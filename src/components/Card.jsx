@@ -8,15 +8,15 @@ const Card = ({ initialRegion, initialCrop }) => {
   const [data, setData] = useState({});
 
   useEffect(() => {
-    axios.get('http://localhost:5000/weather')
+    axios.get(`http://localhost:5000/weather?region_id=${region}`)
       .then(response => {
         console.log('Weather data:', response.data); 
-        setData(response.data);
+        setData(response.data.data || {});
       })
       .catch(error => console.error('Error fetching weather data:', error));
-  }, []);
+  }, [region]);
 
-  const currentData = data[region] || {};
+  const currentData = data;
 
   return (
     <div className="w-full max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg bg-white border border-gray-200 transition-transform transform hover:scale-105 hover:shadow-2xl mt-4">
@@ -32,7 +32,7 @@ const Card = ({ initialRegion, initialCrop }) => {
               onChange={(e) => setRegion(e.target.value)}
               className="flex-1 p-4 border border-gray-300 rounded-lg shadow-md focus:border-blue-600 focus:ring focus:ring-blue-600 focus:ring-opacity-50 text-lg"
             >
-              <option value="Butambal">Butambala</option>
+              <option value="Butambala">Butambala</option>
               <option value="Lwengo">Lwengo</option>
               <option value="Mukono">Mukono</option>
             </select>
