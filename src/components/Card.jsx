@@ -1,38 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { FaThermometerHalf, FaTint, FaSun, FaWind, FaTachometerAlt, FaMapPin } from 'react-icons/fa';
 import axios from 'axios';
+import DateTimePicker from 'react-datetime-picker';
+import 'react-datetime-picker/dist/DateTimePicker.css';
+import { Link } from 'react-router-dom';
+
 
 const Card = ({ initialRegion, initialCrop }) => {
   const [region, setRegion] = useState(initialRegion);
   const [crop, setCrop] = useState(initialCrop);
   const [data, setData] = useState({});
+  const [time, setTime] = useState(new Date());
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        console.log(`Fetching data for region: ${region} and crop: ${crop}`);
-        const response = await axios.get('http://localhost:5000/weather', {
-          params: {
-            region_id: region,
-            crop_id: crop
-          }
-        });
-        console.log('Weather data:', response.data);
-        setData(response.data.data || {});
-      } catch (error) {
-        console.error('Error fetching weather data:', error);
-        setError('Failed to fetch weather data');
-      } finally {
-        setLoading(false);
-      }
-    };    
+    // Fonction vide, car les données ne seront plus récupérées automatiquement à chaque changement
+  }, []);
 
-    fetchData();
-  }, [region, crop]);
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log(`Fetching data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}, time: ${time}`);
+      const response = await axios.get('http://localhost:5000/weather', {
+        params: {
+          region_id: region,
+          crop_id: crop,
+          latitude: latitude,
+          longitude: longitude,
+          time: time.toISOString() // Convert Date object to ISO string
+        }
+      });
+      console.log('Weather data:', response.data);
+      setData(response.data.data || {});
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+      setError('Failed to fetch weather data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRegionChange = (e) => {
     setRegion(e.target.value);
@@ -41,6 +51,28 @@ const Card = ({ initialRegion, initialCrop }) => {
   const handleCropChange = (e) => {
     setCrop(e.target.value);
   };
+
+  const handleLatitudeChange = (e) => {
+    const value = parseFloat(e.target.value);
+    setLatitude(isNaN(value) ? '' : value);
+    console.log(`Latitude updated: ${value}`);
+  };
+
+  const handleLongitudeChange = (e) => {
+    const value = parseFloat(e.target.value);
+    setLongitude(isNaN(value) ? '' : value);
+    console.log(`Longitude updated: ${value}`);
+  };
+
+  const handleTimeChange = (date) => {
+    setTime(date);
+    console.log(`Time updated: ${date}`);
+  };
+
+  const handleFetchClick = () => {
+    fetchData();
+  };
+
 
   return (
     <div className="w-full max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg bg-white border border-gray-200 transition-transform transform hover:scale-105 hover:shadow-2xl mt-4">
@@ -60,6 +92,40 @@ const Card = ({ initialRegion, initialCrop }) => {
               <option value="Mukono">Mukono</option>
             </select>
           </div>
+          <div className="px-6 py-4 bg-gray-50">
+            <Link to="/graph" className="text-blue-600 hover:underline">Voir le graphique</Link>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <label htmlFor="latitude" className="text-gray-800 font-semibold w-1/3">Latitude:</label>
+            <input
+              id="latitude"
+              type="text"
+              value={latitude}
+              onChange={handleLatitudeChange}
+              placeholder="Enter latitude"
+              className="flex-1 p-4 border border-gray-300 rounded-lg shadow-md text-lg"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <label htmlFor="longitude" className="text-gray-800 font-semibold w-1/3">Longitude:</label>
+            <input
+              id="longitude"
+              type="text"
+              value={longitude}
+              onChange={handleLongitudeChange}
+              placeholder="Enter longitude"
+              className="flex-1 p-4 border border-gray-300 rounded-lg shadow-md text-lg"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <label htmlFor="time" className="text-gray-800 font-semibold w-1/3">Time:</label>
+            <DateTimePicker
+              onChange={handleTimeChange}
+              value={time}
+              className="flex-1 p-4 border border-gray-300 rounded-lg shadow-md text-lg"
+            />
+          </div>
           <div className="flex items-center gap-4">
             <label htmlFor="crop" className="text-gray-800 font-semibold w-1/3">Crop:</label>
             <select
@@ -73,6 +139,12 @@ const Card = ({ initialRegion, initialCrop }) => {
               <option value="Cocoa">Cocoa</option>
             </select>
           </div>
+          <button
+            onClick={handleFetchClick}
+            className="w-full py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
+          >
+            Fetch Data
+          </button>
         </div>
         <div className="text-gray-800 text-lg mb-6">
           <p className="mb-2">
@@ -80,6 +152,15 @@ const Card = ({ initialRegion, initialCrop }) => {
           </p>
           <p>
             <strong className="text-gray-600">Farm Name:</strong> {data.farmName || 'N/A'}
+          </p>
+          <p>
+            <strong className="text-gray-600">Latitude:</strong> {data.latitude || 'N/A'}
+          </p>
+          <p>
+            <strong className="text-gray-600">Longitude:</strong> {data.longitude || 'N/A'}
+          </p>
+          <p>
+            <strong className="text-gray-600">Time:</strong> {data.time || 'N/A'}
           </p>
         </div>
       </div>
@@ -143,8 +224,10 @@ const Card = ({ initialRegion, initialCrop }) => {
           </div>
         </>
       )}
+       
     </div>
   );
+  
 };
 
 export default Card;
