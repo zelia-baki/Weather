@@ -1,0 +1,24 @@
+/* landing.css */
+
+.bg-video-overlay {
+    background-image: url('https://via.placeholder.com/1600x900?text=Farm+Background'); /* Remplacez par une vraie URL de vidéo ou d'image */
+    background-size: cover;
+    background-position: center;
+  }
+  
+  .cta-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s, background-color 0.3s;
+  }
+  
+  .cta-button:hover {
+    transform: scale(1.05);
+    background-color: #005500; /* Ajustez en fonction de votre design */
+  }
+  
+  .shadow-xl {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  

@@ -4,46 +4,32 @@ import { Chart as ChartJS } from 'chart.js/auto';
 import axios from 'axios';
 
 function Graph() {
-  const [monthlyProduction, setMonthlyProduction] = useState(new Array(12).fill(0));
-  const [yearlyProduction, setYearlyProduction] = useState(new Array(12).fill(0));
-
-  // Les mois
-  const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'];
+  const [farmData, setFarmData] = useState([]);
 
   useEffect(() => {
-    // Appel à l'API pour récupérer les données de production
-    axios.get('/api/production')
+    axios.get('http://localhost:5000/farm_data')
       .then(response => {
-        const { monthly_production, yearly_production } = response.data;
-        setMonthlyProduction(monthly_production);
-        setYearlyProduction(yearly_production);
+        const { data } = response.data;
+        setFarmData(data || []); // Ensure farmData is always an array
       })
       .catch(error => {
         console.error('Erreur lors de la récupération des données :', error);
       });
   }, []);
 
-  // Données pour les graphiques
-  const chartDataMonth = {
-    labels: months,
-    datasets: [
-      {
-        label: "Production Mensuelle",
-        data: monthlyProduction,
-        backgroundColor: '#E3C6B1',
-        borderColor: '#E3C6B1',
-      }
-    ]
-  };
+  const labels = (farmData || []).map(item => item.name);
+  const quantities = (farmData || []).map(item => item.quantity);
 
-  const chartDataYear = {
-    labels: months,
+  const chartData = {
+    labels: labels,
     datasets: [
       {
-        label: "Production Annuelle",
-        data: yearlyProduction,
-        backgroundColor: '#B1E3C6',
-        borderColor: '#B1E3C6',
+        label: "Production",
+        data: quantities,
+        backgroundColor: 'rgba(255, 159, 64, 0.2)', // Vibrant orange color with transparency
+        borderColor: 'rgba(255, 159, 64, 1)', // Darker orange color for border
+        borderWidth: 2,
+        tension: 0.4, // Smooth curve for Line chart
       }
     ]
   };
@@ -53,36 +39,48 @@ function Graph() {
     plugins: {
       legend: {
         position: 'bottom',
+        labels: {
+          color: '#333', // Color for the legend text
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: (tooltipItem) => `Quantity: ${tooltipItem.raw}`, // Customize tooltip label
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#333', // Color for x-axis labels
+        },
+      },
+      y: {
+        ticks: {
+          color: '#333', // Color for y-axis labels
+        },
       },
     },
   };
 
   return (
-    <div className='Graph'>
-      <div className='container'>
-        <div className='chart'>
-          <Bar data={chartDataMonth} />
+    <div className='bg-gray-100 min-h-screen p-6'>
+      <div className='container mx-auto grid grid-cols-1 md:grid-cols-2 gap-6'>
+        <div className='bg-white p-4 rounded-lg shadow-lg'>
+          <h2 className='text-xl font-semibold mb-4 text-blue-500'>Bar Chart</h2>
+          <Bar data={chartData} options={options} />
         </div>
-        <div className='chart'>
-          <Line data={chartDataMonth} />
+        <div className='bg-white p-4 rounded-lg shadow-lg'>
+          <h2 className='text-xl font-semibold mb-4 text-green-500'>Line Chart</h2>
+          <Line data={chartData} options={options} />
         </div>
-        <div className='chart'>
-          <Doughnut data={chartDataMonth} />
+        <div className='bg-white p-4 rounded-lg shadow-lg mt-6 md:mt-0'>
+          <h2 className='text-xl font-semibold mb-4 text-pink-500'>Doughnut Chart</h2>
+          <Doughnut data={chartData} options={options} />
         </div>
-        <div className='chart'>
-          <Pie data={chartDataMonth} options={options} />
-        </div>
-        <div className='chart'>
-          <Bar data={chartDataYear} />
-        </div>
-        <div className='chart'>
-          <Line data={chartDataYear} />
-        </div>
-        <div className='chart'>
-          <Doughnut data={chartDataYear} />
-        </div>
-        <div className='chart'>
-          <Pie data={chartDataYear} options={options} />
+        <div className='bg-white p-4 rounded-lg shadow-lg mt-6 md:mt-0'>
+          <h2 className='text-xl font-semibold mb-4 text-purple-500'>Pie Chart</h2>
+          <Pie data={chartData} options={options} />
         </div>
       </div>
     </div>
