@@ -3,6 +3,7 @@ import Card from './components/Card';
 import Graph from './components/Graph';
 import MapboxExample from './components/Mapbox';
 import Landing from './components/main/Landing';
+import Login from './components/main/Login';
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
@@ -18,6 +19,7 @@ function App() {
         <Route exact path="/graph" element={<Graph />} />
         <Route exact path="/mapbox" element={<MapboxExample />} />
         <Route exact path='/landing' element={<Landing />} />
+        <Route exact path='/login' element={<Login />} />
  
         
     </Routes>

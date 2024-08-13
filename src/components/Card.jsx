@@ -198,6 +198,12 @@ const Card = ({ initialRegion, initialCrop }) => {
                 <div className="font-semibold w-1/2">Pressure:</div>
                 <div className="text-gray-800 text-xl w-1/2 text-right">{data.pressure || 'N/A'} Pa</div>
               </div>
+              {/* Precipitation */}
+              {/* <div className="flex items-center text-gray-600">
+                <FaTachometerAlt className="text-green-500 mr-3 text-2xl" />
+                <div className="font-semibold w-1/2">Precipitation:</div>
+                <div className="text-gray-800 text-xl w-1/2 text-right">{data.pressure || 'N/A'} Pa</div>
+              </div> */}
               <div className="flex items-center text-gray-600">
                 <FaMapPin className="text-gray-700 mr-3 text-2xl" />
                 <div className="font-semibold w-1/2">Latitude:</div>
@@ -208,6 +214,8 @@ const Card = ({ initialRegion, initialCrop }) => {
                 <div className="font-semibold w-1/2">Longitude:</div>
                 <div className="text-gray-800 text-xl w-1/2 text-right">{data.longitude || 'N/A'}</div>
               </div>
+
+
             </div>
             <div className="px-4 py-2 bg-gray-100 mt-4 rounded-lg shadow-md">
               <div className="flex items-center text-gray-600 mb-2">
