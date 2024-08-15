@@ -18,7 +18,7 @@ const Login = () => {
       localStorage.setItem('token', response.data.token); // Stocker le token JWT
       setSuccessMessage('Login successful!');
       setErrorMessage('');
-      navigate('/dashboard'); // Redirection vers la page du tableau de bord après connexion
+      navigate('/home'); // Redirection vers la page du tableau de bord après connexion
     } catch (error) {
       setErrorMessage('Login failed. Please check your credentials.');
       setSuccessMessage('');
