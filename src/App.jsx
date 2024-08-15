@@ -4,7 +4,8 @@ import Graph from './components/Graph';
 import MapboxExample from './components/Mapbox';
 import Landing from './components/main/Landing';
 import Login from './components/main/Login';
-import './App.css';
+import Home from './components/main/Home';
+import Tabcrop from './components/crop/tabcrop.jsx';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 function App() {
@@ -20,6 +21,10 @@ function App() {
         <Route exact path="/mapbox" element={<MapboxExample />} />
         <Route exact path='/landing' element={<Landing />} />
         <Route exact path='/login' element={<Login />} />
+        <Route exact path='/home' element={<Home />} />
+        <Route exact path='/tabcrop' element={<Tabcrop />} />
+
+
  
         
     </Routes>
