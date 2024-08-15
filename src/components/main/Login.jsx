@@ -1,8 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
+import axiosInstance from '../../axiosInstance'; // Importez l'instance Axios
 import { motion } from 'framer-motion';
 import { FaGoogle, FaFacebookF, FaUser, FaEnvelope, FaLock } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom'; // Import pour la redirection
 
 const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const navigate = useNavigate(); // Hook pour la redirection
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axiosInstance.post('/api/login', { email, password });
+      localStorage.setItem('token', response.data.token); // Stocker le token JWT
+      setSuccessMessage('Login successful!');
+      setErrorMessage('');
+      navigate('/dashboard'); // Redirection vers la page du tableau de bord après connexion
+    } catch (error) {
+      setErrorMessage('Login failed. Please check your credentials.');
+      setSuccessMessage('');
+    }
+  };
+  
   return (
     <div className="bg-gradient-to-r from-teal-500 via-blue-500 to-purple-600 flex items-center justify-center min-h-screen p-4">
       <motion.div
@@ -23,9 +45,9 @@ const Login = () => {
         {/* Form Section */}
         <div className="w-full md:w-1/2 p-8">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Create Account</h1>
+            <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Login</h1>
           </div>
-          <form method="POST" action="/auth/login">
+          <form onSubmit={handleSubmit}>
             <div className="mb-6">
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700">Email Address:</label>
               <motion.div
@@ -39,6 +61,8 @@ const Login = () => {
                   name="email"
                   required
                   className="w-full px-4 py-3 focus:outline-none"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </motion.div>
             </div>
@@ -55,9 +79,15 @@ const Login = () => {
                   name="password"
                   required
                   className="w-full px-4 py-3 focus:outline-none"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)} 
                 />
               </motion.div>
             </div>
+
+            {/* Display Error or Success Message */}
+            {errorMessage && <p className="text-red-600 mb-4">{errorMessage}</p>}
+            {successMessage && <p className="text-green-600 mb-4">{successMessage}</p>}
 
             {/* New Button and Link Section */}
             <div className="flex justify-between items-center mb-6">
