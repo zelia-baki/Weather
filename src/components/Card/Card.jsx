@@ -4,6 +4,7 @@ import axios from 'axios';
 import DateTimePicker from 'react-datetime-picker';
 import 'react-datetime-picker/dist/DateTimePicker.css';
 import { Link } from 'react-router-dom';
+import axiosInstance from '../../axiosInstance';
 
 
 const Card = ({ initialRegion, initialCrop }) => {
@@ -24,8 +25,8 @@ const Card = ({ initialRegion, initialCrop }) => {
     setLoading(true);
     setError(null);
     try {
-      console.log(`Fetching data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}, time: ${time}`);
-      const response = await axios.get('http://localhost:5000/weather', {
+      console.log(`Fetching data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}, time: ${time.toISOString()}`);
+      const response = await axiosInstance.get('/weather', {
         params: {
           region_id: region,
           crop_id: crop,

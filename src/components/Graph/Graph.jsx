@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS } from 'chart.js/auto';
-import axiosInstance from '../axiosInstance';
+import axiosInstance from '../../axiosInstance';
 import { clearStorage } from 'mapbox-gl';
 
 function Graph() {
