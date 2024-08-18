@@ -25,7 +25,7 @@ function Graph() {
       const crop = 'some-crop-id';      // replace with actual crop
       const latitude = '0.292225';        // replace with actual latitude
       const longitude = '32.576809';      // replace with actual longitude
-      const time = new Date('2024-08-06T03:00:00');
+      const time = new Date('2024-08-11T04:00:00');
 
       try {
         console.log(`Fetching data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}, time: ${time}`);
@@ -62,7 +62,9 @@ function Graph() {
   console.log(weatherHumidity)       // replace with actual field
   const weatherWindSpeed = weatherData.windSpeed || 0;  
   console.log(weatherWindSpeed)       // replace with actual field
-  // replace with actual field
+  const weatherWindPrecipitation = weatherData.precipitaion || 0;  
+  console.log(weatherWindPrecipitation)       // replace with actual field
+
 
   const chartData = {
     labels: farmLabels,
@@ -96,6 +98,14 @@ function Graph() {
         data: farmLabels.map(() => weatherWindSpeed), // Same as above
         backgroundColor: 'rgba(255, 206, 86, 0.2)', // Transparent yellow
         borderColor: 'rgba(255, 206, 86, 1)', // Solid yellow
+        borderWidth: 2,
+        tension: 0.4,
+      },
+      {
+        label: "Precipitation",
+        data: farmLabels.map(() => weatherWindPrecipitation), // Same as above
+        backgroundColor: 'rgba(255, 206, 83, 0.2)', // Transparent yellow
+        borderColor: 'rgba(255, 206, 83, 1)', // Solid yellow
         borderWidth: 2,
         tension: 0.4,
       }
