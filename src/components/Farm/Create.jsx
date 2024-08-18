@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import FarmModal from './FarmModal';
+import FarmList from './FarmList'; // Import the FarmList component
 
 const Create = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,6 +18,9 @@ const Create = () => {
             </button>
 
             <FarmModal isOpen={isModalOpen} onClose={handleCloseModal} />
+
+            {/* Display the FarmList component */}
+            <FarmList />
         </div>
     );
 };
