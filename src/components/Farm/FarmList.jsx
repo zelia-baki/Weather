@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+
 
 const FarmList = () => {
     const [selectedFarmId, setSelectedFarmId] = useState(null);
@@ -92,12 +94,12 @@ const FarmList = () => {
                                             >
                                                 View
                                             </button>
-                                            <button
-                                                onClick={() => handleAction('Add FD', 1)}
-                                                className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"
-                                            >
-                                                Add FD
-                                            </button>
+                                            <Link
+    to="/farmdata"
+    className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"
+>
+    Add FD
+</Link>
                                         </div>
                                     )}
                                 </div>

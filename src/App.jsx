@@ -12,6 +12,8 @@ import Layout from './components/Layout/Layout.jsx';
 import Forest from './components/Forest/Forest.jsx';
 import ForestPage from './components/Forest/ForestPage.jsx';
 import Create from './components/Farm/Create.jsx';
+import Farmdata from './components/Farm/Farmdata.jsx';
+import Createcrop from './components/crop/Createcrop.jsx';
 function App() {
   const layoutRoutes = [
     { path: "/graph", component: <Graph /> },
@@ -21,6 +23,10 @@ function App() {
     { path: "/forest", component: <Forest /> },
     { path: "/forestpage", component: <ForestPage /> },
     { path: "/createfarm", component: <Create /> },
+    { path: "/farmdata", component: <Farmdata /> },
+    { path: "/cropmanage", component: <Createcrop /> }
+
+
 
 
 
