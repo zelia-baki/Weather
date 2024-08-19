@@ -25,12 +25,6 @@ function App() {
     { path: "/createfarm", component: <Create /> },
     { path: "/farmdata", component: <Farmdata /> },
     { path: "/cropmanage", component: <Createcrop /> }
-
-
-
-
-
-
   ];
 
   return (
