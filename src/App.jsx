@@ -31,9 +31,7 @@ function App() {
     { path: "/cropedit/:id", component: <CropEdit /> },
     { path: "/cardex", component: <Cardex /> },
     { path: "/district", component: <CreateDistrict /> },
-
-
-
+    { path: "/cropmanage", component: <Createcrop /> }
   ];
 
   return (
