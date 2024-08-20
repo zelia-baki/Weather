@@ -1,0 +1,191 @@
+import React, { useState, useEffect } from 'react';
+import { FaThermometerHalf, FaTint, FaSun, FaWind, FaTachometerAlt, FaMapPin } from 'react-icons/fa';
+import axiosInstance from '../../axiosInstance';
+import DateTimePicker from 'react-datetime-picker';
+import { Link } from 'react-router-dom';
+import 'react-datetime-picker/dist/DateTimePicker.css';
+
+const Card = ({ initialRegion, initialCrop }) => {
+  const [region, setRegion] = useState(initialRegion);
+  const [crop, setCrop] = useState(initialCrop);
+  const [data, setData] = useState({});
+  const [time, setTime] = useState(new Date());
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {}, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axiosInstance.get('/weather', {
+        params: {
+          region_id: region,
+          crop_id: crop,
+          latitude: latitude,
+          longitude: longitude,
+          time: time.toISOString(),
+        },
+      });
+      setData(response.data.data || {});
+    } catch (error) {
+      setError('Failed to fetch weather data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFetchClick = () => {
+    fetchData();
+  };
+
+  return (
+    <div className="w-full max-w-7xl mx-auto rounded-xl overflow-hidden shadow-2xl bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 border border-blue-300 mt-4 mb-8 p-8">
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Left Column */}
+        <div className="md:w-3/5 p-6 bg-white rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
+          <h1 className="text-4xl font-extrabold text-blue-700 mb-4">{region}</h1>
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-4">
+              <label htmlFor="region" className="text-gray-700 font-semibold w-1/3">Region:</label>
+              <select
+                id="region"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="flex-1 p-3 border border-gray-300 rounded-lg shadow-md focus:border-blue-600 focus:ring focus:ring-blue-600 focus:ring-opacity-50 text-lg bg-gradient-to-r from-white to-blue-50"
+              >
+                <option value="Butambala">Butambala</option>
+                <option value="Lwengo">Lwengo</option>
+                <option value="Mukono">Mukono</option>
+              </select>
+            </div>
+            <div className="px-6 py-3 bg-blue-100 rounded-lg shadow-md mt-4">
+              <Link to="/graph" className="text-blue-800 font-bold hover:underline">Voir le graphique</Link>
+            </div>
+            <div className="flex items-center gap-4">
+              <label htmlFor="latitude" className="text-gray-700 font-semibold w-1/3">Latitude:</label>
+              <input
+                id="latitude"
+                type="text"
+                value={latitude}
+                onChange={(e) => setLatitude(parseFloat(e.target.value))}
+                placeholder="Enter latitude"
+                className="flex-1 p-3 border border-gray-300 rounded-lg shadow-md text-lg bg-gradient-to-r from-white to-blue-50"
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <label htmlFor="longitude" className="text-gray-700 font-semibold w-1/3">Longitude:</label>
+              <input
+                id="longitude"
+                type="text"
+                value={longitude}
+                onChange={(e) => setLongitude(parseFloat(e.target.value))}
+                placeholder="Enter longitude"
+                className="flex-1 p-3 border border-gray-300 rounded-lg shadow-md text-lg bg-gradient-to-r from-white to-blue-50"
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <label htmlFor="time" className="text-gray-700 font-semibold w-1/3">Time:</label>
+              <DateTimePicker
+                onChange={setTime}
+                value={time}
+                className="flex-1 p-3 border border-gray-300 rounded-lg shadow-md text-lg bg-gradient-to-r from-white to-blue-50"
+              />
+            </div>
+            <div className="flex items-center gap-4">
+              <label htmlFor="crop" className="text-gray-700 font-semibold w-1/3">Crop:</label>
+              <select
+                id="crop"
+                value={crop}
+                onChange={(e) => setCrop(e.target.value)}
+                className="flex-1 p-3 border border-gray-300 rounded-lg shadow-md focus:border-blue-600 focus:ring focus:ring-blue-600 focus:ring-opacity-50 text-lg bg-gradient-to-r from-white to-blue-50"
+              >
+                <option value="Rice">Rice</option>
+                <option value="Coffee">Coffee</option>
+                <option value="Cocoa">Cocoa</option>
+              </select>
+            </div>
+            <button
+              onClick={handleFetchClick}
+              className="w-full py-2 bg-blue-700 text-white rounded-lg shadow-md hover:bg-blue-800 transition duration-300 mt-4 transform hover:translate-y-1 hover:shadow-xl"
+            >
+              Fetch Data
+            </button>
+          </div>
+          <div className="text-gray-800 text-lg mt-4">
+            <p className="mb-2">
+              <strong className="text-gray-600">Crop:</strong> {crop}
+            </p>
+            <p>
+              <strong className="text-gray-600">Farm Name:</strong> {data.farmName || 'N/A'}
+            </p>
+            <p>
+              <strong className="text-gray-600">Latitude:</strong> {data.latitude || 'N/A'}
+            </p>
+            <p>
+              <strong className="text-gray-600">Longitude:</strong> {data.longitude || 'N/A'}
+            </p>
+            <p>
+              <strong className="text-gray-600">Time:</strong> {data.time || 'N/A'}
+            </p>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="md:w-2/5 p-6 bg-white rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300">
+          {loading ? (
+            <div className="text-center text-gray-500">Loading...</div>
+          ) : error ? (
+            <div className="text-center text-red-500">{error}</div>
+          ) : (
+            <>
+              <img className="w-full h-40 object-cover rounded-lg shadow-md mb-4" src={data.imageUrl || '/default-image.jpg'} alt={`Photo of ${region}`} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center text-gray-600">
+                  <FaThermometerHalf className="text-red-500 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">Temperature:</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.temperature || 'N/A'} °C</div>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <FaTint className="text-blue-500 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">Humidity:</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.humidity || 'N/A'} %</div>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <FaSun className="text-yellow-500 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">Solar Radiation:</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.solarRadiation || 'N/A'} W/m²</div>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <FaWind className="text-gray-600 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">Wind Speed:</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.windSpeed || 'N/A'} m/s</div>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <FaTachometerAlt className="text-green-500 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">ET₀:</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.eto || 'N/A'} mm/day</div>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <FaMapPin className="text-purple-500 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">Latitude:</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.latitude || 'N/A'}</div>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <FaMapPin className="text-purple-500 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">Longitude:</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.longitude || 'N/A'}</div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Card;

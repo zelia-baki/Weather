@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import CropModal from './CropModal'; // Import the CropModal component
+import CropList from './CropList'; // Import the CropList component
 
 const CreateCrop = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,6 +17,7 @@ const CreateCrop = () => {
             >
                 Create Crop
             </button>
+            <CropList />
 
         </div>
     );

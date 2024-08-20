@@ -1,0 +1,47 @@
+ssh user@linux-server
+
+rman target /
+
+RMAN> LIST BACKUP;
+
+utilisation du fichier de contrôle de la base de données cible au lieu du catalogue de récupération
+
+Liste des ensembles de sauvegarde
+===============================
+BS Key  Size       Device Type Elapsed Time Completion Time
+------- ---------- ----------- ------------ ---------------
+1       159.94M    DISK        00:00:00     29/07/2024 16:37:07
+        BP Key: 1   Status: AVAILABLE  Compressed: NO  Tag: TAG20240729T163206
+        Piece Name: /home/oracle/backup/backup_013i4ia7_1_1
+
+Liste des journaux archivés dans l'ensemble de sauvegarde 1
+===========================================================
+ Thrd Seq  Low SCN    Low Time            Next SCN   Next Time
+---- ---- ---------- ------------------- ---------- -------------------
+1    5    2013180    29/07/2024 10:59:07 2042683    29/07/2024 12:31:55
+
+BS Key  LV Size       Device Type Elapsed Time Completion Time
+------- -- ---------- ----------- ------------ ---------------
+2       Full 1.14G    DISK        00:00:49     29/07/2024 16:37:04
+        BP Key: 2   Status: AVAILABLE  Compressed: NO  Tag: TAG20240729T163214
+        Piece Name: /home/oracle/backup/backup_023i4iaf_1_1
+
+Liste des fichiers de données dans l'ensemble de sauvegarde 2
+============================================================
+ File LV Type Ckp SCN    Ckp Time        Abs Fuz SCN Sparse Name
+---- -- ---- ---------- ---------------- --- ---------- -----
+1    Full 2042707    29/07/2024 16:37:12 NO  /u01/app/oracle/oradata/NORTHWIND/system01.dbf
+2    Full 2042707    29/07/2024 16:37:15 NO  /u01/app/oracle/oradata/NORTHWIND/sysaux01.dbf
+3    Full 2042707    29/07/2024 16:37:15 NO  /u01/app/oracle/oradata/NORTHWIND/undotbs01.dbf
+4    Full 2042707    29/07/2024 16:37:15 NO  /u01/app/oracle/oradata/NORTHWIND/users01.dbf
+
+BS Key  Size       Device Type Elapsed Time Completion Time
+------- ---------- ----------- ------------ ---------------
+3       159.94M    DISK        00:00:00     29/07/2024 16:37:21
+        BP Key: 3   Status: AVAILABLE  Compressed: NO  Tag: TAG20240729T163231
+        Piece Name: /home/oracle/backup/backup_033i4ich_1_1
+
+Liste des journaux archivés dans l'ensemble de sauvegarde 3
+===========================================================
+ Thrd Seq  Low SCN    Low Time            Next SCN   Next Time
+---- ---- ---------- ------------------- ---------- -------------------
