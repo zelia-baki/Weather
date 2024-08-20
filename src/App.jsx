@@ -14,6 +14,9 @@ import ForestPage from './components/Forest/ForestPage.jsx';
 import Create from './components/Farm/Create.jsx';
 import Farmdata from './components/Farm/Farmdata.jsx';
 import Createcrop from './components/crop/Createcrop.jsx';
+import CropEdit from './components/crop/CropEdit.jsx';
+import Cardex from './components/Card/Cardex.jsx';
+import CreateDistrict from './components/District/CreateDistrict.jsx';
 function App() {
   const layoutRoutes = [
     { path: "/graph", component: <Graph /> },
@@ -24,10 +27,10 @@ function App() {
     { path: "/forestpage", component: <ForestPage /> },
     { path: "/createfarm", component: <Create /> },
     { path: "/farmdata", component: <Farmdata /> },
-    { path: "/cropmanage", component: <Createcrop /> }
-
-
-
+    { path: "/cropmanage", component: <Createcrop /> },
+    { path: "/cropedit/:id", component: <CropEdit /> },
+    { path: "/cardex", component: <Cardex /> },
+    { path: "/district", component: <CreateDistrict /> },
 
 
 
