@@ -17,6 +17,8 @@ import Createcrop from './components/crop/Createcrop.jsx';
 import CropEdit from './components/crop/CropEdit.jsx';
 import Cardex from './components/Card/Cardex.jsx';
 import CreateDistrict from './components/District/CreateDistrict.jsx';
+import DistrictView from './components/District/DistrictView.jsx';
+import DistrictList from './components/District/DistrictList.jsx';
 function App() {
   const layoutRoutes = [
     { path: "/graph", component: <Graph /> },
@@ -27,11 +29,14 @@ function App() {
     { path: "/forestpage", component: <ForestPage /> },
     { path: "/createfarm", component: <Create /> },
     { path: "/farmdata", component: <Farmdata /> },
-    { path: "/cropmanage", component: <Createcrop /> },
     { path: "/cropedit/:id", component: <CropEdit /> },
     { path: "/cardex", component: <Cardex /> },
     { path: "/district", component: <CreateDistrict /> },
-    { path: "/cropmanage", component: <Createcrop /> }
+    { path: "/cropmanage", component: <Createcrop /> },
+    { path: "/districts/:id/view", component: <DistrictView /> },
+    { path: "/districts", component: <DistrictList /> }
+
+
   ];
 
   return (
