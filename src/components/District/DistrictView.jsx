@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axiosInstance from '../../axiosInstance';
-import { useParams } from 'react-router-dom';
 
-const DistrictView = () => {
-    const { id } = useParams();
+const DistrictView = ({ id }) => {
     const [district, setDistrict] = useState(null);
 
     useEffect(() => {
@@ -22,8 +20,8 @@ const DistrictView = () => {
     if (!district) return <p>Loading...</p>;
 
     return (
-        <div className="container mx-auto p-6">
-            <h1 className="text-3xl font-extrabold mb-6 text-center text-teal-700">District Details</h1>
+        <div>
+            <h1 className="text-2xl font-extrabold mb-4 text-center text-teal-700">District Details</h1>
             <p><span className="font-bold">Name:</span> {district.name}</p>
             <p><span className="font-bold">Region:</span> {district.region}</p>
             {/* Add other details as needed */}

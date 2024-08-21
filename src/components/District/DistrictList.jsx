@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
-import { Link } from 'react-router-dom';
-import DistrictView from './DistrictView';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+
+const MySwal = withReactContent(Swal);
 
 const DistrictList = () => {
     const [districts, setDistricts] = useState([]);
-    const [dropdownOpen, setDropdownOpen] = useState(null); // State to handle the dropdown
+    const [dropdownOpen, setDropdownOpen] = useState(null);
 
     useEffect(() => {
         fetchDistricts();
@@ -26,6 +28,42 @@ const DistrictList = () => {
             setDistricts(districts.filter(district => district.id !== districtId));
         } catch (error) {
             console.error('Error deleting district:', error);
+        }
+    };
+
+    const handleView = async (districtId) => {
+        try {
+            // Show loading message
+            MySwal.fire({
+                title: 'Loading...',
+                text: 'Fetching district details',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    MySwal.showLoading();
+                }
+            });
+
+            const { data } = await axiosInstance.get(`/api/district/${districtId}`);
+            console.log('District data:', data); // Log data to verify
+
+            MySwal.fire({
+                title: 'District Details',
+                html: `<div>
+                    <p><span class="font-bold">Name:</span> ${data.name}</p>
+                    <p><span class="font-bold">Region:</span> ${data.region}</p>
+                    <!-- Add more details as needed -->
+                </div>`,
+                showCancelButton: true,
+                cancelButtonText: 'Close',
+                showConfirmButton: false,
+            });
+        } catch (error) {
+            console.error('Error fetching district details:', error);
+            MySwal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Failed to fetch district details. Please try again later.',
+            });
         }
     };
 
@@ -54,20 +92,20 @@ const DistrictList = () => {
                                 <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                                     <ul>
                                         <li>
-                                            <Link
-                                                to={`/districts/${district.id}/view`}
-                                                className="block px-4 py-2 text-blue-500 hover:bg-gray-100"
+                                            <button
+                                                onClick={() => handleView(district.id)}
+                                                className="block px-4 py-2 text-blue-500 hover:bg-gray-100 w-full text-left"
                                             >
                                                 View
-                                            </Link>
+                                            </button>
                                         </li>
                                         <li>
-                                            <Link
-                                                to={`/districts/${district.id}/edit`}
+                                            <a
+                                                href={`/districts/${district.id}/edit`}
                                                 className="block px-4 py-2 text-green-500 hover:bg-gray-100"
                                             >
                                                 Edit
-                                            </Link>
+                                            </a>
                                         </li>
                                         <li>
                                             <button
