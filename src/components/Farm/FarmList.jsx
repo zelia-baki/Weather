@@ -114,7 +114,7 @@ const FarmList = () => {
                                                 Actions
                                             </button>
                                             {dropdownOpen === farm.id && (
-                                                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg">
+                                                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
                                                     <button
                                                         onClick={() => handleAction('Update', farm.id)}
                                                         className="block px-4 py-2 text-teal-600 hover:bg-teal-100 w-full text-left"
@@ -154,25 +154,27 @@ const FarmList = () => {
                 </table>
 
                 {/* Pagination */}
-                <div className="flex justify-center mt-8">
-                    <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-l disabled:opacity-50"
-                    >
-                        Previous
-                    </button>
-                    <span className="px-4 py-2">
-                        Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-r disabled:opacity-50"
-                    >
-                        Next
-                    </button>
-                </div>
+                {totalPages > 1 && (
+                    <div className="flex justify-center mt-8">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-l disabled:opacity-50"
+                        >
+                            Previous
+                        </button>
+                        <span className="px-4 py-2">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-r disabled:opacity-50"
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

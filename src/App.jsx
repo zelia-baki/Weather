@@ -19,6 +19,7 @@ import Cardex from './components/Card/Cardex.jsx';
 import CreateDistrict from './components/District/CreateDistrict.jsx';
 import DistrictView from './components/District/DistrictView.jsx';
 import DistrictList from './components/District/DistrictList.jsx';
+import DistrictEdit from './components/District/DistrictEdit.jsx';
 function App() {
   const layoutRoutes = [
     { path: "/graph", component: <Graph /> },
@@ -34,7 +35,10 @@ function App() {
     { path: "/district", component: <CreateDistrict /> },
     { path: "/cropmanage", component: <Createcrop /> },
     { path: "/districts/:id/view", component: <DistrictView /> },
-    { path: "/districts", component: <DistrictList /> }
+    { path: "/districts", component: <DistrictList /> },
+    { path: "/districts/:id/edit", component: <DistrictEdit /> }
+
+    
 
 
   ];
