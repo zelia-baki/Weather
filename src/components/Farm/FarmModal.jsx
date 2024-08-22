@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
 import { IoClose, IoCheckmark } from 'react-icons/io5';
 
@@ -14,10 +14,16 @@ const FarmModal = ({ isOpen, onClose }) => {
         phonenumber2: '',
     });
 
+    const [districts, setDistricts] = useState({});
+    const [farmerGroups, setFarmerGroups] = useState({});
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        fetchDistricts();
-        fetchFarmerGroups();
-    }, [currentPage]);
+        if (isOpen) {
+            fetchDistricts();
+            fetchFarmerGroups();
+        }
+    }, [isOpen]);
 
     const fetchDistricts = async () => {
         try {
@@ -29,6 +35,8 @@ const FarmModal = ({ isOpen, onClose }) => {
             setDistricts(districtsMap);
         } catch (error) {
             console.error('Error fetching districts:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -61,7 +69,7 @@ const FarmModal = ({ isOpen, onClose }) => {
             console.error('Error creating farm:', error);
         }
     };
-
+    
     return (
         <div id="farmModal" className={`fixed inset-0 bg-gray-900 bg-opacity-50 ${isOpen ? 'flex' : 'hidden'} items-center justify-center`}>
             <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-3xl mx-4 md:mx-auto">

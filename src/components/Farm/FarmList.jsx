@@ -18,7 +18,9 @@ const FarmList = () => {
 
     const fetchFarms = async (page) => {
         try {
+            console.log(`Fetching farms for page: ${page}`);
             const response = await axiosInstance.get(`/api/farm/?page=${page}`);
+            console.log('Fetched farms:', response.data);
             setFarms(response.data.farms);
             setTotalPages(response.data.total_pages || 1);
         } catch (error) {
@@ -51,7 +53,6 @@ const FarmList = () => {
             console.error('Error fetching farmer groups:', error);
         }
     };
-    
 
     const handleDropdownToggle = (farmId) => {
         setDropdownOpen(dropdownOpen === farmId ? null : farmId);
@@ -64,9 +65,17 @@ const FarmList = () => {
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
+            console.log(`Changing page to: ${page}`);
             setCurrentPage(page);
+        } else {
+            console.log('Page out of bounds:', page);
         }
     };
+
+    useEffect(() => {
+        console.log('Current page:', currentPage);
+        console.log('Total pages:', totalPages);
+    }, [currentPage, totalPages]);
 
     return (
         <div className="container mx-auto p-6">
@@ -86,55 +95,61 @@ const FarmList = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {farms.map((farm) => (
-                            <tr key={farm.id} className="bg-gray-50 hover:bg-gray-100">
-                                <td className="border px-4 py-2">{farm.id}</td>
-                                <td className="border px-4 py-2">{farm.name}</td>
-                                <td className="border px-4 py-2">{districts[farm.district_id]}</td>
-                                <td className="border px-4 py-2">{farmerGroups[farm.farmergroup_id]}</td>
-                                <td className="border px-4 py-2">{farm.geolocation}</td>
-                                <td className="border px-4 py-2">{farm.phonenumber1}</td>
-                                <td className="border px-4 py-2">{farm.phonenumber2}</td>
-                                <td className="border px-4 py-2">
-                                    <div className="relative">
-                                        <button
-                                            onClick={() => handleDropdownToggle(farm.id)}
-                                            className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-1 px-2 rounded"
-                                        >
-                                            Actions
-                                        </button>
-                                        {dropdownOpen === farm.id && (
-                                            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg">
-                                                <button
-                                                    onClick={() => handleAction('Update', farm.id)}
-                                                    className="block px-4 py-2 text-teal-600 hover:bg-teal-100 w-full text-left"
-                                                >
-                                                    Update
-                                                </button>
-                                                <button
-                                                    onClick={() => handleAction('Delete', farm.id)}
-                                                    className="block px-4 py-2 text-red-600 hover:bg-red-100 w-full text-left"
-                                                >
-                                                    Delete
-                                                </button>
-                                                <button
-                                                    onClick={() => handleAction('View', farm.id)}
-                                                    className="block px-4 py-2 text-blue-600 hover:bg-blue-100 w-full text-left"
-                                                >
-                                                    View
-                                                </button>
-                                                <Link
-                                                    to="/farmdata"
-                                                    className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"
-                                                >
-                                                    Add FD
-                                                </Link>
-                                            </div>
-                                        )}
-                                    </div>
-                                </td>
+                        {farms.length > 0 ? (
+                            farms.map((farm) => (
+                                <tr key={farm.id} className="bg-gray-50 hover:bg-gray-100">
+                                    <td className="border px-4 py-2">{farm.id}</td>
+                                    <td className="border px-4 py-2">{farm.name}</td>
+                                    <td className="border px-4 py-2">{districts[farm.district_id]}</td>
+                                    <td className="border px-4 py-2">{farmerGroups[farm.farmergroup_id]}</td>
+                                    <td className="border px-4 py-2">{farm.geolocation}</td>
+                                    <td className="border px-4 py-2">{farm.phonenumber1}</td>
+                                    <td className="border px-4 py-2">{farm.phonenumber2}</td>
+                                    <td className="border px-4 py-2">
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => handleDropdownToggle(farm.id)}
+                                                className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-1 px-2 rounded"
+                                            >
+                                                Actions
+                                            </button>
+                                            {dropdownOpen === farm.id && (
+                                                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg">
+                                                    <button
+                                                        onClick={() => handleAction('Update', farm.id)}
+                                                        className="block px-4 py-2 text-teal-600 hover:bg-teal-100 w-full text-left"
+                                                    >
+                                                        Update
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAction('Delete', farm.id)}
+                                                        className="block px-4 py-2 text-red-600 hover:bg-red-100 w-full text-left"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAction('View', farm.id)}
+                                                        className="block px-4 py-2 text-blue-600 hover:bg-blue-100 w-full text-left"
+                                                    >
+                                                        View
+                                                    </button>
+                                                    <Link
+                                                        to="/farmdata"
+                                                        className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"
+                                                    >
+                                                        Add FD
+                                                    </Link>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="8" className="border px-4 py-2 text-center">No farms available</td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
 

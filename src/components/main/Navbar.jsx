@@ -67,7 +67,7 @@ const Sidebar = () => {
               <FaChevronDown className={`ml-4 transition-transform ${openFarmDropdown ? 'rotate-180' : ''}`} />
             </button>
             <div className={`ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out ${openFarmDropdown ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-              <Link to="/createfarm" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+              <Link to="/farmdata" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                 Farm Data
               </Link>
               <Link to="/farmer-group" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
