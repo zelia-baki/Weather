@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../../axiosInstance';
 import { IoClose, IoCheckmark } from 'react-icons/io5';
 
 const FarmModal = ({ isOpen, onClose }) => {
     const [formData, setFormData] = useState({
-        farm_id: 'next_farm_id', // Ceci devrait être défini dynamiquement en fonction de votre backend
         name: '',
         subcounty: '',
         district_id: '',
@@ -15,6 +14,37 @@ const FarmModal = ({ isOpen, onClose }) => {
         phonenumber2: '',
     });
 
+    useEffect(() => {
+        fetchDistricts();
+        fetchFarmerGroups();
+    }, [currentPage]);
+
+    const fetchDistricts = async () => {
+        try {
+            const response = await axiosInstance.get('/api/district/');
+            const districtsMap = response.data.districts.reduce((acc, district) => {
+                acc[district.id] = district.name;
+                return acc;
+            }, {});
+            setDistricts(districtsMap);
+        } catch (error) {
+            console.error('Error fetching districts:', error);
+        }
+    };
+
+    const fetchFarmerGroups = async () => {
+        try {
+            const response = await axiosInstance.get('/api/farmergroup/');
+            const farmerGroupsMap = response.data.reduce((acc, group) => {
+                acc[group.id] = group.name;
+                return acc;
+            }, {});
+            setFarmerGroups(farmerGroupsMap);
+        } catch (error) {
+            console.error('Error fetching farmer groups:', error);
+        }
+    };
+    
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -25,10 +55,10 @@ const FarmModal = ({ isOpen, onClose }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('/farm/create', formData);
-            onClose(); // Fermer la modal après soumission réussie
+            await axiosInstance.post('/api/farm/create', formData);
+            onClose(); // Close the modal after successful submission
         } catch (error) {
-            console.error('Erreur lors de la création de la ferme:', error);
+            console.error('Error creating farm:', error);
         }
     };
 
@@ -44,61 +74,56 @@ const FarmModal = ({ isOpen, onClose }) => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
-                            <label htmlFor="farm_id" className="block text-gray-700 text-sm font-semibold mb-2">ID de la Ferme :</label>
-                            <input type="text" id="farm_id" name="farm_id" required value={formData.farm_id} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
-                        </div>
-                        <div className="relative">
                             <label htmlFor="name" className="block text-gray-700 text-sm font-semibold mb-2">Nom de la Ferme :</label>
                             <input type="text" id="name" name="name" required value={formData.name} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <label htmlFor="subcounty" className="block text-gray-700 text-sm font-semibold mb-2">Sous-comté :</label>
                             <input type="text" id="subcounty" name="subcounty" required value={formData.subcounty} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <label htmlFor="district_id" className="block text-gray-700 text-sm font-semibold mb-2">District :</label>
                             <select id="district_id" name="district_id" value={formData.district_id} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <option value="">Aucun</option>
-                                {/* Remplacez par des options dynamiques */}
+                                {/* Replace with dynamic options */}
                                 <option value="1">District 1</option>
                                 <option value="2">District 2</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <label htmlFor="farmergroup_id" className="block text-gray-700 text-sm font-semibold mb-2">Groupe de Fermiers :</label>
                             <select id="farmergroup_id" name="farmergroup_id" required value={formData.farmergroup_id} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <option value="">Aucun</option>
-                                {/* Remplacez par des options dynamiques */}
+                                {/* Replace with dynamic options */}
                                 <option value="1">Groupe de Fermiers 1</option>
                                 <option value="2">Groupe de Fermiers 2</option>
                             </select>
-                        </div>
-                        <div className="relative">
-                            <label htmlFor="longitude" className="block text-gray-700 text-sm font-semibold mb-2">Longitude :</label>
-                            <input type="text" id="longitude" name="longitude" required value={formData.longitude} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
+                            <label htmlFor="longitude" className="block text-gray-700 text-sm font-semibold mb-2">Longitude :</label>
+                            <input type="text" id="longitude" name="longitude" required value={formData.longitude} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                        </div>
+                        <div className="relative">
                             <label htmlFor="latitude" className="block text-gray-700 text-sm font-semibold mb-2">Latitude :</label>
                             <input type="text" id="latitude" name="latitude" required value={formData.latitude} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <label htmlFor="phonenumber1" className="block text-gray-700 text-sm font-semibold mb-2">Numéro de Téléphone 1 :</label>
                             <input type="text" id="phonenumber1" name="phonenumber1" value={formData.phonenumber1} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
                         </div>
-                    </div>
-
-                    <div className="relative">
-                        <label htmlFor="phonenumber2" className="block text-gray-700 text-sm font-semibold mb-2">Numéro de Téléphone 2 :</label>
-                        <input type="text" id="phonenumber2" name="phonenumber2" value={formData.phonenumber2} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                        <div className="relative">
+                            <label htmlFor="phonenumber2" className="block text-gray-700 text-sm font-semibold mb-2">Numéro de Téléphone 2 :</label>
+                            <input type="text" id="phonenumber2" name="phonenumber2" value={formData.phonenumber2} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                        </div>
                     </div>
 
                     <div className="flex items-center justify-end space-x-4">
