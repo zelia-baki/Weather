@@ -3,15 +3,18 @@ import mapboxgl from "mapbox-gl";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import * as turf from "@turf/turf";
+import axiosInstance from '../axiosInstance'; // Import axios
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 
-const MapboxExample = () => {
+const MapboxExample = ({ owner_id }) => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
   const [roundedArea, setRoundedArea] = useState();
+  const [polygonCoordinates, setPolygonCoordinates] = useState([]);
+  const [placeName, setPlaceName] = useState('');
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
@@ -33,7 +36,6 @@ const MapboxExample = () => {
     });
     mapRef.current.addControl(draw);
 
-    // Geocoder for searching coordinates
     const coordinatesGeocoder = (query) => {
       const matches = query.match(
         /^[ ]*(?:Lat: )?(-?\d+\.?\d*)[, ]+(?:Lng: )?(-?\d+\.?\d*)[ ]*$/i
@@ -76,16 +78,28 @@ const MapboxExample = () => {
       return geocodes;
     };
 
-    mapRef.current.addControl(
-      new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        localGeocoder: coordinatesGeocoder,
-        zoom: 4,
-        placeholder: "Search coordinates",
-        mapboxgl: mapboxgl,
-        reverseGeocode: true,
-      })
-    );
+    const geocoder = new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      localGeocoder: coordinatesGeocoder,
+      zoom: 4,
+      placeholder: "Search coordinates",
+      mapboxgl: mapboxgl,
+      reverseGeocode: true,
+    });
+
+    mapRef.current.addControl(geocoder);
+
+    // Event listener for when a search result is selected
+    geocoder.on('result', (e) => {
+      const { place_name, geometry } = e.result;
+      setPlaceName(place_name);
+      console.log("Place Name:", place_name);
+      console.log("Coordinates:", geometry.coordinates);
+      mapRef.current.flyTo({
+        center: geometry.coordinates,
+        zoom: 12
+      });
+    });
 
     mapRef.current.on("draw.create", updateArea);
     mapRef.current.on("draw.delete", updateArea);
@@ -97,8 +111,8 @@ const MapboxExample = () => {
         const area = turf.area(data);
         setRoundedArea(Math.round(area * 100) / 100);
 
-        // Extract and log coordinates
         const coordinates = data.features[0].geometry.coordinates;
+        setPolygonCoordinates(coordinates);
         console.log("Polygon Coordinates:", coordinates);
       } else {
         setRoundedArea();
@@ -108,9 +122,29 @@ const MapboxExample = () => {
     }
   }, []);
 
-  const handleValidate = () => {
-    console.log("Selection validated:", roundedArea);
-    // Implement your validation logic here
+  const handleValidate = async () => {
+    console.log("Selection validated:", roundedArea, "Owner ID:", owner_id);
+
+    // Extraire tous les points du polygone
+    const points = polygonCoordinates[0].map(coord => ({
+      longitude: coord[0],
+      latitude: coord[1]
+    }));
+
+    try {
+      // Envoyer chaque point au backend
+      for (const point of points) {
+        await axiosInstance.post('/api/points/create', {
+          longitude: point.longitude,
+          latitude: point.latitude,
+          owner_id: owner_id, // Ajuster en fonction de votre logique
+        });
+      }
+
+      console.log("All points created successfully!");
+    } catch (error) {
+      console.error('Error sending request:', error.response ? error.response.data : error.message);
+    }
   };
 
   return (
@@ -125,9 +159,6 @@ const MapboxExample = () => {
       <div ref={mapContainerRef} id="map" className="h-[80vh]"></div>
     </div>
   );
-  
-  
-  
 };
 
 export default MapboxExample;
