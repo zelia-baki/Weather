@@ -79,6 +79,9 @@ const Sidebar = () => {
               <Link to="/district" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                 District
               </Link>
+              <Link to="/mapviewall" state={{ owner_type: "farmer",}} className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                View all
+              </Link>
             </div>
           </div>
 

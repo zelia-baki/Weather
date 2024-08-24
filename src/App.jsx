@@ -5,6 +5,7 @@ import Card from './components/Card/Card';
 import Graph from './components/Graph/Graph';
 import MapboxExample from './components/Mapbox';
 import MapView from './components/MapView.jsx';
+import MapViewAll from './components/MapViewAll.jsx';
 import Landing from './components/main/Landing';
 import Login from './components/main/Login';
 import Home from './components/main/Home';
@@ -39,6 +40,7 @@ function App() {
     { path: "/districts", component: <DistrictList /> },
     { path: "/districts/:id/edit", component: <DistrictEdit /> },
     { path: "/mapview", component: <MapView /> },
+    { path: "/mapviewall", component: <MapViewAll /> },
 
     
 
