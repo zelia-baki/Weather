@@ -93,10 +93,6 @@ const Card = ({ initialRegion, initialCrop }) => {
               <option value="Mukono">Mukono</option>
             </select>
           </div>
-          <div className="px-6 py-4 bg-gray-50">
-            <Link to="/graph" className="text-blue-600 hover:underline">Voir le graphique</Link>
-          </div>
-
           <div className="flex items-center gap-4">
             <label htmlFor="latitude" className="text-gray-800 font-semibold w-1/3">Latitude:</label>
             <input

@@ -139,6 +139,27 @@ const FarmList = () => {
                                                     >
                                                         Add FD
                                                     </Link>
+                                                    <Link
+                                                        to={{
+                                                            pathname: "/mapbox",  // Adjust the path to match your route setup
+                                                        }}
+                                                        state={{owner_id: farm.id}}
+                                                        className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"
+                                                    >
+                                                       create maps
+                                                    </Link>
+
+                                                    <Link
+                                                        to={{
+                                                            pathname: "/mapview",  // Adjust the path to match your route setup
+                                                        }}
+                                                        state={{owner_id: farm.id,
+                                                            owner_type: "farmer",
+                                                        }}
+                                                        className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"
+                                                    >
+                                                       view maps
+                                                    </Link>
                                                 </div>
                                             )}
                                         </div>

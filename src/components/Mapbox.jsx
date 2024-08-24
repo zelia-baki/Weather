@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";  // Import useLocation to access the passed state
 import mapboxgl from "mapbox-gl";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
@@ -9,9 +10,12 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 
-const MapboxExample = ({ owner_id }) => {
+const MapboxExample = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
+  const location = useLocation(); 
+   // Access the location object
+  const owner_id = location.state?.owner_id;
   const [roundedArea, setRoundedArea] = useState();
   const [polygonCoordinates, setPolygonCoordinates] = useState([]);
   const [placeName, setPlaceName] = useState('');
@@ -25,7 +29,7 @@ const MapboxExample = ({ owner_id }) => {
       center: [-91.874, 42.76],
       zoom: 12,
     });
-
+    console.log(owner_id)
     const draw = new MapboxDraw({
       displayControlsDefault: false,
       controls: {
@@ -130,7 +134,7 @@ const MapboxExample = ({ owner_id }) => {
       longitude: coord[0],
       latitude: coord[1]
     }));
-
+    console.log(owner_id);
     try {
       // Envoyer chaque point au backend
       for (const point of points) {
