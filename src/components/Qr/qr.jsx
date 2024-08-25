@@ -28,7 +28,7 @@ const GenerateQrCode = () => {
           <Card
             title="Produce Stamps"
             description="Generate Digital codes for a farm with details such as weight, price per kg, and total value."
-            link="/qr/generate_farmer_qr"
+            link="/qrproduce"
             buttonText="Generate Farm Digital Codes"
             bgColor="bg-green-100"
             hoverColor="bg-green-200 hover:bg-green-300"
@@ -38,7 +38,7 @@ const GenerateQrCode = () => {
           <Card
             title="Forest Conservation Stamps"
             description="Generate Digital codes for marking tree cuttings with details such as forest name, tree type, and GPS coordinates."
-            link="/qr/generate_tree_qr"
+            link="/qrconservation"
             buttonText="Generate Tree Cutting Digital Codes"
             bgColor="bg-blue-100"
             hoverColor="bg-blue-200 hover:bg-blue-300"
@@ -48,7 +48,7 @@ const GenerateQrCode = () => {
           <Card
             title="Digital Export Stamps"
             description="Generate EUDR export stamps for a specified farm. Upload a zip file containing the Export stamps codes images."
-            link="/qr/generate_qr"
+            link="/qrexport"
             buttonText="Generate Export Digital Codes"
             bgColor="bg-red-100"
             hoverColor="bg-red-200 hover:bg-red-300"
