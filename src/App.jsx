@@ -12,7 +12,7 @@ import Home from './components/main/Home';
 import Tabcrop from './components/crop/tabcrop';
 import Layout from './components/Layout/Layout.jsx';
 import Forest from './components/Forest/Forest.jsx';
-import ForestPage from './components/Forest/ForestPage.jsx';
+import ForestPage from './components/Forest/Fore/ForestPage.jsx';
 import Create from './components/Farm/Create.jsx';
 import Farmdata from './components/Farm/Farmdata.jsx';
 import Createcrop from './components/crop/Createcrop.jsx';
@@ -22,6 +22,13 @@ import CreateDistrict from './components/District/CreateDistrict.jsx';
 import DistrictView from './components/District/DistrictView.jsx';
 import DistrictList from './components/District/DistrictList.jsx';
 import DistrictEdit from './components/District/DistrictEdit.jsx';
+import ForestPoint from './components/Forest/Point/ForestPoint.jsx';
+import ForestTree from './components/Forest/Tree/ForestTree.jsx';
+import QR from './components/Qr/qr.jsx';
+import Produce from './components/Qr/Produce.jsx';
+import Conservation from './components/Qr/Conservation.jsx';
+import Export from './components/Qr/Export.jsx';
+
 function App() {
   const layoutRoutes = [
     { path: "/graph", component: <Graph /> },
@@ -41,6 +48,18 @@ function App() {
     { path: "/districts/:id/edit", component: <DistrictEdit /> },
     { path: "/mapview", component: <MapView /> },
     { path: "/mapviewall", component: <MapViewAll /> },
+    { path: "/forestpoint", component: <ForestPoint /> },
+    { path: "/foresttree", component: <ForestTree /> },
+    { path: "/qr", component: <QR /> },
+    { path: "/qrproduce", component: <Produce /> },
+    { path: "/qrconservation", component: <Conservation /> },
+    { path: "/qrexport", component: <Export /> }
+
+
+
+
+
+
 
     
 

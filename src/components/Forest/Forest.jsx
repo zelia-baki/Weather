@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import Modal from './Modal'; // Assuming Modal is in the same directory
-import ModalTree from './ModalTree'; // Import the new ModalTree component
-import ModalPoint from './ModalPoint'; // Import the ModalPoint component
+import ModalPoint from './Point/ModalPoint';
+import Modal from './Fore/Modal'; 
+import ModalTree from './Tree/ModalTree'; 
 
 const ForestAndPointManagement = () => {
   const [isForestModalOpen, setIsForestModalOpen] = useState(false);

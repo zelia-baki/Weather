@@ -1,18 +1,25 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState } from 'react';
+import ModalTree from './ModalTree'; // Assurez-vous que le chemin est correct
 
-const ModalTree = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
+const ForestTree = () => {
+  const [isTreeModalOpen, setIsTreeModalOpen] = useState(false);
 
-  return ReactDOM.createPortal(
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-      <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-4xl relative">
+  const openTreeModal = () => setIsTreeModalOpen(true);
+  const closeTreeModal = () => setIsTreeModalOpen(false);
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6 text-center">Tree Management</h1>
+      <div className="flex justify-center mb-6">
         <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-2xl font-bold"
+          onClick={openTreeModal}
+          className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-blue-700 transition duration-300"
         >
-          &times;
+          Create Tree
         </button>
+      </div>
+
+      <ModalTree isOpen={isTreeModalOpen} onClose={closeTreeModal}>
         <h2 className="text-3xl font-bold text-center text-green-700 mb-6">Create Tree</h2>
         <form
           action="/tree/handle_create_tree"
@@ -126,10 +133,9 @@ const ModalTree = ({ isOpen, onClose }) => {
             </button>
           </div>
         </form>
-      </div>
-    </div>,
-    document.body
+      </ModalTree>
+    </div>
   );
 };
 
-export default ModalTree;
+export default ForestTree;

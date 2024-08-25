@@ -46,12 +46,12 @@ const Sidebar = () => {
               <Link to="/forestpage" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                 Forest Data
               </Link>
-              <Link to="/forest-management" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Forest Management
+              {/* <Link to="/forestpoint" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                Forest Point
               </Link>
-              <Link to="/tree-species" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Tree Species
-              </Link>
+              <Link to="/foresttree" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                Forest Tree
+              </Link> */}
             </div>
           </div>
 
@@ -97,14 +97,14 @@ const Sidebar = () => {
               <FaChevronDown className={`ml-4 transition-transform ${openDigitalTraceDropdown ? 'rotate-180' : ''}`} />
             </button>
             <div className={`ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out ${openDigitalTraceDropdown ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-              <Link to="/digital-trace-data" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Digital Trace Data
+              <Link to="/qrproduce" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                Produce Stamps
               </Link>
-              <Link to="/trace-management" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Trace Management
+              <Link to="/qrconservation" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                Forest Conservation Stamps
               </Link>
-              <Link to="/trace-logs" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Trace Logs
+              <Link to="/qrexport" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                Export Stamps
               </Link>
             </div>
           </div>
