@@ -7,6 +7,16 @@ const GenerateTreeCuttingQrCode = () => {
     setIsExportChecked(e.target.checked);
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+        await axiosInstance.post('/api/generate_tree_qr', formData);
+        onClose(); // Close the modal after successful submission
+    } catch (error) {
+        console.error('Error creating farm:', error);
+    }
+};
+
   return (
     <div className="bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 min-h-screen flex justify-center items-center p-10">
       <div className="container mx-auto">
@@ -14,7 +24,7 @@ const GenerateTreeCuttingQrCode = () => {
           Generate Digital Codes for Tree Cutting
         </h1>
         <form
-          action="/qr/generate_tree_qr"
+          onSubmit={handleSubmit}
           method="post"
           className="max-w-4xl mx-auto bg-white p-10 rounded-lg shadow-xl transform transition-transform hover:scale-105 hover:shadow-2xl"
         >

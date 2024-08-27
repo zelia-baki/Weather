@@ -18,11 +18,9 @@ const FarmList = () => {
 
     const fetchFarms = async (page) => {
         try {
-            console.log(`Fetching farms for page: ${page}`);
             const response = await axiosInstance.get(`/api/farm/?page=${page}`);
-            console.log('Fetched farms:', response.data);
             setFarms(response.data.farms);
-            setTotalPages(response.data.total_pages || 1);
+            setTotalPages(response.data.total_pages);  // Set total pages from response
         } catch (error) {
             console.error('Error fetching farms:', error);
         }
@@ -65,17 +63,9 @@ const FarmList = () => {
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
-            console.log(`Changing page to: ${page}`);
             setCurrentPage(page);
-        } else {
-            console.log('Page out of bounds:', page);
         }
     };
-
-    useEffect(() => {
-        console.log('Current page:', currentPage);
-        console.log('Total pages:', totalPages);
-    }, [currentPage, totalPages]);
 
     return (
         <div className="container mx-auto p-6">

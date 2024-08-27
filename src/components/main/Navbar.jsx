@@ -23,6 +23,10 @@ const Sidebar = () => {
   const toggleWeatherDropdown = () => {
     setOpenWeatherDropdown(!openWeatherDropdown);
   };
+  const handleLogOut = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  };
 
   return (
     <div className="h-screen w-64 bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 text-gray-900 flex flex-col justify-between rounded-xl shadow-lg overflow-hidden">
@@ -135,7 +139,9 @@ const Sidebar = () => {
         </nav>
       </div>
       <div className="p-4">
-        <button className="mt-2 w-full py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-500 transition-colors duration-300 flex items-center justify-center transform hover:scale-105">
+        <button className="mt-2 w-full py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-500 transition-colors duration-300 flex items-center justify-center transform hover:scale-105"
+        onClick={handleLogOut}
+        >
           <FaSignOutAlt className="mr-2" />
           Log Out
         </button>
