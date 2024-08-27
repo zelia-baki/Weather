@@ -5,26 +5,26 @@ import 'tailwindcss/tailwind.css';
 
 const GenerateQrCode = () => {
   const Card = ({ title, description, link, buttonText, bgColor, hoverColor, icon, iconColor }) => (
-    <div className={`p-8 rounded-lg border border-gray-200 shadow-lg transform transition-transform hover:scale-105 hover:shadow-xl ${bgColor} flex flex-col justify-between`}>
+    <div className={`p-6 sm:p-8 lg:p-10 rounded-lg border border-gray-200 shadow-lg transform transition-transform hover:scale-105 hover:shadow-xl ${bgColor} flex flex-col justify-between`}>
       <div>
-        <div className="flex items-center mb-6">
-          <div className={`text-5xl mr-4 ${iconColor}`}>{icon}</div>
-          <h2 className="text-3xl font-semibold text-gray-800">{title}</h2>
+        <div className="flex items-center mb-4 sm:mb-6">
+          <div className={`text-4xl sm:text-5xl mr-3 sm:mr-4 ${iconColor}`}>{icon}</div>
+          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800">{title}</h2>
         </div>
-        <p className="text-gray-600 mb-6 text-lg">{description}</p>
+        <p className="text-gray-600 mb-4 sm:mb-6 text-base sm:text-lg">{description}</p>
       </div>
-      <Link to={link} className={`bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-lg transition-colors ${hoverColor}`}>
+      <Link to={link} className={`bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors ${hoverColor}`}>
         {buttonText}
       </Link>
     </div>
   );
 
   return (
-    <div className="bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 min-h-screen flex justify-center items-center p-10 font-sans">
-      <div className="text-center max-w-5xl mx-auto">
-        <h1 className="text-6xl font-extrabold mb-12 text-teal-800">Generate Digital Codes</h1>
-        <p className="text-gray-700 text-2xl mb-14">Choose an option below to get started:</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+    <div className="bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 min-h-screen flex justify-center items-center p-6 sm:p-10 font-sans">
+      <div className="text-center max-w-4xl sm:max-w-5xl mx-auto">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-8 sm:mb-12 text-teal-800">Generate Digital Codes</h1>
+        <p className="text-gray-700 text-lg sm:text-2xl mb-8 sm:mb-14">Choose an option below to get started:</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
           <Card
             title="Produce Stamps"
             description="Generate Digital codes for a farm with details such as weight, price per kg, and total value."

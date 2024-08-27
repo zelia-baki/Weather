@@ -56,23 +56,46 @@ const PointForm = ({ point, qrImage, farmId }) => {
         <h1 className="text-4xl font-extrabold mb-4 text-center text-gray-900">Digital Export Stamps</h1>
         <div id="form-container" className="max-w-4xl mx-auto bg-gray-50 p-6 rounded-lg shadow-lg">
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(formData).map(([key, value]) => (
-                <div className="mb-4" key={key}>
-                  <label htmlFor={key} className="block text-sm font-medium text-gray-700">
-                    {key.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}:
-                  </label>
-                  <input
-                    type={key.includes('date') ? 'date' : key.includes('timestamp') ? 'datetime-local' : 'text'}
-                    id={key}
-                    name={key}
-                    value={value}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    required
-                  />
-                </div>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {/* Left Side */}
+              <div className="col-span-2 space-y-4">
+                {['country', 'farm_id', 'group_id', 'geolocation', 'land_boundaries', 'district', 'crop', 'grade'].map((field) => (
+                  <div className="mb-4" key={field}>
+                    <label htmlFor={field} className="block text-sm font-medium text-gray-700">
+                      {field.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}:
+                    </label>
+                    <input
+                      type={field.includes('date') ? 'date' : field.includes('timestamp') ? 'datetime-local' : 'text'}
+                      id={field}
+                      name={field}
+                      value={formData[field]}
+                      onChange={handleChange}
+                      className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      required
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Right Side */}
+              <div className="col-span-2 space-y-4">
+                {['tilled_land_size', 'season', 'quality', 'produce_weight', 'harvest_date', 'timestamp', 'district_region', 'batch_number', 'channel_partner', 'destination_country', 'customer_name', 'serial_number'].map((field) => (
+                  <div className="mb-4" key={field}>
+                    <label htmlFor={field} className="block text-sm font-medium text-gray-700">
+                      {field.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())}:
+                    </label>
+                    <input
+                      type={field.includes('date') ? 'date' : field.includes('timestamp') ? 'datetime-local' : 'text'}
+                      id={field}
+                      name={field}
+                      value={formData[field]}
+                      onChange={handleChange}
+                      className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      required
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="text-center mt-6">
