@@ -3,9 +3,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import Card from './components/Card/Card';
 import Graph from './components/Graph/Graph';
-import MapboxExample from './components/Mapbox';
-import MapView from './components/MapView.jsx';
-import MapViewAll from './components/MapViewAll.jsx';
+import MapboxExample from './components/mapbox/Mapbox';
+import MapView from './components/mapbox/MapView.jsx';
+import MapViewAll from './components/mapbox/MapViewAll.jsx';
 import Landing from './components/main/Landing';
 import Login from './components/main/Login';
 import Home from './components/main/Home';
@@ -28,6 +28,9 @@ import QR from './components/Qr/qr.jsx';
 import Produce from './components/Qr/Produce.jsx';
 import Conservation from './components/Qr/Conservation.jsx';
 import Export from './components/Qr/Export.jsx';
+import Fertilizer from './components/Qr/Fertilizer.jsx';
+import FarmReport from './components/gfw/Gfwreportfarmer.jsx';
+import ForestReport from './components/gfw/Gfwreportforest.jsx';
 
 function App() {
   const layoutRoutes = [
@@ -53,17 +56,11 @@ function App() {
     { path: "/qr", component: <QR /> },
     { path: "/qrproduce", component: <Produce /> },
     { path: "/qrconservation", component: <Conservation /> },
-    { path: "/qrexport", component: <Export /> }
-
-
-
-
-
-
-
-    
-
-
+    { path: "/qrexport", component: <Export /> },
+    { path: "/qrfertilizer", component: <Fertilizer/>},
+    { path: "/reportfarmer", component: <FarmReport/>},
+    { path: "/reportforest", component: <ForestReport/>},
+ 
   ];
 
   return (

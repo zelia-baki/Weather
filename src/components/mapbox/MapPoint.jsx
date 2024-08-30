@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
-import axiosInstance from '../axiosInstance'; // Import your axios instance\
+import axiosInstance from '../../axiosInstance'; // Import your axios instance\
 import { useLocation } from "react-router-dom";  // Import useLocation to access the passed state
 
 
@@ -12,6 +12,7 @@ const MapboxExample = () => {
   const location = useLocation(); 
   const owner_id = location.state?.owner_id;
   const owner_type = location.state?.owner_type;
+  const geolocation = location.state?.geolocation;
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';

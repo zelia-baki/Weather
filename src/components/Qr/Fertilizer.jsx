@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import QRCodeStyling from 'qr-code-styling';
 
-const GenerateTreeCuttingQrCode = () => {
+const GenerateFertilizerQrCode = () => {
   const [formData, setFormData] = useState({
-    forest_name: '',
-    forest_id: '',
-    tree_type: '',
-    date_cutting: '',
-    gps_coordinates: '',
-    height: '',
-    diameter: '',
+    field_name: '',
+    field_id: '',
+    fertilizer_type: '',
+    application_date: '',
+    application_rate: '',
+    soil_moisture: '',
+    soil_ph: '',
     export_name: '',
   });
   const [isExportChecked, setIsExportChecked] = useState(false);
@@ -20,7 +20,7 @@ const GenerateTreeCuttingQrCode = () => {
     width: 300,
     height: 300,
     dotsOptions: {
-      color: "#4267b2",
+      color: "#4CAF50",
       type: "rounded"
     },
     imageOptions: {
@@ -38,8 +38,8 @@ const GenerateTreeCuttingQrCode = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const { forest_name, forest_id, tree_type, date_cutting, gps_coordinates, height, diameter, export_name } = formData;
-    const qrCodeData = `Forest Name: ${forest_name}\nForest ID: ${forest_id}\nTree Type: ${tree_type}\nDate of Cutting: ${date_cutting}\nGPS Coordinates: ${gps_coordinates}\nHeight: ${height}\nDiameter: ${diameter}\nExport Name: ${export_name}`;
+    const { field_name, field_id, fertilizer_type, application_date, application_rate, soil_moisture, soil_ph, export_name } = formData;
+    const qrCodeData = `Field Name: ${field_name}\nField ID: ${field_id}\nFertilizer Type: ${fertilizer_type}\nApplication Date: ${application_date}\nApplication Rate: ${application_rate}\nSoil Moisture: ${soil_moisture}\nSoil pH: ${soil_ph}\nExport Name: ${export_name}`;
     setQrCodeUrl(qrCodeData);
   };
 
@@ -60,8 +60,8 @@ const GenerateTreeCuttingQrCode = () => {
     <div className="bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 min-h-screen flex justify-center items-center p-10">
       <div className="flex gap-10">
         <div className="container mx-auto">
-          <h1 className="text-5xl font-extrabold mb-12 text-center text-teal-700">
-            Generate Digital Codes for Tree Cutting
+          <h1 className="text-5xl font-extrabold mb-12 text-center text-green-700">
+            Generate Digital Codes for Fertilizer Application
           </h1>
           <form
             onSubmit={handleSubmit}
@@ -71,48 +71,48 @@ const GenerateTreeCuttingQrCode = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Forest Name</label>
+                  <label className="text-lg text-gray-800 mb-2">Field Name</label>
                   <input
                     type="text"
-                    name="forest_name"
-                    placeholder="Forest Name"
-                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                    value={formData.forest_name}
+                    name="field_name"
+                    placeholder="Field Name"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.field_name}
                     onChange={handleChange}
                     required
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Forest ID</label>
+                  <label className="text-lg text-gray-800 mb-2">Field ID</label>
                   <input
                     type="text"
-                    name="forest_id"
-                    placeholder="Forest ID"
-                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                    value={formData.forest_id}
+                    name="field_id"
+                    placeholder="Field ID"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.field_id}
                     onChange={handleChange}
                     required
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Tree Type</label>
+                  <label className="text-lg text-gray-800 mb-2">Fertilizer Type</label>
                   <input
                     type="text"
-                    name="tree_type"
-                    placeholder="Tree Type"
-                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                    value={formData.tree_type}
+                    name="fertilizer_type"
+                    placeholder="Fertilizer Type"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.fertilizer_type}
                     onChange={handleChange}
                     required
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Date of Cutting</label>
+                  <label className="text-lg text-gray-800 mb-2">Application Date</label>
                   <input
                     type="date"
-                    name="date_cutting"
-                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                    value={formData.date_cutting}
+                    name="application_date"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.application_date}
                     onChange={handleChange}
                     required
                   />
@@ -120,37 +120,37 @@ const GenerateTreeCuttingQrCode = () => {
               </div>
               <div className="space-y-6">
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">GPS Coordinates</label>
+                  <label className="text-lg text-gray-800 mb-2">Application Rate (kg/ha)</label>
                   <input
                     type="text"
-                    name="gps_coordinates"
-                    placeholder="GPS Coordinates"
-                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                    value={formData.gps_coordinates}
+                    name="application_rate"
+                    placeholder="Application Rate (kg/ha)"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.application_rate}
                     onChange={handleChange}
                     required
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Height (m)</label>
+                  <label className="text-lg text-gray-800 mb-2">Soil Moisture (%)</label>
                   <input
                     type="text"
-                    name="height"
-                    placeholder="Height (m)"
-                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                    value={formData.height}
+                    name="soil_moisture"
+                    placeholder="Soil Moisture (%)"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.soil_moisture}
                     onChange={handleChange}
                     required
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Diameter (cm)</label>
+                  <label className="text-lg text-gray-800 mb-2">Soil pH</label>
                   <input
                     type="text"
-                    name="diameter"
-                    placeholder="Diameter (cm)"
-                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                    value={formData.diameter}
+                    name="soil_ph"
+                    placeholder="Soil pH"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.soil_ph}
                     onChange={handleChange}
                     required
                   />
@@ -160,7 +160,7 @@ const GenerateTreeCuttingQrCode = () => {
                     type="checkbox"
                     id="exportCheckbox"
                     name="export"
-                    className="form-checkbox h-5 w-5 text-teal-600 focus:ring-teal-400"
+                    className="form-checkbox h-5 w-5 text-green-600 focus:ring-green-400"
                     checked={isExportChecked}
                     onChange={handleExportCheckboxChange}
                   />
@@ -171,7 +171,7 @@ const GenerateTreeCuttingQrCode = () => {
                   id="exportName"
                   name="export_name"
                   placeholder="Export Name"
-                  className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
+                  className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
                   value={formData.export_name}
                   onChange={handleChange}
                   disabled={!isExportChecked}
@@ -182,7 +182,7 @@ const GenerateTreeCuttingQrCode = () => {
               type="submit"
               className="bg-gradient-to-r from-green-400 to-teal-500 hover:from-green-500 hover:to-teal-600 text-white px-8 py-4 rounded-lg w-full text-lg font-bold transition-all transform hover:scale-105"
             >
-              Generate Digital Codes for Tree Cutting
+              Generate Digital Codes for Fertilizer Application
             </button>
           </form>
         </div>
@@ -202,4 +202,4 @@ const GenerateTreeCuttingQrCode = () => {
   );
 };
 
-export default GenerateTreeCuttingQrCode;
+export default GenerateFertilizerQrCode;

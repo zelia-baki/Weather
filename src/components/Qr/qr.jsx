@@ -54,6 +54,16 @@ const GenerateQrCode = () => {
             hoverColor="bg-red-200 hover:bg-red-300"
             icon={<FaQrcode />}
             iconColor="text-purple-600"
+          />\
+          <Card
+            title="Fertilizer Stamps"
+            description="Generate Digital codes for fertilizers "
+            link="/qrconservation"
+            buttonText="Generate Digital Codes"
+            bgColor="bg-blue-100"
+            hoverColor="bg-blue-200 hover:bg-blue-300"
+            icon={<FaTree />}
+            iconColor="text-green-700"
           />
         </div>
       </div>
