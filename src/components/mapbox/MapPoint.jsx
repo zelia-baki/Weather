@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
-import axiosInstance from '../axiosInstance'; // Import your axios instance
+import axiosInstance from '../../axiosInstance'; // Import your axios instance\
 import { useLocation } from "react-router-dom";  // Import useLocation to access the passed state
+
 
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -11,6 +12,7 @@ const MapboxExample = () => {
   const location = useLocation(); 
   const owner_id = location.state?.owner_id;
   const owner_type = location.state?.owner_type;
+  const geolocation = location.state?.geolocation;
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
@@ -28,51 +30,37 @@ const MapboxExample = () => {
         const response = await axiosInstance.get(`/api/points/getbyownerid/${owner_type}/${owner_id}`);
         const points = response.data.points;
 
-        // Create a GeoJSON object for the polygon
         const geojson = {
           type: 'FeatureCollection',
-          features: [{
+          features: points.map(point => ({
             type: 'Feature',
             geometry: {
-              type: 'Polygon',
-              coordinates: [
-                points.map(point => [point.longitude, point.latitude])
-              ],
+              type: 'Point',
+              coordinates: [point.longitude, point.latitude],
             },
             properties: {
-              owner_type,
-              owner_id
+              id: point.id,
+              owner_type: point.owner_type,
+              forest_id: point.forest_id,
+              farmer_id: point.farmer_id,
             },
-          }],
+          })),
         };
 
         mapRef.current.on('load', () => {
-          // Add the polygon source to the map
-          mapRef.current.addSource('polygon', {
+          mapRef.current.addSource('points', {
             type: 'geojson',
             data: geojson,
           });
 
-          // Add a fill layer to represent the polygon
           mapRef.current.addLayer({
-            id: 'polygon-fill',
-            type: 'fill',
-            source: 'polygon',
+            id: 'points',
+            type: 'circle',
+            source: 'points',
             paint: {
-              'fill-color': '#0080ff',
-              'fill-opacity': 0.5
-            }
-          });
-
-          // Add a line layer to outline the polygon
-          mapRef.current.addLayer({
-            id: 'polygon-outline',
-            type: 'line',
-            source: 'polygon',
-            paint: {
-              'line-color': '#000',
-              'line-width': 2
-            }
+              'circle-radius': 5,
+              'circle-color': '#007cbf',
+            },
           });
         });
       } catch (error) {
@@ -82,7 +70,7 @@ const MapboxExample = () => {
 
     fetchPoints();
 
-  }, [owner_id, owner_type]);
+  }, []);
 
   return <div id="map" ref={mapContainerRef} style={{ height: '100%' }} />;
 };

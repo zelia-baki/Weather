@@ -1,12 +1,37 @@
 import React, { useState } from 'react';
-import Modal from './Modal'; // Assuming Modal is in the same directory
-import ForestList from './ForestList'; // Import ForestList
+import axiosInstance from '../../../axiosInstance'; // Adjust the path as needed
+import Modal from './Modal';
+import ForestList from './ForestList';
 
 const ForestPage = () => {
   const [isForestModalOpen, setIsForestModalOpen] = useState(false);
+  const [updateFlag, setUpdateFlag] = useState(false);
 
   const openForestModal = () => setIsForestModalOpen(true);
   const closeForestModal = () => setIsForestModalOpen(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+
+    try {
+      const response = await axiosInstance.post('/api/forest/create', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.success) {
+        console.log('Forest created successfully', response.data.forest_id);
+        setUpdateFlag(!updateFlag); // Toggle the flag to trigger re-fetch of forests
+        closeForestModal(); // Close the modal after successful creation
+      } else {
+        console.error('Failed to create forest');
+      }
+    } catch (error) {
+      console.error('Error creating forest:', error);
+    }
+  };
 
   return (
     <div className="container mx-auto px-6 py-8 bg-gray-50 min-h-screen">
@@ -19,31 +44,27 @@ const ForestPage = () => {
           Create Forest
         </button>
         
-        {/* Display the ForestList directly below the button */}
         <div className="mt-8 w-full bg-white p-6 rounded-lg shadow-md">
-          <ForestList />
+          <ForestList key={updateFlag} /> {/* Re-fetch forests when updateFlag changes */}
         </div>
       </div>
 
       <Modal isOpen={isForestModalOpen} onClose={closeForestModal}>
-        <form
-          action="/forest/handle_create_forest"
-          method="post"
-          className="space-y-4"
-          encType="multipart/form-data"
-        >
+        <form onSubmit={handleSubmit} className="space-y-4">
           <h2 className="text-2xl font-bold mb-4 text-teal-800">Create New Forest</h2>
           <input
             type="text"
             name="name"
             placeholder="Forest Name"
             className="border rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-teal-400"
+            required
           />
           <input
             type="text"
             name="tree_type"
             placeholder="Tree Type"
             className="border rounded-md px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-teal-400"
+            required
           />
           <input
             type="file"

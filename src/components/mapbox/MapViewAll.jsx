@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
-import axiosInstance from '../axiosInstance'; // Import your axios instance
+import axiosInstance from '../../axiosInstance'; // Import your axios instance
 import { useLocation } from "react-router-dom";  // Import useLocation to access the passed state
 import 'mapbox-gl/dist/mapbox-gl.css';
 

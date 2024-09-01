@@ -110,6 +110,9 @@ const Sidebar = () => {
               <Link to="/qrexport" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                 Export Stamps
               </Link>
+              <Link to="/qrfertilizer" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                Fertilizer Stamps
+              </Link>
             </div>
           </div>
 

@@ -56,10 +56,32 @@ const FarmList = () => {
         setDropdownOpen(dropdownOpen === farmId ? null : farmId);
     };
 
-    const handleAction = (action, farmId) => {
+    const handleAction = async (action, farmId) => {
         console.log(`${action} action for farm ID: ${farmId}`);
-        // Implement further action handling here
+    
+        if (action === 'Delete') {
+            const userConfirmed = window.confirm('Are you sure you want to delete this farm? This action cannot be undone.');
+            
+            if (userConfirmed) {
+                try {
+                    const response = await axiosInstance.post(`/api/farm/${farmId}/delete`);
+                    if (response.data.success) {
+                        // Remove the deleted farm from the state
+                        setFarms(farms.filter(farm => farm.id !== farmId));
+                        console.log('Farm deleted successfully');
+                    } else {
+                        console.error('Failed to delete farm');
+                    }
+                } catch (error) {
+                    console.error('Error deleting farm:', error);
+                }
+            } else {
+                console.log('User canceled the deletion');
+            }
+        }
+        // Implement further action handling for other actions (e.g., Update, View) here
     };
+    
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -117,12 +139,18 @@ const FarmList = () => {
                                                     >
                                                         Delete
                                                     </button>
-                                                    <button
-                                                        onClick={() => handleAction('View', farm.id)}
+                                                    <Link
+                                                        to={{
+                                                            pathname: "/mapview",  // Adjust the path to match your route setup
+                                                        }}
+                                                        state={{owner_id: farm.id,
+                                                            owner_type: "farmer",
+                                                            geolocation: farm.geolocation
+                                                        }}
                                                         className="block px-4 py-2 text-blue-600 hover:bg-blue-100 w-full text-left"
                                                     >
-                                                        View
-                                                    </button>
+                                                       View
+                                                    </Link>
                                                     <Link
                                                         to="/farmdata"
                                                         className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"
@@ -133,23 +161,24 @@ const FarmList = () => {
                                                         to={{
                                                             pathname: "/mapbox",  // Adjust the path to match your route setup
                                                         }}
-                                                        state={{owner_id: farm.id}}
+                                                        state={{owner_id: farm.id,
+                                                            geolocation: farm.geolocation
+                                                        }}
                                                         className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"
                                                     >
-                                                       create maps
+                                                       Create Maps
                                                     </Link>
-
                                                     <Link
                                                         to={{
-                                                            pathname: "/mapview",  // Adjust the path to match your route setup
+                                                            pathname: "/reportfarmer",  // Adjust the path to match your route setup
                                                         }}
-                                                        state={{owner_id: farm.id,
-                                                            owner_type: "farmer",
+                                                        state={{farmId: farm.id,
                                                         }}
                                                         className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"
                                                     >
-                                                       view maps
+                                                     view report
                                                     </Link>
+
                                                 </div>
                                             )}
                                         </div>

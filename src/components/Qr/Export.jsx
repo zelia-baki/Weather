@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import QRCodeStyling from 'qr-code-styling';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
-const PointForm = ({ point, qrImage, farmId }) => {
+const PointForm = ({ farmId }) => {
   const navigate = useNavigate();
+  const qrCodeRef = useRef(null);
 
   const [formData, setFormData] = useState({
     country: 'Uganda',
@@ -27,6 +31,26 @@ const PointForm = ({ point, qrImage, farmId }) => {
     serial_number: '33ce46a983069a23a5df2ba578c5b379'
   });
 
+  useEffect(() => {
+    if (qrCodeRef.current) {
+      const qrCode = new QRCodeStyling({
+        width: 300,
+        height: 300,
+        dotsOptions: {
+          color: "#4267b2",
+          type: "rounded"
+        },
+        imageOptions: {
+          crossOrigin: "anonymous",
+          margin: 20
+        },
+        data: JSON.stringify(formData)
+      });
+
+      qrCode.append(qrCodeRef.current);
+    }
+  }, [formData]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -37,8 +61,20 @@ const PointForm = ({ point, qrImage, farmId }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Add your form submission logic here
-    console.log('Form submitted:', formData);
+    // Optionally handle form submission logic here
+  };
+
+  const downloadPdf = async () => {
+    const canvas = await html2canvas(qrCodeRef.current);
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: [300, 300]
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, 300, 300);
+    pdf.save(`${formData.farm_id}_QRCode.pdf`);
   };
 
   return (
@@ -106,13 +142,16 @@ const PointForm = ({ point, qrImage, farmId }) => {
           </form>
         </div>
 
-        {qrImage && (
-          <div className="mt-8 text-center">
-            <p className="text-sm font-medium text-green-800 mb-2">{qrImage}</p>
-            <img src={qrImage} alt="QR Code" className="mx-auto rounded-lg shadow-lg" />
-            <a href={`your-qr-download-url/${farmId}`} download="QR_code" className="text-blue-500 hover:underline">Download QR Code</a>
-          </div>
-        )}
+        <div className="mt-8 text-center">
+          <p className="text-sm font-medium text-green-800 mb-2">QR Code:</p>
+          <div ref={qrCodeRef} className="mx-auto"></div>
+          <button
+            className="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition ease-in-out duration-300"
+            onClick={downloadPdf}
+          >
+            Download QR Code as PDF
+          </button>
+        </div>
       </div>
     </div>
   );
