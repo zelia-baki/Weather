@@ -19,6 +19,7 @@
     "@mapbox/mapbox-gl-geocoder": "^5.0.2",
     "@testing-library/dom": "^10.4.0",
     "@turf/turf": "^7.1.0",
+    "@urbica/react-map-gl": "^1.16.2",
     "@wojtekmaj/react-daterange-picker": "^6.0.0",
     "axxios": "^0.1.0",
     "chart.js": "^4.4.3",

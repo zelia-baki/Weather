@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";  // Import useLocation to access the passed state
+import { useLocation } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import * as turf from "@turf/turf";
-import axiosInstance from '../../axiosInstance'; // Import axios
+import axiosInstance from '../../axiosInstance';
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
@@ -14,12 +14,12 @@ const MapboxExample = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
   const location = useLocation(); 
-   // Access the location object
   const owner_id = location.state?.owner_id;
   const geolocation = location.state?.geolocation;
   const [roundedArea, setRoundedArea] = useState();
   const [polygonCoordinates, setPolygonCoordinates] = useState([]);
   const [placeName, setPlaceName] = useState('');
+  const [notification, setNotification] = useState(null); // State for notification
   const [longitude, latitude] = geolocation.split(',');
 
   useEffect(() => {
@@ -31,7 +31,7 @@ const MapboxExample = () => {
       center: [latitude, longitude],
       zoom: 8,
     });
-    console.log(owner_id)
+
     const draw = new MapboxDraw({
       displayControlsDefault: false,
       controls: {
@@ -103,8 +103,7 @@ const MapboxExample = () => {
       console.log("Coordinates:", geometry.coordinates);
       mapRef.current.flyTo({
         center: geometry.coordinates,
-        zoom: 12
-      });
+        zoom: 15      });
     });
 
     mapRef.current.on("draw.create", updateArea);
@@ -120,13 +119,68 @@ const MapboxExample = () => {
         const coordinates = data.features[0].geometry.coordinates;
         setPolygonCoordinates(coordinates);
         console.log("Polygon Coordinates:", coordinates);
+
+        // Add or update the polygon source and layers
+        const sourceId = `polygon-${owner_id}`;
+        if (mapRef.current.getSource(sourceId)) {
+          mapRef.current.getSource(sourceId).setData({
+            type: 'FeatureCollection',
+            features: [{
+              type: 'Feature',
+              geometry: {
+                type: 'Polygon',
+                coordinates: coordinates,
+              },
+              properties: {
+                owner_id
+              },
+            }]
+          });
+        } else {
+          mapRef.current.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: [{
+                type: 'Feature',
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: coordinates,
+                },
+                properties: {
+                  owner_id
+                },
+              }]
+            }
+          });
+
+          mapRef.current.addLayer({
+            id: `polygon-fill-${owner_id}`,
+            type: 'fill',
+            source: sourceId,
+            paint: {
+              'fill-color': '#0080ff',
+              'fill-opacity': 0.5
+            }
+          });
+
+          mapRef.current.addLayer({
+            id: `polygon-outline-${owner_id}`,
+            type: 'line',
+            source: sourceId,
+            paint: {
+              'line-color': '#000',
+              'line-width': 2
+            }
+          });
+        }
       } else {
         setRoundedArea();
         if (e.type !== "draw.delete")
           alert("Please draw a polygon.");
       }
     }
-  }, []);
+  }, [owner_id]);
 
   const handleValidate = async () => {
     console.log("Selection validated:", roundedArea, "Owner ID:", owner_id);
@@ -147,14 +201,41 @@ const MapboxExample = () => {
         });
       }
 
-      console.log("All points created successfully!");
+      // Set success notification
+      setNotification({
+        type: "success",
+        message: "All points created successfully!",
+      });
+
     } catch (error) {
+      // Set error notification
+      setNotification({
+        type: "error",
+        message: error.response ? error.response.data : error.message,
+      });
       console.error('Error sending request:', error.response ? error.response.data : error.message);
+    } finally {
+      // Clear notification after 5 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
     }
   };
 
   return (
     <div className="relative h-full">
+      {notification && (
+        <div
+          className={`absolute top-20 right-2 z-10 px-4 py-2 rounded-md shadow-lg transition-shadow duration-300 focus:outline-none ${
+            notification.type === "success"
+              ? "bg-green-500 text-white"
+              : "bg-red-500 text-white"
+          }`}
+        >
+          {notification.message}
+        </div>
+      )}
+
       <button
         onClick={handleValidate}
         className="absolute top-40 right-2 z-10 px-4 py-2 bg-white text-black border-2 border-black rounded-md shadow-lg hover:bg-gray-100 hover:shadow-2xl transition-shadow duration-300 focus:outline-none"
@@ -162,6 +243,7 @@ const MapboxExample = () => {
       >
         Valider
       </button>
+
       <div ref={mapContainerRef} id="map" className="h-[80vh]"></div>
     </div>
   );
