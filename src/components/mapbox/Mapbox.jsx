@@ -16,6 +16,7 @@ const MapboxExample = () => {
   const location = useLocation(); 
   const owner_id = location.state?.owner_id;
   const geolocation = location.state?.geolocation;
+  const owner_type = location.state?.owner_type;
   const [roundedArea, setRoundedArea] = useState();
   const [polygonCoordinates, setPolygonCoordinates] = useState([]);
   const [placeName, setPlaceName] = useState('');
@@ -103,7 +104,8 @@ const MapboxExample = () => {
       console.log("Coordinates:", geometry.coordinates);
       mapRef.current.flyTo({
         center: geometry.coordinates,
-        zoom: 15      });
+        zoom: 15
+      });
     });
 
     mapRef.current.on("draw.create", updateArea);
@@ -185,19 +187,32 @@ const MapboxExample = () => {
   const handleValidate = async () => {
     console.log("Selection validated:", roundedArea, "Owner ID:", owner_id);
 
-    // Extraire tous les points du polygone
-    const points = polygonCoordinates[0].map(coord => ({
-      longitude: coord[0],
-      latitude: coord[1]
-    }));
-    console.log(owner_id);
     try {
-      // Envoyer chaque point au backend
+      // Check if any points already exist for the given owner_id
+      const { data } = await axiosInstance.get(`/api/points/exists/${owner_type}/${owner_id}`);
+      if (data.exists) {
+        // Set notification if points already exist
+        setNotification({
+          type: "error",
+          message: "Points for this owner already exist.",
+        });
+        return;
+      }
+
+      // Extract all points from the polygon
+      const points = polygonCoordinates[0].map(coord => ({
+        longitude: coord[0],
+        latitude: coord[1]
+      }));
+      console.log(owner_id, owner_type);
+
+      // Send each point to the backend
       for (const point of points) {
         await axiosInstance.post('/api/points/create', {
           longitude: point.longitude,
           latitude: point.latitude,
-          owner_id: owner_id, // Ajuster en fonction de votre logique
+          owner_id: owner_id,
+          owner_type: owner_type, // Adjust based on your logic
         });
       }
 
@@ -245,6 +260,7 @@ const MapboxExample = () => {
       </button>
 
       <div ref={mapContainerRef} id="map" className="h-[80vh]"></div>
+      
     </div>
   );
 };

@@ -162,6 +162,7 @@ const FarmList = () => {
                                                             pathname: "/mapbox",  // Adjust the path to match your route setup
                                                         }}
                                                         state={{owner_id: farm.id,
+                                                            owner_type: "farmer",
                                                             geolocation: farm.geolocation
                                                         }}
                                                         className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"

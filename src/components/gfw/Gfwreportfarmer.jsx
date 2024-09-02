@@ -1,23 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
-import { useLocation } from "react-router-dom";  // Import useLocation to access the passed state
-
+import { useLocation } from "react-router-dom";
+import Loading from '../main/Loading.jsx';
 
 const FarmReport = () => {
   const [farmInfo, setFarmInfo] = useState(null);
-  const [report, setReport] = useState(null);
+  const [geoData, setGeoData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const location = useLocation();
   const farmId = location.state?.farmId;
-
 
   useEffect(() => {
     const fetchFarmReport = async () => {
       try {
         const response = await axiosInstance.get(`/api/gfw/farm/${farmId}/report`);
         setFarmInfo(response.data.farm_info);
-        setReport(response.data.report);
+        setGeoData(response.data.report || []);
       } catch (error) {
         setError('Failed to fetch farm report');
         console.error('Error:', error);
@@ -29,14 +28,53 @@ const FarmReport = () => {
     fetchFarmReport();
   }, [farmId]);
 
-  if (loading) return <p>Loading...</p>;
+  const generateMapboxUrl = (coordinates) => {
+    console.log('Generating Mapbox URL with coordinates:', coordinates);
+  
+    const geojson = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Polygon",
+            coordinates: [coordinates] // Ensure coordinates are nested properly
+          },
+          properties: {
+          }
+        }
+      ]
+    };
+    
+    console.log('Generated GeoJSON:', geojson);
+    
+    // Encode the GeoJSON object to use in the URL
+    const encodedGeojson = encodeURIComponent(JSON.stringify(geojson));
+    
+    // Construct the Mapbox URL
+    const mapboxUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/geojson(${encodedGeojson})/auto/500x300?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`;
+  
+    console.log('Generated Mapbox URL:', mapboxUrl);
+    return mapboxUrl;
+  };
+  
+  
+
+  if (loading) {
+    return (
+      <div >
+        <Loading></Loading>
+      </div>
+    );
+  }
+
   if (error) return <p className="text-red-600">{error}</p>;
 
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Farm Report</h1>
       {farmInfo && (
-        <div className="bg-white p-6 shadow-md rounded-md">
+        <div className="bg-white p-6 shadow-md rounded-md mb-6">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">{farmInfo.name}</h2>
           <p className="text-lg font-medium text-gray-700 mb-2">Farm ID: {farmInfo.farm_id}</p>
           <p className="text-lg font-medium text-gray-700 mb-2">Location: {farmInfo.subcounty}, {farmInfo.district_name} ({farmInfo.district_region})</p>
@@ -47,38 +85,27 @@ const FarmReport = () => {
           )}
           <p className="text-lg font-medium text-gray-700 mb-4">Date Created: {farmInfo.date_created}</p>
           <p className="text-lg font-medium text-gray-700 mb-4">Last Updated: {farmInfo.date_updated}</p>
-
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Crops:</h3>
-          <ul className="list-disc pl-5">
-            {farmInfo.crops.length > 0 ? (
-              farmInfo.crops.map((crop, idx) => (
-                <li key={idx} className="mb-2 text-gray-700">
-                  <strong>{crop.crop}</strong> - {crop.tilled_land_size} acres, Season: {crop.season}, Quality: {crop.quality}
-                  <br />
-                  Planting Date: {crop.planting_date} | Harvest Date: {crop.harvest_date}
-                  <br />
-                  Expected Yield: {crop.expected_yield} | Actual Yield: {crop.actual_yield}
-                  <br />
-                  Destination: {crop.destination_country || 'N/A'} | Customer: {crop.customer_name || 'N/A'}
-                </li>
-              ))
-            ) : (
-              <p className="text-gray-700">No crops data available.</p>
-            )}
-          </ul>
         </div>
       )}
-      {report && (
-        <div className="mt-6 bg-gray-100 p-6 shadow-md rounded-md">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">Report Data:</h3>
-          <pre className="bg-gray-800 text-white p-4 rounded-md overflow-x-auto">
-            {JSON.stringify(report, null, 2)}
-          </pre>
+      {geoData.length > 0 && (
+        <div className="mb-6">
+          {geoData.map((dataset, idx) => (
+            <div key={idx} className="bg-white p-4 shadow-lg rounded-lg border border-gray-200 mb-6">
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">Dataset: {dataset.dataset}</h4>
+              <p className="text-gray-700 mb-2">Value: {dataset.data_fields.area__ha.toFixed(5)}</p>
+              {dataset.coordinates && dataset.coordinates.length > 0 && (
+                <img
+                  src={generateMapboxUrl(dataset.coordinates[0])}
+                  alt={`Map for ${dataset.dataset}`}
+                />
+              )}
+            </div>
+          ))}
         </div>
       )}
       <div className="mt-6 flex justify-center">
         <button
-          onClick={() => window.print()} // Adjust this to download a PDF if needed
+          onClick={() => window.print()}
           className="inline-block px-6 py-3 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400"
         >
           Download Full Farm Report
