@@ -53,7 +53,7 @@ const GenerateFertilizerQrCode = () => {
   };
 
   const handleDownloadClick = () => {
-    qrCode.download({ extension: 'png' }); // Adjust extension as needed
+    qrCode.download({ extension: 'png' });
   };
 
   return (
@@ -66,12 +66,12 @@ const GenerateFertilizerQrCode = () => {
           <form
             onSubmit={handleSubmit}
             method="post"
-            className="max-w-4xl mx-auto bg-white p-10 rounded-lg shadow-xl transform transition-transform hover:scale-105 hover:shadow-2xl"
+            className="bg-white p-10 rounded-lg shadow-xl transform transition-transform hover:scale-105 hover:shadow-2xl"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Field Name</label>
+                  <label className="text-lg text-gray-800 mb-2">Farmer ID</label>
                   <input
                     type="text"
                     name="field_name"
@@ -83,7 +83,7 @@ const GenerateFertilizerQrCode = () => {
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Field ID</label>
+                  <label className="text-lg text-gray-800 mb-2">Farmer Phone Number</label>
                   <input
                     type="text"
                     name="field_id"
@@ -95,19 +95,77 @@ const GenerateFertilizerQrCode = () => {
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Fertilizer Type</label>
+                  <label className="text-lg text-gray-800 mb-2">District</label>
                   <input
                     type="text"
-                    name="fertilizer_type"
-                    placeholder="Fertilizer Type"
+                    name="field_id"
+                    placeholder="Field ID"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
-                    value={formData.fertilizer_type}
+                    value={formData.field_id}
                     onChange={handleChange}
                     required
                   />
                 </div>
                 <div className="flex flex-col">
+                  <label className="text-lg text-gray-800 mb-2">AgroInput Category</label>
+                  <select
+                    name="fertilizer_type"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.fertilizer_type}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="" disabled>Select a Category</option>
+                    <option value="Fertilizers">Fertilizers</option>
+                    <option value="Pesticides">Pesticides</option>
+                  </select>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-lg text-gray-800 mb-2">Payement Type</label>
+                  <select
+                    name="fertilizer_type"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.fertilizer_type}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="" disabled>Select a payement</option>
+                    <option value="cash">Cash</option>
+                    <option value="credit">Credit</option>
+                    <option value="mobilemoney">Mobile Money</option>
+                    <option value="visa">Visa</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="text-lg text-gray-800 mb-2">Store Name</label>
+                  <select
+                    name="fertilizer_type"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.fertilizer_type}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="" disabled>Select a Store Name</option>
+                    <option value="store1">Store 1</option>
+                    <option value="store2">Store 2</option>
+
+                  </select>
+                </div>
+
+                <div className="flex flex-col">
                   <label className="text-lg text-gray-800 mb-2">Application Date</label>
+                  <input
+                    type="date"
+                    name="application_date"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.application_date}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-lg text-gray-800 mb-2">Transaction Date</label>
                   <input
                     type="date"
                     name="application_date"
@@ -132,19 +190,91 @@ const GenerateFertilizerQrCode = () => {
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Soil Moisture (%)</label>
+                  <label className="text-lg text-gray-800 mb-2">AgroInput Type</label>
+                  <select
+                    name="agroInputCategory"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400 mb-4"
+                    value={formData.agroInputCategory}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select AgroInput Category</option>
+                    <option value="Fertilizers">Fertilizers</option>
+                    <option value="Pesticides">Pesticides</option>
+                  </select>
+
+                  {formData.agroInputCategory === "Fertilizers" && (
+                    <select
+                      name="agroInputType"
+                      className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400 mb-4"
+                      value={formData.agroInputType}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="" disabled>Select Fertilizer Type</option>
+                      <optgroup label="Organic">
+                        <option value="Organic1">Organic 1</option>
+                        <option value="Organic2">Organic 2</option>
+                      </optgroup>
+                      <optgroup label="Chemical">
+                        <option value="Chemical1">Chemical 1</option>
+                        <option value="Chemical2">Chemical 2</option>
+                      </optgroup>
+                    </select>
+                  )}
+
+                  {formData.agroInputCategory === "Pesticides" && (
+                    <select
+                      name="agroInputType"
+                      className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400 mb-4"
+                      value={formData.agroInputType}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="" disabled>Select Pesticide Type</option>
+                      <option value="Pesticide1">Pesticide 1</option>
+                      <option value="Pesticide2">Pesticide 2</option>
+                    </select>
+                  )}
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-lg text-gray-800 mb-2">AgroInput Weight (Kgs)</label>
                   <input
                     type="text"
-                    name="soil_moisture"
-                    placeholder="Soil Moisture (%)"
+                    name="soil_ph"
+                    placeholder="Soil pH"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
-                    value={formData.soil_moisture}
+                    value={formData.soil_ph}
                     onChange={handleChange}
                     required
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Soil pH</label>
+                  <label className="text-lg text-gray-800 mb-2"> Price / Kg(Ugshs)</label>
+                  <input
+                    type="text"
+                    name="soil_ph"
+                    placeholder="Soil pH"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.soil_ph}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-lg text-gray-800 mb-2">Total Price (Ugshs)</label>
+                  <input
+                    type="text"
+                    name="soil_ph"
+                    placeholder="Soil pH"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.soil_ph}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-lg text-gray-800 mb-2"> Store ID</label>
                   <input
                     type="text"
                     name="soil_ph"
@@ -182,11 +312,12 @@ const GenerateFertilizerQrCode = () => {
               type="submit"
               className="bg-gradient-to-r from-green-400 to-teal-500 hover:from-green-500 hover:to-teal-600 text-white px-8 py-4 rounded-lg w-full text-lg font-bold transition-all transform hover:scale-105"
             >
-              Generate Digital Codes for Fertilizer Application
+              Generate Digital Codes for Agro Input
             </button>
           </form>
         </div>
-        <div className="flex flex-col justify-center items-center">
+        {/* Div droite */}
+        <div className="lg:w-1/2 flex flex-col justify-center items-center">
           <div ref={qrCodeRef} className="mb-4">
             {/* QR Code will be rendered here */}
           </div>
