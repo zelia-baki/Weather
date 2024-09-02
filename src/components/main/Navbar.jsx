@@ -58,63 +58,63 @@ const Sidebar = () => {
               </Link> */}
             </div>
           </div>
+          <div className="mb-6">
+  <button
+    onClick={toggleFarmDropdown}
+    className="flex items-center justify-between w-full p-3 text-base font-medium text-gray-800 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105"
+  >
+    <span className="flex items-center">
+      <FaSeedling className="text-yellow-700 text-xl" />
+      <span className="ml-4">Farm</span>
+    </span>
+    <FaChevronDown className={`ml-4 transition-transform ${openFarmDropdown ? 'rotate-180' : ''}`} />
+  </button>
+  <div className={`ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out ${openFarmDropdown ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+    <Link to="/createfarm" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+      Farm List
+    </Link>
+    <Link to="/farmer-group" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+      Farmer Group
+    </Link>
+    <Link to="/cropmanage" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+      Crop
+    </Link>
+    <Link to="/district" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+      District
+    </Link>
+    <Link to="/mapviewall" state={{ owner_type: "farmer" }} className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+      View all
+    </Link>
+  </div>
+</div>
 
-          <div>
-            <button
-              onClick={toggleFarmDropdown}
-              className="flex items-center justify-between w-full p-3 text-base font-medium text-gray-800 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105"
-            >
-              <span className="flex items-center">
-                <FaSeedling className="text-yellow-700 text-xl" />
-                <span className="ml-4">Farm</span>
-              </span>
-              <FaChevronDown className={`ml-4 transition-transform ${openFarmDropdown ? 'rotate-180' : ''}`} />
-            </button>
-            <div className={`ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out ${openFarmDropdown ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-              <Link to="/createfarm" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Farm List
-              </Link>
-              <Link to="/farmer-group" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Farmer Group
-              </Link>
-              <Link to="/cropmanage" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Crop
-              </Link>
-              <Link to="/district" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                District
-              </Link>
-              <Link to="/mapviewall" state={{ owner_type: "farmer",}} className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                View all
-              </Link>
-            </div>
-          </div>
+<div className="mb-2">
+  <button
+    onClick={toggleDigitalTraceDropdown}
+    className="flex items-center justify-between w-full p-3 text-base font-medium text-gray-800 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105"
+  >
+    <span className="flex items-center">
+      <FaQrcode className="text-blue-700 text-xl" />
+      <span className="ml-4">Digital Trace</span>
+    </span>
+    <FaChevronDown className={`ml-4 transition-transform ${openDigitalTraceDropdown ? 'rotate-180' : ''}`} />
+  </button>
+  <div className={`ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out ${openDigitalTraceDropdown ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+    <Link to="/qrproduce" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+      Produce Stamps
+    </Link>
+    <Link to="/qrconservation" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+      Forest Conservation Stamps
+    </Link>
+    <Link to="/qrexport" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+      Export Stamps
+    </Link>
+    <Link to="/qrfertilizer" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+      Fertilizer Stamps
+    </Link>
+  </div>
+</div>
 
-          <div>
-            <button
-              onClick={toggleDigitalTraceDropdown}
-              className="flex items-center justify-between w-full p-3 text-base font-medium text-gray-800 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105"
-            >
-              <span className="flex items-center">
-                <FaQrcode className="text-blue-700 text-xl" />
-                <span className="ml-4">Digital Trace</span>
-              </span>
-              <FaChevronDown className={`ml-4 transition-transform ${openDigitalTraceDropdown ? 'rotate-180' : ''}`} />
-            </button>
-            <div className={`ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out ${openDigitalTraceDropdown ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
-              <Link to="/qrproduce" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Produce Stamps
-              </Link>
-              <Link to="/qrconservation" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Forest Conservation Stamps
-              </Link>
-              <Link to="/qrexport" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Export Stamps
-              </Link>
-              <Link to="/qrfertilizer" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                Fertilizer Stamps
-              </Link>
-            </div>
-          </div>
 
           <div>
             <button
