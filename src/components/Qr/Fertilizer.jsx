@@ -242,7 +242,7 @@ const GenerateFertilizerQrCode = () => {
                   <input
                     type="text"
                     name="soil_ph"
-                    placeholder="Soil pH"
+                    placeholder="AgroInput Weight (Kgs)"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
                     value={formData.soil_ph}
                     onChange={handleChange}
@@ -254,7 +254,7 @@ const GenerateFertilizerQrCode = () => {
                   <input
                     type="text"
                     name="soil_ph"
-                    placeholder="Soil pH"
+                    placeholder="Price / Kg(Ugshs)"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
                     value={formData.soil_ph}
                     onChange={handleChange}
@@ -266,7 +266,7 @@ const GenerateFertilizerQrCode = () => {
                   <input
                     type="text"
                     name="soil_ph"
-                    placeholder="Soil pH"
+                    placeholder="Total Price (Ugshs)"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
                     value={formData.soil_ph}
                     onChange={handleChange}
@@ -278,7 +278,7 @@ const GenerateFertilizerQrCode = () => {
                   <input
                     type="text"
                     name="soil_ph"
-                    placeholder="Soil pH"
+                    placeholder="Store ID"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
                     value={formData.soil_ph}
                     onChange={handleChange}
