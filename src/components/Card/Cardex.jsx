@@ -51,22 +51,6 @@ const Card = ({ initialRegion, initialCrop }) => {
 
           <h1 className="text-4xl font-extrabold text-blue-700 mb-4">{region}</h1>
           <div className="flex flex-col gap-6">
-            {/* <div className="flex items-center gap-4">
-              <label htmlFor="region" className="text-gray-700 font-semibold w-1/3">Region:</label>
-              <select
-                id="region"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                className="flex-1 p-3 border border-gray-300 rounded-lg shadow-md focus:border-blue-600 focus:ring focus:ring-blue-600 focus:ring-opacity-50 text-lg bg-gradient-to-r from-white to-blue-50"
-              >
-                <option value="Butambala">Butambala</option>
-                <option value="Lwengo">Lwengo</option>
-                <option value="Mukono">Mukono</option>
-              </select>
-            </div>
-            <div className="px-6 py-3 bg-blue-100 rounded-lg shadow-md mt-4">
-              <Link to="/graph" className="text-blue-800 font-bold hover:underline">Voir le graphique</Link>
-            </div> */}
             <div className="flex items-center gap-4">
               <label htmlFor="latitude" className="text-gray-700 font-semibold w-1/3">Latitude:</label>
               <input
@@ -105,6 +89,7 @@ const Card = ({ initialRegion, initialCrop }) => {
                 onChange={(e) => setCrop(e.target.value)}
                 className="flex-1 p-3 border border-gray-300 rounded-lg shadow-md focus:border-blue-600 focus:ring focus:ring-blue-600 focus:ring-opacity-50 text-lg bg-gradient-to-r from-white to-blue-50"
               >
+                <option value=" ">Select a Crop</option>
                 <option value="Rice">Rice</option>
                 <option value="Coffee">Coffee</option>
                 <option value="Cocoa">Cocoa</option>
@@ -177,14 +162,20 @@ const Card = ({ initialRegion, initialCrop }) => {
                   <div className="font-semibold w-1/2">Wind Speed:</div>
                   <div className="text-gray-800 text-lg w-1/2 text-right">{data.windSpeed || 'N/A'} m/s</div>
                 </div>
+                 {/* Precipitation */}
+              <div className="flex items-center text-gray-600">
+                <FaTint className="text-green-500 mr-3 text-2xl" />
+                <div className="font-semibold w-1/2">Precipitation:</div>
+                <div className="text-gray-800 text-xl w-1/2 text-right">{data.pressure || 'N/A'} Pa</div>
+              </div>
                 <div className="flex items-center text-gray-600">
                   <FaTachometerAlt className="text-green-500 mr-2 text-xl" />
                   <div className="font-semibold w-1/2">ET₀:</div>
                   <div className="text-gray-800 text-lg w-1/2 text-right">{data.ET0 || 'N/A'} mm/day</div>
                 </div>
                 <div className="flex items-center text-gray-600">
-                <FaTachometerAlt className="text-green-500 mr-2 text-xl" />
-                <div className="font-semibold w-1/2">ETc:</div>
+                  <FaTachometerAlt className="text-green-500 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">ETc:</div>
                   <div className="text-gray-800 text-xl w-1/2 text-right">{data.ETc || 'N/A'} mm/day</div>
                 </div>
                 <div className="flex items-center text-gray-600">

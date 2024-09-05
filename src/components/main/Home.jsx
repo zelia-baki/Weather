@@ -48,7 +48,7 @@ const HomePage = () => {
           <Card
             title="Weather"
             description="Monitor and manage weather data efficiently."
-            link="/card"
+            link="/cardex"
             buttonText="View Weather"
             bgColor="bg-blue-100"
             hoverColor="bg-blue-200 hover:bg-blue-300"
