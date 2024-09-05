@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import QRCodeStyling from 'qr-code-styling';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import axiosInstance from '../../axiosInstance'; // Assuming axiosInstance is imported from a utility file
 
-const PointForm = ({ farmId }) => {
+const PointForm = () => { // Removed farmId prop since it’s not used in the provided code
   const navigate = useNavigate();
-  const qrCodeRef = useRef(null);
+  const qrCodeContainerRef = useRef(null);
 
   const [formData, setFormData] = useState({
     farm_id: '',
@@ -28,42 +29,67 @@ const PointForm = ({ farmId }) => {
     end_customer_name: '',
   });
 
-  const [generateQRCode, setGenerateQRCode] = useState(false);
+  const [farms, setFarms] = useState([]); // State to hold farms data
+  const [qrCodes, setQrCodes] = useState([]); // State to hold generated QR codes
 
-  useEffect(() => {
-    // Fetch farm properties using the API
-    fetch(`http://127.0.0.1:5000/api/farm/${farmId}/allprop`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.status === 'success') {
-          setFormData(data.data[0]); // Assuming there's only one farm returned
-        } else {
-          console.error('No data found for the provided farm ID');
-        }
-      })
-      .catch(error => console.error('Error fetching farm properties:', error));
-  }, [farmId]);
+  const handleFarmIdChange = (e) => {
+    const farm_id = e.target.value;
 
-  useEffect(() => {
-    if (generateQRCode && qrCodeRef.current) {
-      const qrCode = new QRCodeStyling({
-        width: 300,
-        height: 300,
-        dotsOptions: {
-          color: "#4267b2",
-          type: "rounded"
-        },
-        imageOptions: {
-          crossOrigin: "anonymous",
-          margin: 20
-        },
-        data: JSON.stringify(formData)
-      });
+    // Update farm_id in form data
+    setFormData(prevFormData => ({ ...prevFormData, farm_id }));
 
-      qrCode.append(qrCodeRef.current);
-      setGenerateQRCode(false); // Reset the QR code generation flag
+    // Fetch the corresponding farm properties
+    if (farm_id) {
+      axiosInstance.get(`/api/farm/${farm_id}/allprop`)
+        .then(response => {
+          if (response.data.status === 'success') {
+            const farmProperties = response.data.data[0]; // Assuming you get a list of farm properties
+            setFormData(farmProperties);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching farm properties:', error);
+        });
     }
-  }, [generateQRCode, formData]);
+  };
+
+  useEffect(() => {
+    // Fetch farms data using axiosInstance
+    const fetchFarms = async () => {
+      try {
+        const { data } = await axiosInstance.get('/api/farm/');
+        setFarms(data.farms || []); // Ensure data.farms is an array
+      } catch (error) {
+        console.error('Error fetching farms:', error);
+      }
+    };
+
+    fetchFarms();
+  }, []);
+
+  useEffect(() => {
+    if (qrCodes.length > 0 && qrCodeContainerRef.current) {
+      qrCodeContainerRef.current.innerHTML = ''; // Clear previous QR codes
+      qrCodes.forEach((qrCodeData, index) => {
+        const qrCode = new QRCodeStyling({
+          width: 300,
+          height: 300,
+          dotsOptions: {
+            color: "#4267b2",
+            type: "rounded"
+          },
+          imageOptions: {
+            crossOrigin: "anonymous",
+            margin: 20
+          },
+          data: qrCodeData
+        });
+        const qrCodeElement = document.createElement('div');
+        qrCode.append(qrCodeElement);
+        qrCodeContainerRef.current.appendChild(qrCodeElement);
+      });
+    }
+  }, [qrCodes]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -75,20 +101,38 @@ const PointForm = ({ farmId }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setGenerateQRCode(true); // Trigger QR code generation
+    const batchNumber = parseInt(formData.batch_number, 10);
+    
+    if (isNaN(batchNumber) || batchNumber <= 0) {
+      alert('Invalid batch number. Please enter a positive integer.');
+      return;
+    }
+
+    // Generate QR codes based on batch number
+    const qrCodesData = Array.from({ length: batchNumber }, () => JSON.stringify(formData));
+    setQrCodes(qrCodesData);
   };
 
   const downloadPdf = async () => {
-    const canvas = await html2canvas(qrCodeRef.current);
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'pt',
-      format: [300, 300]
-    });
+    if (qrCodeContainerRef.current) {
+      const canvasPromises = Array.from(qrCodeContainerRef.current.children).map(child =>
+        html2canvas(child).then(canvas => canvas.toDataURL('image/png'))
+      );
 
-    pdf.addImage(imgData, 'PNG', 0, 0, 300, 300);
-    pdf.save(`${formData.farm_id}_QRCode.pdf`);
+      const imgDataArray = await Promise.all(canvasPromises);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4'
+      });
+
+      imgDataArray.forEach((imgData, index) => {
+        if (index > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, 10, 190, 190); // Adjust dimensions as needed
+      });
+
+      pdf.save(`${formData.farm_id}_QRCode.pdf`);
+    }
   };
 
   return (
@@ -109,8 +153,30 @@ const PointForm = ({ farmId }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Side */}
               <div className="space-y-4">
+                {/* Farm ID Dropdown */}
+                <div className="mb-4">
+                  <label htmlFor="farm_id" className="block text-sm font-medium text-gray-700">
+                    Farm ID:
+                  </label>
+                  <select
+                    id="farm_id"
+                    name="farm_id"
+                    value={formData.farm_id || ''}
+                    onChange={handleFarmIdChange} // Update handler to handle farm ID change
+                    className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    required
+                  >
+                    <option value="">Select Farm</option>
+                    {farms.map(farm => (
+                      <option key={farm.id} value={farm.id}>
+                        {farm.name} - {farm.subcounty}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Other Form Fields */}
                 {[
-                  { label: 'Farm ID', name: 'farm_id', type: 'text' },
                   { label: 'Farmer Group Name', name: 'farmergroup_name', type: 'text' },
                   { label: 'District', name: 'district_name', type: 'text' },
                   { label: 'Country of Origin', name: 'country_of_origin', type: 'text' },
@@ -133,7 +199,6 @@ const PointForm = ({ farmId }) => {
                     options: ['Quality A', 'Quality B', 'Quality C']
                   },
                   { label: 'Produce Weight (Kgs)', name: 'produce_weight', type: 'text' },
-               
                   { label: 'Timestamp (Transaction Date)', name: 'timestamp', type: 'datetime-local' }
                 ].map(({ label, name, type, options }) => (
                   <div className="mb-4" key={name}>
@@ -171,72 +236,73 @@ const PointForm = ({ farmId }) => {
 
               {/* Right Side */}
               <div className="space-y-4">
+                {/* Batch Number */}
+                <div className="mb-4">
+                  <label htmlFor="batch_number" className="block text-sm font-medium text-gray-700">
+                    Batch Number:
+                  </label>
+                  <input
+                    type="number"
+                    id="batch_number"
+                    name="batch_number"
+                    value={formData.batch_number || ''}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                
+                {/* Remaining Fields */}
                 {[
-                  { label: 'Geolocation', name: 'geolocation', type: 'text' },
-                  { label: 'Store Name', name: 'store_name', type: 'select', options: ['Store 1', 'Store 2', 'Store 3'] },
-                  { label: 'Season', name: 'season', type: 'select', options: ['Season 1', 'Season 2', 'Season 3'] },
-                  { label: 'Batch Number', name: 'batch_number', type: 'text' },
                   { label: 'Harvest Date', name: 'harvest_date', type: 'date' },
+                  { label: 'Geolocation', name: 'geolocation', type: 'text' },
+                  { label: 'Store Name', name: 'store_name', type: 'text' },
+                  { label: 'Season', name: 'season', type: 'text' },
                   { label: 'Destination Country', name: 'destination_country', type: 'text' },
                   { label: 'Channel Partner', name: 'channel_partner', type: 'text' },
                   { label: 'End Customer Name', name: 'end_customer_name', type: 'text' }
-                ].map(({ label, name, type, options }) => (
+                ].map(({ label, name, type }) => (
                   <div className="mb-4" key={name}>
                     <label htmlFor={name} className="block text-sm font-medium text-gray-700">
                       {label}:
                     </label>
-                    {type === 'select' ? (
-                      <select
-                        id={name}
-                        name={name}
-                        value={formData[name] || ''}
-                        onChange={handleChange}
-                        className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        required
-                      >
-                        <option value="">Select {label}</option>
-                        {options.map(option => (
-                          <option key={option} value={option.toLowerCase()}>{option}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type={type}
-                        id={name}
-                        name={name}
-                        value={formData[name] || ''}
-                        onChange={handleChange}
-                        className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        required
-                      />
-                    )}
+                    <input
+                      type={type}
+                      id={name}
+                      name={name}
+                      value={formData[name] || ''}
+                      onChange={handleChange}
+                      className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      required
+                    />
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-between items-center mt-6">
               <button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition ease-in-out duration-300"
               >
-                Generate QR Code
+                Generate QR Codes
               </button>
+
+              {qrCodes.length > 0 && (
+                <div className="flex flex-col items-center mt-6">
+                  <div ref={qrCodeContainerRef} className="mb-4"></div>
+                  <button
+                    type="button"
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition ease-in-out duration-300"
+                    onClick={downloadPdf}
+                  >
+                    Download PDF
+                  </button>
+                </div>
+              )}
             </div>
           </form>
         </div>
-
-        {generateQRCode && (
-          <div className="mt-8 flex flex-col items-center">
-            <div id="qr-code" ref={qrCodeRef} className="mb-4"></div>
-            <button
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition ease-in-out duration-300"
-              onClick={downloadPdf}
-            >
-              Download QR Code as PDF
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

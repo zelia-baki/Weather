@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS } from 'chart.js/auto';
 import axiosInstance from '../../axiosInstance';
-import { clearStorage } from 'mapbox-gl';
 
 function Graph() {
   const [farmData, setFarmData] = useState([]);
@@ -25,17 +24,15 @@ function Graph() {
       const crop = 'some-crop-id';      // replace with actual crop
       const latitude = '0.292225';        // replace with actual latitude
       const longitude = '32.576809';      // replace with actual longitude
-      const time = new Date('2024-08-11T04:00:00');
 
       try {
-        console.log(`Fetching data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}, time: ${time}`);
-        const response = await axiosInstance.get('/weather', {
+        console.log(`Fetching weather data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}`);
+        const response = await axiosInstance.get('/WeatherWeekly', {
           params: {
             region_id: region,
             crop_id: crop,
             latitude: latitude,
-            longitude: longitude,
-            time: time.toISOString() // Convert Date object to ISO string
+            longitude: longitude
           }
         });
 
@@ -54,32 +51,22 @@ function Graph() {
   const farmLabels = (farmData || []).map(item => item.name);
   const farmQuantities = (farmData || []).map(item => item.quantity);
 
-  // Extract values from weather data (assuming structure, adapt as necessary)
-  const weatherTemperature = weatherData.temperature || 0;
-  console.log(weatherTemperature);
-   // replace with actual field
-  const weatherHumidity = weatherData.humidity || 0;
-  console.log(weatherHumidity)       // replace with actual field
-  const weatherWindSpeed = weatherData.windSpeed || 0;  
-  console.log(weatherWindSpeed)       // replace with actual field
-  const weatherWindPrecipitation = weatherData.precipitaion || 0;  
-  console.log(weatherWindPrecipitation)       // replace with actual field
-
+  // Extract labels and values for weather data
+  const weatherLabels = (weatherData || []).map(item => {
+    const date = new Date(item.date);
+    return `${date.getMonth() + 1}/${date.getDate()}`; // Format as MM/DD
+  });
+  const weatherTemperatures = (weatherData || []).map(item => item.average_temperature);
+  const weatherHumidities = (weatherData || []).map(item => item.average_humidity);
+  const weatherWindSpeeds = (weatherData || []).map(item => item.average_wind_speed);
+  const weatherPrecipitations = (weatherData || []).map(item => item.average_precipitation);
 
   const chartData = {
-    labels: farmLabels,
+    labels: weatherLabels, // Use formatted weather dates as x-axis labels
     datasets: [
       {
-        label: "Farm Production",
-        data: farmQuantities,
-        backgroundColor: 'rgba(255, 159, 64, 0.2)', // Vibrant orange color with transparency
-        borderColor: 'rgba(255, 159, 64, 1)', // Darker orange color for border
-        borderWidth: 2,
-        tension: 0.4, // Smooth curve for Line chart
-      },
-      {
         label: "Temperature",
-        data: farmLabels.map(() => weatherTemperature), // Use the same labels, replace with actual mapping logic if needed
+        data: weatherTemperatures,
         backgroundColor: 'rgba(75, 192, 192, 0.2)', // Transparent teal
         borderColor: 'rgba(75, 192, 192, 1)', // Solid teal
         borderWidth: 2,
@@ -87,7 +74,7 @@ function Graph() {
       },
       {
         label: "Humidity",
-        data: farmLabels.map(() => weatherHumidity), // Same as above
+        data: weatherHumidities,
         backgroundColor: 'rgba(153, 102, 255, 0.2)', // Transparent purple
         borderColor: 'rgba(153, 102, 255, 1)', // Solid purple
         borderWidth: 2,
@@ -95,7 +82,7 @@ function Graph() {
       },
       {
         label: "Wind Speed",
-        data: farmLabels.map(() => weatherWindSpeed), // Same as above
+        data: weatherWindSpeeds,
         backgroundColor: 'rgba(255, 206, 86, 0.2)', // Transparent yellow
         borderColor: 'rgba(255, 206, 86, 1)', // Solid yellow
         borderWidth: 2,
@@ -103,9 +90,9 @@ function Graph() {
       },
       {
         label: "Precipitation",
-        data: farmLabels.map(() => weatherWindPrecipitation), // Same as above
-        backgroundColor: 'rgba(255, 206, 83, 0.2)', // Transparent yellow
-        borderColor: 'rgba(255, 206, 83, 1)', // Solid yellow
+        data: weatherPrecipitations,
+        backgroundColor: 'rgba(255, 159, 64, 0.2)', // Transparent orange
+        borderColor: 'rgba(255, 159, 64, 1)', // Solid orange
         borderWidth: 2,
         tension: 0.4,
       }
