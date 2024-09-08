@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom'; // Import Link
 import FarmModal from './FarmModal';
 import FarmList from './FarmList'; // Import the FarmList component
@@ -11,8 +11,6 @@ const Create = () => {
 
     return (
         <div>
-           
-
             <FarmModal isOpen={isModalOpen} onClose={handleCloseModal} />
             <button
                 onClick={handleOpenModal}
@@ -21,9 +19,16 @@ const Create = () => {
                 Create Farm
             </button>
 
+            {/* Add a link to /mapviewall */}
+            <Link
+                to="/mapviewall"
+                className="inline-block m-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+                View All Farms
+            </Link>
+
             {/* Display the FarmList component */}
             <FarmList />
-           
         </div>
     );
 };

@@ -17,6 +17,7 @@ const MapboxExample = () => {
   });
   const [polygons, setPolygons] = useState([]);
   const [totalArea, setTotalArea] = useState(0);
+  const [polygonCount, setPolygonCount] = useState(0); // New state for polygon count
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
@@ -56,6 +57,9 @@ const MapboxExample = () => {
 
         setNotification(null);
         setPolygons(data.polygons);
+
+        // Update the number of polygons
+        setPolygonCount(data.polygons.length);
 
       } catch (error) {
         console.error('Error fetching polygons:', error);
@@ -225,6 +229,7 @@ const MapboxExample = () => {
             <div className="mt-4">
               <h3 className="text-lg font-semibold">Map Properties</h3>
               <p><strong>Total Area:</strong> {totalArea ? `${totalArea} m²` : 'Calculating...'}</p>
+              <p><strong>Number of Polygons:</strong> {polygonCount}</p> {/* Display the number of polygons */}
               <p><strong>Zoom:</strong> {mapProps.zoom}</p>
             </div>
           </div>
