@@ -3,12 +3,14 @@ import mapboxgl from 'mapbox-gl';
 import axiosInstance from '../../axiosInstance'; // Import your axios instance
 import { useLocation } from "react-router-dom";  // Import useLocation to access the passed state
 import 'mapbox-gl/dist/mapbox-gl.css';
+import * as turf from '@turf/turf'; // Import turf for handling multipolygon
 
 const MapboxExample = () => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
-  const location = useLocation(); 
-  const owner_type = location.state?.owner_type;
+  const location = useLocation();
+  // const owner_type = location.state?.owner_type;
+  const owner_type = "farmer";  // Example owner_type
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
@@ -28,56 +30,71 @@ const MapboxExample = () => {
         const response = await axiosInstance.get(`/api/points/getallbyownertype/${owner_type}`);
         const polygons = response.data.polygons; // Array of polygons
 
-        // Generate a GeoJSON object containing multiple polygon features
+        // Ensure polygons data is available
+        if (!polygons || polygons.length === 0) {
+          console.warn('No polygons data available.');
+          return;
+        }
+
+        // Create GeoJSON features for each polygon
+        const features = polygons.map((polygon, index) => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [polygon.points.map(point => [point.longitude, point.latitude])],
+          },
+          properties: {
+            id: index,
+            owner_type: polygon.owner_type,
+            owner_id: polygon.owner_id,
+          },
+        }));
+
+        // Create a FeatureCollection GeoJSON object
         const geojson = {
           type: 'FeatureCollection',
-          features: polygons.map(polygon => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [
-                polygon.points.map(point => [point.longitude, point.latitude])
-              ],
-            },
-            properties: {
-              owner_type: polygon.owner_type,
-              group_id: polygon[owner_type] // This could be forest_id, farmer_id, etc.
-            },
-          })),
+          features,
         };
 
         mapRef.current.on('load', () => {
           // Check if the source already exists before adding
-          if (mapRef.current.getSource('polygons')) {
-            mapRef.current.getSource('polygons').setData(geojson);
+          if (mapRef.current.getSource('multiPolygon')) {
+            mapRef.current.getSource('multiPolygon').setData(geojson);
           } else {
-            // Add polygons source to the map
-            mapRef.current.addSource('polygons', {
+            // Add multipolygon source to the map
+            mapRef.current.addSource('multiPolygon', {
               type: 'geojson',
               data: geojson,
             });
 
-            // Add a fill layer to represent the polygons
+            // Add a fill layer to represent each polygon
             mapRef.current.addLayer({
-              id: 'polygons-fill',
+              id: 'multiPolygon-fill',
               type: 'fill',
-              source: 'polygons',
+              source: 'multiPolygon',
               paint: {
                 'fill-color': '#0080ff',
-                'fill-opacity': 0.5
-              }
+                'fill-opacity': 0.5,
+              },
             });
 
-            // Add a line layer to outline the polygons
+            // Add a line layer to outline each polygon
             mapRef.current.addLayer({
-              id: 'polygons-outline',
+              id: 'multiPolygon-outline',
               type: 'line',
-              source: 'polygons',
+              source: 'multiPolygon',
               paint: {
                 'line-color': '#000',
-                'line-width': 2
-              }
+                'line-width': 2,
+              },
             });
+
+            // Fit the map to the bounds of the polygons
+            const bounds = new mapboxgl.LngLatBounds();
+            features.forEach(feature => {
+              feature.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
+            });
+            mapRef.current.fitBounds(bounds, { padding: 20 });
           }
         });
 
