@@ -8,6 +8,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 const MapboxExample = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
+  const popupRef = useRef(new mapboxgl.Popup({ closeButton: false, closeOnClick: false }));
   const location = useLocation();
   const owner_id = location.state?.owner_id;
   const owner_type = location.state?.owner_type;
@@ -99,6 +100,20 @@ const MapboxExample = () => {
                 'line-width': 2,
               },
             });
+
+            mapRef.current.on('mouseenter', 'polygon-fill', (e) => {
+              const coordinates = e.features[0].geometry.coordinates[0];
+              const ownerId = e.features[0].properties.owner_id;
+
+              popupRef.current.setLngLat(coordinates[0])
+                .setHTML(`<strong>Owner ID:</strong> ${ownerId}`)
+                .addTo(mapRef.current);
+            });
+
+            mapRef.current.on('mouseleave', 'polygon-fill', () => {
+              popupRef.current.remove();
+            });
+
           } else {
             mapRef.current.getSource('polygon').setData(geojson);
           }
@@ -160,7 +175,7 @@ const MapboxExample = () => {
             <div className="rounded-full bg-slate-700 h-10 w-10"></div>
             <div className="mt-4">
               <h3 className="text-lg font-semibold">Map Properties</h3>
-              <p><strong>Area m²:</strong> {area ? area : 'Calculating...'}</p>
+              <p><strong>Area m²:</strong> {area ? area : 'Calculating...'} m2</p>
               <p><strong>Zoom:</strong> {mapProps.zoom}</p>
             </div>
           </div>

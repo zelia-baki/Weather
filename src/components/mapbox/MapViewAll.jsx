@@ -1,102 +1,61 @@
-import React, { useEffect, useRef } from 'react';
-import mapboxgl from 'mapbox-gl';
-import axiosInstance from '../../axiosInstance'; // Import your axios instance
-import { useLocation } from "react-router-dom";  // Import useLocation to access the passed state
+import React, { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import mapboxgl from "mapbox-gl";
+import axiosInstance from '../../axiosInstance';
+import * as turf from '@turf/turf';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import * as turf from '@turf/turf'; // Import turf for handling multipolygon
 
 const MapboxExample = () => {
-  const mapContainerRef = useRef(null);
-  const mapRef = useRef(null);
+  const mapContainerRef = useRef();
+  const mapRef = useRef();
   const location = useLocation();
-  // const owner_type = location.state?.owner_type;
   const owner_type = "farmer";  // Example owner_type
+  const [notification, setNotification] = useState(null);
+  const [mapProps, setMapProps] = useState({
+    center: [-91.874, 42.76], // Default center if geolocation is not provided
+    zoom: 5, // Default zoom if geolocation is not provided
+  });
+  const [polygons, setPolygons] = useState([]);
+  const [totalArea, setTotalArea] = useState(0);
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
 
     if (!mapRef.current) {
-      // Initialize the map only once
       mapRef.current = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: 'mapbox://styles/mapbox/satellite-v9',
-        center: [-91.874, 42.76],
-        zoom: 5
+        center: mapProps.center,
+        zoom: mapProps.zoom,
+      });
+
+      mapRef.current.on('move', () => {
+        const center = mapRef.current.getCenter();
+        const zoom = mapRef.current.getZoom();
+        setMapProps({
+          center: [center.lng, center.lat],
+          zoom: zoom.toFixed(2),
+        });
       });
     }
+  }, [mapProps.center, mapProps.zoom]);
 
+  useEffect(() => {
     const fetchPolygons = async () => {
       try {
         const response = await axiosInstance.get(`/api/points/getallbyownertype/${owner_type}`);
-        const polygons = response.data.polygons; // Array of polygons
+        const data = response.data;
 
-        // Ensure polygons data is available
-        if (!polygons || polygons.length === 0) {
-          console.warn('No polygons data available.');
+        if (!data.polygons || data.polygons.length === 0) {
+          setNotification({
+            type: "info",
+            message: "No polygons found.",
+          });
           return;
         }
 
-        // Create GeoJSON features for each polygon
-        const features = polygons.map((polygon, index) => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [polygon.points.map(point => [point.longitude, point.latitude])],
-          },
-          properties: {
-            id: index,
-            owner_type: polygon.owner_type,
-            owner_id: polygon.owner_id,
-          },
-        }));
-
-        // Create a FeatureCollection GeoJSON object
-        const geojson = {
-          type: 'FeatureCollection',
-          features,
-        };
-
-        mapRef.current.on('load', () => {
-          // Check if the source already exists before adding
-          if (mapRef.current.getSource('multiPolygon')) {
-            mapRef.current.getSource('multiPolygon').setData(geojson);
-          } else {
-            // Add multipolygon source to the map
-            mapRef.current.addSource('multiPolygon', {
-              type: 'geojson',
-              data: geojson,
-            });
-
-            // Add a fill layer to represent each polygon
-            mapRef.current.addLayer({
-              id: 'multiPolygon-fill',
-              type: 'fill',
-              source: 'multiPolygon',
-              paint: {
-                'fill-color': '#0080ff',
-                'fill-opacity': 0.5,
-              },
-            });
-
-            // Add a line layer to outline each polygon
-            mapRef.current.addLayer({
-              id: 'multiPolygon-outline',
-              type: 'line',
-              source: 'multiPolygon',
-              paint: {
-                'line-color': '#000',
-                'line-width': 2,
-              },
-            });
-
-            // Fit the map to the bounds of the polygons
-            const bounds = new mapboxgl.LngLatBounds();
-            features.forEach(feature => {
-              feature.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
-            });
-            mapRef.current.fitBounds(bounds, { padding: 20 });
-          }
-        });
+        setNotification(null);
+        setPolygons(data.polygons);
 
       } catch (error) {
         console.error('Error fetching polygons:', error);
@@ -104,17 +63,184 @@ const MapboxExample = () => {
     };
 
     fetchPolygons();
-
-    // Cleanup on component unmount
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
   }, [owner_type]);
 
-  return <div id="map" ref={mapContainerRef} style={{ height: '100%' }} />;
+  useEffect(() => {
+    const getRandomColor = () => {
+      // Function to generate a random hex color
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    };
+
+    const addPolygonLayers = () => {
+      if (!mapRef.current || polygons.length === 0) return;
+
+      const features = polygons.map((polygon, index) => {
+        const coordinates = polygon.points.map(point => [point.longitude, point.latitude]);
+        const polygonGeoJSON = {
+          type: 'FeatureCollection',
+          features: [{
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [coordinates]
+            },
+            properties: {
+              id: index,
+              owner_type: polygon.owner_type,
+              owner_id: polygon.owner_id,
+              area: Math.round(turf.area({
+                type: 'FeatureCollection',
+                features: [{
+                  type: 'Feature',
+                  geometry: {
+                    type: 'Polygon',
+                    coordinates: [coordinates]
+                  }
+                }]
+              }) * 100) / 100
+            }
+          }]
+        };
+
+        const centroid = turf.centroid(polygonGeoJSON.features[0]);
+
+        // Add marker for the centroid
+        new mapboxgl.Marker()
+          .setLngLat([centroid.geometry.coordinates[0], centroid.geometry.coordinates[1]])
+          .addTo(mapRef.current);
+
+        return {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [coordinates],
+          },
+          properties: {
+            id: index,
+            owner_type: polygon.owner_type,
+            owner_id: polygon.owner_id,
+            area: Math.round(turf.area(polygonGeoJSON.features[0]) * 100) / 100,
+            color: getRandomColor()  // Assign a random color
+          },
+        };
+      });
+
+      // Calculate total area
+      const total = features.reduce((sum, feature) => sum + feature.properties.area, 0);
+      setTotalArea(total);
+
+      const geojson = {
+        type: 'FeatureCollection',
+        features,
+      };
+
+      if (!mapRef.current.getSource('multiPolygon')) {
+        mapRef.current.addSource('multiPolygon', {
+          type: 'geojson',
+          data: geojson,
+        });
+
+        mapRef.current.addLayer({
+          id: 'multiPolygon-fill',
+          type: 'fill',
+          source: 'multiPolygon',
+          paint: {
+            'fill-color': ['get', 'color'],  // Use the color from properties
+            'fill-opacity': 0.5,
+          },
+        });
+
+        mapRef.current.addLayer({
+          id: 'multiPolygon-outline',
+          type: 'line',
+          source: 'multiPolygon',
+          paint: {
+            'line-color': '#000',
+            'line-width': 2,
+          },
+        });
+
+        mapRef.current.on('click', 'multiPolygon-fill', (e) => {
+          const { properties } = e.features[0];
+
+          new mapboxgl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML(`<h3>Owner Type: ${properties.owner_type}</h3>
+                      <p>Owner ID: ${properties.owner_id}</p>
+                      <p>Feature ID: ${properties.id}</p>
+                      <p>Area: ${properties.area} m²</p>`)
+            .addTo(mapRef.current);
+        });
+
+        mapRef.current.on('mouseenter', 'multiPolygon-fill', () => {
+          mapRef.current.getCanvas().style.cursor = 'pointer';
+        });
+
+        mapRef.current.on('mouseleave', 'multiPolygon-fill', () => {
+          mapRef.current.getCanvas().style.cursor = '';
+        });
+
+        const bounds = new mapboxgl.LngLatBounds();
+        features.forEach(feature => {
+          feature.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
+        });
+        mapRef.current.fitBounds(bounds, { padding: 20 });
+      } else {
+        mapRef.current.getSource('multiPolygon').setData(geojson);
+      }
+    };
+
+    if (mapRef.current && polygons.length > 0) {
+      if (mapRef.current.isStyleLoaded()) {
+        addPolygonLayers();
+      } else {
+        mapRef.current.on('load', addPolygonLayers);
+      }
+    }
+  }, [polygons]);
+
+  return (
+    <div className="relative h-full">
+      {notification && (
+        <div
+          className={`absolute top-20 right-2 z-10 px-4 py-2 rounded-md shadow-lg transition-shadow duration-300 focus:outline-none ${notification.type === "info"
+            ? "bg-blue-500 text-white"
+            : "bg-red-500 text-white"
+            }`}
+        >
+          {notification.message}
+        </div>
+      )}
+
+      <div ref={mapContainerRef} id="map" className="h-[80vh]" />
+      <div className="flex">
+        <div className="border border-blue-300 shadow rounded-md mt-4 p-4 max-w-sm w-full">
+          <div className="flex space-x-4">
+            <div className="rounded-full bg-slate-700 h-10 w-10"></div>
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold">Map Properties</h3>
+              <p><strong>Total Area:</strong> {totalArea ? `${totalArea} m²` : 'Calculating...'}</p>
+              <p><strong>Zoom:</strong> {mapProps.zoom}</p>
+            </div>
+          </div>
+        </div>
+        <div className="border border-blue-300 shadow rounded-md mt-4 ms-4 p-4 flex-1">
+          <div className="flex space-x-4">
+            <div className="rounded-full bg-slate-700 h-10 w-10"></div>
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold">Additional Information</h3>
+              <p>This is where you can add more details related to the map or your application.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default MapboxExample;
