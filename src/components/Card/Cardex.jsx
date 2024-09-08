@@ -166,7 +166,7 @@ const Card = ({ initialRegion, initialCrop }) => {
               <div className="flex items-center text-gray-600">
                 <FaTint className="text-green-500 mr-3 text-2xl" />
                 <div className="font-semibold w-1/2">Precipitation:</div>
-                <div className="text-gray-800 text-xl w-1/2 text-right">{data.pressure || 'N/A'} Pa</div>
+                <div className="text-gray-800 text-xl w-1/2 text-right">{data.precipitation || 'N/A'} Pa</div>
               </div>
                 <div className="flex items-center text-gray-600">
                   <FaTachometerAlt className="text-green-500 mr-2 text-xl" />
