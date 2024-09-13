@@ -31,6 +31,7 @@ import Export from './components/Qr/Export.jsx';
 import Fertilizer from './components/Qr/Fertilizer.jsx';
 import FarmReport from './components/gfw/Gfwreportfarmer.jsx';
 import ForestReport from './components/gfw/Gfwreportforest.jsx';
+// import ThreeJS from './components/Three/ThreeJs.js';
 
 function App() {
   const layoutRoutes = [
@@ -60,6 +61,8 @@ function App() {
     { path: "/qrfertilizer", component: <Fertilizer/>},
     { path: "/reportfarmer", component: <FarmReport/>},
     { path: "/reportforest", component: <ForestReport/>},
+    // { path: "/threejs", component: <ThreeJS/>}
+
  
   ];
 

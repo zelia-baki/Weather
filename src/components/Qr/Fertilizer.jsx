@@ -4,6 +4,7 @@ import QRCodeStyling from 'qr-code-styling';
 const GenerateFertilizerQrCode = () => {
   const [formData, setFormData] = useState({
     field_name: '',
+    farm_id: '',
     field_id: '',
     fertilizer_type: '',
     application_date: '',
@@ -14,6 +15,8 @@ const GenerateFertilizerQrCode = () => {
   });
   const [isExportChecked, setIsExportChecked] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [farms, setFarms] = useState([]);
+
   const qrCodeRef = useRef(null);
 
   const qrCode = new QRCodeStyling({
@@ -28,6 +31,37 @@ const GenerateFertilizerQrCode = () => {
       margin: 20
     }
   });
+  const handleFarmIdChange = (e) => {
+    const farm_id = e.target.value;
+    setFormData(prevFormData => ({ ...prevFormData, farm_id }));
+
+    if (farm_id) {
+      axiosInstance.get(`/api/farm/${farm_id}/allprop`)
+        .then(response => {
+          if (response.data.status === 'success') {
+            const farmProperties = response.data.data[0];
+            setFormData(farmProperties);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching farm properties:', error);
+        });
+    }
+  };
+  useEffect(() => {
+    const fetchFarms = async () => {
+      try {
+        const { data } = await axiosInstance.get('/api/farm/');
+        setFarms(data.farms || []);
+      } catch (error) {
+        console.error('Error fetching farms:', error);
+      }
+    };
+
+    fetchFarms();
+  }, []);
+
+ 
 
   useEffect(() => {
     if (qrCodeRef.current) {
@@ -70,17 +104,25 @@ const GenerateFertilizerQrCode = () => {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-6">
-                <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Farmer ID</label>
-                  <input
-                    type="text"
-                    name="field_name"
-                    placeholder="Field Name"
-                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
-                    value={formData.field_name}
-                    onChange={handleChange}
+              <div className="mb-6">
+                  <label className="text-lg text-gray-800 mb-2 block" htmlFor="farm_id">
+                    Farm ID:
+                  </label>
+                  <select
+                    id="farm_id"
+                    name="farm_id"
+                    value={formData.farm_id || ''}
+                    onChange={handleFarmIdChange}
+                    className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                     required
-                  />
+                  >
+                    <option value="">Select Farm</option>
+                    {farms.map(farm => (
+                      <option key={farm.id} value={farm.id}>
+                        {farm.name} - {farm.subcounty}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex flex-col">
                   <label className="text-lg text-gray-800 mb-2">Farmer Phone Number</label>
@@ -164,21 +206,10 @@ const GenerateFertilizerQrCode = () => {
                     required
                   />
                 </div>
-                <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Transaction Date</label>
-                  <input
-                    type="date"
-                    name="application_date"
-                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
-                    value={formData.application_date}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
               </div>
               <div className="space-y-6">
                 <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">Application Rate (kg/ha)</label>
+                  <label className="text-lg text-gray-800 mb-2">Application Rate (kg/Acre)</label>
                   <input
                     type="text"
                     name="application_rate"
@@ -285,27 +316,17 @@ const GenerateFertilizerQrCode = () => {
                     required
                   />
                 </div>
-                <div className="flex items-center">
+                <div className="flex flex-col">
+                  <label className="text-lg text-gray-800 mb-2">Transaction Date</label>
                   <input
-                    type="checkbox"
-                    id="exportCheckbox"
-                    name="export"
-                    className="form-checkbox h-5 w-5 text-green-600 focus:ring-green-400"
-                    checked={isExportChecked}
-                    onChange={handleExportCheckboxChange}
+                    type="date"
+                    name="application_date"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
+                    value={formData.application_date}
+                    onChange={handleChange}
+                    required
                   />
-                  <label htmlFor="exportCheckbox" className="ml-3 text-lg text-gray-800">Export</label>
                 </div>
-                <input
-                  type="text"
-                  id="exportName"
-                  name="export_name"
-                  placeholder="Export Name"
-                  className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
-                  value={formData.export_name}
-                  onChange={handleChange}
-                  disabled={!isExportChecked}
-                />
               </div>
             </div>
             <button
