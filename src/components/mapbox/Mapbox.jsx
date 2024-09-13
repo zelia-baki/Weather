@@ -256,7 +256,7 @@ const MapboxExample = () => {
         className="absolute top-40 right-2 z-10 px-4 py-2 bg-white text-black border-2 border-black rounded-md shadow-lg hover:bg-gray-100 hover:shadow-2xl transition-shadow duration-300 focus:outline-none"
         style={{ boxShadow: '0 12px 24px rgba(0, 0, 0, 1)' }}
       >
-        Valider
+        Validate 
       </button>
 
       <div ref={mapContainerRef} id="map" className="h-[80vh]"></div>
