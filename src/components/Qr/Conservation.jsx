@@ -155,27 +155,6 @@ const GenerateTreeCuttingQrCode = () => {
                     required
                   />
                 </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="exportCheckbox"
-                    name="export"
-                    className="form-checkbox h-5 w-5 text-teal-600 focus:ring-teal-400"
-                    checked={isExportChecked}
-                    onChange={handleExportCheckboxChange}
-                  />
-                  <label htmlFor="exportCheckbox" className="ml-3 text-lg text-gray-800">Export</label>
-                </div>
-                <input
-                  type="text"
-                  id="exportName"
-                  name="export_name"
-                  placeholder="Export Name"
-                  className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                  value={formData.export_name}
-                  onChange={handleChange}
-                  disabled={!isExportChecked}
-                />
               </div>
             </div>
             <button

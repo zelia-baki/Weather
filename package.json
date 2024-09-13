@@ -28,6 +28,7 @@
     "date-time-picker-react": "^2.0.4",
     "framer-motion": "^11.3.24",
     "html2canvas": "^1.4.1",
+    "install": "^0.13.0",
     "jspdf": "^2.5.1",
     "mapbox-gl": "^3.6.0",
     "qr-code-styling": "^1.6.0-rc.1",
@@ -47,11 +48,13 @@
     "styled-jsx-plugin-postcss": "^4.0.1",
     "sweetalert2": "^11.12.4",
     "sweetalert2-react-content": "^5.0.7",
+    "three": "^0.168.0",
     "typescript": "^5.5.4"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.168.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
