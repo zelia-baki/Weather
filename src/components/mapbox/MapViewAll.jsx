@@ -174,10 +174,11 @@ const MapboxExample = () => {
 
           new mapboxgl.Popup()
             .setLngLat(e.lngLat)
-            .setHTML(`<h3>Owner Type: ${properties.owner_type}</h3>
-                      <p>Owner ID: ${properties.owner_id}</p>
-                      <p>Feature ID: ${properties.id}</p>
-                      <p>Area: ${properties.area} m²</p>`)
+            .setHTML(` <h3>Owner Type: ${properties.owner_type}</h3>
+              <p>Owner ID: ${properties.owner_id}</p>
+              <p>Feature ID: ${properties.id}</p>
+              <p>Area: ${properties.area} m²</p>
+              <button class="delete-btn" data-owner-id="${properties.owner_id}" style="margin-top: 10px; padding: 5px 10px; background-color: red; color: white; border: none; border-radius: 3px; cursor: pointer;">Delete Polygon</button>`)
             .addTo(mapRef.current);
         });
 
@@ -206,6 +207,67 @@ const MapboxExample = () => {
         mapRef.current.on('load', addPolygonLayers);
       }
     }
+  }, [polygons]);
+
+  // Event listener for Delete button
+  useEffect(() => {
+    // Function to handle the delete button click event
+    const handleDeleteClick = async (event) => {
+      if (event.target.classList.contains("delete-btn")) {
+        const ownerId = event.target.getAttribute("data-owner-id");
+
+        // Confirm the deletion
+        const isConfirmed = window.confirm(`Are you sure you want to delete the polygon with owner ID: ${ownerId}?`);
+        if (!isConfirmed) {
+          return; // Abort the delete operation
+        }
+
+        console.log("Owner ID:", ownerId);
+  
+        // Send DELETE request to the backend
+        try {
+          const response = await axiosInstance.delete(`/api/points/owner/${ownerId}`);
+          if (response.status === 204) {
+            console.log(`Polygon with owner ID: ${ownerId} deleted successfully.`);
+  
+            // Optionally, show a notification or update the UI
+            setNotification({
+              type: "info",
+              message: `Polygon with owner ID: ${ownerId} deleted successfully.`,
+            });
+  
+            // Fetch the polygons again to update the map
+            const updatedPolygonsResponse = await axiosInstance.get(`/api/points/getallbyownertype/${owner_type}`);
+            const updatedData = updatedPolygonsResponse.data;
+  
+            setPolygons(updatedData.polygons);
+            setPolygonCount(updatedData.polygons.length);  // Update the number of polygons
+  
+          } else {
+            setNotification({
+              type: "error",
+              message: `Failed to delete polygon with owner ID: ${ownerId}.`,
+            });
+          }
+        } catch (error) {
+          console.error("Error deleting polygon:", error);
+          setNotification({
+            type: "error",
+            message: `Error deleting polygon with owner ID: ${ownerId}.`,
+          });
+        }
+      }
+    };
+  
+    // Add event listener for click events on the map container
+    mapContainerRef.current.addEventListener("click", handleDeleteClick);
+  
+    // Cleanup event listener on component unmount
+    return () => {
+      if (mapContainerRef.current) {
+        mapContainerRef.current.removeEventListener("click", handleDeleteClick);
+      }
+    };
   }, [polygons]);
 
   return (
