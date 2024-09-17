@@ -31,6 +31,7 @@ import Export from './components/Qr/Export.jsx';
 import Fertilizer from './components/Qr/Fertilizer.jsx';
 import FarmReport from './components/gfw/Gfwreportfarmer.jsx';
 import ForestReport from './components/gfw/Gfwreportforest.jsx';
+import CreateUsers from './components/Users/CreateUsers.jsx';
 // import ThreeJS from './components/Three/ThreeJs.js';
 
 function App() {
@@ -61,6 +62,7 @@ function App() {
     { path: "/qrfertilizer", component: <Fertilizer/>},
     { path: "/reportfarmer", component: <FarmReport/>},
     { path: "/reportforest", component: <ForestReport/>},
+    { path: "/createUsers", component: <CreateUsers />}
     // { path: "/threejs", component: <ThreeJS/>}
 
  

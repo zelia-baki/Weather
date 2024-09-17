@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FaThermometerHalf, FaTint, FaSun, FaWind, FaTachometerAlt, FaMapPin } from 'react-icons/fa';
 import axiosInstance from '../../axiosInstance';
-import DateTimePicker from 'react-datetime-picker';
 import { Link } from 'react-router-dom';
-import 'react-datetime-picker/dist/DateTimePicker.css';
+import 'react-datetime-picker/dist/DateTimePicker.css'; // Vous pouvez supprimer cette ligne si vous n'utilisez plus DateTimePicker
 
 const Card = ({ initialRegion, initialCrop }) => {
   const [region, setRegion] = useState(initialRegion);
@@ -75,10 +74,14 @@ const Card = ({ initialRegion, initialCrop }) => {
             </div>
             <div className="flex items-center gap-4">
               <label htmlFor="time" className="text-gray-700 font-semibold w-1/3">Time:</label>
-              <DateTimePicker
-                onChange={setTime}
-                value={time}
+              <input
+                type="datetime-local"
+                id="time"
+                name="time"
+                value={time.toISOString().slice(0, 16)}
+                onChange={(e) => setTime(new Date(e.target.value))}
                 className="flex-1 p-3 border border-gray-300 rounded-lg shadow-md text-lg bg-gradient-to-r from-white to-blue-50"
+                required
               />
             </div>
             <div className="flex items-center gap-4">
@@ -97,10 +100,6 @@ const Card = ({ initialRegion, initialCrop }) => {
                 <option value="Soybean">Soybean</option>
                 <option value="Sorghum">Sorghum</option>
                 <option value="Sunflower">Sunflower</option>
-
-
-
-
               </select>
             </div>
             <button
@@ -124,7 +123,7 @@ const Card = ({ initialRegion, initialCrop }) => {
               <strong className="text-gray-600">Longitude:</strong> {data.longitude || 'N/A'}
             </p>
             <p>
-              <strong className="text-gray-600">Time:</strong> {data.time || 'N/A'}
+              <strong className="text-gray-600">Time:</strong> {data.timestamp || 'N/A'}
             </p>
           </div>
 
@@ -138,8 +137,7 @@ const Card = ({ initialRegion, initialCrop }) => {
             <div className="text-center text-red-500">{error}</div>
           ) : (
             <>
-
-              <br></br>
+              <br />
               <img className="w-full h-40 object-cover rounded-lg shadow-md mb-4" src={data.imageUrl || '/default-image.jpg'} alt={`Photo of ${region}`} />
               <div className="flex flex-col gap-4">
                 <div className="flex items-center text-gray-600">
@@ -162,34 +160,29 @@ const Card = ({ initialRegion, initialCrop }) => {
                   <div className="font-semibold w-1/2">Wind Speed:</div>
                   <div className="text-gray-800 text-lg w-1/2 text-right">{data.windSpeed || 'N/A'} m/s</div>
                 </div>
-                 {/* Precipitation */}
-              <div className="flex items-center text-gray-600">
-                <FaTint className="text-green-500 mr-3 text-2xl" />
-                <div className="font-semibold w-1/2">Precipitation:</div>
-                <div className="text-gray-800 text-xl w-1/2 text-right">{data.precipitation || 'N/A'} Pa</div>
-              </div>
+                {/* Precipitation */}
                 <div className="flex items-center text-gray-600">
-                  <FaTachometerAlt className="text-green-500 mr-2 text-xl" />
-                  <div className="font-semibold w-1/2">ET₀:</div>
-                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.ET0 || 'N/A'} mm/day</div>
+                  <FaTint className="text-green-500 mr-3 text-2xl" />
+                  <div className="font-semibold w-1/2">Precipitation:</div>
+                  <div className="text-gray-800 text-xl w-1/2 text-right">{data.precipitation || 'N/A'} Pa</div>
                 </div>
                 <div className="flex items-center text-gray-600">
-                  <FaTachometerAlt className="text-green-500 mr-2 text-xl" />
-                  <div className="font-semibold w-1/2">ETc:</div>
+                  <FaTachometerAlt className="text-purple-500 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">ETc :</div>
+                  <div className="text-gray-800 text-xl w-1/2 text-right">{data.ET0 || 'N/A'} mm/day</div>
+                  </div>
+                  <div className="flex items-center text-gray-600">
+
+                  <FaTachometerAlt className="text-purple-500 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">ET0 :</div>
                   <div className="text-gray-800 text-xl w-1/2 text-right">{data.ETc || 'N/A'} mm/day</div>
                 </div>
-                <div className="flex items-center text-gray-600">
-                  <FaMapPin className="text-purple-500 mr-2 text-xl" />
-                  <div className="font-semibold w-1/2">Latitude:</div>
-                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.latitude || 'N/A'}</div>
-                </div>
-                <div className="flex items-center text-gray-600">
-                  <FaMapPin className="text-purple-500 mr-2 text-xl" />
-                  <div className="font-semibold w-1/2">Longitude:</div>
-                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.longitude || 'N/A'}</div>
-                </div>
+                {/* <div className="flex items-center text-gray-600">
+                  <FaMapPin className="text-orange-500 mr-2 text-xl" />
+                  <div className="font-semibold w-1/2">Location:</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.location || 'N/A'}</div>
+                </div> */}
               </div>
-
             </>
           )}
         </div>
