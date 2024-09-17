@@ -22,6 +22,9 @@ const Create = () => {
             {/* Add a link to /mapviewall */}
             <Link
                 to="/mapviewall"
+                state={{
+                    owner_type: "farmer",
+                }}
                 className="inline-block m-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
             >
                 View All Farms

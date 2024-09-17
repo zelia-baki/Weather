@@ -102,7 +102,8 @@ const ForestList = () => {
                                                         to={{
                                                             pathname: "/mapview",
                                                         }}
-                                                        state={{ owner_id: forest.id, owner_type: "forest" }}
+                                                        state={{ 
+                                                        owner_id: forest.id, owner_type: "forest" }}
                                                         className="block px-4 py-2 text-blue-600 hover:bg-blue-100 w-full text-left"
                                                     >
                                                         View
@@ -111,7 +112,10 @@ const ForestList = () => {
                                                         to={{
                                                             pathname: "/mapbox",
                                                         }}
-                                                        state={{ owner_id: forest.id }}
+                                                        state={{ owner_id: forest.id ,
+
+                                                            owner_type: "forest",
+                                                        }}
                                                         className="block px-4 py-2 text-green-600 hover:bg-green-100 w-full text-left"
                                                     >
                                                         Create Maps
