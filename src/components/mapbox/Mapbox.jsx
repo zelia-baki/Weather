@@ -23,7 +23,14 @@ const MapboxExample = () => {
   const [placeName, setPlaceName] = useState('');
   const [notification, setNotification] = useState(null);
   const [newCoordinate, setNewCoordinate] = useState({ lng: "", lat: "" });
-  const [longitude, latitude] = geolocation.split(',');
+  
+  let longitude = "32.5825"; // Default longitude for Kampala, Uganda
+    let latitude = "0.3476";   // Default latitude for Kampala, Uganda
+
+    if (geolocation && geolocation.includes(',')) {
+      [longitude, latitude] = geolocation.split(',');
+    }
+
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';

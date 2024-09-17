@@ -13,7 +13,13 @@ const MapboxExample = () => {
   const owner_id = location.state?.owner_id;
   const owner_type = location.state?.owner_type;
   const geolocation = location.state?.geolocation;
-  const [latitude, longitude] = geolocation.split(',');
+  let longitude = "32.5825"; // Default longitude for Kampala, Uganda
+  let latitude = "0.3476";   // Default latitude for Kampala, Uganda
+
+  if (geolocation && geolocation.includes(',')) {
+    [longitude, latitude] = geolocation.split(',');
+  }
+;
   const [notification, setNotification] = useState(null);
   const [mapProps, setMapProps] = useState({
     center: [longitude, latitude],
