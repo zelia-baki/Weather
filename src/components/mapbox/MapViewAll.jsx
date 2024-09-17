@@ -9,7 +9,8 @@ const MapboxExample = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
   const location = useLocation();
-  const owner_type = "farmer";  // Example owner_type
+  const owner_type = location.state?.owner_type;
+  // const owner_type = "farmer";  // Example owner_type
   const [notification, setNotification] = useState(null);
   const [mapProps, setMapProps] = useState({
     center: [-91.874, 42.76], // Default center if geolocation is not provided

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axiosInstance from '../../../axiosInstance'; // Adjust the path as needed
 import Modal from './Modal';
 import ForestList from './ForestList';
+import { Link } from 'react-router-dom';
 
 const ForestPage = () => {
   const [isForestModalOpen, setIsForestModalOpen] = useState(false);
@@ -43,6 +44,15 @@ const ForestPage = () => {
         >
           Create Forest
         </button>
+        <Link
+                to="/mapviewall"
+                state={{
+                    owner_type: "forest",
+                }}
+                className="inline-block m-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+                View All Forest
+            </Link>
         
         <div className="mt-8 w-full bg-white p-6 rounded-lg shadow-md">
           <ForestList key={updateFlag} /> {/* Re-fetch forests when updateFlag changes */}
