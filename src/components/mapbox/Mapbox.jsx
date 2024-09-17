@@ -13,6 +13,7 @@ import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 const MapboxExample = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
+  const drawRef = useRef(); // Add a ref to keep track of MapboxDraw
   const location = useLocation(); 
   const owner_id = location.state?.owner_id;
   const geolocation = location.state?.geolocation;
@@ -20,7 +21,8 @@ const MapboxExample = () => {
   const [roundedArea, setRoundedArea] = useState();
   const [polygonCoordinates, setPolygonCoordinates] = useState([]);
   const [placeName, setPlaceName] = useState('');
-  const [notification, setNotification] = useState(null); // State for notification
+  const [notification, setNotification] = useState(null);
+  const [newCoordinate, setNewCoordinate] = useState({ lng: "", lat: "" });
   const [longitude, latitude] = geolocation.split(',');
 
   useEffect(() => {
@@ -41,7 +43,9 @@ const MapboxExample = () => {
       },
       defaultMode: "draw_polygon",
     });
+
     mapRef.current.addControl(draw);
+    drawRef.current = draw; // Store draw instance in the ref
 
     const coordinatesGeocoder = (query) => {
       const matches = query.match(
@@ -96,7 +100,6 @@ const MapboxExample = () => {
 
     mapRef.current.addControl(geocoder);
 
-    // Event listener for when a search result is selected
     geocoder.on('result', (e) => {
       const { place_name, geometry } = e.result;
       setPlaceName(place_name);
@@ -121,61 +124,6 @@ const MapboxExample = () => {
         const coordinates = data.features[0].geometry.coordinates;
         setPolygonCoordinates(coordinates);
         console.log("Polygon Coordinates:", coordinates);
-
-        // Add or update the polygon source and layers
-        const sourceId = `polygon-${owner_id}`;
-        if (mapRef.current.getSource(sourceId)) {
-          mapRef.current.getSource(sourceId).setData({
-            type: 'FeatureCollection',
-            features: [{
-              type: 'Feature',
-              geometry: {
-                type: 'Polygon',
-                coordinates: coordinates,
-              },
-              properties: {
-                owner_id
-              },
-            }]
-          });
-        } else {
-          mapRef.current.addSource(sourceId, {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: [{
-                type: 'Feature',
-                geometry: {
-                  type: 'Polygon',
-                  coordinates: coordinates,
-                },
-                properties: {
-                  owner_id
-                },
-              }]
-            }
-          });
-
-          mapRef.current.addLayer({
-            id: `polygon-fill-${owner_id}`,
-            type: 'fill',
-            source: sourceId,
-            paint: {
-              'fill-color': '#0080ff',
-              'fill-opacity': 0.5
-            }
-          });
-
-          mapRef.current.addLayer({
-            id: `polygon-outline-${owner_id}`,
-            type: 'line',
-            source: sourceId,
-            paint: {
-              'line-color': '#000',
-              'line-width': 2
-            }
-          });
-        }
       } else {
         setRoundedArea();
         if (e.type !== "draw.delete")
@@ -184,14 +132,58 @@ const MapboxExample = () => {
     }
   }, [owner_id]);
 
+  // Update the polygon on the map with new coordinates
+  const updatePolygon = (newCoords) => {
+    const draw = drawRef.current;
+    const existingPolygon = draw.getAll();
+
+    if (existingPolygon.features.length > 0) {
+      // Update existing polygon's coordinates
+      draw.delete(existingPolygon.features[0].id);
+    }
+
+    draw.add({
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: newCoords,
+      },
+    });
+  };
+
+  // Handle adding new coordinates to the polygon
+  const handleAddCoordinate = () => {
+    const { lng, lat } = newCoordinate;
+    if (!lng || !lat) {
+      alert("Please enter valid coordinates.");
+      return;
+    }
+
+    const newCoord = [parseFloat(lng), parseFloat(lat)];
+
+    setPolygonCoordinates((prevCoords) => {
+      const updatedCoords = [...prevCoords];
+      if (updatedCoords.length > 0) {
+        updatedCoords[0].push(newCoord); // Add new point to existing polygon
+      } else {
+        updatedCoords.push([newCoord]); // Start new polygon
+      }
+
+      updatePolygon(updatedCoords); // Update polygon on the map
+
+      return updatedCoords;
+    });
+
+    // Clear input fields
+    setNewCoordinate({ lng: "", lat: "" });
+  };
+
   const handleValidate = async () => {
     console.log("Selection validated:", roundedArea, "Owner ID:", owner_id);
 
     try {
-      // Check if any points already exist for the given owner_id
       const { data } = await axiosInstance.get(`/api/points/exists/${owner_type}/${owner_id}`);
       if (data.exists) {
-        // Set notification if points already exist
         setNotification({
           type: "error",
           message: "Points for this owner already exist.",
@@ -199,38 +191,33 @@ const MapboxExample = () => {
         return;
       }
 
-      // Extract all points from the polygon
       const points = polygonCoordinates[0].map(coord => ({
         longitude: coord[0],
         latitude: coord[1]
       }));
       console.log(owner_id, owner_type);
 
-      // Send each point to the backend
       for (const point of points) {
         await axiosInstance.post('/api/points/create', {
           longitude: point.longitude,
           latitude: point.latitude,
           owner_id: owner_id,
-          owner_type: owner_type, // Adjust based on your logic
+          owner_type: owner_type,
         });
       }
 
-      // Set success notification
       setNotification({
         type: "success",
         message: "All points created successfully!",
       });
 
     } catch (error) {
-      // Set error notification
       setNotification({
         type: "error",
         message: error.response ? error.response.data : error.message,
       });
       console.error('Error sending request:', error.response ? error.response.data : error.message);
     } finally {
-      // Clear notification after 5 seconds
       setTimeout(() => {
         setNotification(null);
       }, 5000);
@@ -241,26 +228,54 @@ const MapboxExample = () => {
     <div className="relative h-full">
       {notification && (
         <div
-          className={`absolute top-20 right-2 z-10 px-4 py-2 rounded-md shadow-lg transition-shadow duration-300 focus:outline-none ${
-            notification.type === "success"
-              ? "bg-green-500 text-white"
-              : "bg-red-500 text-white"
-          }`}
+          className={`absolute top-20 right-2 z-10 px-4 py-2 rounded-md shadow-lg transition-shadow duration-300 focus:outline-none ${notification.type === "success" ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
         >
           {notification.message}
         </div>
       )}
 
-      <button
-        onClick={handleValidate}
-        className="absolute top-40 right-2 z-10 px-4 py-2 bg-white text-black border-2 border-black rounded-md shadow-lg hover:bg-gray-100 hover:shadow-2xl transition-shadow duration-300 focus:outline-none"
-        style={{ boxShadow: '0 12px 24px rgba(0, 0, 0, 1)' }}
-      >
-        Validate 
-      </button>
+      <div className="absolute top-10 left-2 z-10 bg-white p-4 rounded-md shadow-lg">
+        <div>
+          <label>
+            Longitude:
+            <input
+              type="number"
+              value={newCoordinate.lng}
+              onChange={(e) => setNewCoordinate({ ...newCoordinate, lng: e.target.value })}
+              className="border p-2 rounded-md ml-2"
+            />
+          </label>
+        </div>
+        <div className="mt-2">
+          <label>
+            Latitude:
+            <input
+              type="number"
+              value={newCoordinate.lat}
+              onChange={(e) => setNewCoordinate({ ...newCoordinate, lat: e.target.value })}
+              className="border p-2 rounded-md ml-2"
+            />
+          </label>
+        </div>
 
-      <div ref={mapContainerRef} id="map" className="h-[80vh]"></div>
-      
+        <button
+          onClick={handleAddCoordinate}
+          className="mt-4 bg-blue-500 text-white p-2 rounded-md"
+        >
+          Add Coordinate
+        </button>
+
+        <button
+          onClick={handleValidate}
+          className="mt-4 bg-green-500 text-white p-2 rounded-md ml-2"
+        >
+          Validate Selection
+        </button>
+      </div>
+
+      <div className="relative h-[600px]">
+        <div ref={mapContainerRef} className="absolute inset-0" />
+      </div>
     </div>
   );
 };
