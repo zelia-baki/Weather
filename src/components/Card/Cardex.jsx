@@ -143,39 +143,42 @@ const Card = ({ initialRegion, initialCrop }) => {
                 <div className="flex items-center text-gray-600">
                   <FaThermometerHalf className="text-red-500 mr-2 text-xl" />
                   <div className="font-semibold w-1/2">Temperature:</div>
-                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.temperature || 'N/A'} °C</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right"> {data.temperature ? data.temperature.toFixed(2) : 'N/A'} °C</div>
+                 
+
                 </div>
                 <div className="flex items-center text-gray-600">
                   <FaTint className="text-blue-500 mr-2 text-xl" />
                   <div className="font-semibold w-1/2">Humidity:</div>
-                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.humidity || 'N/A'} %</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.humidity ? data.humidity.toFixed(2) : 'N/A'} %
+                  </div>
                 </div>
                 <div className="flex items-center text-gray-600">
                   <FaSun className="text-yellow-500 mr-2 text-xl" />
                   <div className="font-semibold w-1/2">Solar Radiation:</div>
-                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.solarRadiation || 'N/A'} W/m²</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.solarRadiation ? data.solarRadiation.toFixed(2) :  'N/A'} W/m²</div>
                 </div>
                 <div className="flex items-center text-gray-600">
                   <FaWind className="text-gray-600 mr-2 text-xl" />
                   <div className="font-semibold w-1/2">Wind Speed:</div>
-                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.windSpeed || 'N/A'} m/s</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.windSpeed ? data.windSpeed.toFixed(2) :  'N/A'} m/s</div>
                 </div>
                 {/* Precipitation */}
                 <div className="flex items-center text-gray-600">
                   <FaTint className="text-green-500 mr-3 text-2xl" />
                   <div className="font-semibold w-1/2">Precipitation:</div>
-                  <div className="text-gray-800 text-xl w-1/2 text-right">{data.precipitation || 'N/A'} Pa</div>
+                  <div className="text-gray-800 text-xl w-1/2 text-right">{data.precipitation ? data.precipitation.toFixed(2) :  'N/A'} Pa</div>
                 </div>
                 <div className="flex items-center text-gray-600">
                   <FaTachometerAlt className="text-purple-500 mr-2 text-xl" />
                   <div className="font-semibold w-1/2">ETc :</div>
-                  <div className="text-gray-800 text-xl w-1/2 text-right">{data.ET0 || 'N/A'} mm/day</div>
+                  <div className="text-gray-800 text-xl w-1/2 text-right">{data.ET0 ? data.ET0.toFixed(2) : 'N/A'} mm/day</div>
                   </div>
                   <div className="flex items-center text-gray-600">
 
                   <FaTachometerAlt className="text-purple-500 mr-2 text-xl" />
                   <div className="font-semibold w-1/2">ET0 :</div>
-                  <div className="text-gray-800 text-xl w-1/2 text-right">{data.ETc || 'N/A'} mm/day</div>
+                  <div className="text-gray-800 text-xl w-1/2 text-right">{data.ETc ? data.ETc.toFixed(2) : 'N/A'} mm/day</div>
                 </div>
                 {/* <div className="flex items-center text-gray-600">
                   <FaMapPin className="text-orange-500 mr-2 text-xl" />
