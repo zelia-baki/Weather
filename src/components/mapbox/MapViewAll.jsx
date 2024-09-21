@@ -9,11 +9,12 @@ const MapboxExample = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
   const location = useLocation();
+  const popupRef = useRef(new mapboxgl.Popup({ closeButton: false, closeOnClick: false }));
   const owner_type = location.state?.owner_type;
   // const owner_type = "farmer";  // Example owner_type
   const [notification, setNotification] = useState(null);
   const [mapProps, setMapProps] = useState({
-    center: [-91.874, 42.76], // Default center if geolocation is not provided
+    center: [-32.5825, 0.3476], // Default center if geolocation is not provided
     zoom: 5, // Default zoom if geolocation is not provided
   });
   const [polygons, setPolygons] = useState([]);

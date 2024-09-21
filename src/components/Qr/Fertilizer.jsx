@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import QRCodeStyling from 'qr-code-styling';
+import axiosInstance from '../../axiosInstance'; // Assurez-vous que le chemin est correct
 
 const GenerateFertilizerQrCode = () => {
   const [formData, setFormData] = useState({
-    field_name: '',
-    farm_id: '',
+    farm_name: '',
     field_id: '',
+    crop_name: '',
     fertilizer_type: '',
     application_date: '',
     application_rate: '',
@@ -19,6 +20,7 @@ const GenerateFertilizerQrCode = () => {
 
   const qrCodeRef = useRef(null);
 
+  // Initialize QRCodeStyling with default options
   const qrCode = new QRCodeStyling({
     width: 300,
     height: 300,
@@ -31,23 +33,7 @@ const GenerateFertilizerQrCode = () => {
       margin: 20
     }
   });
-  const handleFarmIdChange = (e) => {
-    const farm_id = e.target.value;
-    setFormData(prevFormData => ({ ...prevFormData, farm_id }));
 
-    if (farm_id) {
-      axiosInstance.get(`/api/farm/${farm_id}/allprop`)
-        .then(response => {
-          if (response.data.status === 'success') {
-            const farmProperties = response.data.data[0];
-            setFormData(farmProperties);
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching farm properties:', error);
-        });
-    }
-  };
   useEffect(() => {
     const fetchFarms = async () => {
       try {
@@ -61,14 +47,31 @@ const GenerateFertilizerQrCode = () => {
     fetchFarms();
   }, []);
 
- 
-
   useEffect(() => {
     if (qrCodeRef.current) {
       qrCode.append(qrCodeRef.current);
     }
     qrCode.update({ data: qrCodeUrl });
   }, [qrCodeUrl]);
+
+  const handleFarmIdChange = async (e) => {
+    const farm_id = e.target.value;
+    setFormData(prevFormData => ({ ...prevFormData, farm_id }));
+  
+    if (farm_id) {
+        axiosInstance.get(`/api/farm/${farm_id}/allprop`)
+        .then(response => {
+        if (response.data.status === 'success') {
+          const farmProperties = response.data.data[0];
+          console.log(farmProperties);
+          setFormData(farmProperties);
+          console.log('formData', formData);
+        }
+      }).catch(error => {
+        console.error('Error fetching farm properties:', error);
+      });
+  }
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -92,7 +95,7 @@ const GenerateFertilizerQrCode = () => {
 
   return (
     <div className="bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 min-h-screen flex justify-center items-center p-10">
-      <div className="flex gap-10">
+      <div className="flex">
         <div className="container mx-auto">
           <h1 className="text-5xl font-extrabold mb-12 text-center text-green-700">
             Generate Digital Codes for Fertilizer Application
@@ -127,11 +130,12 @@ const GenerateFertilizerQrCode = () => {
                 <div className="flex flex-col">
                   <label className="text-lg text-gray-800 mb-2">Farmer Phone Number</label>
                   <input
+
                     type="text"
                     name="field_id"
                     placeholder="Field ID"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
-                    value={formData.field_id}
+                    value={formData.crop_name}
                     onChange={handleChange}
                     required
                   />
