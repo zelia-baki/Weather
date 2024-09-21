@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import QRCodeStyling from 'qr-code-styling'; // Assurez-vous que vous avez installé et importé QRCodeStyling
+import axiosInstance from '../../axiosInstance'; // Assuming axiosInstance is imported from a utility file
 
 const GenerateQrCodeAndReceipt = () => {
   const [formData, setFormData] = useState({
@@ -29,25 +29,28 @@ const GenerateQrCodeAndReceipt = () => {
     const farm_id = e.target.value;
     setFormData(prevFormData => ({ ...prevFormData, farm_id }));
 
-  
     if (farm_id) {
-      axiosInstance.get(`/api/farm/${farm_id}/allprop`)
-        .then(response => {
-          if (response.data.status === 'success') {
-            const farmProperties = response.data.data[0];
-            setFormData(farmProperties);
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching farm properties:', error);
-        });
+      try {
+        const response = await axiosInstance.get(`/api/farm/${farm_id}/allprop`);
+        if (response.data.status === 'success') {
+          const farmProperties = response.data.data[0];
+          setFormData(prevData => ({
+            ...prevData,
+            phone_number: farmProperties.phone_number || '',
+            district: farmProperties.district || ''
+            // Mettez à jour les autres champs si nécessaire
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching farm properties:', error);
+      }
     }
   };
 
   useEffect(() => {
     const fetchFarms = async () => {
       try {
-        const { data } = await axios.get('/api/farm/');
+        const { data } = await axiosInstance.get('/api/farm/');
         setFarms(data.farms || []);
       } catch (error) {
         console.error('Error fetching farms:', error);
@@ -86,28 +89,16 @@ const GenerateQrCodeAndReceipt = () => {
     setFormData(prevData => ({ ...prevData, [name]: value }));
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Ajoutez ici votre logique pour générer les QR codes et les reçus
-    // Par exemple, vous pouvez envoyer les données au serveur avec axios
-    axios.post('/api/qr/generate', formData)
-      .then(response => {
-        if (response.data.status === 'success') {
-          // Traitez la réponse, mettez à jour qrCodes avec les données générées
-          setQrCodes(response.data.qrCodes);
-        }
-      })
-      .catch(error => {
-        console.error('Error generating QR codes:', error);
-      });
+    try {
+      const response = await axiosInstance.post('/api/qr/generate', formData);
+      if (response.data.status === 'success') {
+        setQrCodes(response.data.qrCodes);
+      }
+    } catch (error) {
+      console.error('Error generating QR codes:', error);
+    }
   };
 
   return (
@@ -130,7 +121,7 @@ const GenerateQrCodeAndReceipt = () => {
                 <select
                   id="farm_id"
                   name="farm_id"
-                  value={formData.farm_id || ''}
+                  value={formData.farm_id}
                   onChange={handleFarmIdChange}
                   className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                   required
@@ -231,8 +222,8 @@ const GenerateQrCodeAndReceipt = () => {
             {/* Right Side */}
             <div className="w-1/2 pl-4">
               <div className="mb-6">
-                <label className="text-lg text-gray-800 mb-2 block" htmlFor="produce_weight">
-                  Weight of Produce (kg)
+                <label className="text-lg text-gray-800 mb-2" htmlFor="produce_weight">
+                  Produce Weight (kg)
                 </label>
                 <input
                   type="number"
@@ -240,15 +231,15 @@ const GenerateQrCodeAndReceipt = () => {
                   id="produce_weight"
                   value={formData.produce_weight}
                   onChange={handleInputChange}
-                  placeholder="Weight of Produce"
+                  placeholder="Produce Weight"
                   className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                   required
                 />
               </div>
 
               <div className="mb-6">
-                <label className="text-lg text-gray-800 mb-2 block" htmlFor="price_per_kg">
-                  Price per kg
+                <label className="text-lg text-gray-800 mb-2" htmlFor="price_per_kg">
+                  Price Per Kg (USD)
                 </label>
                 <input
                   type="number"
@@ -256,15 +247,15 @@ const GenerateQrCodeAndReceipt = () => {
                   id="price_per_kg"
                   value={formData.price_per_kg}
                   onChange={handleInputChange}
-                  placeholder="Price per kg"
+                  placeholder="Price Per Kg"
                   className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                   required
                 />
               </div>
 
               <div className="mb-6">
-                <label className="text-lg text-gray-800 mb-2 block" htmlFor="total_value">
-                  Total Value
+                <label className="text-lg text-gray-800 mb-2" htmlFor="total_value">
+                  Total Value (USD)
                 </label>
                 <input
                   type="number"
@@ -279,7 +270,7 @@ const GenerateQrCodeAndReceipt = () => {
               </div>
 
               <div className="mb-6">
-                <label className="text-lg text-gray-800 mb-2 block" htmlFor="payment_type">
+                <label className="text-lg text-gray-800 mb-2" htmlFor="payment_type">
                   Payment Type
                 </label>
                 <select
@@ -292,48 +283,54 @@ const GenerateQrCodeAndReceipt = () => {
                 >
                   <option value="">Select Payment Type</option>
                   <option value="cash">Cash</option>
-                  <option value="mobile_money">Mobile Money</option>
                   <option value="bank_transfer">Bank Transfer</option>
                 </select>
               </div>
 
               <div className="mb-6">
-                <label className="text-lg text-gray-800 mb-2 block" htmlFor="store_id">
+                <label className="text-lg text-gray-800 mb-2" htmlFor="store_id">
                   Store ID
                 </label>
-                <input
-                  type="text"
+                <select
                   name="store_id"
                   id="store_id"
                   value={formData.store_id}
                   onChange={handleInputChange}
-                  placeholder="Store ID"
                   className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                />
+                  required
+                >
+                  <option value="">Select Store ID</option>
+                  {storeNames.map((store, index) => (
+                    <option key={index} value={index + 1}>
+                      {store}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-                 {/* Store Name Dropdown */}
-                 <div className="mb-6">
-                  <label htmlFor="store_name" className="text-lg text-gray-800 mb-2 block">
-                    Store Name:
-                  </label>
-                  <select
-                    id="store_name"
-                    name="store_name"
-                    value={formData.store_name || ''}
-                    onChange={handleChange}
-                    className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                    required
-                  >
-                    <option value="">Select Store</option>
-                    {storeNames.map(store => (
-                      <option key={store} value={store}>{store}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="mb-6">
+                <label className="text-lg text-gray-800 mb-2" htmlFor="store_name">
+                  Store Name
+                </label>
+                <select
+                  name="store_name"
+                  id="store_name"
+                  value={formData.store_name}
+                  onChange={handleInputChange}
+                  className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
+                  required
+                >
+                  <option value="">Select Store Name</option>
+                  {storeNames.map((store, index) => (
+                    <option key={index} value={store}>
+                      {store}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div className="mb-6">
-                <label className="text-lg text-gray-800 mb-2 block" htmlFor="transaction_date">
+                <label className="text-lg text-gray-800 mb-2" htmlFor="transaction_date">
                   Transaction Date
                 </label>
                 <input
@@ -343,27 +340,22 @@ const GenerateQrCodeAndReceipt = () => {
                   value={formData.transaction_date}
                   onChange={handleInputChange}
                   className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
+                  required
                 />
               </div>
+
+              <button
+                type="submit"
+                className="bg-teal-600 text-white p-4 rounded-lg shadow-lg hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-400"
+              >
+                Generate QR Code and Receipt
+              </button>
             </div>
           </div>
-
-          <button
-            type="submit"
-            className="w-full bg-teal-600 text-white py-2 px-4 rounded-lg hover:bg-teal-700"
-          >
-            Generate Receipt and QR Code
-          </button>
         </form>
-
-        {qrCodes.length > 0 && (
-          <div
-            ref={qrCodeContainerRef}
-            className="mt-10 grid grid-cols-2 gap-6"
-          >
-            {/* QR Code containers will be appended here */}
-          </div>
-        )}
+        <div ref={qrCodeContainerRef} className="mt-12">
+          {/* Les QR codes générés seront affichés ici */}
+        </div>
       </div>
     </div>
   );
