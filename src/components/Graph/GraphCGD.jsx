@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS } from 'chart.js/auto';
 import axiosInstance from '../../axiosInstance';
 
@@ -22,10 +22,8 @@ function Graph() {
     const fetchWeatherData = async () => {
       const region = 'some-region-id';  // replace with actual region
       const crop = 'some-crop-id';      // replace with actual crop
-      // const latitude = '0.292225';      // replace with actual latitude
-      // const longitude = '32.576809';    // replace with actual longitude
-      const latitude = '0.535737';     
-      const longitude = '32.58964'; 
+      const latitude = '0.292225';        // replace with actual latitude
+      const longitude = '32.576809';      // replace with actual longitude
 
       try {
         console.log(`Fetching weather data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}`);
@@ -33,8 +31,8 @@ function Graph() {
           params: {
             region_id: region,
             crop_id: crop,
-            lat: latitude,
-            lon: longitude
+            latitude: latitude,
+            longitude: longitude
           }
         });
 
@@ -48,6 +46,10 @@ function Graph() {
 
     fetchWeatherData();
   }, []);
+
+  // Extract labels and values for farm data
+  const farmLabels = (farmData || []).map(item => item.name);
+  const farmQuantities = (farmData || []).map(item => item.quantity);
 
   // Extract labels and values for weather data
   const weatherLabels = (weatherData || []).map(item => {
@@ -128,10 +130,10 @@ function Graph() {
 
   return (
     <div className='bg-gray-100 min-h-screen p-6'>
-      <div className='container mx-auto'>
+      <div className='container mx-auto grid grid-cols-1 md:grid-cols-2 gap-6'>
         <div className='bg-white p-4 rounded-lg shadow-lg'>
-          <h2 className='text-xl font-semibold mb-4 text-green-500'>Weekly Forecast</h2>
-          <Line data={chartData} options={options} />
+          <h2 className='text-xl font-semibold mb-4 text-blue-500'>Bar Chart</h2>
+          <Bar data={chartData} options={options} />
         </div>
       </div>
     </div>

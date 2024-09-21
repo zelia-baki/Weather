@@ -171,13 +171,13 @@ const Card = ({ initialRegion, initialCrop }) => {
                 </div>
                 <div className="flex items-center text-gray-600">
                   <FaTachometerAlt className="text-purple-500 mr-2 text-xl" />
-                  <div className="font-semibold w-1/2">ETc :</div>
+                  <div className="font-semibold w-1/2">ET0 :</div>
                   <div className="text-gray-800 text-xl w-1/2 text-right">{data.ET0 ? data.ET0.toFixed(2) : 'N/A'} mm/day</div>
                   </div>
                   <div className="flex items-center text-gray-600">
 
                   <FaTachometerAlt className="text-purple-500 mr-2 text-xl" />
-                  <div className="font-semibold w-1/2">ET0 :</div>
+                  <div className="font-semibold w-1/2">ETc :</div>
                   <div className="text-gray-800 text-xl w-1/2 text-right">{data.ETc ? data.ETc.toFixed(2) : 'N/A'} mm/day</div>
                 </div>
                 {/* <div className="flex items-center text-gray-600">
