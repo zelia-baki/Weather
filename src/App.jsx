@@ -34,6 +34,7 @@ import ForestReport from './components/gfw/Gfwreportforest.jsx';
 import CreateUsers from './components/Users/CreateUsers.jsx';
 import GraphCGD from './components/Graph/GraphCGD.jsx';
 import ProtectedRoute from './ProtectedRoute'; // Import ProtectedRoute
+import FarmerGroupManager from './components/Farmergroup/FarmerGroup.jsx';
 
 function App() {
   const layoutRoutes = [
@@ -64,7 +65,9 @@ function App() {
     { path: "/reportfarmer", component: <FarmReport /> },
     { path: "/reportforest", component: <ForestReport /> },
     { path: "/createUsers", component: <CreateUsers /> },
-    { path: "/graphcgd", component: <GraphCGD /> }
+    { path: "/graphcgd", component: <GraphCGD /> },
+    { path: "/farmergroup", component: <FarmerGroupManager /> }
+
   ];
 
   return (
