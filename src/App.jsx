@@ -37,6 +37,7 @@ import ProtectedRoute from './ProtectedRoute'; // Import ProtectedRoute
 import FarmerGroupManager from './components/Farmergroup/FarmerGroup.jsx';
 import FarmManager from './components/Farm/FarmManager.jsx';
 import FarmDataManager from './components/Farm/FarmDataManager.jsx';
+import Export2 from './components/Qr/Export2.jsx';
 
 function App() {
   const layoutRoutes = [
@@ -62,7 +63,7 @@ function App() {
     { path: "/qr", component: <QR /> },
     { path: "/qrproduce", component: <Produce /> },
     { path: "/qrconservation", component: <Conservation /> },
-    { path: "/qrexport", component: <Export /> },
+    { path: "/qrexport", component: <Export2 /> },
     { path: "/qrfertilizer", component: <Fertilizer /> },
     { path: "/reportfarmer", component: <FarmReport /> },
     { path: "/reportforest", component: <ForestReport /> },
@@ -71,7 +72,7 @@ function App() {
     { path: "/farmergroup", component: <FarmerGroupManager /> },
     { path: "/farmmanager", component: <FarmManager /> },
     { path: "/farmdatamanager", component: <FarmDataManager /> }
-    
+    // { path: "/export2", component: <Export2 /> }
 
   ];
 
