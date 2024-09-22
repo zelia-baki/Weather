@@ -16,7 +16,9 @@ const GenerateQrCodeAndReceipt = () => {
     payment_type: '',
     store_id: '',
     store_name: '',
-    transaction_date: ''
+    transaction_date: '',
+    batch_number: '', // Add batch_number here
+
   });
 
   const [farms, setFarms] = useState([]);
@@ -146,6 +148,21 @@ const GenerateQrCodeAndReceipt = () => {
                   value={formData.phone_number}
                   onChange={handleInputChange}
                   placeholder="Phone Number"
+                  className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
+                  required
+                />
+              </div>
+              <div className="mb-6">
+                <label className="text-lg text-gray-800 mb-2" htmlFor="batch_number">
+                  Batch Number
+                </label>
+                <input
+                  type="text"
+                  name="batch_number"
+                  id="batch_number"
+                  value={formData.batch_number}
+                  onChange={handleInputChange}
+                  placeholder="Batch Number"
                   className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                   required
                 />

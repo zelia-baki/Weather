@@ -184,7 +184,7 @@ const PointForm = () => {
                 {[
                   { label: 'Farmer Group Name', name: 'farmergroup_name', type: 'text' },
                   { label: 'District', name: 'district_name', type: 'text' },
-                  // { label: 'Country of Origin', name: 'country_of_origin', type: 'text' },
+                  { label: 'Batch Number', name: 'batch_number', type: 'number' }, // Add this line
                   {
                     label: 'Crop Category',
                     name: 'crop_category',
