@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
 import { IoClose, IoCheckmark } from 'react-icons/io5';
 
-const FarmModal = ({ isOpen, onClose }) => {
+const FarmModal = ({ isOpen, onClose, setUpdateFlag }) => {
     const [formData, setFormData] = useState({
         name: '',
         subcounty: '',
@@ -16,16 +16,21 @@ const FarmModal = ({ isOpen, onClose }) => {
 
     const [districts, setDistricts] = useState({});
     const [farmerGroups, setFarmerGroups] = useState({});
-    const [loading, setLoading] = useState(true);
+    const [loadingDistricts, setLoadingDistricts] = useState(true);
+    const [loadingFarmerGroups, setLoadingFarmerGroups] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         if (isOpen) {
             fetchDistricts();
             fetchFarmerGroups();
+            resetForm(); // Resets the form when the modal opens
         }
     }, [isOpen]);
 
     const fetchDistricts = async () => {
+        setLoadingDistricts(true);
         try {
             const response = await axiosInstance.get('/api/district/');
             const districtsMap = response.data.districts.reduce((acc, district) => {
@@ -36,11 +41,12 @@ const FarmModal = ({ isOpen, onClose }) => {
         } catch (error) {
             console.error('Error fetching districts:', error);
         } finally {
-            setLoading(false);
+            setLoadingDistricts(false);
         }
     };
 
     const fetchFarmerGroups = async () => {
+        setLoadingFarmerGroups(true);
         try {
             const response = await axiosInstance.get('/api/farmergroup/');
             const farmerGroupsMap = response.data.reduce((acc, group) => {
@@ -50,9 +56,25 @@ const FarmModal = ({ isOpen, onClose }) => {
             setFarmerGroups(farmerGroupsMap);
         } catch (error) {
             console.error('Error fetching farmer groups:', error);
+        } finally {
+            setLoadingFarmerGroups(false);
         }
     };
-    
+
+    const resetForm = () => {
+        setFormData({
+            name: '',
+            subcounty: '',
+            district_id: '',
+            farmergroup_id: '',
+            longitude: '',
+            latitude: '',
+            phonenumber1: '',
+            phonenumber2: '',
+        });
+        setError(null);
+    };
+
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -62,14 +84,34 @@ const FarmModal = ({ isOpen, onClose }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
+        setError(null);
+    
+        // Create geolocation string
+        const formWithGeo = {
+            ...formData,
+            geolocation: `${formData.latitude},${formData.longitude}`,
+        };
+    
         try {
-            await axiosInstance.post('/api/farm/create', formData);
-            onClose(); // Close the modal after successful submission
+            const response = await axiosInstance.post('/api/farm/create', formWithGeo);
+            if (response.data.success) {
+                console.log('Farm created successfully');
+                setUpdateFlag(prev => !prev); // Update flag to refresh data
+                resetForm();
+                onClose(); // Close the modal
+            } else {
+                setError('Failed to create farm. Please try again.');
+            }
         } catch (error) {
             console.error('Error creating farm:', error);
+            setError('An error occurred while creating the farm.');
+        } finally {
+            setSubmitting(false);
         }
     };
     
+
     return (
         <div id="farmModal" className={`fixed inset-0 bg-gray-900 bg-opacity-50 ${isOpen ? 'flex' : 'hidden'} items-center justify-center`}>
             <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-3xl mx-4 md:mx-auto">
@@ -80,6 +122,7 @@ const FarmModal = ({ isOpen, onClose }) => {
                     </button>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {error && <div className="text-red-500">{error}</div>}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <label htmlFor="name" className="block text-gray-700 text-sm font-semibold mb-2">Farm Name:</label>
@@ -94,21 +137,29 @@ const FarmModal = ({ isOpen, onClose }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
                             <label htmlFor="district_id" className="block text-gray-700 text-sm font-semibold mb-2">District:</label>
-                            <select id="district_id" name="district_id" value={formData.district_id} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="">None</option>
-                                {/* Replace with dynamic options */}
-                                <option value="1">District 1</option>
-                                <option value="2">District 2</option>
-                            </select>
+                            {loadingDistricts ? (
+                                <p>Loading districts...</p>
+                            ) : (
+                                <select id="district_id" name="district_id" required value={formData.district_id} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="">None</option>
+                                    {Object.entries(districts).map(([id, name]) => (
+                                        <option key={id} value={id}>{name}</option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
                         <div className="relative">
                             <label htmlFor="farmergroup_id" className="block text-gray-700 text-sm font-semibold mb-2">Farmer Group:</label>
-                            <select id="farmergroup_id" name="farmergroup_id" required value={formData.farmergroup_id} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="">None</option>
-                                {/* Replace with dynamic options */}
-                                <option value="1">Farmer Group 1</option>
-                                <option value="2">Farmer Group 2</option>
-                            </select>
+                            {loadingFarmerGroups ? (
+                                <p>Loading farmer groups...</p>
+                            ) : (
+                                <select id="farmergroup_id" name="farmergroup_id" required value={formData.farmergroup_id} onChange={handleChange} className="shadow-sm appearance-none border rounded w-full py-3 px-4 text-gray-800 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="">None</option>
+                                    {Object.entries(farmerGroups).map(([id, name]) => (
+                                        <option key={id} value={id}>{name}</option>
+                                    ))}
+                                </select>
+                            )}
                         </div>
                     </div>
 
@@ -134,14 +185,14 @@ const FarmModal = ({ isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-end space-x-4">
-                        <button type="button" onClick={onClose} className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded shadow-md flex items-center space-x-2 transition duration-150 ease-in-out">
-                            <IoClose size={20} />
-                            <span>Cancel</span>
-                        </button>
-                        <button type="submit" className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded shadow-md flex items-center space-x-2 transition duration-150 ease-in-out">
-                            <IoCheckmark size={20} />
-                            <span>Create Farm</span>
+                    <div className="flex justify-end">
+                        <button type="submit" disabled={submitting} className="bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-500 focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-50 transition">
+                            {submitting ? 'Submitting...' : (
+                                <div className="flex items-center">
+                                    <IoCheckmark size={20} className="mr-2" />
+                                    <span>Submit</span>
+                                </div>
+                            )}
                         </button>
                     </div>
                 </form>
