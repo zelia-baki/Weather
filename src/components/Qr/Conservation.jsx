@@ -11,6 +11,7 @@ const GenerateTreeCuttingQrCode = () => {
     height: '',
     diameter: '',
     export_name: '',
+    batch_number: '', // Added batch_number here
   });
   const [isExportChecked, setIsExportChecked] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -38,8 +39,8 @@ const GenerateTreeCuttingQrCode = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const { forest_name, forest_id, tree_type, date_cutting, gps_coordinates, height, diameter, export_name } = formData;
-    const qrCodeData = `Forest Name: ${forest_name}\nForest ID: ${forest_id}\nTree Type: ${tree_type}\nDate of Cutting: ${date_cutting}\nGPS Coordinates: ${gps_coordinates}\nHeight: ${height}\nDiameter: ${diameter}\nExport Name: ${export_name}`;
+    const { forest_name, forest_id, tree_type, date_cutting, gps_coordinates, height, diameter, export_name, batch_number } = formData;
+    const qrCodeData = `Forest Name: ${forest_name}\nForest ID: ${forest_id}\nTree Type: ${tree_type}\nDate of Cutting: ${date_cutting}\nGPS Coordinates: ${gps_coordinates}\nHeight: ${height}\nDiameter: ${diameter}\nExport Name: ${export_name}\nBatch Number: ${batch_number}`; // Added batch_number to QR code data
     setQrCodeUrl(qrCodeData);
   };
 
@@ -151,6 +152,18 @@ const GenerateTreeCuttingQrCode = () => {
                     placeholder="Diameter (cm)"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                     value={formData.diameter}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-lg text-gray-800 mb-2">Batch Number</label>
+                  <input
+                    type="text"
+                    name="batch_number" // New input for batch_number
+                    placeholder="Batch Number"
+                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
+                    value={formData.batch_number}
                     onChange={handleChange}
                     required
                   />
