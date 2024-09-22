@@ -133,7 +133,7 @@ const GenerateFertilizerQrCode = () => {
 
                     type="text"
                     name="field_id"
-                    placeholder="Field ID"
+                    placeholder="Farmer Phone Number"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
                     value={formData.crop_name}
                     onChange={handleChange}
@@ -145,7 +145,7 @@ const GenerateFertilizerQrCode = () => {
                   <input
                     type="text"
                     name="field_id"
-                    placeholder="Field ID"
+                    placeholder="District"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
                     value={formData.field_id}
                     onChange={handleChange}

@@ -35,13 +35,14 @@ const Login = () => {
         transition={{ duration: 0.6 }}
       >
         {/* Image Section */}
-        <div className="hidden md:block w-1/2 bg-gray-200 flex items-center justify-center">
+        <div className="hidden md:block w-1/2 flex items-center justify-center">
           <img
             src={backgroundImage}
             alt="Decorative"
             className="object-contain w-full h-full" // Proportional image scaling
           />
         </div>
+
 
         {/* Form Section */}
         <div className="w-full md:w-1/2 p-8">
@@ -98,7 +99,8 @@ const Login = () => {
               >
                 Login
               </button>
-              <a href="#" className="text-purple-600 font-semibold hover:text-purple-700 hover:underline transition duration-150 ease-in-out">
+              <a href="mailto:lwetutb@gmail.com"
+                className="text-purple-600 font-semibold hover:text-purple-700 hover:underline transition duration-150 ease-in-out">
                 Contact Us to register
               </a>
             </div>
