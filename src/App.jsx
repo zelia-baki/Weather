@@ -36,6 +36,8 @@ import GraphCGD from './components/Graph/GraphCGD.jsx';
 import ProtectedRoute from './ProtectedRoute'; // Import ProtectedRoute
 import FarmerGroupManager from './components/Farmergroup/FarmerGroup.jsx';
 import FarmManager from './components/Farm/FarmManager.jsx';
+import FarmManager1 from './components/Farm/FarmManager1.jsx';
+
 import FarmDataManager from './components/Farm/FarmDataManager.jsx';
 
 function App() {
@@ -70,6 +72,8 @@ function App() {
     { path: "/graphcgd", component: <GraphCGD /> },
     { path: "/farmergroup", component: <FarmerGroupManager /> },
     { path: "/farmmanager", component: <FarmManager /> },
+    { path: "/farmmanager1", component: <FarmManager1 /> },
+
     { path: "/farmdatamanager", component: <FarmDataManager /> }
     
 

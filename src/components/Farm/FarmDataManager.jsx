@@ -24,7 +24,7 @@ const FarmDataManager = () => {
 
   useEffect(() => {
     fetchFarmData();
-    fetchFarmsList(); // Fetch farms for the dropdown
+    fetchFarmsList();
   }, []);
 
   const fetchFarmData = async () => {
@@ -100,41 +100,88 @@ const FarmDataManager = () => {
   };
 
   return (
-    <div>
-      <h1>Farm Data Manager</h1>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="farm_id">Farm ID:</label>
-        <select name="farm_id" value={formData.farm_id} onChange={handleFarmSelect} required>
-          <option value="">Select a Farm</option>
-          {farmsList.map((farm) => (
-            <option key={farm.id} value={farm.id}>{farm.name}</option>
-          ))}
-        </select>
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-4">Farm Data Manager</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="farm_id" className="block mb-2 text-sm font-medium">Farm ID:</label>
+          <select name="farm_id" value={formData.farm_id} onChange={handleFarmSelect} required className="w-full p-2 border rounded-md shadow-sm">
+            <option value="">Select a Farm</option>
+            {farmsList.map((farm) => (
+              <option key={farm.id} value={farm.id}>{farm.name}</option>
+            ))}
+          </select>
+        </div>
 
-        {/* Add other input fields here... */}
-        <input type="text" name="crop_id" value={formData.crop_id} onChange={handleChange} placeholder="Crop ID" required />
-        <input type="text" name="land_type" value={formData.land_type} onChange={handleChange} placeholder="Land Type" required />
-        <input type="number" name="tilled_land_size" value={formData.tilled_land_size} onChange={handleChange} placeholder="Tilled Land Size" required />
-        <input type="date" name="planting_date" value={formData.planting_date} onChange={handleChange} required />
-        <input type="text" name="season" value={formData.season} onChange={handleChange} placeholder="Season" required />
-        <input type="text" name="quality" value={formData.quality} onChange={handleChange} placeholder="Quality" required />
-        <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} placeholder="Quantity" required />
-        <input type="date" name="harvest_date" value={formData.harvest_date} onChange={handleChange} required />
-        <input type="number" name="expected_yield" value={formData.expected_yield} onChange={handleChange} placeholder="Expected Yield" required />
-        <input type="number" name="actual_yield" value={formData.actual_yield} onChange={handleChange} placeholder="Actual Yield" required />
-        <input type="text" name="channel_partner" value={formData.channel_partner} onChange={handleChange} placeholder="Channel Partner" required />
-        <input type="text" name="destination_country" value={formData.destination_country} onChange={handleChange} placeholder="Destination Country" required />
-        <input type="text" name="customer_name" value={formData.customer_name} onChange={handleChange} placeholder="Customer Name" required />
-        <button type="submit">{editId ? 'Update Farm Data' : 'Create Farm Data'}</button>
+        {/* Other input fields with styling */}
+        {['crop_id', 'land_type', 'tilled_land_size', 'season', 'quality', 'quantity', 'channel_partner', 'destination_country', 'customer_name'].map(field => (
+          <div key={field}>
+            <input
+              type="text"
+              name={field}
+              value={formData[field]}
+              onChange={handleChange}
+              placeholder={field.replace('_', ' ').replace(/\b\w/g, char => char.toUpperCase())}
+              required
+              className="w-full p-2 border rounded-md shadow-sm"
+            />
+          </div>
+        ))}
+
+        <div className="flex space-x-4">
+          <input
+            type="date"
+            name="planting_date"
+            value={formData.planting_date}
+            onChange={handleChange}
+            required
+            className="w-full p-2 border rounded-md shadow-sm"
+          />
+          <input
+            type="date"
+            name="harvest_date"
+            value={formData.harvest_date}
+            onChange={handleChange}
+            required
+            className="w-full p-2 border rounded-md shadow-sm"
+          />
+        </div>
+
+        <div className="flex space-x-4">
+          <input
+            type="number"
+            name="expected_yield"
+            value={formData.expected_yield}
+            onChange={handleChange}
+            placeholder="Expected Yield"
+            required
+            className="w-full p-2 border rounded-md shadow-sm"
+          />
+          <input
+            type="number"
+            name="actual_yield"
+            value={formData.actual_yield}
+            onChange={handleChange}
+            placeholder="Actual Yield"
+            required
+            className="w-full p-2 border rounded-md shadow-sm"
+          />
+        </div>
+
+        <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
+          {editId ? 'Update Farm Data' : 'Create Farm Data'}
+        </button>
       </form>
 
-      <h2>Farm Data List</h2>
-      <ul>
+      <h2 className="text-xl font-semibold mt-6">Farm Data List</h2>
+      <ul className="mt-4 space-y-2">
         {farmData.map((data) => (
-          <li key={data.id}>
-            {JSON.stringify(data)} 
-            <button onClick={() => handleEdit(data)}>Edit</button>
-            <button onClick={() => handleDelete(data.id)}>Delete</button>
+          <li key={data.id} className="p-4 border rounded-md shadow-sm flex justify-between items-center">
+            <span>{JSON.stringify(data)}</span>
+            <div>
+              <button onClick={() => handleEdit(data)} className="text-blue-500 hover:underline mr-2">Edit</button>
+              <button onClick={() => handleDelete(data.id)} className="text-red-500 hover:underline">Delete</button>
+            </div>
           </li>
         ))}
       </ul>
