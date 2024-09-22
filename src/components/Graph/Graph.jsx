@@ -24,8 +24,10 @@ function Graph() {
       const crop = 'some-crop-id';      // replace with actual crop
       // const latitude = '0.292225';      // replace with actual latitude
       // const longitude = '32.576809';    // replace with actual longitude
-      const latitude = '0.535737';     
-      const longitude = '32.58964'; 
+      // const latitude = '0.06667';     
+      // const longitude = '31.63333'; 
+      const latitude = '0.358261';        // replace with actual latitude
+      const longitude = '32.654738'; 
 
       try {
         console.log(`Fetching weather data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}`);
@@ -57,7 +59,7 @@ function Graph() {
   const weatherTemperatures = (weatherData || []).map(item => item.average_temperature);
   const weatherHumidities = (weatherData || []).map(item => item.average_humidity);
   const weatherWindSpeeds = (weatherData || []).map(item => item.average_wind_speed);
-  const weatherPrecipitations = (weatherData || []).map(item => item.average_precipitation);
+  const weatherPrecipitations = (weatherData || []).map(item => item.total_precipitation);
 
   const chartData = {
     labels: weatherLabels, // Use formatted weather dates as x-axis labels

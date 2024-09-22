@@ -32,7 +32,8 @@ import Fertilizer from './components/Qr/Fertilizer.jsx';
 import FarmReport from './components/gfw/Gfwreportfarmer.jsx';
 import ForestReport from './components/gfw/Gfwreportforest.jsx';
 import CreateUsers from './components/Users/CreateUsers.jsx';
-// import ThreeJS from './components/Three/ThreeJs.js';
+import GraphCGD from './components/Graph/GraphCGD.jsx';
+import ProtectedRoute from './ProtectedRoute'; // Import ProtectedRoute
 
 function App() {
   const layoutRoutes = [
@@ -59,23 +60,39 @@ function App() {
     { path: "/qrproduce", component: <Produce /> },
     { path: "/qrconservation", component: <Conservation /> },
     { path: "/qrexport", component: <Export /> },
-    { path: "/qrfertilizer", component: <Fertilizer/>},
-    { path: "/reportfarmer", component: <FarmReport/>},
-    { path: "/reportforest", component: <ForestReport/>},
-    { path: "/createUsers", component: <CreateUsers />}
-    // { path: "/threejs", component: <ThreeJS/>}
-
- 
+    { path: "/qrfertilizer", component: <Fertilizer /> },
+    { path: "/reportfarmer", component: <FarmReport /> },
+    { path: "/reportforest", component: <ForestReport /> },
+    { path: "/createUsers", component: <CreateUsers /> },
+    { path: "/graphcgd", component: <GraphCGD /> }
   ];
 
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Landing />} />
-        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
+
+        {/* Protected Routes */}
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
         {layoutRoutes.map(({ path, component }) => (
-          <Route key={path} path={path} element={<Layout>{component}</Layout>} />
+          <Route
+            key={path}
+            path={path}
+            element={
+              <ProtectedRoute>
+                <Layout>{component}</Layout>
+              </ProtectedRoute>
+            }
+          />
         ))}
       </Routes>
     </BrowserRouter>

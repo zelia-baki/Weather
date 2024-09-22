@@ -8,24 +8,18 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 const MapboxExample = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
-  const popupRef = useRef(new mapboxgl.Popup({ closeButton: false, closeOnClick: false }));
   const location = useLocation();
-  const owner_id = location.state?.owner_id;
+  const popupRef = useRef(new mapboxgl.Popup({ closeButton: false, closeOnClick: false }));
   const owner_type = location.state?.owner_type;
-  const geolocation = location.state?.geolocation;
-  let longitude = "32.5825"; // Default longitude for Kampala, Uganda
-  let latitude = "0.3476";   // Default latitude for Kampala, Uganda
-
-  if (geolocation && geolocation.includes(',')) {
-    [longitude, latitude] = geolocation.split(',');
-  }
-;
+  // const owner_type = "farmer";  // Example owner_type
   const [notification, setNotification] = useState(null);
   const [mapProps, setMapProps] = useState({
-    center: [longitude, latitude],
-    zoom: 15,
+    center: [-32.5825, 0.3476], // Default center if geolocation is not provided
+    zoom: 5, // Default zoom if geolocation is not provided
   });
-  const [area, setArea] = useState(null);
+  const [polygons, setPolygons] = useState([]);
+  const [totalArea, setTotalArea] = useState(0);
+  const [polygonCount, setPolygonCount] = useState(0); // New state for polygon count
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
@@ -34,8 +28,8 @@ const MapboxExample = () => {
       mapRef.current = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: 'mapbox://styles/mapbox/satellite-v9',
-        center: [longitude, latitude],
-        zoom: 15,
+        center: mapProps.center,
+        zoom: mapProps.zoom,
       });
 
       mapRef.current.on('move', () => {
@@ -47,124 +41,177 @@ const MapboxExample = () => {
         });
       });
     }
+  }, [mapProps.center, mapProps.zoom]);
 
-    const fetchPoints = async () => {
+  useEffect(() => {
+    const fetchPolygons = async () => {
       try {
-        const response = await axiosInstance.get(`/api/points/getbyownerid/${owner_type}/${owner_id}`);
-        const points = response.data.points;
+        const response = await axiosInstance.get(`/api/points/getallbyownertype/${owner_type}`);
+        const data = response.data;
 
-        if (points.length === 0) {
+        if (!data.polygons || data.polygons.length === 0) {
           setNotification({
             type: "info",
-            message: "No points found. Please create a point first.",
+            message: "No polygons found.",
           });
           return;
         }
 
         setNotification(null);
+        setPolygons(data.polygons);
 
-        const geojson = {
+        // Update the number of polygons
+        setPolygonCount(data.polygons.length);
+
+      } catch (error) {
+        console.error('Error fetching polygons:', error);
+      }
+    };
+
+    fetchPolygons();
+  }, [owner_type]);
+
+  useEffect(() => {
+    const getRandomColor = () => {
+      // Function to generate a random hex color
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    };
+
+    const addPolygonLayers = () => {
+      if (!mapRef.current || polygons.length === 0) return;
+
+      const features = polygons.map((polygon, index) => {
+        const coordinates = polygon.points.map(point => [point.longitude, point.latitude]);
+        const polygonGeoJSON = {
           type: 'FeatureCollection',
           features: [{
             type: 'Feature',
             geometry: {
               type: 'Polygon',
-              coordinates: [
-                points.map(point => [point.longitude, point.latitude])
-              ],
+              coordinates: [coordinates]
             },
             properties: {
-              owner_type,
-              owner_id,
-            },
-          }],
+              id: index,
+              owner_type: polygon.owner_type,
+              owner_id: polygon.owner_id,
+              area: Math.round(turf.area({
+                type: 'FeatureCollection',
+                features: [{
+                  type: 'Feature',
+                  geometry: {
+                    type: 'Polygon',
+                    coordinates: [coordinates]
+                  }
+                }]
+              }) * 100) / 100
+            }
+          }]
         };
 
-        const addPolygonLayers = () => {
-          if (!mapRef.current.getSource('polygon')) {
-            mapRef.current.addSource('polygon', {
-              type: 'geojson',
-              data: geojson,
-            });
+        const centroid = turf.centroid(polygonGeoJSON.features[0]);
 
-            mapRef.current.addLayer({
-              id: 'polygon-fill',
-              type: 'fill',
-              source: 'polygon',
-              paint: {
-                'fill-color': '#0080ff',
-                'fill-opacity': 0.5,
-              },
-            });
+        // Add marker for the centroid
+        new mapboxgl.Marker()
+          .setLngLat([centroid.geometry.coordinates[0], centroid.geometry.coordinates[1]])
+          .addTo(mapRef.current);
 
-            mapRef.current.addLayer({
-              id: 'polygon-outline',
-              type: 'line',
-              source: 'polygon',
-              paint: {
-                'line-color': '#000',
-                'line-width': 2,
-              },
-            });
-
-            mapRef.current.on('mouseenter', 'polygon-fill', (e) => {
-              const coordinates = e.features[0].geometry.coordinates[0];
-              const ownerId = e.features[0].properties.owner_id;
-
-              popupRef.current.setLngLat(coordinates[0])
-                .setHTML(`
-                  <p>Owner ID: ${properties.owner_id}</p>
-                  <p>Feature ID: ${properties.id}</p>
-                  <p>Area: ${properties.area} m²</p>
-                  <button class="delete-btn" data-owner-id="${properties.owner_id}" style="margin-top: 10px; padding: 5px 10px; background-color: red; color: white; border: none; border-radius: 3px; cursor: pointer;">Delete Polygon</button>`)
-                .addTo(mapRef.current);
-            });
-
-            mapRef.current.on('mouseleave', 'polygon-fill', () => {
-              popupRef.current.remove();
-            });
-
-          } else {
-            mapRef.current.getSource('polygon').setData(geojson);
-          }
-
-          if (points.length > 0) {
-            const [firstPoint] = points;
-            new mapboxgl.Marker()
-              .setLngLat([firstPoint.longitude, firstPoint.latitude])
-              .addTo(mapRef.current);
-          }
-
-          const bounds = new mapboxgl.LngLatBounds();
-
-          points.forEach(point => {
-            bounds.extend([point.longitude, point.latitude]);
-          });
-
-          mapRef.current.fitBounds(bounds, {
-            padding: 20,
-          });
-
-          // Calculate the area of the polygon
-          const area = turf.area(geojson.features[0]);
-          setArea(Math.round(area * 100) / 100); // Round area to 2 decimal places
+        return {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [coordinates],
+          },
+          properties: {
+            id: index,
+            owner_type: polygon.owner_type,
+            owner_id: polygon.owner_id,
+            area: Math.round(turf.area(polygonGeoJSON.features[0]) * 100) / 100,
+            color: getRandomColor()  // Assign a random color
+          },
         };
+      });
 
-        if (mapRef.current.isStyleLoaded()) {
-          addPolygonLayers();
-        } else {
-          mapRef.current.on('load', addPolygonLayers);
-        }
+      // Calculate total area
+      const total = features.reduce((sum, feature) => sum + feature.properties.area, 0);
+      setTotalArea(total);
 
-      } catch (error) {
-        console.error('Error fetching points:', error);
+      const geojson = {
+        type: 'FeatureCollection',
+        features,
+      };
+
+      if (!mapRef.current.getSource('multiPolygon')) {
+        mapRef.current.addSource('multiPolygon', {
+          type: 'geojson',
+          data: geojson,
+        });
+
+        mapRef.current.addLayer({
+          id: 'multiPolygon-fill',
+          type: 'fill',
+          source: 'multiPolygon',
+          paint: {
+            'fill-color': ['get', 'color'],  // Use the color from properties
+            'fill-opacity': 0.5,
+          },
+        });
+
+        mapRef.current.addLayer({
+          id: 'multiPolygon-outline',
+          type: 'line',
+          source: 'multiPolygon',
+          paint: {
+            'line-color': '#000',
+            'line-width': 2,
+          },
+        });
+
+        mapRef.current.on('click', 'multiPolygon-fill', (e) => {
+          const { properties } = e.features[0];
+
+          new mapboxgl.Popup()
+            .setLngLat(e.lngLat)
+            .setHTML(` <h3>Owner Type: ${properties.owner_type}</h3>
+              <p>Owner ID: ${properties.owner_id}</p>
+              <p>Feature ID: ${properties.id}</p>
+              <p>Area: ${properties.area} m²</p>
+              <button class="delete-btn" data-owner-id="${properties.owner_id}" style="margin-top: 10px; padding: 5px 10px; background-color: red; color: white; border: none; border-radius: 3px; cursor: pointer;">Delete Polygon</button>`)
+            .addTo(mapRef.current);
+        });
+
+        mapRef.current.on('mouseenter', 'multiPolygon-fill', () => {
+          mapRef.current.getCanvas().style.cursor = 'pointer';
+        });
+
+        mapRef.current.on('mouseleave', 'multiPolygon-fill', () => {
+          mapRef.current.getCanvas().style.cursor = '';
+        });
+
+        const bounds = new mapboxgl.LngLatBounds();
+        features.forEach(feature => {
+          feature.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
+        });
+        mapRef.current.fitBounds(bounds, { padding: 20 });
+      } else {
+        mapRef.current.getSource('multiPolygon').setData(geojson);
       }
     };
 
-    fetchPoints();
+    if (mapRef.current && polygons.length > 0) {
+      if (mapRef.current.isStyleLoaded()) {
+        addPolygonLayers();
+      } else {
+        mapRef.current.on('load', addPolygonLayers);
+      }
+    }
+  }, [polygons]);
 
-  }, [owner_id, owner_type, longitude, latitude]);
-  
+  // Event listener for Delete button
   useEffect(() => {
     // Function to handle the delete button click event
     const handleDeleteClick = async (event) => {
@@ -245,7 +292,8 @@ const MapboxExample = () => {
             <div className="rounded-full bg-slate-700 h-10 w-10"></div>
             <div className="mt-4">
               <h3 className="text-lg font-semibold">Map Properties</h3>
-              <p><strong>Area m²:</strong> {area ? area : 'Calculating...'} m2</p>
+              <p><strong>Total Area:</strong> {totalArea ? `${totalArea} m²` : 'Calculating...'}</p>
+              <p><strong>Number of Polygons:</strong> {polygonCount}</p> {/* Display the number of polygons */}
               <p><strong>Zoom:</strong> {mapProps.zoom}</p>
             </div>
           </div>

@@ -114,7 +114,7 @@ const Card = ({ initialRegion, initialCrop }) => {
               <strong className="text-gray-600">Crop:</strong> {crop}
             </p>
             <p>
-              <strong className="text-gray-600">Farm Name:</strong> {data.farmName || 'N/A'}
+              <strong className="text-gray-600">Farm Name:</strong> {data.farmName || 'Adhil Morgan'}
             </p>
             <p>
               <strong className="text-gray-600">Latitude:</strong> {data.latitude || 'N/A'}
@@ -143,7 +143,7 @@ const Card = ({ initialRegion, initialCrop }) => {
                 <div className="flex items-center text-gray-600">
                   <FaThermometerHalf className="text-red-500 mr-2 text-xl" />
                   <div className="font-semibold w-1/2">Temperature:</div>
-                  <div className="text-gray-800 text-lg w-1/2 text-right"> {data.temperature ? data.temperature.toFixed(2) : 'N/A'} °C</div>
+                  <div className="text-gray-800 text-lg w-1/2 text-right"> {data.average_temperature ? data.average_temperature.toFixed(2) : 'N/A'} °C</div>
                  
 
                 </div>

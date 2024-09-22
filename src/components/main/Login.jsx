@@ -3,6 +3,7 @@ import axiosInstance from '../../axiosInstance'; // Importez l'instance Axios
 import { motion } from 'framer-motion';
 import { FaGoogle, FaFacebookF, FaUser, FaEnvelope, FaLock } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom'; // Import pour la redirection
+import backgroundImage from '../../assets/plume.jpg'; // Import the background image
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -24,7 +25,7 @@ const Login = () => {
       setSuccessMessage('');
     }
   };
-  
+
   return (
     <div className="bg-gradient-to-r from-teal-500 via-blue-500 to-purple-600 flex items-center justify-center min-h-screen p-4">
       <motion.div
@@ -35,13 +36,13 @@ const Login = () => {
       >
         {/* Image Section */}
         <div className="hidden md:block w-1/2 bg-gray-200 flex items-center justify-center">
-          <img 
-            src="https://via.placeholder.com/200" 
-            alt="Decorative" 
-            className="w-3/4 h-auto" 
+          <img
+            src={backgroundImage}
+            alt="Decorative"
+            className="object-contain w-full h-full" // Proportional image scaling
           />
         </div>
-        
+
         {/* Form Section */}
         <div className="w-full md:w-1/2 p-8">
           <div className="text-center mb-6">
@@ -80,7 +81,7 @@ const Login = () => {
                   required
                   className="w-full px-4 py-3 focus:outline-none"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)} 
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </motion.div>
             </div>
@@ -93,12 +94,15 @@ const Login = () => {
             <div className="flex justify-between items-center mb-6">
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition duration-150 ease-in-out"
+                className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1"
               >
                 Login
               </button>
-              <a href="#" className="text-blue-600 hover:underline">Contact Us to register</a>
+              <a href="#" className="text-purple-600 font-semibold hover:text-purple-700 hover:underline transition duration-150 ease-in-out">
+                Contact Us to register
+              </a>
             </div>
+
 
             <div className="text-center">
               <a href="#" className="text-teal-600 hover:text-teal-800 hover:underline text-sm">Already have an account? Log in</a>
