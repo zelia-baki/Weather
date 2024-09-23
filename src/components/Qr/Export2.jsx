@@ -30,6 +30,7 @@ const PointForm = () => {
   });
 
   const [farms, setFarms] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const [farmerGroups, setFarmerGroups] = useState([]);
   const [qrCodes, setQrCodes] = useState([]); // Stocke les données pour générer les QR codes
   const [countries, setCountries] = useState([]);
@@ -69,6 +70,19 @@ const PointForm = () => {
     };
 
     fetchFarms();
+  }, []);
+
+  useEffect(() => {
+    const fetchDistrict = async () => {
+      try {
+        const { data } = await axiosInstance.get('/api/district/');
+        setDistricts(data.districts || []);
+      } catch (error) {
+        console.error('Error fetching district:', error);
+      }
+    };
+
+    fetchDistrict();
   }, []);
 
   useEffect(() => {
@@ -268,11 +282,27 @@ const PointForm = () => {
                 ))}
               </select>
             </div>
+            <div>
+              <label htmlFor="District" className="block text-sm font-medium text-gray-700">District :</label>
+              <select
+                id="district_name"
+                name="district_name"
+                value={formData.district_name || ''}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="">Select District</option>
+                {districts.map(district => (
+                  <option key={district.id} value={district.id}>
+                    {district.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
   
           {[{
-              label: 'District', name: 'district_name', type: 'text'
-            }, {
               label: 'Batch Number', name: 'batch_number', type: 'number'
             }, {
               label: 'Crop Category', name: 'crop_category', type: 'select', options: ['Coffee', 'Cocoa', 'Palm Oil', 'Soybean']
@@ -451,6 +481,11 @@ const PointForm = () => {
           {/* Placeholder for QR codes */}
         </div>
       </div>
+      {qrCodes.length > 0 && (
+        <div>
+          <button onClick={downloadPdf}>Download PDF</button>
+        </div>
+      )}
     </div>
   );
   

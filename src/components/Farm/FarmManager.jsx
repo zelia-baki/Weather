@@ -68,7 +68,7 @@ const FarmComponent = () => {
     try {
       if (currentFarmId) {
         // Use PUT or PATCH instead of POST
-        await axiosInstance.put(`/api/farm/${currentFarmId}/update`, formData);
+        await axiosInstance.post(`/api/farm/${currentFarmId}/update`, formData);
       } else {
         await axiosInstance.post('/api/farm/create', formData);
       }
@@ -92,11 +92,11 @@ const FarmComponent = () => {
       district_id: farm.district_id,
       farmergroup_id: farm.farmergroup_id,
       geolocation: farm.geolocation,
-      phonenumber1: farm.phonenumber1,
+      phonenumber: farm.phonenumber1,
       phonenumber2: farm.phonenumber2,
     });
     setCurrentFarmId(farm.id);
-    // setIsModalOpen(true);
+    setIsModalOpen(true);
   };
 
   const handleDelete = async (farmId) => {
