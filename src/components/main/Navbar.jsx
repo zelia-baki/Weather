@@ -157,6 +157,31 @@ const Sidebar = () => {
               </div>
             )}
           </div>
+
+          {/*  */}
+            {/* users Section */}
+            <div>
+            <button
+              onClick={toggleWeatherDropdown}
+              className={`flex items-center justify-between w-full p-3 text-base font-medium text-gray-800 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}
+            >
+              <FaSun className="text-orange-600 text-xl" />
+              {!isCollapsed && (
+                <>
+                  <span className="ml-4">Users Manager</span>
+                  <FaChevronDown className={`ml-4 transition-transform ${openWeatherDropdown ? 'rotate-180' : ''}`} />
+                </>
+              )}
+            </button>
+            {!isCollapsed && openWeatherDropdown && (
+              <div className="ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out">
+                <Link to="/usermanager" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                  Users
+                </Link>
+                
+              </div>
+            )}
+          </div>
         </nav>
       </div>
 
