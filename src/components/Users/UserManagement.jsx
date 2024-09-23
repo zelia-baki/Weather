@@ -42,7 +42,7 @@ const UserManagement = () => {
       if (editing) {
         // Update existing user
         await axiosInstance.put(`/api/users/${userForm.id}/edit`, userForm);
-        alert('User updated successfully');
+        alert('User updated successfully'); 9
       } else {
         // Create new user
         await axiosInstance.post('/api/users/create', userForm);

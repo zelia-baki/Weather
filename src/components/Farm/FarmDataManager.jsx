@@ -174,17 +174,45 @@ const FarmDataManager = () => {
       </form>
 
       <h2 className="text-xl font-semibold mt-6">Farm Data List</h2>
-      <ul className="mt-4 space-y-2">
-        {farmData.map((data) => (
-          <li key={data.id} className="p-4 border rounded-md shadow-sm flex justify-between items-center">
-            <span>{JSON.stringify(data)}</span>
-            <div>
-              <button onClick={() => handleEdit(data)} className="text-blue-500 hover:underline mr-2">Edit</button>
-              <button onClick={() => handleDelete(data.id)} className="text-red-500 hover:underline">Delete</button>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="overflow-x-auto mt-4">
+        <table className="min-w-full text-left text-sm text-gray-500">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-4 py-2">Farm ID</th>
+              <th className="px-4 py-2">Crop ID</th>
+              <th className="px-4 py-2">Land Type</th>
+              <th className="px-4 py-2">Tilled Land Size</th>
+              <th className="px-4 py-2">Planting Date</th>
+              <th className="px-4 py-2">Harvest Date</th>
+              <th className="px-4 py-2">Quality</th>
+              <th className="px-4 py-2">Quantity</th>
+              <th className="px-4 py-2">Expected Yield</th>
+              <th className="px-4 py-2">Actual Yield</th>
+              <th className="px-4 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {farmData.map((data) => (
+              <tr key={data.id} className="border-t">
+                <td className="px-4 py-2">{data.farm_id}</td>
+                <td className="px-4 py-2">{data.crop_id}</td>
+                <td className="px-4 py-2">{data.land_type}</td>
+                <td className="px-4 py-2">{data.tilled_land_size}</td>
+                <td className="px-4 py-2">{new Date(data.planting_date).toLocaleDateString()}</td>
+                <td className="px-4 py-2">{new Date(data.harvest_date).toLocaleDateString()}</td>
+                <td className="px-4 py-2">{data.quality}</td>
+                <td className="px-4 py-2">{data.quantity}</td>
+                <td className="px-4 py-2">{data.expected_yield}</td>
+                <td className="px-4 py-2">{data.actual_yield}</td>
+                <td className="px-4 py-2">
+                  <button onClick={() => handleEdit(data)} className="text-blue-500 hover:underline mr-2">Edit</button>
+                  <button onClick={() => handleDelete(data.id)} className="text-red-500 hover:underline">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

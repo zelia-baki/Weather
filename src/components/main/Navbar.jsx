@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaTree, FaQrcode, FaSeedling, FaSun, FaChevronDown, FaSignOutAlt, FaBars } from 'react-icons/fa';
+import { FaUser, FaTree, FaQrcode, FaSeedling, FaSun, FaChevronDown, FaSignOutAlt, FaBars } from 'react-icons/fa';
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -22,7 +22,7 @@ const Sidebar = () => {
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
   return (
-    <div className={`h-screen ${isCollapsed ? 'w-16' : 'w-64'} bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 text-gray-900 flex flex-col justify-between rounded-xl shadow-lg overflow-hidden transition-all duration-300 ease-in-out`}>
+    <div className={`h-lvh ${isCollapsed ? 'w-16' : 'w-64'} bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 text-gray-900 flex flex-col justify-between rounded-xl shadow-lg overflow-hidden transition-all duration-300 ease-in-out`}>
       <div>
         <div className="flex items-center justify-between h-16 bg-gradient-to-r from-teal-400 via-green-400 to-yellow-400 rounded-t-xl shadow-lg px-3">
           {!isCollapsed && <span className="text-2xl font-bold text-white">Agriyields</span>}
@@ -162,6 +162,14 @@ const Sidebar = () => {
 
       {/* Log out */}
       <div className="mt-5">
+
+        <Link to="/usermanager" className={`flex items-center p-3 text-base font-medium text-gray-800 hover:bg-teal-200 w-full rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}>
+        <FaUser className="text-red-500 text-xl " />
+                 <span className="mx-4 ">
+                 Manage account
+                 </span>
+                  
+        </Link>
         <button
           onClick={handleLogOut}
           className={`flex items-center p-3 text-base font-medium text-gray-800 hover:bg-teal-200 w-full rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}
