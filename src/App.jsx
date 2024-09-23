@@ -40,6 +40,7 @@ import FarmManager1 from './components/Farm/FarmManager1.jsx';
 
 import FarmDataManager from './components/Farm/FarmDataManager.jsx';
 import Export2 from './components/Qr/Export2.jsx';
+import UserManagement from './components/Users/UserManagement.jsx';
 
 function App() {
   const layoutRoutes = [
@@ -75,7 +76,8 @@ function App() {
     { path: "/farmmanager", component: <FarmManager /> },
     { path: "/farmmanager1", component: <FarmManager1 /> },
 
-    { path: "/farmdatamanager", component: <FarmDataManager /> }
+    { path: "/farmdatamanager", component: <FarmDataManager /> },
+    { path: "/usermanager", component: <UserManagement /> }
     // { path: "/export2", component: <Export2 /> }
 
   ];
