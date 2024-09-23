@@ -269,7 +269,6 @@ const FarmComponent = () => {
         </div>
       )}
 
-      <h3 className="text-lg font-semibold mb-4">Farm List</h3>
       <ul className="space-y-4 mt-6">
         {farms.map((farm) => (
           <li key={farm.id} className="border border-gray-200 p-4 rounded-lg shadow-sm">
