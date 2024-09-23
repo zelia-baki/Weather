@@ -134,7 +134,7 @@ const MapboxExample = () => {
       } else {
         setRoundedArea();
         if (e.type !== "draw.delete")
-          alert("Please draw a polygon.");
+          alert("Please draw a GeoMap.");
       }
     }
   }, [owner_id]);
@@ -193,7 +193,7 @@ const MapboxExample = () => {
       if (data.exists) {
         setNotification({
           type: "error",
-          message: "Points for this owner already exist.",
+          message: "GeoMap for this owner already exist.",
         });
         return;
       }

@@ -77,7 +77,7 @@ const FarmReport = () => {
         <div className="bg-white p-6 shadow-md rounded-md mb-6">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">{farmInfo.name}</h2>
           <p className="text-lg font-medium text-gray-700 mb-2">Farm ID: {farmInfo.farm_id}</p>
-          <p className="text-lg font-medium text-gray-700 mb-2">Location: {farmInfo.subcounty}, {farmInfo.district_name} ({farmInfo.district_region})</p>
+          <p className="text-lg font-medium text-gray-700 mb-2">Location: {farmInfo.subcounty},</p>
           <p className="text-lg font-medium text-gray-700 mb-2">Geolocation: {farmInfo.geolocation}</p>
           <p className="text-lg font-medium text-gray-700 mb-2">Phone: {farmInfo.phonenumber}</p>
           {farmInfo.phonenumber2 && (
@@ -91,7 +91,7 @@ const FarmReport = () => {
         <div className="mb-6">
           {geoData.map((dataset, idx) => (
             <div key={idx} className="bg-white p-4 shadow-lg rounded-lg border border-gray-200 mb-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">Dataset: {dataset.dataset}</h4>
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">{dataset.dataset}</h4>
               <p className="text-gray-700 mb-2">Value: {dataset.data_fields.area__ha.toFixed(5)}</p>
               {dataset.coordinates && dataset.coordinates.length > 0 && (
                 <img
