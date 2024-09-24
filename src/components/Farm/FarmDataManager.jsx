@@ -16,6 +16,7 @@ const FarmDataManager = () => {
     harvest_date: '',
     expected_yield: '',
     actual_yield: '',
+    number_of_tree: '',
     channel_partner: '',
     destination_country: '',
     customer_name: '',
@@ -78,6 +79,7 @@ const FarmDataManager = () => {
         channel_partner: '',
         destination_country: '',
         customer_name: '',
+        number_of_tree: '',
       });
       setEditId(null);
     } catch (error) {
@@ -114,7 +116,7 @@ const FarmDataManager = () => {
         </div>
 
         {/* Other input fields with styling */}
-        {['crop_id', 'land_type', 'tilled_land_size', 'season', 'quality', 'quantity', 'channel_partner', 'destination_country', 'customer_name'].map(field => (
+        {['crop_id', 'land_type', 'tilled_land_size', 'season', 'quality', 'quantity', 'channel_partner', 'number_of_tree','destination_country', 'customer_name'].map(field => (
           <div key={field}>
             <input
               type="text"
