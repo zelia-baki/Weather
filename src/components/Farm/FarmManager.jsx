@@ -83,8 +83,6 @@ const FarmComponent = () => {
   };
   
 
-  
-
   const handleEdit = (farm) => {
     setFormData({
       name: farm.name,

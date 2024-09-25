@@ -41,6 +41,11 @@ import FarmManager1 from './components/Farm/FarmManager1.jsx';
 import FarmDataManager from './components/Farm/FarmDataManager.jsx';
 import Export2 from './components/Qr/Export2.jsx';
 import UserManagement from './components/Users/UserManagement.jsx';
+import WeatherAndSolar from './components/Weather/WeatherAndSolar.jsx'
+import CropManager from './components/crop/CropManager.jsx';
+import IrrigationManager from './components/crop/IrrigationManager.jsx';
+import CropCoefficientManager from './components/crop/CropCoefficientManager.jsx';
+import GradeManager from './components/crop/GradeManager.jsx';
 
 function App() {
   const layoutRoutes = [
@@ -77,7 +82,12 @@ function App() {
     { path: "/farmmanager1", component: <FarmManager1 /> },
 
     { path: "/farmdatamanager", component: <FarmDataManager /> },
-    { path: "/usermanager", component: <UserManagement /> }
+    { path: "/usermanager", component: <UserManagement /> },
+    { path: "/weatherandsolar", component: <WeatherAndSolar /> },
+    { path: "/cropmanager", component: <CropManager /> },
+    { path: "/irrigationmanager", component: <IrrigationManager /> },
+    { path: "/cropcoefficientmanager", component: <CropCoefficientManager/>},
+    { path: "/grademanager", component: <GradeManager/>},
     // { path: "/export2", component: <Export2 /> }
 
   ];

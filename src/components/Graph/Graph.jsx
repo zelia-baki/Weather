@@ -26,8 +26,8 @@ function Graph() {
       // const longitude = '32.576809';    // replace with actual longitude
       // const latitude = '0.06667';     
       // const longitude = '31.63333'; 
-      const latitude = '0.358261';        // replace with actual latitude
-      const longitude = '32.654738'; 
+      const latitude = '1.373333';        // replace with actual latitude
+      const longitude = '32.290275'; 
 
       try {
         console.log(`Fetching weather data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}`);
