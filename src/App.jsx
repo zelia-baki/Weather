@@ -47,6 +47,8 @@ import IrrigationManager from './components/crop/IrrigationManager.jsx';
 import CropCoefficientManager from './components/crop/CropCoefficientManager.jsx';
 import GradeManager from './components/crop/GradeManager.jsx';
 
+import ContactUs from './components/main/ContactUs.jsx';
+
 function App() {
   const layoutRoutes = [
     { path: "/graph", component: <Graph /> },
@@ -88,6 +90,7 @@ function App() {
     { path: "/irrigationmanager", component: <IrrigationManager /> },
     { path: "/cropcoefficientmanager", component: <CropCoefficientManager/>},
     { path: "/grademanager", component: <GradeManager/>},
+    { path: "/contactus", component: <ContactUs/>}
     // { path: "/export2", component: <Export2 /> }
 
   ];

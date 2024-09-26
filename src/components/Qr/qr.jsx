@@ -21,10 +21,10 @@ const GenerateQrCode = () => {
 
   return (
     <div className="bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 min-h-screen flex justify-center items-center p-6 sm:p-10 font-sans">
-      <div className="text-center max-w-4xl sm:max-w-5xl mx-auto">
+      <div className="text-center max-w-5xl mx-auto">
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-8 sm:mb-12 text-teal-800">Generate Digital Codes</h1>
         <p className="text-gray-700 text-lg sm:text-2xl mb-8 sm:mb-14">Choose an option below to get started:</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
           <Card
             title="Produce Stamps"
             description="Generate Digital codes for a farm with details such as weight, price per kg, and total value."
@@ -54,13 +54,13 @@ const GenerateQrCode = () => {
             hoverColor="bg-red-200 hover:bg-red-300"
             icon={<FaQrcode />}
             iconColor="text-purple-600"
-          />\
+          />
           <Card
             title="Fertilizer Stamps"
-            description="Generate Digital codes for fertilizers "
+            description="Generate Digital codes for fertilizers."
             link="/qrconservation"
             buttonText="Generate Digital Codes"
-            bgColor="bg-blue-100"
+            bgColor="bg-yellow-100"
             hoverColor="bg-blue-200 hover:bg-blue-300"
             icon={<FaTree />}
             iconColor="text-green-700"

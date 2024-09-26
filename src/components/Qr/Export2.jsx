@@ -194,7 +194,7 @@ const PointForm = () => {
             crossOrigin: "anonymous",
             margin: 20
           },
-          data: qrCodeData
+          data : `${qrCodeData} \n "batchNumber" : ${i}`,
         });
 
         const qrCodeElement = document.createElement('div');

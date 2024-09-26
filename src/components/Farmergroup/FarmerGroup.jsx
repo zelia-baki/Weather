@@ -117,7 +117,7 @@ const FarmerGroupManager = () => {
         onClick={() => setIsModalOpen(true)}
         className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition duration-300"
       >
-        Create Farmer Group
+        Create Cooperative
       </button>
 
       {/* Modal for creating Farmer Group */}

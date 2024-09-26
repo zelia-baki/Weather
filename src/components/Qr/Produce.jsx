@@ -6,7 +6,7 @@ const GenerateQrCodeAndReceipt = () => {
   const [formData, setFormData] = useState({
     farm_id: '',
     phone_number: '',
-    district: '',
+    district_id: '',
     agroInputCategory: '',
     agroInputType: '',
     season: '',
@@ -23,6 +23,7 @@ const GenerateQrCodeAndReceipt = () => {
 
   const [farms, setFarms] = useState([]);
   const [qrCodes, setQrCodes] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const storeNames = ['Store A', 'Store B', 'Store C']; // Example options for Store Name
 
   const qrCodeContainerRef = useRef(null); // Référence pour le conteneur des QR codes
@@ -58,7 +59,7 @@ const GenerateQrCodeAndReceipt = () => {
         console.error('Error fetching farms:', error);
       }
     };
-
+    fetchDistricts();
     fetchFarms();
   }, []);
 
@@ -85,6 +86,19 @@ const GenerateQrCodeAndReceipt = () => {
       });
     }
   }, [qrCodes]);
+
+  const fetchDistricts = async () => {
+    try {
+      const response = await axiosInstance.get('/api/district/');
+      setDistricts(response.data.districts);
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+      setError('Error fetching districts.');
+    }
+  };
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -167,21 +181,24 @@ const GenerateQrCodeAndReceipt = () => {
                   required
                 />
               </div>
-
               <div className="mb-6">
-                <label className="text-lg text-gray-800 mb-2 block" htmlFor="district">
+              <label className="text-lg text-gray-800 mb-2" htmlFor="district_id">
                   District
                 </label>
-                <input
-                  type="text"
-                  name="district"
-                  id="district"
-                  value={formData.district}
-                  onChange={handleInputChange}
-                  placeholder="District"
-                  className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
+                <select
+                  name="district_id"
+                  value={formData.district_id}
+                  onChange={handleChange}
+                  className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
                   required
-                />
+                >
+                  <option value="">Select District</option>
+                  {districts.map((district) => (
+                    <option key={district.id} value={district.id}>
+                      {district.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex flex-col mb-6">

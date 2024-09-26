@@ -69,9 +69,9 @@ const Sidebar = () => {
             </button>
             {!isCollapsed && openFarmDropdown && (
               <div className="ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out">
-                <Link to="/createfarm" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                {/* <Link to="/createfarm" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                   Farm List
-                </Link>
+                </Link> */}
                 <Link to="/farmergroup" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                   Farmer Group
                 </Link>

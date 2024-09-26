@@ -6,6 +6,7 @@ const GenerateFertilizerQrCode = () => {
   const [formData, setFormData] = useState({
     farm_name: '',
     field_id: '',
+    district_name: '',
     crop_name: '',
     fertilizer_type: '',
     application_date: '',
@@ -17,6 +18,7 @@ const GenerateFertilizerQrCode = () => {
   });
   const [isExportChecked, setIsExportChecked] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [districts, setDistricts] = useState([]);
   const [farms, setFarms] = useState([]);
 
   const qrCodeRef = useRef(null);
@@ -46,6 +48,19 @@ const GenerateFertilizerQrCode = () => {
     };
 
     fetchFarms();
+  }, []);
+
+  useEffect(() => {
+    const fetchDistrict = async () => {
+      try {
+        const { data } = await axiosInstance.get('/api/district/');
+        setDistricts(data.districts || []);
+      } catch (error) {
+        console.error('Error fetching district:', error);
+      }
+    };
+
+    fetchDistrict();
   }, []);
 
   useEffect(() => {
@@ -85,9 +100,12 @@ const GenerateFertilizerQrCode = () => {
     setIsExportChecked(event.target.checked);
   };
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormData(prevData => ({ ...prevData, [name]: value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
   };
 
   const handleDownloadClick = () => {
@@ -158,19 +176,25 @@ const GenerateFertilizerQrCode = () => {
                     required
                   />
                 </div>
-                <div className="flex flex-col">
-                  <label className="text-lg text-gray-800 mb-2">District</label>
-                  <input
-                    type="text"
-                    name="district"
-                    placeholder="District"
-                    className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
-                    value={formData.district}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="flex flex-col">
+                <div>
+              <label htmlFor="District"  className="text-lg text-gray-800 mb-2">District </label>
+              <select
+                id="district_name"
+                name="district_name"
+                value={formData.district_name || ''}
+                onChange={handleChange}
+                required
+                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
+                >
+                <option value="">Select District</option>
+                {districts.map(district => (
+                  <option key={district.id} value={district.id}>
+                    {district.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+                {/* <div className="flex flex-col">
                   <label className="text-lg text-gray-800 mb-2">AgroInput Category</label>
                   <select
                     name="agroinput_category"
@@ -183,7 +207,7 @@ const GenerateFertilizerQrCode = () => {
                     <option value="Fertilizers">Fertilizers</option>
                     <option value="Pesticides">Pesticides</option>
                   </select>
-                </div>
+                </div> */}
 
                 <div className="flex flex-col">
                   <label className="text-lg text-gray-800 mb-2">Payment Type</label>
@@ -237,7 +261,7 @@ const GenerateFertilizerQrCode = () => {
                   <input
                     type="text"
                     name="application_rate"
-                    placeholder="Application Rate (kg/ha)"
+                    placeholder="Application Rate (kg/Acre)"
                     className="border-2 p-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-400"
                     value={formData.application_rate}
                     onChange={handleChange}

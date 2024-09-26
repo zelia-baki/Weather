@@ -7,9 +7,9 @@ const FarmDataManager = () => {
             <div className="bg-white rounded-lg p-6 w-11/12 max-w-4xl">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-3xl font-extrabold text-teal-700">Create / Edit Farm Data</h1>
-                    <Link to="/" className="text-gray-500 hover:text-gray-700 text-2xl">
+                    {/* <Link to="/" className="text-gray-500 hover:text-gray-700 text-2xl">
                         &times;
-                    </Link>
+                    </Link> */}
                 </div>
                 <form className="space-y-4">
                     <div className="grid grid-cols-2 gap-6">
@@ -137,7 +137,7 @@ const FarmDataManager = () => {
                                 required
                             />
                         </div>
-                        <div>
+                        {/* <div>
                             <label htmlFor="channel_partner" className="block text-gray-700">Channel Partner:</label>
                             <input
                                 type="text"
@@ -166,7 +166,7 @@ const FarmDataManager = () => {
                                 className="border rounded p-2 w-full"
                                 required
                             />
-                        </div>
+                        </div> */}
                     </div>
                     <div className="flex justify-end space-x-4 mt-6">
                         <Link
