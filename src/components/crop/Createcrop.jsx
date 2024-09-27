@@ -19,8 +19,9 @@ const CreateCrop = () => {
             >
                 Create Crop
             </button>
+            <br></br>
 
-            <CropList />
+            {/* <CropList /> */}
             <Link 
                 to="/cropmanager" 
                 className="text-blue-500 hover:underline mt-4 inline-block"

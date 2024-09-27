@@ -49,7 +49,7 @@ import GradeManager from './components/crop/GradeManager.jsx';
 
 import ContactUs from './components/main/ContactUs.jsx';
 import SignUp from './components/main/SignUp.jsx';
-import CategoryManager from '/components/Category/CategoryManager.jsx';
+import CategoryManager from './components/Category/CategoryManager.jsx';
 
 function App() {
   const layoutRoutes = [
@@ -94,7 +94,7 @@ function App() {
     { path: "/grademanager", component: <GradeManager/>},
     { path: "/contactus", component: <ContactUs/>},
     { path: "/signup", component: <SignUp/>},
-    { path: "/categorymanager", component: <CategoryManager/>},
+    { path: "/categorymanager", component: <CategoryManager/>}
 
 
     // { path: "/export2", component: <Export2 /> }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axiosInstance from './axiosInstance'; // Import the axios instance
+import axiosInstance from '../../axiosInstance'; // Adjust the path as needed
 
 const CategoryManager = () => {
   const [categories, setCategories] = useState([]);
