@@ -9,6 +9,8 @@ const FarmComponent = () => {
     name: '',
     subcounty: '',
     district_id: '',
+    parishe: '',
+    village: '',
     farmergroup_id: '',
     geolocation: '',
     phonenumber1: '',
@@ -81,12 +83,14 @@ const FarmComponent = () => {
       Swal.fire('Error!', 'An error occurred while saving the farm.', 'error'); // Show error message
     }
   };
-  
+
 
   const handleEdit = (farm) => {
     setFormData({
       name: farm.name,
       subcounty: farm.subcounty,
+      parishe: farm.parishe,
+      village: farm.village,
       district_id: farm.district_id,
       farmergroup_id: farm.farmergroup_id,
       geolocation: farm.geolocation,
@@ -125,6 +129,8 @@ const FarmComponent = () => {
       name: '',
       subcounty: '',
       district_id: '',
+      parishe: '',
+      village: '',
       farmergroup_id: '',
       geolocation: '',
       phonenumber1: '',
@@ -179,6 +185,25 @@ const FarmComponent = () => {
                 name="subcounty"
                 placeholder="Subcounty"
                 value={formData.subcounty}
+                onChange={handleChange}
+                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
+                required
+              />
+              <input
+                type="text"
+                name="parishe"
+                placeholder="Parishe"
+                value={formData.parishe}
+                onChange={handleChange}
+                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
+                required
+              />
+
+              <input
+                type="text"
+                name="village"
+                placeholder="Village"
+                value={formData.village}
                 onChange={handleChange}
                 className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
                 required

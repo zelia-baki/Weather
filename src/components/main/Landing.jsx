@@ -57,7 +57,7 @@ const Header = () => (
           label="Contact Us"
         />
         <ActionButton
-          href="mailto:lwetutb@gmail.com"
+          href="/signup"
           bgColor="bg-teal-500" // Teal pour un effet apaisant mais attrayant
           hoverColor="bg-teal-600"
           className="text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105"

@@ -26,6 +26,7 @@
     "axxios": "^0.1.0",
     "chart.js": "^4.4.3",
     "date-time-picker-react": "^2.0.4",
+    "emailjs-com": "^3.2.0",
     "framer-motion": "^11.3.24",
     "html2canvas": "^1.4.1",
     "install": "^0.13.0",

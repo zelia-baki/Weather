@@ -68,7 +68,7 @@ const HomePage = () => {
           <Card
             title="Farm Management"
             description="Track and manage your farm data effectively."
-            link="/createfarm"
+            link="/farmmanager"
             buttonText="Manage Farm"
             bgColor="bg-yellow-100"
             hoverColor="bg-yellow-200 hover:bg-yellow-300"
