@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import CropModal from './CropModal'; // Import the CropModal component
 import CropList from './CropList'; // Import the CropList component
+import { Link } from 'react-router-dom'; // Import Link for routing
+
 
 const CreateCrop = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,7 +19,37 @@ const CreateCrop = () => {
             >
                 Create Crop
             </button>
+
             <CropList />
+            <Link 
+                to="/cropmanager" 
+                className="text-blue-500 hover:underline mt-4 inline-block"
+            >
+                Crop Manager
+            </Link>
+            <br></br>
+            <Link 
+                to="/irrigationmanager" 
+                className="text-blue-500 hover:underline mt-4 inline-block"
+            >
+                Irrigation Manager
+            </Link>
+            <br></br>
+
+            <Link 
+                to="/cropcoefficientmanager" 
+                className="text-blue-500 hover:underline mt-4 inline-block"
+            >
+            Crop Coefficientmanager
+            </Link>
+            <br></br>
+
+            <Link 
+                to="/grademanager"
+                className="text-blue-500 hover:underline mt-4 inline-block"
+            >
+            Grade Manager
+            </Link>
 
         </div>
     );
