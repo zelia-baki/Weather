@@ -101,6 +101,7 @@ const handleCropChange = (event) => {
 
 const handleCatChange = (event) => {
   const selectedCatId = event.target.value; // Get the selected value from the dropdown
+  console.log("selectedCatId", selectedCatId);
   setCat(selectedCatId); // Set the crop_id state
 };
 
