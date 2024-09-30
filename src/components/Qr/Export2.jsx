@@ -382,7 +382,7 @@ const handleCatChange = (event) => {
                 id="crop_category"
                 name="crop_category"
                 value={formData.crop_category || ''}
-                onChange={handleCatChange}
+                onChange={handleChange}
                 required
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
@@ -401,7 +401,7 @@ const handleCatChange = (event) => {
                 id="crop"
                 name="crop"
                 value={formData.crop || ''}
-                onChange={handleCropChange}
+                onChange={handleChange}
                 required
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
