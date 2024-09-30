@@ -100,18 +100,20 @@ const PointForm = () => {
     fetchFarmerGroups();
   }, []);
 
-  useEffect(() => {
+    useEffect(() => {
     const fetchCropGrades = async () => {
-      try {
-        const response = await axiosInstance.get(`/api/grades/getbycrop/${crop_id}`);
-        setcropGrades(response.data.grades);
-      } catch (error) {
-        console.error('Error fetching farmer groups:', error);
+      if (crop_id) {
+        try {
+          const response = await axiosInstance.get(`/api/grades/getbycrop/${crop_id}`);
+          setCropGrades(response.data.grades);
+        } catch (error) {
+          console.error('Error fetching crop grades:', error);
+        }
       }
     };
 
-    fetchFarmerGroups();
-  }, []);
+    fetchCropGrades();
+  }, [crop_id]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -320,7 +322,7 @@ const PointForm = () => {
           {[{
               label: 'Batch Number', name: 'batch_number', type: 'number'
             }, {
-              label: 'Crop Category', name: 'crop_category', type: 'select', options: cropGrades
+              label: 'Crop Category', name: 'crop_category', type: 'select', options: ['Coffee', 'Cocoa', 'Palm Oil', 'Soybean']
             }, {
               label: 'Crop Grade', name: 'crop_grade', type: 'select', options: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4']
             }, {
