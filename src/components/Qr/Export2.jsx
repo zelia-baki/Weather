@@ -31,9 +31,12 @@ const PointForm = () => {
 
   const [farms, setFarms] = useState([]);
   const [crop_id, setCrop] = useState([]);
+  const [cat_id, setCat] = useState([]);
+  const [categorys, setCategory] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [farmerGroups, setFarmerGroups] = useState([]);
   const [cropGrades, setcropGrades] = useState([]);
+  const [crops, setcrops] = useState([]);
   const [qrCodes, setQrCodes] = useState([]); // Stocke les données pour générer les QR codes
   const [countries, setCountries] = useState([]);
   const storeNames = ['Store A', 'Store B', 'Store C'];
@@ -60,6 +63,46 @@ const PointForm = () => {
         });
     }
   };
+
+  useEffect(() => {
+    const fetchCropGrades = async () => {
+      if (crop_id) {
+        try {
+          const response = await axiosInstance.get(`/api/grades/getbycrop/${crop_id}`);
+          setCropGrades(response.data.grades);
+        } catch (error) {
+          console.error('Error fetching crop grades:', error);
+        }
+      }
+    };
+
+    fetchCropGrades();
+  }, [crop_id]);
+
+  useEffect(() => {
+    const fetchCrops = async () => {
+      if (cat_id) {
+        try {
+          const response = await axiosInstance.get(`/api/crop/getbycat/${crop_id}`);
+          setcrops(response.data.crops);
+        } catch (error) {
+          console.error('Error fetching crops:', error);
+        }
+      }
+    };
+
+    fetchCrops();
+  }, [cat_id]);
+
+const handleCropChange = (event) => {
+  const selectedCropId = event.target.value; // Get the selected value from the dropdown
+  setCrop(selectedCropId); // Set the crop_id state
+};
+
+const handleCatChange = (event) => {
+  const selectedCatId = event.target.value; // Get the selected value from the dropdown
+  setCat(selectedCatId); // Set the crop_id state
+};
 
   useEffect(() => {
     const fetchFarms = async () => {
@@ -100,20 +143,6 @@ const PointForm = () => {
     fetchFarmerGroups();
   }, []);
 
-    useEffect(() => {
-    const fetchCropGrades = async () => {
-      if (crop_id) {
-        try {
-          const response = await axiosInstance.get(`/api/grades/getbycrop/${crop_id}`);
-          setCropGrades(response.data.grades);
-        } catch (error) {
-          console.error('Error fetching crop grades:', error);
-        }
-      }
-    };
-
-    fetchCropGrades();
-  }, [crop_id]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -126,6 +155,20 @@ const PointForm = () => {
     };
 
     fetchCountries();
+  }, []);
+
+
+  useEffect(() => {
+    const fetchCat = async () => {
+      try {
+        const response = await axiosInstance.get('/api/producecategory/');
+        setCategory(response.data.categories || []);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    fetchCat();
   }, []);
 
   useEffect(() => {
@@ -317,16 +360,78 @@ const PointForm = () => {
                 ))}
               </select>
             </div>
-          </div>
-  
-          {[{
-              label: 'Batch Number', name: 'batch_number', type: 'number'
-            }, {
+
+            {/*""""""""""""""""""""""""""""""""""eto ny resaka crop"""""""
+
+
+             {
               label: 'Crop Category', name: 'crop_category', type: 'select', options: ['Coffee', 'Cocoa', 'Palm Oil', 'Soybean']
             }, {
               label: 'Crop Grade', name: 'crop_grade', type: 'select', options: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4']
             }, {
               label: 'Crop Quality', name: 'crop_quality', type: 'select', options: ['Quality A', 'Quality B', 'Quality C']
+            }
+
+
+            """"""""""""*/}
+            <div>
+              <label htmlFor="crop_category" className="block text-sm font-medium text-gray-700">District :</label>
+              <select
+                id="crop_category"
+                name="crop_category"
+                value={formData.crop_category || ''}
+                onChange={handleCatChange}
+                required
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="">Select Category</option>
+                {categorys.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="District" className="block text-sm font-medium text-gray-700">District :</label>
+              <select
+                id="district_name"
+                name="district_name"
+                value={formData.district_name || ''}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="">Select District</option>
+                {districts.map(district => (
+                  <option key={district.id} value={district.id}>
+                    {district.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="District" className="block text-sm font-medium text-gray-700">District :</label>
+              <select
+                id="district_name"
+                name="district_name"
+                value={formData.district_name || ''}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="">Select District</option>
+                {districts.map(district => (
+                  <option key={district.id} value={district.id}>
+                    {district.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+  
+          {[{
+              label: 'Batch Number', name: 'batch_number', type: 'number'
             }, {
               label: 'Produce Weight (Kgs)', name: 'produce_weight', type: 'text'
             }]
