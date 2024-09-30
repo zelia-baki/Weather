@@ -30,8 +30,10 @@ const PointForm = () => {
   });
 
   const [farms, setFarms] = useState([]);
+  const [crop_id, setCrop] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [farmerGroups, setFarmerGroups] = useState([]);
+  const [cropGrades, setcropGrades] = useState([]);
   const [qrCodes, setQrCodes] = useState([]); // Stocke les données pour générer les QR codes
   const [countries, setCountries] = useState([]);
   const storeNames = ['Store A', 'Store B', 'Store C'];
@@ -90,6 +92,19 @@ const PointForm = () => {
       try {
         const response = await axiosInstance.get('/api/farmergroup/');
         setFarmerGroups(response.data);
+      } catch (error) {
+        console.error('Error fetching farmer groups:', error);
+      }
+    };
+
+    fetchFarmerGroups();
+  }, []);
+
+  useEffect(() => {
+    const fetchCropGrades = async () => {
+      try {
+        const response = await axiosInstance.get(`/api/grades/getbycrop/${crop_id}`);
+        setcropGrades(response.data.grades);
       } catch (error) {
         console.error('Error fetching farmer groups:', error);
       }
@@ -305,7 +320,7 @@ const PointForm = () => {
           {[{
               label: 'Batch Number', name: 'batch_number', type: 'number'
             }, {
-              label: 'Crop Category', name: 'crop_category', type: 'select', options: ['Coffee', 'Cocoa', 'Palm Oil', 'Soybean']
+              label: 'Crop Category', name: 'crop_category', type: 'select', options: cropGrades
             }, {
               label: 'Crop Grade', name: 'crop_grade', type: 'select', options: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4']
             }, {
