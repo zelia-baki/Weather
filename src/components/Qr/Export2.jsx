@@ -204,6 +204,11 @@ const handleCatChange = (event) => {
       ...prevData,
       [name]: value
     }));
+
+    if(name === 'crop_category') {
+
+      console.log(name);
+    }
   };
 
   const handleSubmit = (e) => {
