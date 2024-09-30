@@ -66,10 +66,10 @@ const PointForm = () => {
 
   useEffect(() => {
     const fetchCropGrades = async () => {
-      if (crop_id) {
+      if (crop_id) { // Ensure crop_id is not empty before fetching
         try {
           const response = await axiosInstance.get(`/api/grades/getbycrop/${crop_id}`);
-          setCropGrades(response.data.grades);
+          setcropGrades(response.data.grades); // Update cropGrades state
         } catch (error) {
           console.error('Error fetching crop grades:', error);
         }
@@ -81,16 +81,15 @@ const PointForm = () => {
 
   useEffect(() => {
     const fetchCrops = async () => {
-      if (cat_id) {
+      if (cat_id) { // Ensure cat_id is not empty before fetching
         try {
-          const response = await axiosInstance.get(`/api/crop/getbycat/${crop_id}`);
-          setcrops(response.data.crops);
+          const response = await axiosInstance.get(`/api/crop/getbycat/${cat_id}`); // Fixed here, use cat_id instead of crop_id
+          setcrops(response.data.crops); // Update crops state
         } catch (error) {
           console.error('Error fetching crops:', error);
         }
       }
     };
-
     fetchCrops();
   }, [cat_id]);
 
@@ -101,6 +100,7 @@ const handleCropChange = (event) => {
 
 const handleCatChange = (event) => {
   const selectedCatId = event.target.value; // Get the selected value from the dropdown
+  setCategory(selectedCatId);
   console.log("selectedCatId", selectedCatId);
   setCat(selectedCatId); // Set the crop_id state
 };
