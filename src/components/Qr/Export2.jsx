@@ -93,17 +93,15 @@ const PointForm = () => {
     fetchCrops();
   }, [cat_id]);
 
-const handleCropChange = (event) => {
-  const selectedCropId = event.target.value; // Get the selected value from the dropdown
+const handleCropChange = (selectedCropId) => {
+  console.log("selectedCropId:", selectedCropId); // Get the selected value from the dropdown
   setCrop(selectedCropId); // Set the crop_id state
 };
 
-const handleCatChange = (event) => {
-  const selectedCatId = event.target.value; // Get the selected value from the dropdown
-  // setCategory(selectedCatId);
-
-  console.log("selectedCatId", selectedCatId);
-  setCat(selectedCatId); // Set the crop_id state
+const handleCatChange = (selectedCatId) => {
+  // Handle the category change logic here
+  console.log("selectedCatId:", selectedCatId);
+  setCat(selectedCatId); // Set the category state
 };
 
   useEffect(() => {
@@ -206,11 +204,21 @@ const handleCatChange = (event) => {
     }));
 
     if(name === 'crop_category') {
+      const selectedCatId = e.target.value;
+
+      console.log(name, selectedCatId);
+      handleCatChange(selectedCatId);
+
+    }
+    if(name === 'crop') {
       const selectedCropId = e.target.value;
 
       console.log(name, selectedCropId);
+      handleCropChange(selectedCropId);
 
     }
+
+  
   };
 
   const handleSubmit = (e) => {
