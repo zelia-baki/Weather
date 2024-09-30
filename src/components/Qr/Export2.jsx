@@ -16,7 +16,7 @@ const PointForm = () => {
     country_of_origin: '',
     crop_category: '',
     crop_grade: '',
-    crop_quality: '',
+    crop: '',
     produce_weight: '',
     batch_number: '',
     harvest_date: '',
@@ -219,8 +219,8 @@ const handleCatChange = (event) => {
     CP : ${formData.channel_partner}\n
     ECN : ${formData.end_customer_name}\n
     StoreName : ${formData.store_name}\n
-    Crop : ${formData.crop_category}\n
-    Quality : ${formData.crop_quality}\n
+    Crop Category : ${formData.crop_category}\n
+    Crop : ${formData.crop}\n
     Grade : ${formData.crop_grade}\n
     Date : ${formData.harvest_date}\n
     Transaction Date : ${formData.timestamp}\n
@@ -375,7 +375,7 @@ const handleCatChange = (event) => {
 
             """"""""""""*/}
             <div>
-              <label htmlFor="crop_category" className="block text-sm font-medium text-gray-700">District :</label>
+              <label htmlFor="crop_category" className="block text-sm font-medium text-gray-700">Category :</label>
               <select
                 id="crop_category"
                 name="crop_category"
@@ -393,19 +393,19 @@ const handleCatChange = (event) => {
               </select>
             </div>
             <div>
-              <label htmlFor="District" className="block text-sm font-medium text-gray-700">District :</label>
+              <label htmlFor="crop" className="block text-sm font-medium text-gray-700">Crop Grade :</label>
               <select
-                id="district_name"
-                name="district_name"
-                value={formData.district_name || ''}
-                onChange={handleChange}
+                id="crop"
+                name="crop"
+                value={formData.crop || ''}
+                onChange={handleCropChange}
                 required
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
-                <option value="">Select District</option>
-                {districts.map(district => (
-                  <option key={district.id} value={district.id}>
-                    {district.name}
+                <option value="">Select Crop</option>
+                {crops.map(crop => (
+                  <option key={crop.id} value={crop.id}>
+                    {crop.name}
                   </option>
                 ))}
               </select>
