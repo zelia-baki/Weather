@@ -206,8 +206,10 @@ const handleCatChange = (event) => {
     }));
 
     if(name === 'crop_category') {
+      const selectedCropId = e.target.value;
 
-      console.log(name);
+      console.log(name, selectedCropId);
+
     }
   };
 
