@@ -101,7 +101,7 @@ const handleCropChange = (event) => {
 const handleCatChange = (event) => {
   const selectedCatId = event.target.value; // Get the selected value from the dropdown
   // setCategory(selectedCatId);
-  
+
   console.log("selectedCatId", selectedCatId);
   setCat(selectedCatId); // Set the crop_id state
 };
@@ -377,7 +377,7 @@ const handleCatChange = (event) => {
 
             """"""""""""*/}
             <div>
-              <label htmlFor="crop_category" className="block text-sm font-medium text-gray-700">Category :</label>
+              <label htmlFor="crop_category" className="block text-sm font-medium text-gray-700">Crop Category:</label>
               <select
                 id="crop_category"
                 name="crop_category"
@@ -394,8 +394,9 @@ const handleCatChange = (event) => {
                 ))}
               </select>
             </div>
+
             <div>
-              <label htmlFor="crop" className="block text-sm font-medium text-gray-700">Crop Grade :</label>
+              <label htmlFor="crop" className="block text-sm font-medium text-gray-700">Crop:</label>
               <select
                 id="crop"
                 name="crop"
@@ -412,20 +413,21 @@ const handleCatChange = (event) => {
                 ))}
               </select>
             </div>
+
             <div>
-              <label htmlFor="District" className="block text-sm font-medium text-gray-700">District :</label>
+              <label htmlFor="crop_grade" className="block text-sm font-medium text-gray-700">Crop Grade:</label>
               <select
-                id="district_name"
-                name="district_name"
-                value={formData.district_name || ''}
+                id="crop_grade"
+                name="crop_grade"
+                value={formData.crop_grade || ''}
                 onChange={handleChange}
                 required
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
-                <option value="">Select District</option>
-                {districts.map(district => (
-                  <option key={district.id} value={district.id}>
-                    {district.name}
+                <option value="">Select Crop Grade</option>
+                {cropGrades.map(grade => (
+                  <option key={grade.id} value={grade.id}>
+                    {grade.name}
                   </option>
                 ))}
               </select>
