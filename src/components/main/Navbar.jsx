@@ -8,6 +8,15 @@ const Sidebar = () => {
   const [openFarmDropdown, setOpenFarmDropdown] = useState(false);
   const [openDigitalTraceDropdown, setOpenDigitalTraceDropdown] = useState(false);
   const [openWeatherDropdown, setOpenWeatherDropdown] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); 
+   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const decoded = jwt_decode(token); // Decode the JWT token
+      // Assuming 'user_type' is the field that defines if a user is admin
+      setIsAdmin(decoded.is_admin);
+    }
+  }, []);
 
   const toggleForestDropdown = () => setOpenForestDropdown(!openForestDropdown);
   const toggleFarmDropdown = () => setOpenFarmDropdown(!openFarmDropdown);
@@ -163,13 +172,12 @@ const Sidebar = () => {
       {/* Log out */}
       <div className="mt-5">
 
-        <Link to="/usermanager" className={`flex items-center p-3 text-base font-medium text-gray-800 hover:bg-teal-200 w-full rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}>
-        <FaUser className="text-red-500 text-xl " />
-                 <span className="mx-4 ">
-                 Manage account
-                 </span>
-                  
-        </Link>
+        {isAdmin && (
+            <Link to="/usermanager" className={`flex items-center p-3 text-base font-medium text-gray-800 hover:bg-teal-200 w-full rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}>
+              <FaUser className="text-red-500 text-xl" />
+              {!isCollapsed && <span className="ml-4">Manage account</span>}
+            </Link>
+          )}
         <button
           onClick={handleLogOut}
           className={`flex items-center p-3 text-base font-medium text-gray-800 hover:bg-teal-200 w-full rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}
