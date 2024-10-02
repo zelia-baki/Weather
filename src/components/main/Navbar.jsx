@@ -174,7 +174,7 @@ const Sidebar = () => {
       {/* Log out */}
       <div className="mt-5">
 
-        {isAdmin && (
+        {!isAdmin && (
             <Link to="/usermanager" className={`flex items-center p-3 text-base font-medium text-gray-800 hover:bg-teal-200 w-full rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}>
               <FaUser className="text-red-500 text-xl" />
               {!isCollapsed && <span className="ml-4">Manage account</span>}
