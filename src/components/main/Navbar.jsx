@@ -15,7 +15,7 @@ const Sidebar = () => {
     const token = localStorage.getItem('token');
     if (token) {
       const decoded = jwtDecode(token); // Decode the JWT token
-      // Assuming 'user_type' is the field that defines if a user is admin
+      console.log(decoded);
       setIsAdmin(decoded.is_admin);
     }
   }, []);

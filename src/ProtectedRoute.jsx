@@ -22,7 +22,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 
     // If the route is admin only, check if the user is an admin
     if (adminOnly && !decodedToken.is_admin) {
-      return <Navigate to="/unauthorized" replace />;
+      return <Navigate to="/login" replace />;
     }
 
     // If everything is valid, render the protected component
