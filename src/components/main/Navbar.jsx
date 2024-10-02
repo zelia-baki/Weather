@@ -11,6 +11,7 @@ const Sidebar = () => {
   const [openDigitalTraceDropdown, setOpenDigitalTraceDropdown] = useState(false);
   const [openWeatherDropdown, setOpenWeatherDropdown] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false); 
+  const [userType, setUserType] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -18,6 +19,7 @@ const Sidebar = () => {
       const decoded = jwtDecode(token); // Decode the JWT token
       console.log(decoded);
       setIsAdmin(decoded.sub.is_admin); // Correct access to is_admin in the token's sub object
+      setUserType(decoded.sub.user_type);
     }
   }, []);
 
@@ -43,27 +45,29 @@ const Sidebar = () => {
           </button>
         </div>
         <nav className="mt-10 space-y-2">
-          <div>
-            <button
-              onClick={toggleForestDropdown}
-              className={`flex items-center justify-between w-full p-3 text-base font-medium text-gray-800 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}
-            >
-              <FaTree className="text-green-700 text-xl" />
-              {!isCollapsed && (
-                <>
-                  <span className="ml-4">Forest</span>
-                  <FaChevronDown className={`ml-4 transition-transform ${openForestDropdown ? 'rotate-180' : ''}`} />
-                </>
-              )}
-            </button>
-            {!isCollapsed && openForestDropdown && (
-              <div className="ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out">
-                <Link to="/forestpage" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
-                  Forest Data
-                </Link>
-              </div>
+          {(isAdmin || userType === 'forest') && (
+        <div>
+          <button
+            onClick={toggleForestDropdown}
+            className={`flex items-center justify-between w-full p-3 text-base font-medium text-gray-800 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}
+          >
+            <FaTree className="text-green-700 text-xl" />
+            {!isCollapsed && (
+              <>
+                <span className="ml-4">Forest</span>
+                <FaChevronDown className={`ml-4 transition-transform ${openForestDropdown ? 'rotate-180' : ''}`} />
+              </>
             )}
-          </div>
+          </button>
+          {!isCollapsed && openForestDropdown && (
+            <div className="ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out">
+              <Link to="/forestpage" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                Forest Data
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
           {/* Farm Section */}
           <div className="mb-6">
