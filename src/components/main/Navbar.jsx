@@ -11,12 +11,13 @@ const Sidebar = () => {
   const [openDigitalTraceDropdown, setOpenDigitalTraceDropdown] = useState(false);
   const [openWeatherDropdown, setOpenWeatherDropdown] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false); 
-   useEffect(() => {
+
+  useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       const decoded = jwtDecode(token); // Decode the JWT token
       console.log(decoded);
-      setIsAdmin(decoded.is_admin);
+      setIsAdmin(decoded.sub.is_admin); // Correct access to is_admin in the token's sub object
     }
   }, []);
 
@@ -174,7 +175,7 @@ const Sidebar = () => {
       {/* Log out */}
       <div className="mt-5">
 
-        {!isAdmin && (
+        {isAdmin && (
             <Link to="/usermanager" className={`flex items-center p-3 text-base font-medium text-gray-800 hover:bg-teal-200 w-full rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}>
               <FaUser className="text-red-500 text-xl" />
               {!isCollapsed && <span className="ml-4">Manage account</span>}
