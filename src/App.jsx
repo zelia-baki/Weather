@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-
 import Card from './components/Card/Card';
 import Graph from './components/Graph/Graph';
 import MapboxExample from './components/mapbox/Mapbox';
@@ -37,7 +36,6 @@ import ProtectedRoute from './ProtectedRoute'; // Import ProtectedRoute
 import FarmerGroupManager from './components/Farmergroup/FarmerGroup.jsx';
 import FarmManager from './components/Farm/FarmManager.jsx';
 import FarmManager1 from './components/Farm/FarmManager1.jsx';
-
 import FarmDataManager from './components/Farm/FarmDataManager.jsx';
 import Export2 from './components/Qr/Export2.jsx';
 import UserManagement from './components/Users/UserManagement.jsx';
@@ -46,55 +44,53 @@ import CropManager from './components/crop/CropManager.jsx';
 import IrrigationManager from './components/crop/IrrigationManager.jsx';
 import CropCoefficientManager from './components/crop/CropCoefficientManager.jsx';
 import GradeManager from './components/crop/GradeManager.jsx';
-
 import ContactUs from './components/main/ContactUs.jsx';
 import SignUp from './components/main/SignUp.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 
 function App() {
   const layoutRoutes = [
-    { path: "/graph", component: <Graph /> },
-    { path: "/card", component: <Card /> },
-    { path: "/mapbox", component: <MapboxExample /> },
-    { path: "/tabcrop", component: <Tabcrop /> },
-    { path: "/forest", component: <Forest /> },
-    { path: "/forestpage", component: <ForestPage /> },
-    { path: "/createfarm", component: <Create /> },
-    { path: "/farmdata", component: <Farmdata /> },
-    { path: "/cropedit/:id", component: <CropEdit /> },
-    { path: "/cardex", component: <Cardex /> },
-    { path: "/district", component: <CreateDistrict /> },
-    { path: "/cropmanage", component: <Createcrop /> },
-    { path: "/districts/:id/view", component: <DistrictView /> },
-    { path: "/districts", component: <DistrictList /> },
-    { path: "/districts/:id/edit", component: <DistrictEdit /> },
-    { path: "/mapview", component: <MapView /> },
-    { path: "/mapviewall", component: <MapViewAll /> },
-    { path: "/forestpoint", component: <ForestPoint /> },
-    { path: "/foresttree", component: <ForestTree /> },
-    { path: "/qr", component: <QR /> },
-    { path: "/qrproduce", component: <Produce /> },
-    { path: "/qrconservation", component: <Conservation /> },
-    { path: "/qrexport", component: <Export2 /> },
-    { path: "/qrfertilizer", component: <Fertilizer /> },
-    { path: "/reportfarmer", component: <FarmReport /> },
-    { path: "/reportforest", component: <ForestReport /> },
-    { path: "/createUsers", component: <CreateUsers /> },
-    { path: "/graphcgd", component: <GraphCGD /> },
-    { path: "/farmergroup", component: <FarmerGroupManager /> },
-    { path: "/farmmanager", component: <FarmManager /> },
-    { path: "/farmmanager1", component: <FarmManager1 /> },
-
-    { path: "/farmdatamanager", component: <FarmDataManager /> },
-    { path: "/usermanager", component: <UserManagement /> },
-    { path: "/weatherandsolar", component: <WeatherAndSolar /> },
-    { path: "/cropmanager", component: <CropManager /> },
-    { path: "/irrigationmanager", component: <IrrigationManager /> },
-    { path: "/cropcoefficientmanager", component: <CropCoefficientManager/>},
-    { path: "/grademanager", component: <GradeManager/>},
-    { path: "/contactus", component: <ContactUs/>},
-    { path: "/signup", component: <SignUp/>},
-    { path: "/categorymanager", component: <CategoryManager/>}
+    { path: "/graph", component: <Graph /> , adminOnly: false},
+    { path: "/card", component: <Card /> , adminOnly: false},
+    { path: "/mapbox", component: <MapboxExample /> , adminOnly: false},
+    { path: "/tabcrop", component: <Tabcrop /> , adminOnly: false},
+    { path: "/forest", component: <Forest /> , adminOnly: false},
+    { path: "/forestpage", component: <ForestPage /> , adminOnly: false},
+    { path: "/createfarm", component: <Create /> , adminOnly: false},
+    { path: "/farmdata", component: <Farmdata /> , adminOnly: false},
+    { path: "/cropedit/:id", component: <CropEdit /> , adminOnly: false},
+    { path: "/cardex", component: <Cardex /> , adminOnly: false},
+    { path: "/district", component: <CreateDistrict /> , adminOnly: false},
+    { path: "/cropmanage", component: <Createcrop /> , adminOnly: false},
+    { path: "/districts/:id/view", component: <DistrictView /> , adminOnly: false},
+    { path: "/districts", component: <DistrictList /> , adminOnly: false},
+    { path: "/districts/:id/edit", component: <DistrictEdit /> , adminOnly: false},
+    { path: "/mapview", component: <MapView /> , adminOnly: false},
+    { path: "/mapviewall", component: <MapViewAll /> , adminOnly: false},
+    { path: "/forestpoint", component: <ForestPoint /> , adminOnly: false},
+    { path: "/foresttree", component: <ForestTree /> , adminOnly: false},
+    { path: "/qr", component: <QR /> , adminOnly: false},
+    { path: "/qrproduce", component: <Produce /> , adminOnly: false},
+    { path: "/qrconservation", component: <Conservation /> , adminOnly: false},
+    { path: "/qrexport", component: <Export2 /> , adminOnly: false},
+    { path: "/qrfertilizer", component: <Fertilizer /> , adminOnly: false},
+    { path: "/reportfarmer", component: <FarmReport /> , adminOnly: false},
+    { path: "/reportforest", component: <ForestReport /> , adminOnly: false},
+    { path: "/createUsers", component: <CreateUsers /> , adminOnly: false},
+    { path: "/graphcgd", component: <GraphCGD /> , adminOnly: false},
+    { path: "/farmergroup", component: <FarmerGroupManager /> , adminOnly: false},
+    { path: "/farmmanager", component: <FarmManager /> , adminOnly: false},
+    { path: "/farmmanager1", component: <FarmManager1 /> , adminOnly: false},
+    { path: "/farmdatamanager", component: <FarmDataManager /> , adminOnly: false},
+    { path: "/usermanager", component: <UserManagement /> , adminOnly: false},
+    { path: "/weatherandsolar", component: <WeatherAndSolar /> , adminOnly: false},
+    { path: "/cropmanager", component: <CropManager /> , adminOnly: false},
+    { path: "/irrigationmanager", component: <IrrigationManager /> , adminOnly: false},
+    { path: "/cropcoefficientmanager", component: <CropCoefficientManager/>, adminOnly: false},
+    { path: "/grademanager", component: <GradeManager/>, adminOnly: false},
+    { path: "/contactus", component: <ContactUs/>, adminOnly: false},
+    { path: "/signup", component: <SignUp/>, adminOnly: false},
+    { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false}
 
 
     // { path: "/export2", component: <Export2 /> }
@@ -117,12 +113,12 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {layoutRoutes.map(({ path, component }) => (
+        {layoutRoutes.map(({ path, component, adminOnly }) => (
           <Route
             key={path}
             path={path}
             element={
-              <ProtectedRoute>
+              <ProtectedRoute adminOnly={adminOnly}>
                 <Layout>{component}</Layout>
               </ProtectedRoute>
             }
@@ -131,6 +127,8 @@ function App() {
       </Routes>
     </BrowserRouter>
   );
+}
+
 }
 
 export default App;
