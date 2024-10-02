@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaUser, FaTree, FaQrcode, FaSeedling, FaSun, FaChevronDown, FaSignOutAlt, FaBars } from 'react-icons/fa';
+import { jwtDecode } from 'jwt-decode';  // Correct import
+
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -12,7 +14,7 @@ const Sidebar = () => {
    useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      const decoded = jwt_decode(token); // Decode the JWT token
+      const decoded = jwtDecode(token); // Decode the JWT token
       // Assuming 'user_type' is the field that defines if a user is admin
       setIsAdmin(decoded.is_admin);
     }
