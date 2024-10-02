@@ -22,6 +22,7 @@ const FarmDataManager = () => {
     channel_partner: '',
     destination_country: '',
     customer_name: '',
+    hs_code: '',
   });
   const [editId, setEditId] = useState(null);
 
@@ -109,6 +110,7 @@ const FarmDataManager = () => {
         destination_country: '',
         customer_name: '',
         number_of_tree: '',
+        hs_code: '',
       });
       setEditId(null);
     } catch (error) {
@@ -259,6 +261,15 @@ const FarmDataManager = () => {
             required
             className="w-full p-2 border rounded-md shadow-sm"
           />
+          <input
+            type="text"
+            name="hs_code"
+            value={formData.hs_code}
+            onChange={handleChange}
+            placeholder="HS code"
+            required
+            className="w-full p-2 border rounded-md shadow-sm"
+          />
         </div>
 
         <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
@@ -297,6 +308,7 @@ const FarmDataManager = () => {
                 <td className="px-4 py-2">{data.quantity}</td>
                 <td className="px-4 py-2">{data.expected_yield}</td>
                 <td className="px-4 py-2">{data.actual_yield}</td>
+                <td className="px-4 py-2">{data.hs_code}</td>
                 <td className="px-4 py-2">
                   <button onClick={() => handleEdit(data)} className="text-blue-500 hover:underline mr-2">Edit</button>
                   <button onClick={() => handleDelete(data.id)} className="text-red-500 hover:underline">Delete</button>
