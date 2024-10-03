@@ -42,21 +42,6 @@ const PointForm = () => {
   const storeNames = ['Store A', 'Store B', 'Store C'];
   const seasons = ['Season 1', 'Season 2', 'Season 3', 'Season 4'];
 
-  const cropsData = [
-    { id: 1, name: 'Cocoa', category: 1 },
-    { id: 2, name: 'Coffee Robusta', category: 2 },
-    { id: 3, name: 'Coffee Arabica', category: 3 },
-    { id: 4, name: 'Oil Palm', category: 4 },
-    { id: 5, name: 'Soya Bean', category: 5 },
-    { id: 6, name: 'Rubber', category: 6 },
-    { id: 7, name: 'Hass Avocado', category: 4 },
-    { id: 8, name: 'snickerdoodle', category: 1 },
-    { id: 9, name: 'test1', category: 2 },
-    { id: 10, name: 'test', category: 4 },
-    { id: 11, name: 'Cafe', category: 1 },
-    { id: 12, name: 'Cafe Robusta', category: 2 },
-  ];
-
   const handleFarmIdChange = (e) => {
     const farm_id = e.target.value;
     setFormData(prevFormData => ({ ...prevFormData, farm_id }));
@@ -81,12 +66,10 @@ const PointForm = () => {
 
   useEffect(() => {
     const fetchCropGrades = async () => {
-      if (crop_id) {
-        console.log('Fetching grades for crop_id:', crop_id); // Ajoute ce log pour vérifier crop_id
+      if (crop_id) { // Ensure crop_id is not empty before fetching
         try {
-          const result = await axiosInstance.get(`/api/grade/getbycrop/${crop_id}`);
-          console.log(result.data);
-          setcropGrades(result.data.grades);
+          const response = await axiosInstance.get(`/api/grades/getbycrop/${crop_id}`);
+          setcropGrades(response.data.grades); // Update cropGrades state
         } catch (error) {
           console.error('Error fetching crop grades:', error);
         }
@@ -95,8 +78,6 @@ const PointForm = () => {
 
     fetchCropGrades();
   }, [crop_id]);
-
-
 
   useEffect(() => {
     const fetchCrops = async () => {
@@ -114,21 +95,21 @@ const PointForm = () => {
         }
       }
     };
-
+  
     fetchCrops();
   }, [cat_id]);
+  
 
+const handleCropChange = (selectedCropId) => {
+  console.log("selectedCropId:", selectedCropId); // Get the selected value from the dropdown
+  setCrop(selectedCropId); // Set the crop_id state
+};
 
-  const handleCropChange = (selectedCropId) => {
-    console.log("selectedCropId:", selectedCropId); // Get the selected value from the dropdown
-    setCrop(selectedCropId); // Set the crop_id state
-  };
-
-  const handleCatChange = (selectedCatId) => {
-    // Handle the category change logic here
-    console.log("selectedCatId:", selectedCatId);
-    setCat(selectedCatId); // Set the category state
-  };
+const handleCatChange = (selectedCatId) => {
+  // Handle the category change logic here
+  console.log("selectedCatId:", selectedCatId);
+  setCat(selectedCatId); // Set the category state
+};
 
   useEffect(() => {
     const fetchFarms = async () => {
@@ -200,7 +181,7 @@ const PointForm = () => {
   useEffect(() => {
     if (qrCodes.length > 0 && qrCodeContainerRef.current) {
       qrCodeContainerRef.current.innerHTML = '';
-
+      
       // Afficher uniquement le premier QR code dans le HTML
       const qrCodeData = qrCodes[0]; // Affiche le premier QR code uniquement
       const qrCode = new QRCodeStyling({
@@ -229,27 +210,22 @@ const PointForm = () => {
       [name]: value
     }));
 
-    if (name === 'crop_category') {
+    if(name === 'crop_category') {
       const selectedCatId = e.target.value;
-      setCat(selectedCatId); // Mets à jour cat_id
-
 
       console.log(name, selectedCatId);
       handleCatChange(selectedCatId);
 
     }
-    if (name === 'crop') {
+    if(name === 'crop') {
       const selectedCropId = e.target.value;
-
-      setCrop(selectedCropId); // Mets à jour crop_id
-
 
       console.log(name, selectedCropId);
       handleCropChange(selectedCropId);
 
     }
 
-
+  
   };
 
   const handleSubmit = (e) => {
@@ -270,8 +246,6 @@ const PointForm = () => {
     Crop Category : ${formData.crop_category}\n
     Crop : ${formData.crop}\n
     Grade : ${formData.crop_grade}\n
-    Coffee Type : ${formData.coffeeType}\n
-    HsCode : ${formData.hscode}\n
     Date : ${formData.harvest_date}\n
     Transaction Date : ${formData.timestamp}\n
         
@@ -304,7 +278,7 @@ const PointForm = () => {
             crossOrigin: "anonymous",
             margin: 20
           },
-          data: `${qrCodeData} \n "batchNumber" : ${i}`,
+          data : `${qrCodeData} \n "batchNumber" : ${i}`,
         });
 
         const qrCodeElement = document.createElement('div');
@@ -312,19 +286,19 @@ const PointForm = () => {
         document.body.appendChild(qrCodeElement);
 
         const canvasPromise = new Promise((resolve) => {
-          setTimeout(() => {
-            html2canvas(qrCodeElement, {
-              scale: 2,  // Augmente la résolution
-              useCORS: true, // Pour éviter les problèmes liés aux images externes
-            }).then((canvas) => {
-              document.body.removeChild(qrCodeElement);
-              resolve({
-                imgData: canvas.toDataURL('image/png'),
-                width: canvas.width,
-                height: canvas.height,
+            setTimeout(() => {
+              html2canvas(qrCodeElement, {
+                scale: 2,  // Augmente la résolution
+                useCORS: true, // Pour éviter les problèmes liés aux images externes
+              }).then((canvas) => {
+                document.body.removeChild(qrCodeElement);
+                resolve({
+                  imgData: canvas.toDataURL('image/png'),
+                  width: canvas.width,
+                  height: canvas.height,
+                });
               });
-            });
-          }, 100); // Pause de 100ms
+            }, 100); // Pause de 100ms
         });
 
         canvasPromises.push(canvasPromise);
@@ -346,7 +320,7 @@ const PointForm = () => {
       pdf.save(`${formData.farm_id}_QRCode.pdf`);
     }
   };
-
+  
 
 
 
@@ -454,7 +428,7 @@ const PointForm = () => {
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
                 <option value="">Select Crop</option>
-                {cropsData.map(crop => (
+                {crops.map(crop => (
                   <option key={crop.id} value={crop.id}>
                     {crop.name}
                   </option>
@@ -473,20 +447,20 @@ const PointForm = () => {
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
                 <option value="">Select Crop Grade</option>
-                <option value="A">Grade A</option>
-                <option value="B">Grade B</option>
-                <option value="C">Grade C</option>
-                <option value="D">Grade D</option>
+                {cropGrades.map(grade => (
+                  <option key={grade.id} value={grade.id}>
+                    {grade.name}
+                  </option>
+                ))}
               </select>
             </div>
-
           </div>
-
+  
           {[{
-            label: 'Batch Number', name: 'batch_number', type: 'number'
-          }, {
-            label: 'Produce Weight (Kgs)', name: 'produce_weight', type: 'text'
-          }]
+              label: 'Batch Number', name: 'batch_number', type: 'number'
+            }, {
+              label: 'Produce Weight (Kgs)', name: 'produce_weight', type: 'text'
+            }]
             .map(({ label, name, type, options }) => (
               <div key={name} className="grid grid-cols-1">
                 <label htmlFor={name} className="block text-sm font-medium text-gray-700">{label}:</label>
@@ -518,49 +492,7 @@ const PointForm = () => {
               </div>
             ))
           }
-          {/* ------------------------------------------------------------------------------------------------------------------------------- */}
-          <div className="space-y-6"> {/* Remplace grid par space-y pour espacement vertical */}
-            <label htmlFor='coffeetype' className="block text-sm font-medium text-gray-700">Coffee Type</label>
-            <select
-              id="coffeeType"
-              name="coffeeType"
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              value={formData.coffeeType}
-              onChange={handleChange}
-              required
-            >
-              <option value="" >Select Coffee Type</option>
-              <option value="Robusta">Robusta</option>
-              <option value="Arabica">Arabica</option>
-            </select>
-
-            <label htmlFor='hscode' className="block text-sm font-medium text-gray-700">HS Code</label>
-            <select
-              id='hscode'
-              name="hscode"
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              value={formData.hscode}
-              onChange={handleChange}
-              required
-            >
-              <option value="" >Select HS Code</option>
-              {formData.coffeeType === "Robusta" && (
-                <>
-                  <option value="0901.11">0901.11 -- Not decaffeinated</option>
-                  <option value="0901.21">0901.21 -- Not decaffeinated, roasted</option>
-                </>
-              )}
-              {formData.coffeeType === "Arabica" && (
-                <>
-                  <option value="0901.12">0901.12 -- Decaffeinated</option>
-                  <option value="0901.22">0901.22 -- Decaffeinated, roasted</option>
-                </>
-              )}
-            </select>
-          </div>
-
-
-          {/* ---------------------------------------------------------------------------------------------------------------------------- */}
+  
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label htmlFor="store_name" className="block text-sm font-medium text-gray-700">Store Name:</label>
@@ -578,7 +510,7 @@ const PointForm = () => {
                 ))}
               </select>
             </div>
-
+  
             <div>
               <label htmlFor="season" className="block text-sm font-medium text-gray-700">Season:</label>
               <select
@@ -596,7 +528,7 @@ const PointForm = () => {
               </select>
             </div>
           </div>
-
+  
           <div>
             <label htmlFor="geolocation" className="block text-sm font-medium text-gray-700">Geolocation:</label>
             <input
@@ -609,7 +541,7 @@ const PointForm = () => {
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
-
+  
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label htmlFor="country_of_origin" className="block text-sm font-medium text-gray-700">Country of Origin:</label>
@@ -627,7 +559,7 @@ const PointForm = () => {
                 ))}
               </select>
             </div>
-
+  
             <div>
               <label htmlFor="destination_country" className="block text-sm font-medium text-gray-700">Destination Country:</label>
               <select
@@ -645,7 +577,7 @@ const PointForm = () => {
               </select>
             </div>
           </div>
-
+  
           <div>
             <label htmlFor="channel_partner" className="block text-sm font-medium text-gray-700">Channel Partner:</label>
             <input
@@ -658,7 +590,7 @@ const PointForm = () => {
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
-
+  
           <div>
             <label htmlFor="end_customer_name" className="block text-sm font-medium text-gray-700">End Customer Name:</label>
             <input
@@ -671,7 +603,7 @@ const PointForm = () => {
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
-
+  
           <div className="mb-6">
             <label htmlFor="timestamp" className="block text-sm font-medium text-gray-700">Timestamp (Transaction Date):</label>
             <input
@@ -684,7 +616,7 @@ const PointForm = () => {
               className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
-
+  
           <button
             type="submit"
             className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -692,7 +624,7 @@ const PointForm = () => {
             Generate QR Codes
           </button>
         </form>
-
+  
         <div ref={qrCodeContainerRef} className="mt-6">
           {/* Placeholder for QR codes */}
         </div>
@@ -704,7 +636,7 @@ const PointForm = () => {
       )}
     </div>
   );
-
+  
 };
 
 export default PointForm;

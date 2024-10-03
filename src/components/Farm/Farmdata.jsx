@@ -170,7 +170,7 @@ const FarmDataManager = () => {
                     </div>
                     <div className="flex justify-end space-x-4 mt-6">
                         <Link
-                            to="/createfarm"
+                            to="/farmmanager"
                             className="bg-gray-500 text-white py-2 px-4 rounded inline-flex items-center"
                         >
                             <span>Cancel</span>
