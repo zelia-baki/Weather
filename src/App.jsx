@@ -88,8 +88,8 @@ function App() {
     { path: "/irrigationmanager", component: <IrrigationManager /> , adminOnly: false},
     { path: "/cropcoefficientmanager", component: <CropCoefficientManager/>, adminOnly: false},
     { path: "/grademanager", component: <GradeManager/>, adminOnly: false},
-    { path: "/contactus", component: <ContactUs/>, adminOnly: false},
-    { path: "/signup", component: <SignUp/>, adminOnly: false},
+    // { path: "/contactus", component: <ContactUs/>, adminOnly: false},
+    // { path: "/signup", component: <SignUp/>, adminOnly: false},
     { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false}
 
 
@@ -103,6 +103,10 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/contactus" element={<ContactUs />} />
+        <Route path="/signup" element={<SignUp/>} />
+
+
 
         {/* Protected Routes */}
         <Route

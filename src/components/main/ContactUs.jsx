@@ -18,14 +18,14 @@ const ContactUs = () => {
         e.preventDefault();
     
         emailjs.send(
-            'service_zba803d',
-            'template_d0yb1qr',
+            'service_3xq2aks',
+            'template_waiira7',
             {
                 phone: formData.phone,
                 email: formData.email,
                 message: formData.message
             },
-            'CO15tjM0oa2UXniWZ'
+            'Pt5g2EHR_AEyDF5NC'
         ).then((result) => {
             console.log('Email successfully sent!', result.text);
             // Show success alert

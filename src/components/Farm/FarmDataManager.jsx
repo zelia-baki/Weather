@@ -122,15 +122,29 @@ const FarmDataManager = () => {
     setFormData(data);
     setEditId(data.id);
   };
-
   const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'You won’t be able to revert this!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!',
+    });
+    if (result.isConfirmed) {
+
     try {
-      await axiosInstance.delete(`/api/farmdata/${id}/delete`);
-      fetchFarmData();
+      await axiosInstance.post(`/api/farmdata/${id}/delete`);
+        Swal.fire('Deleted!', 'Farm has been deleted.', 'success'); 
+      fetchFarmData(currentPage); // Rafraîchit les données après suppression
     } catch (error) {
-      console.error("Error deleting farm data:", error);
+      console.error('Error deleting farm:', error);
+      setError('An error occurred while deleting the farm data.');
     }
+  }
   };
+  
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -261,7 +275,7 @@ const FarmDataManager = () => {
             required
             className="w-full p-2 border rounded-md shadow-sm"
           />
-          <input
+          {/* <input
             type="text"
             name="hs_code"
             value={formData.hs_code}
@@ -269,7 +283,7 @@ const FarmDataManager = () => {
             placeholder="HS code"
             required
             className="w-full p-2 border rounded-md shadow-sm"
-          />
+          /> */}
         </div>
 
         <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
@@ -308,7 +322,7 @@ const FarmDataManager = () => {
                 <td className="px-4 py-2">{data.quantity}</td>
                 <td className="px-4 py-2">{data.expected_yield}</td>
                 <td className="px-4 py-2">{data.actual_yield}</td>
-                <td className="px-4 py-2">{data.hs_code}</td>
+                {/* <td className="px-4 py-2">{data.hs_code}</td> */}
                 <td className="px-4 py-2">
                   <button onClick={() => handleEdit(data)} className="text-blue-500 hover:underline mr-2">Edit</button>
                   <button onClick={() => handleDelete(data.id)} className="text-red-500 hover:underline">Delete</button>

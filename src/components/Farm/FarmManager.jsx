@@ -310,7 +310,7 @@ const FarmComponent = () => {
                 <Link to="/mapview" state={{ owner_id: farm.id, owner_type: 'farmer', geolocation: farm.geolocation }} className="bg-blue-200 text-blue-800 py-1 px-3 rounded hover:bg-blue-300 transition duration-300">
                   View
                 </Link>
-                <Link to="/farmdata" className="bg-green-200 text-green-800 py-1 px-3 rounded hover:bg-green-300 transition duration-300">
+                <Link to="/farmdatamanager" className="bg-green-200 text-green-800 py-1 px-3 rounded hover:bg-green-300 transition duration-300">
                   Add FD
                 </Link>
                 <Link to="/mapbox" state={{ owner_id: farm.id, owner_type: 'farmer', geolocation: farm.geolocation }} className="bg-purple-200 text-purple-800 py-1 px-3 rounded hover:bg-purple-300 transition duration-300">

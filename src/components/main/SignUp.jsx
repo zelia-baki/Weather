@@ -20,15 +20,15 @@ const SignUp = () => {
 
         // Sending email via EmailJS
         emailjs.send(
-            'service_zba803d',         // Service ID
-            'template_iscrwq4',        // Template ID
+            'service_3xq2aks',         // Service ID
+            'template_irqm3l1',        // Template ID
             {
                 phone: formData.phone,
                 message: formData.message,
                 organization: formData.organization,
                 company: formData.company
             },
-            'CO15tjM0oa2UXniWZ'              // User ID from EmailJS
+            'Pt5g2EHR_AEyDF5NC'              // User ID from EmailJS
         ).then((response) => {
             Swal.fire({
                 icon: 'success',

@@ -117,6 +117,7 @@ const PointForm = () => {
 
     fetchCrops();
   }, [cat_id]);
+  
 
 
   const handleCropChange = (selectedCropId) => {
@@ -532,6 +533,8 @@ const PointForm = () => {
               <option value="" >Select Coffee Type</option>
               <option value="Robusta">Robusta</option>
               <option value="Arabica">Arabica</option>
+              <option value="Other">Other</option>
+
             </select>
 
             <label htmlFor='hscode' className="block text-sm font-medium text-gray-700">HS Code</label>
@@ -554,6 +557,12 @@ const PointForm = () => {
                 <>
                   <option value="0901.12">0901.12 -- Decaffeinated</option>
                   <option value="0901.22">0901.22 -- Decaffeinated, roasted</option>
+                </>
+              )}
+               {formData.coffeeType === "Other" && (
+                <>
+                  <option value="0901.90">0901.90 -- Other 1</option>
+                  <option value="0901.90">0901.90 -- Other 2</option>
                 </>
               )}
             </select>

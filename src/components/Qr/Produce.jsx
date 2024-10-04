@@ -108,7 +108,7 @@ const GenerateQrCodeAndReceipt = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axiosInstance.post('/api/qr/generate', formData);
+      const response = await axiosInstance.post('/api/qrcode/generate_qr', formData);
       if (response.data.status === 'success') {
         setQrCodes(response.data.qrCodes);
       }

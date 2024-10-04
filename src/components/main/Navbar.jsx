@@ -157,6 +157,9 @@ const Sidebar = () => {
                 <Link to="/graph" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                   Weather Data
                 </Link>
+                <Link to="/graphcgd" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                  Graph HDD and CDD
+                </Link>
               </div>
             )}
           </div>
