@@ -26,7 +26,7 @@ import ForestTree from './components/Forest/Tree/ForestTree.jsx';
 import QR from './components/Qr/qr.jsx';
 import Produce from './components/Qr/Produce.jsx';
 import Conservation from './components/Qr/Conservation.jsx';
-import Export from './components/Qr/Export.jsx';
+import Export from './components/Qr/Export2.jsx';
 import Fertilizer from './components/Qr/Fertilizer.jsx';
 import FarmReport from './components/gfw/Gfwreportfarmer.jsx';
 import ForestReport from './components/gfw/Gfwreportforest.jsx';
@@ -37,7 +37,7 @@ import FarmerGroupManager from './components/Farmergroup/FarmerGroup.jsx';
 import FarmManager from './components/Farm/FarmManager.jsx';
 import FarmManager1 from './components/Farm/FarmManager1.jsx';
 import FarmDataManager from './components/Farm/FarmDataManager.jsx';
-import Export2 from './components/Qr/Export2.jsx';
+import Export2 from './components/Qr/exportEXemple.jsx';
 import UserManagement from './components/Users/UserManagement.jsx';
 import WeatherAndSolar from './components/Weather/WeatherAndSolar.jsx'
 import CropManager from './components/crop/CropManager.jsx';
@@ -72,7 +72,9 @@ function App() {
     { path: "/qr", component: <QR /> , adminOnly: false},
     { path: "/qrproduce", component: <Produce /> , adminOnly: false},
     { path: "/qrconservation", component: <Conservation /> , adminOnly: false},
-    { path: "/qrexport", component: <Export2 /> , adminOnly: false},
+    { path: "/qrexport", component: <Export /> , adminOnly: false},
+    // { path: "/qrexport2", component: <Export /> , adminOnly: false},
+
     { path: "/qrfertilizer", component: <Fertilizer /> , adminOnly: false},
     { path: "/reportfarmer", component: <FarmReport /> , adminOnly: false},
     { path: "/reportforest", component: <ForestReport /> , adminOnly: false},

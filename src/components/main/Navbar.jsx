@@ -154,6 +154,9 @@ const Sidebar = () => {
             </button>
             {!isCollapsed && openWeatherDropdown && (
               <div className="ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out">
+                  <Link to="/cardex" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                  Card
+                </Link>
                 <Link to="/graph" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                   Weather Data
                 </Link>

@@ -15,6 +15,8 @@ const FarmComponent = () => {
     geolocation: '',
     phonenumber1: '',
     phonenumber2: '',
+    gender: '',
+    cin: '',
   });
   const [currentFarmId, setCurrentFarmId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -96,6 +98,8 @@ const FarmComponent = () => {
       geolocation: farm.geolocation,
       phonenumber: farm.phonenumber1,
       phonenumber2: farm.phonenumber2,
+      gender: farm.gender,
+      cin: farm.cin,
     });
     setCurrentFarmId(farm.id);
     setIsModalOpen(true);
@@ -135,6 +139,8 @@ const FarmComponent = () => {
       geolocation: '',
       phonenumber1: '',
       phonenumber2: '',
+      gender: '',
+      cin: '',
     });
     setCurrentFarmId(null);
   };
@@ -192,7 +198,7 @@ const FarmComponent = () => {
               <input
                 type="text"
                 name="parishe"
-                placeholder="Parishe"
+                placeholder="Parish"
                 value={formData.parishe}
                 onChange={handleChange}
                 className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
@@ -263,6 +269,34 @@ const FarmComponent = () => {
                 name="phonenumber2"
                 placeholder="Phone Number 2"
                 value={formData.phonenumber2}
+                onChange={handleChange}
+                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
+              />
+              {/* <input
+                type="text"
+                name="gender"
+                placeholder="Gender"
+                value={formData.gender}
+                onChange={handleChange}
+                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
+              /> */}
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+
+
+              <input
+                type="text"
+                name="cin"
+                placeholder="National ID"
+                value={formData.cin}
                 onChange={handleChange}
                 className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
               />

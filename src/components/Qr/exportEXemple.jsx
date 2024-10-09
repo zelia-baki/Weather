@@ -302,6 +302,7 @@ const PointForm = () => {
     ECN : ${formData.end_customer_name}\n
     StoreName : ${formData.store_name}\n
     Crop Category : ${formData.crop_category}\n
+  Crop : ${selectedCrop ? selectedCrop.name : 'N/A'}\n
     Grade : ${uniqueGrades.join(', ') || 'N/A'}\n
     Coffee Type : ${formData.coffeeType}\n
     HsCode : ${formData.hscode}\n
@@ -481,10 +482,10 @@ const PointForm = () => {
                 ))}
               </select>
             </div> */}
-            <div>
-              <h2 className="block text-sm font-medium text-gray-700">Select Crop to View Grades</h2>
+            <div className="p-6 bg-gray-50">
+              <h2 className="text-lg font-bold">Select Crop to View Grades</h2>
               <select
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="border p-2 mt-2 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 value={selectedCropId}
                 onChange={(e) => setSelectedCropId(e.target.value)}
               >
@@ -499,12 +500,11 @@ const PointForm = () => {
               {error && <p className="text-red-500 mt-2">{error}</p>}
 
               {cropGrades.length > 0 && (
-                <div>
-                  <h3 className="block text-sm font-medium text-gray-700">Grades:</h3>
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold">Grades:</h3>
                   <ul className="list-disc list-inside bg-white rounded-md shadow p-4 mt-2">
                     {cropGrades.map((grade) => (
-                      <li key={grade.id}  className="mt-2 border-b pb-2 last:border-b-0 text-sm text-gray-700 bg-white p-3 rounded-md shadow-sm hover:bg-gray-100 transition-all duration-200"
->
+                      <li key={grade.id} className="mt-2 border-b pb-2 last:border-b-0">
                         <strong>Grade Value:</strong> {grade.grade_value} <br />
                         <strong>Description:</strong> {grade.description} <br />
                         {/* <strong>Date Created:</strong> {new Date(grade.date_created).toLocaleDateString()} <br />
