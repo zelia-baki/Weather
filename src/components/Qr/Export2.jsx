@@ -41,7 +41,9 @@ const PointForm = () => {
   const [selectedCropId, setSelectedCropId] = useState('');
   const [cropGrades, setCropGrades] = useState([]); // État pour les grades
   const [selectedGradeId, setSelectedGradeId] = useState(''); // État pour le grade sélectionné
+  const [selectedGradeDetails, setSelectedGradeDetails] = useState(null); // État pour stocker les détails du grade
   const [selectedGradeValue, setSelectedGradeValue] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState(null); // État pour stocker la sélection du grade
   const [grades, setGrades] = useState([]);
   const [error, setError] = useState(null);
   const storeNames = ['Store A', 'Store B', 'Store C'];
@@ -83,28 +85,7 @@ const PointForm = () => {
     }
   };
 
-
-
-  // useEffect(() => {
-  //   const fetchCrops = async () => {
-  //     if (cat_id) {
-  //       try {
-  //         const response = await axiosInstance.get(`/api/crop/getbycat/${cat_id}`);
-  //         console.log('Crops response:', response.data); // Log pour vérifier les données
-  //         if (response.data.status === 'success') {
-  //           setcrops(response.data.crops || []);
-  //         } else {
-  //           console.error('No crops found for this category');
-  //           setcrops([]); // Vide la liste si aucune culture n'est trouvée
-  //         }
-  //       } catch (error) {
-  //         console.error('Error fetching crops:', error);
-  //       }
-  //     }
-  //   };
-
-  //   fetchCrops();
-  // }, [cat_id]);
+ 
 
   // Fetch crops on component mount
   useEffect(() => {
@@ -146,7 +127,9 @@ const PointForm = () => {
   const selectedCrop = crops.find(crop => crop.id === selectedCropId) || {}; // Trouve la culture sélectionnée
 
 
-
+  const handleGradeClick = (grade) => {
+    setSelectedGrade(grade); // Stocke le grade sélectionné
+  };
 
   const handleCropChange = (selectedCropId) => {
     console.log("selectedCropId:", selectedCropId); // Get the selected value from the dropdown
@@ -158,6 +141,17 @@ const PointForm = () => {
     console.log("selectedCatId:", selectedCatId);
     setCat(selectedCatId); // Set the category state
   };
+
+  useEffect(() => {
+    if (selectedGradeValue) {
+      // Recherche le grade sélectionné pour afficher ses détails
+      const selectedGrade = cropGrades.find(grade => grade.grade_value === selectedGradeValue);
+      setSelectedGradeDetails(selectedGrade);
+    } else {
+      setSelectedGradeDetails(null); // Réinitialise les détails si aucun grade n'est sélectionné
+    }
+  }, [selectedGradeValue, cropGrades]);
+
 
   useEffect(() => {
     const fetchFarms = async () => {
@@ -297,7 +291,7 @@ const PointForm = () => {
     ECN : ${formData.end_customer_name}\n
     StoreName : ${formData.store_name}\n
     Crop Category : ${formData.crop_category}\n
-    Grade : ${uniqueGrades.join(', ') || 'N/A'}\n
+    Grade: ${selectedGradeValue || 'N/A'}
     Coffee Type : ${formData.coffeeType}\n
     HsCode : ${formData.hscode}\n
     Date : ${formData.harvest_date}\n
@@ -460,7 +454,7 @@ const PointForm = () => {
 
         
             <div>
-            <h2 className="block text-sm font-medium text-gray-700">Select Crop to View Grades</h2>
+      <h2 className="block text-sm font-medium text-gray-700">Select Crop to View Grades</h2>
       <select
         className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
         value={selectedCropId}
@@ -470,6 +464,7 @@ const PointForm = () => {
         }}
       >
         <option value="">Select a crop</option>
+        {/* Remplacez 'crops' par votre variable de tableau de cultures */}
         {crops.map((crop) => (
           <option key={crop.id} value={crop.id}>
             {crop.name}
@@ -483,9 +478,11 @@ const PointForm = () => {
         <div className="mt-4">
           <h3 className="block text-sm font-medium text-gray-700">Select Grade:</h3>
           <select
+            id="grade"
+            name="grade"
             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             value={selectedGradeValue}
-            onChange={(e) => setSelectedGradeValue(e.target.value)}
+            onChange={(e) => setSelectedGradeValue(e.target.value)} // Met à jour l'état du grade sélectionné
           >
             <option value="">Select a grade value</option>
             {cropGrades.map((grade) => (
