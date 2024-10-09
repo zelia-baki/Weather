@@ -41,6 +41,7 @@ const PointForm = () => {
   const [selectedCropId, setSelectedCropId] = useState('');
   const [cropGrades, setCropGrades] = useState([]); // État pour les grades
   const [selectedGradeId, setSelectedGradeId] = useState(''); // État pour le grade sélectionné
+  const [selectedGradeValue, setSelectedGradeValue] = useState('');
   const [grades, setGrades] = useState([]);
   const [error, setError] = useState(null);
   const storeNames = ['Store A', 'Store B', 'Store C'];
@@ -71,22 +72,16 @@ const PointForm = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchCropGrades = async () => {
-      if (cropId) {
-        console.log('Fetching grades for crop_id:', cropId);
-        try {
-          const response = await fetch(`/api/grade/getbycrop/${cropId}`);
-          console.log('Received crop grades:', response.data); // Ajoute ce log
-          setcropGrades(response.data.grades || []);
-        } catch (error) {
-          console.error('Error fetching crop grades:', error);
-        }
-      }
-    };
-
-    fetchCropGrades();
-  }, [cropId]);
+  const fetchCropGrades = async (cropId) => {
+    try {
+      const response = await fetch(`/api/grades?crop_id=${cropId}`);
+      const data = await response.json();
+      setCropGrades(data);  // We assume the API returns only the grade_value in the data
+      setSelectedGradeValue('');  // Reset the selected grade value
+    } catch (err) {
+      setError("");
+    }
+  };
 
 
 
@@ -463,57 +458,44 @@ const PointForm = () => {
               </select>
             </div>
 
-            {/* <div>
-              <label htmlFor="crop" className="block text-sm font-medium text-gray-700">Crop:</label>
-              <select
-                id="crop"
-                name="crop"
-                value={formData.crop || ''}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              >
-                <option value="">Select Crop</option>
-                {cropsData.map(crop => (
-                  <option key={crop.id} value={crop.id}>
-                    {crop.name}
-                  </option>
-                ))}
-              </select>
-            </div> */}
+        
             <div>
-              <h2 className="block text-sm font-medium text-gray-700">Select Crop to View Grades</h2>
-              <select
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={selectedCropId}
-                onChange={(e) => setSelectedCropId(e.target.value)}
-              >
-                <option value="">Select a crop</option>
-                {crops.map((crop) => (
-                  <option key={crop.id} value={crop.id}>
-                    {crop.name}
-                  </option>
-                ))}
-              </select>
+            <h2 className="block text-sm font-medium text-gray-700">Select Crop to View Grades</h2>
+      <select
+        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        value={selectedCropId}
+        onChange={(e) => {
+          setSelectedCropId(e.target.value);
+          fetchCropGrades(e.target.value);
+        }}
+      >
+        <option value="">Select a crop</option>
+        {crops.map((crop) => (
+          <option key={crop.id} value={crop.id}>
+            {crop.name}
+          </option>
+        ))}
+      </select>
 
-              {error && <p className="text-red-500 mt-2">{error}</p>}
+      {error && <p className="text-red-500 mt-2">{error}</p>}
 
-              {cropGrades.length > 0 && (
-                <div>
-                  <h3 className="block text-sm font-medium text-gray-700">Grades:</h3>
-                  <ul className="list-disc list-inside bg-white rounded-md shadow p-4 mt-2">
-                    {cropGrades.map((grade) => (
-                      <li key={grade.id}  className="mt-2 border-b pb-2 last:border-b-0 text-sm text-gray-700 bg-white p-3 rounded-md shadow-sm hover:bg-gray-100 transition-all duration-200"
->
-                        <strong>Grade Value:</strong> {grade.grade_value} <br />
-                        <strong>Description:</strong> {grade.description} <br />
-                        {/* <strong>Date Created:</strong> {new Date(grade.date_created).toLocaleDateString()} <br />
-                <strong>Date Updated:</strong> {new Date(grade.date_updated).toLocaleDateString()} <br /> */}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+      {cropGrades.length > 0 && (
+        <div className="mt-4">
+          <h3 className="block text-sm font-medium text-gray-700">Select Grade:</h3>
+          <select
+            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            value={selectedGradeValue}
+            onChange={(e) => setSelectedGradeValue(e.target.value)}
+          >
+            <option value="">Select a grade value</option>
+            {cropGrades.map((grade) => (
+              <option key={grade.id} value={grade.grade_value}>
+                {grade.grade_value}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
             </div>
 
 

@@ -162,7 +162,6 @@ const FarmComponent = () => {
           View All Farms
         </Link>
       </div>
-
       <button
         onClick={() => setIsModalOpen(true)}
         className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition duration-300"
@@ -172,143 +171,207 @@ const FarmComponent = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h3 className="text-lg font-bold mb-4">{currentFarmId ? 'Update Farm' : 'Create Farm'}</h3>
+          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-4xl">
+            <h3 className="text-2xl font-bold mb-6 text-green-600">{currentFarmId ? 'Update Farm' : 'Create Farm'}</h3>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 mb-6">
-              <input
-                type="text"
-                name="name"
-                placeholder="Farm Name"
-                value={formData.name}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-                required
-              />
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-8">
+              {/* Colonne gauche */}
+              <div>
+                <div className="mb-4">
+                  <label htmlFor="name" className="block text-gray-600 font-medium mb-2">
+                    Farm Name
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    placeholder="Enter Farm Name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
 
-              <input
-                type="text"
-                name="subcounty"
-                placeholder="Subcounty"
-                value={formData.subcounty}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-                required
-              />
-              <input
-                type="text"
-                name="parishe"
-                placeholder="Parish"
-                value={formData.parishe}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-                required
-              />
+                <div className="mb-4">
+                  <label htmlFor="subcounty" className="block text-gray-600 font-medium mb-2">
+                    Subcounty
+                  </label>
+                  <input
+                    id="subcounty"
+                    type="text"
+                    name="subcounty"
+                    placeholder="Enter Subcounty"
+                    value={formData.subcounty}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
 
-              <input
-                type="text"
-                name="village"
-                placeholder="Village"
-                value={formData.village}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-                required
-              />
+                <div className="mb-4">
+                  <label htmlFor="parishe" className="block text-gray-600 font-medium mb-2">
+                    Parish
+                  </label>
+                  <input
+                    id="parishe"
+                    type="text"
+                    name="parishe"
+                    placeholder="Enter Parish"
+                    value={formData.parishe}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
 
-              <select
-                name="district_id"
-                value={formData.district_id}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-                required
-              >
-                <option value="">Select District</option>
-                {districts.map((district) => (
-                  <option key={district.id} value={district.id}>
-                    {district.name}
-                  </option>
-                ))}
-              </select>
+                <div className="mb-4">
+                  <label htmlFor="district_id" className="block text-gray-600 font-medium mb-2">
+                    District
+                  </label>
+                  <select
+                    id="district_id"
+                    name="district_id"
+                    value={formData.district_id}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  >
+                    <option value="">Select District</option>
+                    {districts.map((district) => (
+                      <option key={district.id} value={district.id}>
+                        {district.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <select
-                name="farmergroup_id"
-                value={formData.farmergroup_id}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-                required
-              >
-                <option value="">Select Farmer Group</option>
-                {farmerGroups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name}
-                  </option>
-                ))}
-              </select>
+                <div className="mb-4">
+                  <label htmlFor="geolocation" className="block text-gray-600 font-medium mb-2">
+                    Geolocation (lat, long)
+                  </label>
+                  <input
+                    id="geolocation"
+                    type="text"
+                    name="geolocation"
+                    placeholder="Enter Geolocation"
+                    value={formData.geolocation}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
+              </div>
 
-              <input
-                type="text"
-                name="geolocation"
-                placeholder="Geolocation (lat,long)"
-                value={formData.geolocation}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-                required
-              />
+              {/* Colonne droite */}
+              <div>
+                <div className="mb-4">
+                  <label htmlFor="farmergroup_id" className="block text-gray-600 font-medium mb-2">
+                    Farmer Group
+                  </label>
+                  <select
+                    id="farmergroup_id"
+                    name="farmergroup_id"
+                    value={formData.farmergroup_id}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  >
+                    <option value="">Select Farmer Group</option>
+                    {farmerGroups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <input
-                type="text"
-                name="phonenumber1"
-                placeholder="Phone Number 1"
-                value={formData.phonenumber1}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
+                <div className="mb-4">
+                  <label htmlFor="village" className="block text-gray-600 font-medium mb-2">
+                    Village
+                  </label>
+                  <input
+                    id="village"
+                    type="text"
+                    name="village"
+                    placeholder="Enter Village"
+                    value={formData.village}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
 
-              <input
-                type="text"
-                name="phonenumber2"
-                placeholder="Phone Number 2"
-                value={formData.phonenumber2}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
-              {/* <input
-                type="text"
-                name="gender"
-                placeholder="Gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-              /> */}
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-              >
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
+                <div className="mb-4">
+                  <label htmlFor="phonenumber1" className="block text-gray-600 font-medium mb-2">
+                    Phone Number 1
+                  </label>
+                  <input
+                    id="phonenumber1"
+                    type="text"
+                    name="phonenumber1"
+                    placeholder="Enter Phone Number 1"
+                    value={formData.phonenumber1}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
 
+                <div className="mb-4">
+                  <label htmlFor="phonenumber2" className="block text-gray-600 font-medium mb-2">
+                    Phone Number 2
+                  </label>
+                  <input
+                    id="phonenumber2"
+                    type="text"
+                    name="phonenumber2"
+                    placeholder="Enter Phone Number 2"
+                    value={formData.phonenumber2}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
 
-              <input
-                type="text"
-                name="cin"
-                placeholder="National ID"
-                value={formData.cin}
-                onChange={handleChange}
-                className="border border-gray-300 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
+                <div className="mb-4">
+                  <label htmlFor="gender" className="block text-gray-600 font-medium mb-2">
+                    Gender
+                  </label>
+                  <select
+                    id="gender"
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
 
-              <div className="flex justify-between">
+                <div className="mb-4">
+                  <label htmlFor="cin" className="block text-gray-600 font-medium mb-2">
+                    National ID
+                  </label>
+                  <input
+                    id="cin"
+                    type="text"
+                    name="cin"
+                    placeholder="Enter National ID"
+                    value={formData.cin}
+                    onChange={handleChange}
+                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+              </div>
+
+              <div className="col-span-2 flex justify-between mt-6">
                 <button
                   type="submit"
-                  className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition duration-300"
+                  className="bg-green-500 text-white py-2 px-6 rounded hover:bg-green-600 transition duration-300"
                 >
                   {currentFarmId ? 'Update Farm' : 'Create Farm'}
                 </button>
-
 
                 <button
                   type="button"
@@ -316,7 +379,7 @@ const FarmComponent = () => {
                     resetForm();
                     setIsModalOpen(false);
                   }}
-                  className="bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400 transition duration-300"
+                  className="bg-red-500 text-white py-2 px-6 rounded hover:bg-red-600 transition duration-300"
                 >
                   Cancel
                 </button>
@@ -325,6 +388,8 @@ const FarmComponent = () => {
           </div>
         </div>
       )}
+
+
 
       <ul className="space-y-4 mt-6">
         {farms.map((farm) => (
