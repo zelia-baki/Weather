@@ -85,7 +85,7 @@ const PointForm = () => {
     }
   };
 
- 
+
 
   // Fetch crops on component mount
   useEffect(() => {
@@ -285,7 +285,7 @@ const PointForm = () => {
     }
 
     const qrCodesData = Array.from({ length: batchNumber }, () => (`
-    Farm : nkusu.com/api/${formData.channel_partner}\n
+    Farm :www.nkusu.com/farmmanager/${formData.farm_id}
     destination : ${formData.destination_country}\n
     CP : ${formData.channel_partner}\n
     ECN : ${formData.end_customer_name}\n
@@ -452,47 +452,47 @@ const PointForm = () => {
               </select>
             </div>
 
-        
+
             <div>
-      <h2 className="block text-sm font-medium text-gray-700">Select Crop to View Grades</h2>
-      <select
-        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-        value={selectedCropId}
-        onChange={(e) => {
-          setSelectedCropId(e.target.value);
-          fetchCropGrades(e.target.value);
-        }}
-      >
-        <option value="">Select a crop</option>
-        {/* Remplacez 'crops' par votre variable de tableau de cultures */}
-        {crops.map((crop) => (
-          <option key={crop.id} value={crop.id}>
-            {crop.name}
-          </option>
-        ))}
-      </select>
+              <h2 className="block text-sm font-medium text-gray-700">Select Crop to View Grades</h2>
+              <select
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={selectedCropId}
+                onChange={(e) => {
+                  setSelectedCropId(e.target.value);
+                  fetchCropGrades(e.target.value);
+                }}
+              >
+                <option value="">Select a crop</option>
+                {/* Remplacez 'crops' par votre variable de tableau de cultures */}
+                {crops.map((crop) => (
+                  <option key={crop.id} value={crop.id}>
+                    {crop.name}
+                  </option>
+                ))}
+              </select>
 
-      {error && <p className="text-red-500 mt-2">{error}</p>}
+              {error && <p className="text-red-500 mt-2">{error}</p>}
 
-      {cropGrades.length > 0 && (
-        <div className="mt-4">
-          <h3 className="block text-sm font-medium text-gray-700">Select Grade:</h3>
-          <select
-            id="grade"
-            name="grade"
-            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            value={selectedGradeValue}
-            onChange={(e) => setSelectedGradeValue(e.target.value)} // Met à jour l'état du grade sélectionné
-          >
-            <option value="">Select a grade value</option>
-            {cropGrades.map((grade) => (
-              <option key={grade.id} value={grade.grade_value}>
-                {grade.grade_value}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+              {cropGrades.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="block text-sm font-medium text-gray-700">Select Grade:</h3>
+                  <select
+                    id="grade"
+                    name="grade"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value={selectedGradeValue}
+                    onChange={(e) => setSelectedGradeValue(e.target.value)} // Met à jour l'état du grade sélectionné
+                  >
+                    <option value="">Select a grade value</option>
+                    {cropGrades.map((grade) => (
+                      <option key={grade.id} value={grade.grade_value}>
+                        {grade.grade_value}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
 
