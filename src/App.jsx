@@ -47,6 +47,9 @@ import GradeManager from './components/crop/GradeManager.jsx';
 import ContactUs from './components/main/ContactUs.jsx';
 import SignUp from './components/main/SignUp.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
+import WeathearMap from './components/mapbox/WeatherMap.jsx';
+import Test from './components/gfw/Reportgen2Forest.jsx';
+
 
 function App() {
   const layoutRoutes = [
@@ -107,6 +110,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/contactus" element={<ContactUs />} />
         <Route path="/signup" element={<SignUp/>} />
+        <Route path="/test" element={<Test />} />
 
 
 

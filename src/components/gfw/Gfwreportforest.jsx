@@ -89,22 +89,48 @@ const ForestReport = () => {
           <p className="text-lg font-medium text-gray-700 mb-4">Last Updated: {forestInfo.date_updated}</p>
         </div>
       )}
-      {geoData.length > 0 && (
-        <div className="mb-6">
-          {geoData.map((dataset, idx) => (
-            <div key={idx} className="bg-white p-4 shadow-lg rounded-lg border border-gray-200 mb-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">{dataset.dataset}</h4>
-              <p className="text-gray-700 mb-2">Value: {dataset.data_fields.area__ha.toFixed(5)}</p>
-              {dataset.coordinates && dataset.coordinates.length > 0 && (
-                <img
-                  src={generateMapboxUrl(dataset.coordinates[0])}
-                  alt={`Map for ${dataset.dataset}`}
-                />
-              )}
-            </div>
-          ))}
+      
+      <div className="grid grid-cols-2 gap-4">
+        {/* Colonne 1: Tableau des données */}
+        <div className="bg-white p-4 rounded-lg shadow-lg">
+          <h2 className="text-xl font-bold mb-2">Données des Forêts</h2>
+          <table className="min-w-full bg-white rounded-lg shadow-md">
+            <thead>
+              <tr className="bg-green-600 text-white">
+                <th className="py-2 px-4 text-left">Dataset</th>
+                <th className="py-2 px-4 text-left">Valeur</th>
+              </tr>
+            </thead>
+            <tbody>
+              {geoData.map((dataset, idx) => (
+                <tr key={idx} className="border-b hover:bg-gray-200">
+                  <td className="py-2 px-4">{dataset.dataset}</td>
+                  <td className="py-2 px-4">{dataset.data_fields.area__ha ? dataset.data_fields.area__ha.toFixed(5) : 'N/A'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {/* Colonne 2: Image et Informations Générales */}
+        <div className="bg-yellow-200 p-4 rounded-lg">
+          <h2 className="text-xl font-bold mb-2">Informations Générales</h2>
+          <p>
+            La forêt joue un rôle crucial dans la biodiversité et la régulation du climat. 
+            Elles fournissent des habitats pour de nombreuses espèces et contribuent à la 
+            qualité de l'air. La gestion durable des forêts est essentielle pour préserver 
+            cet écosystème vital.
+          </p>
+          {geoData.length > 0 && geoData[0].coordinates && (
+            <img
+              src={generateMapboxUrl(geoData[0].coordinates[0])}
+              alt="Map for the forest"
+              className="w-full h-auto mt-4"
+            />
+          )}
+        </div>
+      </div>
+      
       <div className="mt-6 flex justify-center">
         <button
           onClick={() => window.print()}
