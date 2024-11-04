@@ -180,11 +180,6 @@ const Card = ({ initialRegion, initialCrop }) => {
                   <div className="font-semibold w-1/2">ETc :</div>
                   <div className="text-gray-800 text-xl w-1/2 text-right">{data.ETc ? data.ETc.toFixed(2) : 'N/A'} mm/day</div>
                 </div>
-                {/* <div className="flex items-center text-gray-600">
-                  <FaMapPin className="text-orange-500 mr-2 text-xl" />
-                  <div className="font-semibold w-1/2">Location:</div>
-                  <div className="text-gray-800 text-lg w-1/2 text-right">{data.location || 'N/A'}</div>
-                </div> */}
               </div>
             </>
           )}

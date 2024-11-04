@@ -1,139 +1,146 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS } from 'chart.js/auto';
-import axiosInstance from '../../axiosInstance';
+import axios from 'axios';
+import { FiInfo } from 'react-icons/fi'; // Importing an info icon
 
 function Graph() {
-  const [farmData, setFarmData] = useState([]);
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [weatherData, setWeatherData] = useState([]);
 
-  useEffect(() => {
-    // Fetch farm data
-    axiosInstance.get('/farm_data')
-      .then(response => {
-        const { data } = response.data;
-        setFarmData(data || []);
-      })
-      .catch(error => {
-        console.error('Error fetching farm data:', error);
-      });
+  const fetchWeatherData = async () => {
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,relative_humidity_2m,precipitation,et0_fao_evapotranspiration,shortwave_radiation,wind_speed_1000hPa&forecast_days=10`;
+      const response = await axios.get(url);
 
-    // Fetch weather data
-    const fetchWeatherData = async () => {
-      const region = 'some-region-id';  // replace with actual region
-      const crop = 'some-crop-id';      // replace with actual crop
-      // const latitude = '0.292225';      // replace with actual latitude
-      // const longitude = '32.576809';    // replace with actual longitude
-      // const latitude = '0.06667';     
-      // const longitude = '31.63333'; 
-      const latitude = '1.373333';        // replace with actual latitude
-      const longitude = '32.290275'; 
+      const hourlyData = response.data.hourly;
+      const dailyData = Array.from({ length: 10 }).map((_, i) => ({
+        date: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
+        temperature: hourlyData.temperature_2m.slice(i * 24, (i + 1) * 24).reduce((a, b) => a + b, 0) / 24,
+        humidity: hourlyData.relative_humidity_2m.slice(i * 24, (i + 1) * 24).reduce((a, b) => a + b, 0) / 24,
+        windSpeed: hourlyData.wind_speed_1000hPa.slice(i * 24, (i + 1) * 24).reduce((a, b) => a + b, 0) / 24,
+        precipitation: hourlyData.precipitation.slice(i * 24, (i + 1) * 24).reduce((a, b) => a + b, 0),
+      }));
 
-      try {
-        console.log(`Fetching weather data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}`);
-        const response = await axiosInstance.get('/WeatherWeekly', {
-          params: {
-            region_id: region,
-            crop_id: crop,
-            lat: latitude,
-            lon: longitude
-          }
-        });
+      setWeatherData(dailyData);
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+    }
+  };
 
-        const weatherData = response.data.data;
-        setWeatherData(weatherData || []);
-        console.log('Weather data fetched successfully:', weatherData);
-      } catch (error) {
-        console.error('Error fetching weather data:', error);
-      }
-    };
-
+  const handleSearch = () => {
     fetchWeatherData();
-  }, []);
+  };
 
-  // Extract labels and values for weather data
-  const weatherLabels = (weatherData || []).map(item => {
-    const date = new Date(item.date);
-    return `${date.getMonth() + 1}/${date.getDate()}`; // Format as MM/DD
-  });
-  const weatherTemperatures = (weatherData || []).map(item => item.average_temperature);
-  const weatherHumidities = (weatherData || []).map(item => item.average_humidity);
-  const weatherWindSpeeds = (weatherData || []).map(item => item.average_wind_speed);
-  const weatherPrecipitations = (weatherData || []).map(item => item.total_precipitation);
+  const weatherLabels = weatherData.map((item) => item.date.toLocaleDateString());
+  const weatherTemperatures = weatherData.map((item) => item.temperature);
+  const weatherHumidities = weatherData.map((item) => item.humidity);
+  const weatherWindSpeeds = weatherData.map((item) => item.windSpeed);
+  const weatherPrecipitations = weatherData.map((item) => item.precipitation);
 
   const chartData = {
-    labels: weatherLabels, // Use formatted weather dates as x-axis labels
+    labels: weatherLabels,
     datasets: [
       {
-        label: "Temperature",
+        label: 'Temperature (°C)',
         data: weatherTemperatures,
-        backgroundColor: 'rgba(75, 192, 192, 0.2)', // Transparent teal
-        borderColor: 'rgba(75, 192, 192, 1)', // Solid teal
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderColor: 'rgba(75, 192, 192, 1)',
         borderWidth: 2,
         tension: 0.4,
       },
       {
-        label: "Humidity",
+        label: 'Humidity (%)',
         data: weatherHumidities,
-        backgroundColor: 'rgba(153, 102, 255, 0.2)', // Transparent purple
-        borderColor: 'rgba(153, 102, 255, 1)', // Solid purple
+        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+        borderColor: 'rgba(153, 102, 255, 1)',
         borderWidth: 2,
         tension: 0.4,
       },
       {
-        label: "Wind Speed",
+        label: 'Wind Speed (km/h)',
         data: weatherWindSpeeds,
-        backgroundColor: 'rgba(255, 206, 86, 0.2)', // Transparent yellow
-        borderColor: 'rgba(255, 206, 86, 1)', // Solid yellow
+        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+        borderColor: 'rgba(255, 206, 86, 1)',
         borderWidth: 2,
         tension: 0.4,
       },
       {
-        label: "Precipitation",
+        label: 'Precipitation (mm)',
         data: weatherPrecipitations,
-        backgroundColor: 'rgba(255, 159, 64, 0.2)', // Transparent orange
-        borderColor: 'rgba(255, 159, 64, 1)', // Solid orange
+        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+        borderColor: 'rgba(255, 159, 64, 1)',
         borderWidth: 2,
         tension: 0.4,
-      }
-    ]
+      },
+    ],
   };
 
   const options = {
     responsive: true,
     plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          color: '#333', // Color for the legend text
-        },
-      },
+      legend: { position: 'bottom', labels: { color: '#333', font: { size: 14 } } },
       tooltip: {
-        callbacks: {
-          label: (tooltipItem) => `Value: ${tooltipItem.raw}`, // Customize tooltip label
-        },
+        callbacks: { label: (tooltipItem) => `Value: ${tooltipItem.raw}` },
       },
     },
     scales: {
-      x: {
-        ticks: {
-          color: '#333', // Color for x-axis labels
-        },
-      },
-      y: {
-        ticks: {
-          color: '#333', // Color for y-axis labels
-        },
-      },
+      x: { ticks: { color: '#333', font: { size: 12 } } },
+      y: { ticks: { color: '#333', font: { size: 12 } } },
     },
   };
 
   return (
-    <div className='bg-gray-100 min-h-screen p-6'>
-      <div className='container mx-auto'>
-        <div className='bg-white p-4 rounded-lg shadow-lg'>
-          <h2 className='text-xl font-semibold mb-4 text-green-500'>Weekly Forecast</h2>
-          <Line data={chartData} options={options} />
+    <div className="bg-gray-100 min-h-screen p-6">
+      <div className="container mx-auto">
+        <div className="bg-white p-6 rounded-lg shadow-lg">
+          <h2 className="text-xl font-semibold mb-4 text-green-500">10-Day Weather Forecast</h2>
+          <p className="text-sm text-gray-500 mb-2">
+            Enter the latitude and longitude coordinates to view a 10-day forecast, including temperature, humidity, wind speed, and precipitation.
+          </p>
+
+          <div className="mb-6 flex flex-col md:flex-row gap-4">
+            <div className="flex flex-col">
+              <label className="text-gray-700 font-semibold mb-1">Latitude</label>
+              <input
+                type="text"
+                placeholder="Enter Latitude"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                className="p-2 border rounded"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-gray-700 font-semibold mb-1">Longitude</label>
+              <input
+                type="text"
+                placeholder="Enter Longitude"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                className="p-2 border rounded"
+              />
+            </div>
+            <button
+              onClick={handleSearch}
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 self-center mt-4 md:mt-0"
+            >
+              Search
+            </button>
+          </div>
+
+          {/* Styled explanatory box for axes */}
+          <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg mb-6 flex items-start gap-2">
+            <FiInfo className="text-blue-500 text-xl mt-1" />
+            <p className="text-sm">
+              <strong>Note:</strong> The horizontal axis (<span className="font-semibold">x-axis</span>) represents the date, while the vertical axis (<span className="font-semibold">y-axis</span>) shows the values for temperature, humidity, wind speed, and precipitation. This will help in analyzing weather trends over the 10-day period.
+            </p>
+          </div>
+
+          {/* Display the chart */}
+          <div className="mt-6">
+            <Line data={chartData} options={options} />
+          </div>
         </div>
       </div>
     </div>

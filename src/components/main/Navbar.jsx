@@ -157,6 +157,9 @@ const Sidebar = () => {
                   <Link to="/cardex" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                   Card
                 </Link>
+                <Link to="/weathermap" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                  Map Weather
+                </Link>
                 <Link to="/graph" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                   Weather Data
                 </Link>

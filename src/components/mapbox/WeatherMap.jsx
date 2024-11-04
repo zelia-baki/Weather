@@ -1,16 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
-
 import 'mapbox-gl/dist/mapbox-gl.css';
-import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
 const MapboxExample = () => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const [notification, setNotification] = useState(null);
   const [placeName, setPlaceName] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // State for search input
+  const [temperature, setTemperature] = useState(null);
+  const [humidity, setHumidity] = useState(null);
+  const [precipitation, setPrecipitation] = useState(null);
+  const [et0, setEt0] = useState(null);
+  const [etC, setEtC] = useState(null); // State for ETc
+  const [shortwaveRadiation, setShortwaveRadiation] = useState(null);
+  const [windSpeed1000hPa, setWindSpeed1000hPa] = useState(null);
   const popupRef = useRef(null);
+
+  // Kc value
+  const Kc = 1.2;
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
@@ -22,42 +32,15 @@ const MapboxExample = () => {
       zoom: 8,
     });
 
-    const coordinatesGeocoder = (query) => {
-      const matches = query.match(/^[ ]*(?:Lat: )?(-?\d+\.?\d*)[, ]+(?:Lng: )?(-?\d+\.?\d*)[ ]*$/i);
-      if (!matches) return null;
-
-      const coord1 = Number(matches[1]);
-      const coord2 = Number(matches[2]);
-
-      const coordinateFeature = (lng, lat) => ({
-        center: [lng, lat],
-        geometry: { type: 'Point', coordinates: [lng, lat] },
-        place_name: `Lat: ${lat}, Lng: ${lng}`,
-        place_type: ['coordinate'],
-        properties: {},
-        type: 'Feature',
-      });
-
-      const geocodes = [];
-      if (coord1 < -90 || coord1 > 90) geocodes.push(coordinateFeature(coord1, coord2));
-      if (coord2 < -90 || coord2 > 90) geocodes.push(coordinateFeature(coord2, coord1));
-      if (geocodes.length === 0) geocodes.push(coordinateFeature(coord1, coord2), coordinateFeature(coord2, coord1));
-
-      return geocodes;
-    };
-
     const geocoder = new MapboxGeocoder({
       accessToken: mapboxgl.accessToken,
-      localGeocoder: coordinatesGeocoder,
-      zoom: 4,
-      placeholder: 'Enter coordinates, e.g., -40, 170',
       mapboxgl: mapboxgl,
-      reverseGeocode: true,
+      placeholder: 'Search for places...',
     });
 
     mapRef.current.addControl(geocoder);
 
-    geocoder.on('result', (e) => {
+    geocoder.on('result', async (e) => {
       const { place_name, geometry } = e.result;
       setPlaceName(place_name);
       setNotification({
@@ -65,30 +48,77 @@ const MapboxExample = () => {
         message: `Location found: ${place_name}`,
       });
 
+      // Center the map on the selected location
       mapRef.current.flyTo({ center: geometry.coordinates, zoom: 15 });
+
+      // Fetch weather data for the location
+      const latitude = geometry.coordinates[1];
+      const longitude = geometry.coordinates[0];
+      const weatherData = await fetchWeatherData(latitude, longitude);
+
+      // Update state with fetched weather data
+      setTemperature(weatherData.temperature);
+      setHumidity(weatherData.humidity);
+      setPrecipitation(weatherData.precipitation);
+      setEt0(weatherData.et0_fao_evapotranspiration);
+      setShortwaveRadiation(weatherData.shortwave_radiation);
+      setWindSpeed1000hPa(weatherData.windSpeed1000hPa);
+
+      // Calculate ETc
+      const calculatedEtC = calculateETc(weatherData.et0_fao_evapotranspiration, Kc);
+      setEtC(calculatedEtC);
     });
 
     // Fetch weather data function
     const fetchWeatherData = async (latitude, longitude) => {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,relative_humidity_2m,precipitation,et0_fao_evapotranspiration,shortwave_radiation,wind_speed_1000hPa`;
       try {
         const response = await fetch(url);
         const data = await response.json();
+        const currentHour = new Date().toISOString().slice(0, 13) + ':00';
+        const temperatureIndex = data.hourly.time.indexOf(currentHour);
+        const temperature = temperatureIndex !== -1 ? data.hourly.temperature_2m[temperatureIndex] : null;
+        const humidity = temperatureIndex !== -1 ? data.hourly.relative_humidity_2m[temperatureIndex] : null;
+        const precipitation = temperatureIndex !== -1 ? data.hourly.precipitation[temperatureIndex] : null;
+        const et0_fao_evapotranspiration = temperatureIndex !== -1 ? data.hourly.et0_fao_evapotranspiration[temperatureIndex] : null;
+        const shortwave_radiation = temperatureIndex !== -1 ? data.hourly.shortwave_radiation[temperatureIndex] : null;
+        const windSpeed1000hPa = temperatureIndex !== -1 ? data.hourly.wind_speed_1000hPa[temperatureIndex] : null;
 
-        // Assume we want the first available temperature
-        return data.hourly.temperature_2m[0];
+        return { temperature, humidity, precipitation, et0_fao_evapotranspiration, shortwave_radiation, windSpeed1000hPa };
       } catch (error) {
         console.error('Failed to fetch weather data:', error);
-        return null;
+        return { temperature: null, humidity: null, precipitation: null, shortwave_radiation: null, windSpeed1000hPa: null };
       }
+    };
+
+    // Function to calculate ETc
+    const calculateETc = (et0Value, kc) => {
+      if (et0Value === null) return null; // Avoid calculation if ET0 is null
+      return et0Value * kc; // Calculate ETc
     };
 
     // Add click event to show popup with coordinates and fetch weather data
     mapRef.current.on('click', async (event) => {
       const { lng, lat } = event.lngLat;
 
-      // Fetch weather data based on the clicked location
-      const temperature = await fetchWeatherData(lat, lng);
+      // Perform reverse geocoding to get the place name
+      const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}`;
+      const response = await fetch(reverseGeocodeUrl);
+      const data = await response.json();
+      const city = data.features[0]?.place_name || 'Unknown location';
+
+      const weatherData = await fetchWeatherData(lat, lng);
+
+      setTemperature(weatherData.temperature);
+      setHumidity(weatherData.humidity);
+      setPrecipitation(weatherData.precipitation);
+      setEt0(weatherData.et0_fao_evapotranspiration);
+      setShortwaveRadiation(weatherData.shortwave_radiation);
+      setWindSpeed1000hPa(weatherData.windSpeed1000hPa);
+
+      // Calculate ETc
+      const calculatedEtC = calculateETc(weatherData.et0_fao_evapotranspiration, Kc);
+      setEtC(calculatedEtC);
 
       // If a popup already exists, remove it
       if (popupRef.current) {
@@ -100,7 +130,9 @@ const MapboxExample = () => {
         .setLngLat([lng, lat])
         .setHTML(
           `<p>Coordinates:</p><p>Lng: ${lng.toFixed(4)}, Lat: ${lat.toFixed(4)}</p>
-           <p>Temperature: ${temperature !== null ? `${temperature}°C` : 'N/A'}</p>`
+           <p>City: ${city}</p>
+           <p>Temperature: ${weatherData.temperature !== null ? `${weatherData.temperature}°C` : 'N/A'}</p>
+           <p>Humidity: ${weatherData.humidity !== null ? `${weatherData.humidity}%` : 'N/A'}</p>`
         )
         .addTo(mapRef.current);
     });
@@ -123,6 +155,16 @@ const MapboxExample = () => {
       )}
       <div className="relative h-[600px]">
         <div ref={mapContainerRef} className="absolute inset-0" />
+      </div>
+      {/* Display the weather information at the bottom of the map */}
+      <div className="absolute bottom-4 left-2 z-10 bg-white p-2 rounded-md shadow-lg">
+        <p>Current Temperature: {temperature !== null ? `${temperature}°C` : 'N/A'}</p>
+        <p>Humidity: {humidity !== null ? `${humidity}%` : 'N/A'}</p>
+        <p>Precipitation: {precipitation !== null ? `${precipitation}mm` : 'N/A'}</p>
+        <p>ET0: {et0 !== null ? `${et0}mm` : 'N/A'}</p>
+        <p>ETc: {etC !== null ? `${etC.toFixed(2)}mm` : 'N/A'}</p>
+        <p>Solar Radiation: {shortwaveRadiation !== null ? `${shortwaveRadiation}W/m²` : 'N/A'}</p>
+        <p>Wind Speed: {windSpeed1000hPa !== null ? `${windSpeed1000hPa}m/s` : 'N/A'}</p>
       </div>
     </div>
   );

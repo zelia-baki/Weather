@@ -76,6 +76,8 @@ function App() {
     { path: "/qrproduce", component: <Produce /> , adminOnly: false},
     { path: "/qrconservation", component: <Conservation /> , adminOnly: false},
     { path: "/qrexport", component: <Export /> , adminOnly: false},
+    { path: "/weathermap", component: <WeathearMap  /> , adminOnly: false},
+
     // { path: "/qrexport2", component: <Export /> , adminOnly: false},
 
     { path: "/qrfertilizer", component: <Fertilizer /> , adminOnly: false},
@@ -93,8 +95,6 @@ function App() {
     { path: "/irrigationmanager", component: <IrrigationManager /> , adminOnly: false},
     { path: "/cropcoefficientmanager", component: <CropCoefficientManager/>, adminOnly: false},
     { path: "/grademanager", component: <GradeManager/>, adminOnly: false},
-    // { path: "/contactus", component: <ContactUs/>, adminOnly: false},
-    // { path: "/signup", component: <SignUp/>, adminOnly: false},
     { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false}
 
 

@@ -37,7 +37,7 @@ const Header = () => (
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.3 }}
       >
-        Efficiently manage your farm data, monitor yields, and generate QR codes for your produce with ease.
+        Data driven monitoring and insights for your area of interest using satellite imagery, crop yield forecasts with ease
       </motion.p>
       <div className="flex space-x-6">
         <ActionButton
