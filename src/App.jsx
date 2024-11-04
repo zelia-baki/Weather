@@ -32,6 +32,9 @@ import FarmReport from './components/gfw/Gfwreportfarmer.jsx';
 import ForestReport from './components/gfw/Gfwreportforest.jsx';
 import CreateUsers from './components/Users/CreateUsers.jsx';
 import GraphCGD from './components/Graph/GraphCGD.jsx';
+import GraphCGD1 from './components/Graph/GraphCGD1.jsx';
+
+//-------------------------------------------------------------------- 
 import ProtectedRoute from './ProtectedRoute'; // Import ProtectedRoute
 import FarmerGroupManager from './components/Farmergroup/FarmerGroup.jsx';
 import FarmManager from './components/Farm/FarmManager.jsx';
@@ -85,6 +88,8 @@ function App() {
     { path: "/reportforest", component: <ForestReport /> , adminOnly: false},
     { path: "/createUsers", component: <CreateUsers /> , adminOnly: false},
     { path: "/graphcgd", component: <GraphCGD /> , adminOnly: false},
+    { path: "/graphcgd1", component: <GraphCGD1 /> , adminOnly: false},
+
     { path: "/farmergroup", component: <FarmerGroupManager /> , adminOnly: false},
     { path: "/farmmanager", component: <FarmManager /> , adminOnly: false},
     { path: "/farmmanager1", component: <FarmManager1 /> , adminOnly: false},

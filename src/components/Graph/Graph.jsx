@@ -5,8 +5,8 @@ import axios from 'axios';
 import { FiInfo } from 'react-icons/fi'; // Importing an info icon
 
 function Graph() {
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
+  const [latitude, setLatitude] = useState('1.373333');
+  const [longitude, setLongitude] = useState('32.290275');
   const [weatherData, setWeatherData] = useState([]);
 
   const fetchWeatherData = async () => {
