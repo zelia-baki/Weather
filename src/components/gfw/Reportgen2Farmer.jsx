@@ -4,12 +4,12 @@ import { useLocation, Link } from "react-router-dom";
 import Loading from '../main/Loading.jsx';
 
 const ForestReport = () => {
-  const [forestInfo, setForestInfo] = useState(null);
+const [farmInfo, setFarmInfo] = useState(null);
   const [geoData, setGeoData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const location = useLocation();
-  const forestId = location.state?.forestId || 1;
+  const farmId = location.state?.farmId || WAK0001;
 
 
   // Pagination state
@@ -17,27 +17,27 @@ const ForestReport = () => {
   const itemsPerPage = 5; // Change this to the number of items per page you want
 
   useEffect(() => {
-    const fetchForestReport = async () => {
+    const fetchFarmReport = async () => {
       try {
-        const response = await axiosInstance.get(`/api/gfw/forests/${forestId}/report`);
+        const response = await axiosInstance.get(`/api/gfw/farm/${farmId}/report`);
         if (response.data.error === "No points found for the specified owner") {
           setError('No polygon found. Please create a polygon for this forest.');
         } else {
-          setForestInfo(response.data.forest_info);
-          setGeoData(response.data.report || []);
-          console.log("Forest Info:", response.data.forest_info);
+            setFarmInfo(response.data.farm_info);
+            setGeoData(response.data.report || []);
+          console.log("Farm Info:", response.data.forest_info);
           console.log("GeoData:", response.data.report);
         }
       } catch (error) {
         console.error('Error fetching forest report:', error);
-        setError('Failed to fetch forest report. Please verify if a polygon exists for this forest.');
+        setError('Failed to fetch farm report. Please verify if a polygon exists for this forest.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchForestReport();
-  }, [forestId]);
+    fetchFarmReport();
+  }, [farmId]);
 
   const generateMapboxUrl = (coordinates) => {
     const geojson = {
@@ -105,11 +105,14 @@ const ForestReport = () => {
     <div className="container mx-auto p-6 h-screen">
       <div className="grid grid-cols-2 grid-rows-2 gap-4 h-full">
         {/* Colonne 1, Ligne 1 - Carte pour les propriétaires */}
-        {forestInfo && (
+        {farmInfo && (
           <div className="bg-white shadow-md rounded-lg p-4 flex flex-col">
-            <h2>Forest Information</h2>
-            <p><strong>Name:</strong> {forestInfo.name}</p>
-            <p><strong>Tree Type:</strong> {forestInfo.tree_type}</p>
+            <h2>Farm Information</h2>
+            <p><strong>Name:</strong> {farmInfo.name}</p>
+            <p><strong>Farm ID:</strong> {farmInfo.farm_id}</p>
+            <p><strong>Location:</strong> {farmInfo.subcounty}</p>
+            <p><strong>Phone: </strong> {farmInfo.phonenumber}</p>
+
           </div>
         )}
 
