@@ -1,134 +1,149 @@
-import React, { useState, useEffect } from 'react';
-import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2';
-import { Chart as ChartJS } from 'chart.js/auto';
-import axiosInstance from '../../axiosInstance';
+import React, { useEffect, useState } from 'react';
+import { Bar } from 'react-chartjs-2';
 
-function Graph() {
-  const [farmData, setFarmData] = useState([]);
-  const [weatherData, setWeatherData] = useState([]);
+const DegreeDaysPage = () => {
+  const [dailyTemperatures, setDailyTemperatures] = useState([]);
+  const [dates, setDates] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [latitude, setLatitude] = useState(''); // Default value
+  const [longitude, setLongitude] = useState(''); // Default value
+  const [baseTemp, setBaseTemp] = useState(null); // Base temperature
 
-  useEffect(() => {
-    // Fetch farm data
-    axiosInstance.get('/farm_data')
-      .then(response => {
-        const { data } = response.data;
-        setFarmData(data || []);
-      })
-      .catch(error => {
-        console.error('Error fetching farm data:', error);
-      });
-
-    // Fetch weather data
-    const fetchWeatherData = async () => {
-      const region = 'some-region-id';  // replace with actual region
-      const crop = 'some-crop-id';      // replace with actual crop
-      const latitude = '0.358261';        // replace with actual latitude
-      const longitude = '32.654738';      // replace with actual longitude
-
-      try {
-        console.log(`Fetching weather data for region: ${region}, crop: ${crop}, latitude: ${latitude}, longitude: ${longitude}`);
-        const response = await axiosInstance.get('/WeatherWeekly', {
-          params: {
-            region_id: region,
-            crop_id: crop,
-            latitude: latitude,
-            longitude: longitude
-          }
-        });
-
-        const weatherData = response.data.data;
-        setWeatherData(weatherData || []);
-        console.log('Weather data fetched successfully:', weatherData);
-      } catch (error) {
-        console.error('Error fetching weather data:', error);
+  const fetchWeatherData = async (lat, lon) => {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+    console.log('Fetching URL:', url); // Log the URL for debugging
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    };
+      const data = await response.json();
 
-    fetchWeatherData();
-  }, []);
+      console.log('Data received from API:', data); // Log the data received
 
-  // Extract labels and values for farm data
-  const farmLabels = (farmData || []).map(item => item.name);
-  const farmQuantities = (farmData || []).map(item => item.quantity);
+      if (data.daily) {
+        if (data.daily.temperature_2m_max && data.daily.temperature_2m_min && data.daily.time) {
+          const newDailyTemps = data.daily.temperature_2m_max.map((maxTemp, index) => ({
+            max: maxTemp,
+            min: data.daily.temperature_2m_min[index],
+          }));
 
-  // Extract labels and values for weather data
-  const weatherLabels = (weatherData || []).map(item => {
-    const date = new Date(item.date);
-    return `${date.getMonth() + 1}/${date.getDate()}`; // Format as MM/DD
-  });
-  const GrowingDegreeDays = (weatherData || []).map(item => item.gdd);
-  const HeatingDegreeDays = (weatherData || []).map(item => item.hdd); 
-  const CoolingDegreeDays = (weatherData || []).map(item => item.cdd);
+          setDates(data.daily.time);
+          setDailyTemperatures(newDailyTemps);
 
-  const chartData = {
-    labels: weatherLabels, // Use formatted weather dates as x-axis labels
-    datasets: [
-      {
-        label: "Growing Degree Days",
-        data: GrowingDegreeDays,
-        backgroundColor: 'rgba(75, 192, 192, 0.2)', // Transparent teal
-        borderColor: 'rgba(75, 192, 192, 1)', // Solid teal
-        borderWidth: 2,
-        tension: 0.4,
-      },
-      {
-        label: "Heating Degree Days",
-        data: HeatingDegreeDays,
-        backgroundColor: 'rgba(153, 102, 255, 0.2)', // Transparent purple
-        borderColor: 'rgba(153, 102, 255, 1)', // Solid purple
-        borderWidth: 2,
-        tension: 0.4,
-      },
-      {
-        label: "Cooling Degree Days",
-        data: CoolingDegreeDays,
-        backgroundColor: 'rgba(255, 206, 86, 0.2)', // Transparent yellow
-        borderColor: 'rgba(255, 206, 86, 1)', // Solid yellow
-        borderWidth: 2,
-        tension: 0.4,
-      },
-    ]
+          // Calculate the average temperature to set as the base temperature
+          const averageTemperature = newDailyTemps.reduce((acc, curr) => {
+            const avg = (curr.max + curr.min) / 2;
+            return acc + avg;
+          }, 0) / newDailyTemps.length;
+
+          setBaseTemp(averageTemperature); // Set the base temperature
+        }
+      } else {
+        console.error('Invalid data format from API');
+      }
+    } catch (error) {
+      console.error('Failed to fetch weather data:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          color: '#333', // Color for the legend text
-        },
+  // Effect to load initial data
+  useEffect(() => {
+    fetchWeatherData(latitude, longitude);
+  }, [latitude, longitude]);
+
+// Function to calculate degree days
+const calculateDegreeDays = () => {
+  if (baseTemp === null) return { hdd: [], cdd: [], gdd: [] }; // Return empty arrays if baseTemp is not defined
+
+  const hdd = dailyTemperatures.map((temp) => {
+    const avgTemp = (temp.max + temp.min) / 2;
+    return baseTemp - avgTemp; // HDD, peut être négatif
+  });
+
+  const cdd = dailyTemperatures.map((temp) => {
+    const avgTemp = (temp.max + temp.min) / 2;
+    return avgTemp - baseTemp; // CDD, peut être négatif
+  });
+
+  const gdd = dailyTemperatures.map((temp) => {
+    const avgTemp = (temp.max + temp.min) / 2;
+    return avgTemp - baseTemp; // GDD, utilisant baseTemp
+  });
+
+  return { hdd, cdd, gdd };
+};
+
+
+  // Retrieve degree days data
+  const { hdd, cdd, gdd } = calculateDegreeDays();
+
+  const data = {
+    labels: dates,
+    datasets: [
+      {
+        label: 'Heating Degree Days (HDD)',
+        data: hdd,
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
       },
-      tooltip: {
-        callbacks: {
-          label: (tooltipItem) => `Value: ${tooltipItem.raw}`, // Customize tooltip label
-        },
+      {
+        label: 'Cooling Degree Days (CDD)',
+        data: cdd,
+        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+        borderColor: 'rgba(255, 206, 86, 1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
       },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: '#333', // Color for x-axis labels
-        },
+      {
+        label: 'Growing Degree Days (GDD)',
+        data: gdd,
+        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+        borderColor: 'rgba(153, 102, 255, 1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
       },
-      y: {
-        ticks: {
-          color: '#333', // Color for y-axis labels
-        },
-      },
-    },
+    ],
+  };
+
+  const handleFetch = () => {
+    setIsLoading(true);
+    fetchWeatherData(latitude, longitude);
   };
 
   return (
-    <div className='bg-gray-100 min-h-screen p-6'>
-      <div className='container mx-auto gap-6'>
-        <div className='bg-white p-4 rounded-lg shadow-lg'>
-          <h2 className='text-xl font-semibold mb-4 text-blue-500'>Bar Chart</h2>
-          <Bar data={chartData} options={options} />
-        </div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Heating, Cooling, and Growing Degree Days</h1>
+      <div className="mb-4">
+        <input
+          type="number"
+          value={latitude}
+          onChange={(e) => setLatitude(parseFloat(e.target.value))}
+          placeholder="Latitude"
+          className="mr-2 p-2 border rounded"
+        />
+        <input
+          type="number"
+          value={longitude}
+          onChange={(e) => setLongitude(parseFloat(e.target.value))}
+          placeholder="Longitude"
+          className="mr-2 p-2 border rounded"
+        />
+        <button onClick={handleFetch} className="p-2 bg-blue-500 text-white rounded">Fetch Data</button>
+      </div>
+      {isLoading && <p>Loading data...</p>}
+      <div className="bg-white shadow-md rounded-lg p-6">
+        <Bar data={data} />
       </div>
     </div>
   );
-}
+};
 
-export default Graph;
+export default DegreeDaysPage;
