@@ -6,6 +6,7 @@ import MapboxExample from './components/mapbox/Mapbox';
 import MapView from './components/mapbox/MapView.jsx';
 import MapViewAll from './components/mapbox/MapViewAll.jsx';
 import Landing from './components/main/Landing';
+import Landipage from './components/main/Landipage.jsx';
 import Login from './components/main/Login';
 import Home from './components/main/Home';
 import Tabcrop from './components/crop/tabcrop';
@@ -107,6 +108,7 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Landing />} />
+        <Route path="/landipage" element={<Landipage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/contactus" element={<ContactUs />} />
         <Route path="/signup" element={<SignUp/>} />
