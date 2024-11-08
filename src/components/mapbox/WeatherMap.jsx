@@ -29,7 +29,7 @@ const MapboxExample = () => {
 
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: "mapbox://styles/mapbox/satellite-v9",
       center: [-79.4512, 43.6568],
       zoom: 8,
     });
@@ -179,9 +179,8 @@ const MapboxExample = () => {
     <div className="relative h-full">
       {notification && (
         <div
-          className={`absolute top-20 right-2 z-10 px-4 py-2 rounded-md shadow-lg ${
-            notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-          }`}
+          className={`absolute top-20 right-2 z-10 px-4 py-2 rounded-md shadow-lg ${notification.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            }`}
         >
           {notification.message}
         </div>
@@ -189,32 +188,36 @@ const MapboxExample = () => {
       <div className="relative h-[600px]">
         <div ref={mapContainerRef} className="absolute inset-0" />
       </div>
-      
-          {/* Conteneur pour les informations météorologiques */}
-          <div className="absolute bottom-28 z-10 left-2  w-1/4 bg-white p-4 rounded-md shadow-lg">
-        <h3 className="font-semibold text-lg">Weather Information</h3>
-        <p>Current Temperature: {temperature !== null ? `${temperature}°C` : 'N/A'}</p>
-        <p>Humidity: {humidity !== null ? `${humidity}%` : 'N/A'}</p>
-        <p>Precipitation: {precipitation !== null ? `${precipitation}mm` : 'N/A'}</p>
-        <p>ET₀: {et0 !== null ? `${et0} mm/day` : 'N/A'}</p>
-        <p>ETc: {etC !== null ? `${etC} mm/day` : 'N/A'}</p>
-        <p>Shortwave Radiation: {shortwaveRadiation !== null ? `${shortwaveRadiation} W/m²` : 'N/A'}</p>
-        <p>Wind Speed (1000 hPa): {windSpeed1000hPa !== null ? `${windSpeed1000hPa} m/s` : 'N/A'}</p>
+      {/* Conteneur principal pour les informations météorologiques et le graphique */}
+      <div className="flex flex-wrap justify-between p-4 space-x-4">
+        {/* Conteneur pour les informations météorologiques */}
+        <div className="w-full md:w-1/4 bg-white p-4 rounded-md shadow-lg mb-4 md:mb-0">
+          <h3 className="font-semibold text-lg">Weather Information</h3>
+          <p>Current Temperature: {temperature !== null ? `${temperature}°C` : 'N/A'}</p>
+          <p>Humidity: {humidity !== null ? `${humidity}%` : 'N/A'}</p>
+          <p>Precipitation: {precipitation !== null ? `${precipitation}mm` : 'N/A'}</p>
+          <p>ET₀: {et0 !== null ? `${et0} mm/day` : 'N/A'}</p>
+          <p>ETc: {etC !== null ? `${etC} mm/day` : 'N/A'}</p>
+          <p>Shortwave Radiation: {shortwaveRadiation !== null ? `${shortwaveRadiation} W/m²` : 'N/A'}</p>
+          <p>Wind Speed (1000 hPa): {windSpeed1000hPa !== null ? `${windSpeed1000hPa} m/s` : 'N/A'}</p>
+        </div>
+
+        {/* Conteneur pour le graphique */}
+        <div className="w-full md:w-3/4">
+  <DailyChart
+    temperature={hourlyWeatherData.temperature}
+    humidity={hourlyWeatherData.humidity}
+    precipitation={hourlyWeatherData.precipitation}
+  />
+</div>
+
       </div>
-      <br></br>
-      {/* Afficher le graphique à barres */}
-      <div className="">
-        <DailyChart
-          temperature={hourlyWeatherData.temperature}
-          humidity={hourlyWeatherData.humidity}
-          precipitation={hourlyWeatherData.precipitation}
-        />
-      </div>
+
     </div>
 
   );
-  
-  
+
+
 };
 
 export default MapboxExample;

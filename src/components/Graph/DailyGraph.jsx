@@ -11,21 +11,21 @@ const DailyChart = ({ temperature, humidity, precipitation }) => {
     labels: hours,
     datasets: [
       {
-        label: 'Température (°C)',
+        label: 'Temperature (°C)',
         data: temperature.length ? temperature : new Array(24).fill(null),
         backgroundColor: 'rgba(75,192,192,0.5)',
         borderColor: 'rgba(75,192,192,1)',
         borderWidth: 1,
       },
       {
-        label: 'Humidité (%)',
+        label: 'Humidity (%)',
         data: humidity.length ? humidity : new Array(24).fill(null),
         backgroundColor: 'rgba(153,102,255,0.5)',
         borderColor: 'rgba(153,102,255,1)',
         borderWidth: 1,
       },
       {
-        label: 'Précipitations (mm)',
+        label: 'Precipitation (mm)',
         data: precipitation.length ? precipitation : new Array(24).fill(null),
         backgroundColor: 'rgba(255,159,64,0.5)',
         borderColor: 'rgba(255,159,64,1)',
@@ -43,20 +43,20 @@ const DailyChart = ({ temperature, humidity, precipitation }) => {
       },
       title: {
         display: true,
-        text: 'Données Météo Journalier',
+        text: 'Daily Weather Data',
       },
     },
     scales: {
       x: {
         title: {
           display: true,
-          text: 'Heures',
+          text: 'Hours',
         },
       },
       y: {
         title: {
           display: true,
-          text: 'Valeurs',
+          text: 'Values',
         },
       },
     },
