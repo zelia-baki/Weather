@@ -118,12 +118,12 @@ const [farmInfo, setFarmInfo] = useState(null);
 
         {/* Colonne 2, Ligne 1 - Tableau with pagination */}
         <div className="bg-green-200 p-4 rounded-lg">
-          <h2 className="text-xl font-bold mb-2">Données des Forêts</h2>
+          <h2 className="text-xl font-bold mb-2">Data</h2>
           <table className="min-w-full bg-white rounded-lg shadow-md">
             <thead>
               <tr className="bg-green-600 text-white">
-                <th className="py-2 px-4 text-left">Nom de la Forêt</th>
-                <th className="py-2 px-4 text-left">Superficie (ha)</th>
+                <th className="py-2 px-4 text-left">datasets</th>
+                <th className="py-2 px-4 text-left"> pixels</th>
               </tr>
             </thead>
             <tbody>
