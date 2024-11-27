@@ -13,6 +13,7 @@ function Graph() {
     try {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,relative_humidity_2m,precipitation,et0_fao_evapotranspiration,shortwave_radiation,wind_speed_1000hPa&forecast_days=10`;
       const response = await axios.get(url);
+      console.log(url);
 
       const hourlyData = response.data.hourly;
       const dailyData = Array.from({ length: 10 }).map((_, i) => ({
@@ -92,7 +93,7 @@ function Graph() {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen p-6">
+    <div className="bg-white-100 min-h-screen p-6">
       <div className="container mx-auto">
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold mb-4 text-green-500">10-Day Weather Forecast</h2>
