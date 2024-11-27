@@ -29,7 +29,7 @@ import Produce from './components/Qr/Produce.jsx';
 import Conservation from './components/Qr/Conservation.jsx';
 import Export from './components/Qr/Export2.jsx';
 import Fertilizer from './components/Qr/Fertilizer.jsx';
-import FarmReport from './components/gfw/Reportgen2Farmer.jsx';
+import FarmReport from './components/gfw/ReportTest.jsx';
 import ForestReport from './components/gfw/Reportgen2Forest.jsx';
 import CreateUsers from './components/Users/CreateUsers.jsx';
 import GraphCGD from './components/Graph/GraphCGD.jsx';

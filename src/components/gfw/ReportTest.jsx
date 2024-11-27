@@ -1,9 +1,63 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
+import axiosInstance from '../../axiosInstance';
+import { useLocation, Link } from "react-router-dom";
 import html2canvas from "html2canvas";
+import Loading from '../main/Loading.jsx';
+
 
 const FullReport = () => {
+  const [farmInfo, setFarmInfo] = useState(null);
+  const [geoData, setGeoData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const location = useLocation();
+  const farmId = location.state?.farmId || WAK0001;
   const reportRef = useRef();
+
+
+  useEffect(() => {
+    const fetchFarmReport = async () => {
+      try {
+        const response = await axiosInstance.get(`/api/gfw/farm/${farmId}/report`);
+        if (response.data.error === "No points found for the specified owner") {
+          setError('No polygon found. Please create a polygon for this forest.');
+        } else {
+            setFarmInfo(response.data.farm_info);
+            setGeoData(response.data.report || []);
+          console.log("Farm Info:", response.data.farm_info);
+          console.log("farm ")
+          console.log("GeoData:", response.data.report);
+        }
+      } catch (error) {
+        console.error('Error fetching forest report:', error);
+        setError('Failed to fetch farm report. Please verify if a polygon exists for this forest.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFarmReport();
+  }, [farmId]);
+
+
+  const generateMapboxUrl = (coordinates) => {
+    const geojson = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Polygon",
+            coordinates: [coordinates]
+          },
+          properties: {}
+        }
+      ]
+    };
+    const encodedGeojson = encodeURIComponent(JSON.stringify(geojson));
+    return `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/geojson(${encodedGeojson})/auto/500x300?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`;
+  };
 
   const generatePdf = async () => {
     const element = reportRef.current;
@@ -22,6 +76,35 @@ const FullReport = () => {
 
     pdf.save("EUDR_Report.pdf");
   };
+
+
+
+  if (loading) {
+    return (
+      <div>
+        <Loading />
+      </div>
+    );
+  }
+
+  if (error === 'No polygon found. Please create a polygon for this forest.') {
+    return (
+      <div className="container mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6 text-red-600">{error}</h1>
+        <p className="text-lg font-medium text-gray-700 mb-6">
+          It seems that no polygon data is available for this forest. You can create a polygon by clicking the link below:
+        </p>
+        <Link
+          to="/create-polygon"
+          className="inline-block px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        >
+          Create Polygon
+        </Link>
+      </div>
+    );
+  }
+
+  if (error) return <p className="text-red-600">{error}</p>;
 
   return (
     <div className="flex flex-col items-center">
@@ -106,7 +189,9 @@ const FullReport = () => {
             <div className="bg-gray-200 w-full h-64 flex items-center justify-center mt-6">
               <p className="text-gray-500">Figure Placeholder</p>
             </div>
+            <iframe width="315" height="460" frameborder="0" src="https://www.globalforestwatch.org/embed/widget/treeCoverGainOutsidePlantations/global"></iframe>
           </div>
+          
         ))}
       </div>
 
