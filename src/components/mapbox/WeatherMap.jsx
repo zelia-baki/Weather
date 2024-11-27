@@ -4,6 +4,9 @@ import mapboxgl from 'mapbox-gl';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
+import { FiMapPin } from 'react-icons/fi'; // Added map pin icon for location
+
+import { WiDaySunny, WiHumidity, WiRain, WiWindy, WiCloud, WiSolarEclipse } from 'react-icons/wi'; // Example icons
 import DailyChart from '../Graph/DailyGraph.jsx';
 
 const MapboxExample = () => {
@@ -33,11 +36,48 @@ const MapboxExample = () => {
       center: [-79.4512, 43.6568],
       zoom: 8,
     });
+    const coordinatesGeocoder = (query) => {
+      // Recherche des coordonnées au format "12.34, 56.78" ou "Lat: 12.34, Lng: 56.78"
+      const matches = query.match(
+        /^[ ]*(?:Lat: )?(-?\d+\.?\d*)[, ]+(?:Lng: )?(-?\d+\.?\d*)[ ]*$/i
+      );
+      if (!matches) {
+        return null;
+      }
+
+      const coord1 = Number(matches[1]);
+      const coord2 = Number(matches[2]);
+
+      if (
+        coord1 < -90 || coord1 > 90 || // Vérifie que les coordonnées sont valides
+        coord2 < -180 || coord2 > 180
+      ) {
+        return null;
+      }
+
+      // Retourne un tableau contenant une seule entité géographique
+      return [
+        {
+          center: [coord2, coord1], // Format [longitude, latitude]
+          geometry: {
+            type: 'Point',
+            coordinates: [coord2, coord1],
+          },
+          place_name: `Lat: ${coord1}, Lng: ${coord2}`,
+          place_type: ['coordinate'],
+          properties: {},
+          type: 'Feature',
+        },
+      ];
+    };
+
 
     const geocoder = new MapboxGeocoder({
       accessToken: mapboxgl.accessToken,
       mapboxgl: mapboxgl,
       placeholder: 'Search for places...',
+      localGeocoder: coordinatesGeocoder, // Ajoutez cette ligne pour inclure votre fonction coordinatesGeocoder
+
     });
 
     mapRef.current.addControl(geocoder);
@@ -45,6 +85,8 @@ const MapboxExample = () => {
     geocoder.on('result', async (e) => {
       const { place_name, geometry } = e.result;
       setPlaceName(place_name);
+      console.log("Place Name:", place_name);
+      console.log("Coordinates:", geometry.coordinates);
       setNotification({
         type: 'success',
         message: `Location found: ${place_name}`,
@@ -165,7 +207,10 @@ const MapboxExample = () => {
           `<p>Coordinates:</p><p>Lng: ${lng.toFixed(4)}, Lat: ${lat.toFixed(4)}</p>
            <p>City: ${city}</p>
            <p>Temperature: ${weatherData.temperature !== null ? `${weatherData.temperature}°C` : 'N/A'}</p>
-           <p>Humidity: ${weatherData.humidity !== null ? `${weatherData.humidity}%` : 'N/A'}</p>`
+           <p>Humidity: ${weatherData.humidity !== null ? `${weatherData.humidity}%` : 'N/A'}</p>
+           <p>Precipitation: ${weatherData.precipitation !== null ? `${weatherData.precipitation} mm` : 'N/A'}</p>
+           <p>Shortwave Radiation: ${weatherData.shortwave_radiation !== null ? `${weatherData.shortwave_radiation} W/m²` : 'N/A'}</p>
+           <p>Wind Speed (1000hPa): ${weatherData.windSpeed1000hPa !== null ? `${weatherData.windSpeed1000hPa} m/s` : 'N/A'}</p>`
         )
         .addTo(mapRef.current);
     });
@@ -186,38 +231,68 @@ const MapboxExample = () => {
         </div>
       )}
       <div className="relative h-[600px]">
-        <div ref={mapContainerRef} className="absolute inset-0" />
+        <div ref={mapContainerRef} className="w-full h-full"></div>
       </div>
-      {/* Conteneur principal pour les informations météorologiques et le graphique */}
-      <div className="flex flex-wrap justify-between p-4 space-x-4">
-        {/* Conteneur pour les informations météorologiques */}
-        <div className="w-full md:w-1/4 bg-white p-4 rounded-md shadow-lg mb-4 md:mb-0">
-          <h3 className="font-semibold text-lg">Weather Information</h3>
-          <p>Current Temperature: {temperature !== null ? `${temperature}°C` : 'N/A'}</p>
-          <p>Humidity: {humidity !== null ? `${humidity}%` : 'N/A'}</p>
-          <p>Precipitation: {precipitation !== null ? `${precipitation}mm` : 'N/A'}</p>
-          <p>ET₀: {et0 !== null ? `${et0} mm/day` : 'N/A'}</p>
-          <p>ETc: {etC !== null ? `${etC} mm/day` : 'N/A'}</p>
-          <p>Shortwave Radiation: {shortwaveRadiation !== null ? `${shortwaveRadiation} W/m²` : 'N/A'}</p>
-          <p>Wind Speed (1000 hPa): {windSpeed1000hPa !== null ? `${windSpeed1000hPa} m/s` : 'N/A'}</p>
-        </div>
 
-        {/* Conteneur pour le graphique */}
-        <div className="w-full md:w-3/4">
-  <DailyChart
-    temperature={hourlyWeatherData.temperature}
-    humidity={hourlyWeatherData.humidity}
-    precipitation={hourlyWeatherData.precipitation}
-  />
+      <div className="flex flex-col md:flex-row md:space-x-4 mt-8">
+        {/* Weather Info */}
+
+
+<div className="relative w-full md:w-1/3 bg-white p-6 rounded-lg shadow-lg transition-all hover:shadow-xl hover:bg-gray-50">
+  <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+    <WiDaySunny className="mr-2 text-yellow-500" size={24} />
+    Weather Information
+  </h3>
+  <div className="space-y-4">
+  <div className="flex items-center text-gray-700">
+      <FiMapPin className="mr-2 text-red-500" size={20} />
+      <span className="font-medium">Location:</span> {placeName}
+    </div>
+    <div className="flex items-center text-gray-700">
+      <WiDaySunny className="mr-2 text-orange-400" size={20} />
+      <span className="font-medium">Temperature:</span> {temperature !== null ? `${temperature}°C` : 'N/A'}
+    </div>
+    <div className="flex items-center text-gray-700">
+      <WiHumidity className="mr-2 text-blue-500" size={20} />
+      <span className="font-medium">Humidity:</span> {humidity !== null ? `${humidity}%` : 'N/A'}
+    </div>
+    <div className="flex items-center text-gray-700">
+      <WiRain className="mr-2 text-blue-600" size={20} />
+      <span className="font-medium">Precipitation:</span> {precipitation !== null ? `${precipitation} mm` : 'N/A'}
+    </div>
+    <div className="flex items-center text-gray-700">
+      <WiCloud className="mr-2 text-gray-500" size={20} />
+      <span className="font-medium">ET₀:</span> {et0 !== null ? `${et0} mm/day` : 'N/A'}
+    </div>
+    <div className="flex items-center text-gray-700">
+      <WiCloud className="mr-2 text-gray-500" size={20} />
+      <span className="font-medium">ETc:</span> {etC !== null ? `${etC} mm/day` : 'N/A'}
+    </div>
+    <div className="flex items-center text-gray-700">
+      <WiSolarEclipse className="mr-2 text-yellow-600" size={20} />
+      <span className="font-medium">Shortwave Radiation:</span> {shortwaveRadiation !== null ? `${shortwaveRadiation} W/m²` : 'N/A'}
+    </div>
+    <div className="flex items-center text-gray-700">
+      <WiWindy className="mr-2 text-green-500" size={20} />
+      <span className="font-medium">Wind Speed (1000hPa):</span> {windSpeed1000hPa !== null ? `${windSpeed1000hPa} m/s` : 'N/A'}
+    </div>
+  </div>
 </div>
 
+
+
+
+        {/* Graphique */}
+        <div className="w-full md:w-2/3 bg-white p-4 rounded-md shadow-lg">
+          <DailyChart
+            temperature={hourlyWeatherData.temperature}
+            humidity={hourlyWeatherData.humidity}
+            precipitation={hourlyWeatherData.precipitation}
+          />
+        </div>
       </div>
-
     </div>
-
   );
-
-
 };
 
 export default MapboxExample;
