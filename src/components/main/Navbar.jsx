@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { FaFeather } from 'react-icons/fa';
 import { FaUser, FaTree, FaQrcode, FaSeedling, FaSun, FaChevronDown, FaSignOutAlt, FaBars } from 'react-icons/fa';
 import { jwtDecode } from 'jwt-decode';  // Correct import
 
@@ -15,8 +16,8 @@ const Sidebar = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      const decoded = jwtDecode(token); // Decode the JWT token
-      setIsAdmin(decoded.sub.is_admin); // Correct access to is_admin in the token's sub object
+      const decoded = jwtDecode(token); 
+      setIsAdmin(decoded.sub.is_admin); 
       setUserType(decoded.sub.user_type);
     }
   }, []);
@@ -36,12 +37,23 @@ const Sidebar = () => {
   return (
     <div className={`h-lvh ${isCollapsed ? 'w-16' : 'w-64'} bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 text-gray-900 flex flex-col justify-between rounded-xl shadow-lg overflow-hidden transition-all duration-300 ease-in-out`}>
       <div>
-        <div className="flex items-center justify-between h-16 bg-gradient-to-r from-teal-400 via-green-400 to-yellow-400 rounded-t-xl shadow-lg px-3">
-          {!isCollapsed && <span className="text-2xl font-bold text-white">Agriyields</span>}
+        <div className="flex items-center justify-between h-16 bg-gradient-to-r from-teal-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between shadow-lg sticky top-0 z-50 backdrop-blur-md bg-opacity-90 w-full">
+          {!isCollapsed && (
+            <div className="flex items-center">
+              {/* Icone ajoutée ici */}
+              <span className="bg-white text-teal-600 p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
+                <FaFeather />
+              </span>
+              <span className="ml-2 group-hover:text-teal-300 transition-all duration-300">
+                Nkusu
+              </span>
+            </div>
+          )}
           <button onClick={toggleSidebar} className="text-white">
             <FaBars />
           </button>
         </div>
+
         <nav className="mt-10 space-y-2">
 
           {/* Forest Section - displayed only for forest users or admins */}
@@ -154,7 +166,7 @@ const Sidebar = () => {
             </button>
             {!isCollapsed && openWeatherDropdown && (
               <div className="ml-8 mt-2 space-y-1 transition-all duration-300 ease-in-out">
-                  <Link to="/cardex" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
+                <Link to="/cardex" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
                   Card
                 </Link>
                 <Link to="/weathermap" className="block p-2 text-sm text-gray-600 hover:bg-teal-200 rounded-md transition duration-300 ease-in-out transform hover:scale-105">
@@ -171,14 +183,14 @@ const Sidebar = () => {
           </div>
         </nav>
       </div>
-      
+
       <div>
-      {isAdmin && (
-            <Link to="/usermanager" className={`flex items-center p-3 text-base font-medium text-gray-800 hover:bg-teal-200 w-full rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}>
-              <FaUser className="text-red-500 text-xl" />
-              {!isCollapsed && <span className="ml-4">Manage account</span>}
-            </Link>
-          )}
+        {isAdmin && (
+          <Link to="/usermanager" className={`flex items-center p-3 text-base font-medium text-gray-800 hover:bg-teal-200 w-full rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}>
+            <FaUser className="text-red-500 text-xl" />
+            {!isCollapsed && <span className="ml-4">Manage account</span>}
+          </Link>
+        )}
 
 
         <button
@@ -188,6 +200,16 @@ const Sidebar = () => {
           <FaSignOutAlt className="text-red-500 text-xl" />
           {!isCollapsed && <span className="ml-4">Log Out</span>}
         </button>
+
+        {/* <a
+          href="#"
+          onClick={handleLogOut}
+          className={`flex items-center p-3 text-base font-medium text-gray-800 hover:bg-teal-200 w-full rounded-md transition duration-300 ease-in-out transform hover:scale-105 ${isCollapsed && 'justify-center'}`}
+        >
+          <FaSignOutAlt className="text-red-500 text-xl" />
+          {!isCollapsed && <span className="ml-4">Log Out</span>}
+        </a> */}
+
       </div>
     </div>
   );

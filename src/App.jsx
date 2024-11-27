@@ -50,6 +50,10 @@ import SignUp from './components/main/SignUp.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 import WeathearMap from './components/mapbox/WeatherMap.jsx';
 import Test from './components/gfw/ReportTest.jsx';
+import BarNav from './components/main/BarNav.jsx';
+
+
+
 
 
 function App() {
@@ -107,12 +111,14 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/landipage" element={<Landipage />} />
+        <Route path="/" element={<Landipage />} />
+        <Route path="/landipage" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/contactus" element={<ContactUs />} />
         <Route path="/signup" element={<SignUp/>} />
         <Route path="/test" element={<Test />} />
+        <Route path="/barnav" element={<BarNav />} />
+
 
 
 

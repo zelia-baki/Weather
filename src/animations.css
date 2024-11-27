@@ -1,0 +1,45 @@
+/* Animation d'entré avec zoom et effet de déplacement */
+@keyframes fade-in-up-zoom {
+    0% {
+      opacity: 0;
+      transform: translateY(30px) scale(0.9);
+    }
+    50% {
+      opacity: 0.7;
+      transform: translateY(15px) scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  .animate-fade-in-up-zoom {
+    animation: fade-in-up-zoom 1.5s ease-out;
+  }
+  
+  /* Animation fade-in avec un léger effet de changement de couleur */
+  @keyframes fade-in-color {
+    0% {
+      opacity: 0;
+      color: #00796b;
+    }
+    100% {
+      opacity: 1;
+      color: #004d40; /* Vous pouvez ajuster la couleur ici */
+    }
+  }
+  
+  .animate-fade-in-color {
+    animation: fade-in-color 1.5s ease-out;
+  }
+  @keyframes fade-slide-down {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
