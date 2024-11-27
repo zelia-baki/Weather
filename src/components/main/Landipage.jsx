@@ -1,86 +1,250 @@
-import React from 'react';
-import { FaLeaf, FaRegIdBadge, FaTractor, FaEnvelope, FaPhone } from 'react-icons/fa';
+import React, { useEffect } from "react";
+import { motion } from 'framer-motion';
+import "../../animations.css"; // Assuming your animations.css is in the same folder
+import {
+  FaGlobe,
+  FaCloudSunRain,
+  FaLeaf,
+  FaTree,
+  FaTractor,
+  FaQrcode,
+  FaFeather,
+  FaBarcode,
+  FaMobileAlt,
+  FaCloud,
+  FaRobot,
+  FaEnvelope,
+  FaPhone,
+  FaSatelliteDish,
+  FaChartLine,
+  FaBrain,
+} from "react-icons/fa";
 
 const LandingPage = () => {
+  // Effet Parallax
+  useEffect(() => {
+    const parallax = () => {
+      const scrollPosition = window.scrollY;
+      const background = document.querySelector(".parallax-background");
+      if (background) {
+        background.style.transform = `translateY(${scrollPosition * 0.5}px)`;
+      }
+    };
+
+    window.addEventListener("scroll", parallax);
+    return () => {
+      window.removeEventListener("scroll", parallax);
+    };
+  }, []);
+
   return (
-    <div className="bg-gray-50 min-h-screen font-sans text-gray-800">
-      
+    <div className="bg-gradient-to-br from-green-300 via-teal-100 to-blue-200 min-h-screen font-poppins text-gray-800">
       {/* Header */}
-      <header className="bg-green-600 text-white p-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <FaLeaf className="text-white" /> Nkusu
+      <header className="bg-gradient-to-r from-teal-700 to-blue-800 text-white px-6 py-4 flex items-center justify-between shadow-lg sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
+        {/* Logo animé */}
+        <h1 className="text-4xl font-extrabold flex items-center gap-3 group">
+          <span className="bg-white text-teal-700 p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
+            <FaFeather />
+          </span>
+
+
+          <span className="group-hover:text-teal-300 transition-all duration-300">
+            Nkusu
+          </span>
         </h1>
-        <nav className="space-x-6">
-          <a href="#features" className="hover:text-green-300">Features</a>
-          <a href="#about" className="hover:text-green-300">About</a>
-          <a href="#contact" className="hover:text-green-300">Contact</a>
+
+        {/* Navigation Desktop */}
+        <nav className="hidden md:flex space-x-8 text-lg font-medium animate-fade-in">
+          {["Features", "About", "Contact"].map((item) => (
+            <a
+              key={item}
+              href={`#${item.toLowerCase()}`}
+              className="relative text-white after:absolute after:w-0 after:h-[2px] after:bg-teal-300 after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 hover:after:w-full hover:after:left-0 transition-all duration-300"
+            >
+              {item}
+            </a>
+          ))}
         </nav>
+
+        {/* CTA Button */}
+        <a
+          href="/login"
+          className="hidden md:inline-block bg-teal-500 hover:bg-teal-300 text-white font-semibold px-6 py-2 rounded-full shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300"
+        >
+          Get Started
+        </a>
       </header>
 
       {/* Hero Section */}
-      <section className="flex flex-col items-center text-center p-16 bg-green-100 rounded-xl shadow-lg mx-4 md:mx-20 lg:mx-40 my-10">
-  <h2 className="text-5xl font-extrabold text-green-800 mb-6">
-    Welcome to the Agriyields Traceability Portal
-  </h2>
-  <p className="text-xl text-gray-700 mb-10 max-w-3xl">
-    Data-driven monitoring and insights for your area of interest using satellite imagery and crop yield forecasts.
-  </p>
-  <button className="bg-green-600 text-white px-12 py-4 rounded-full text-lg font-semibold hover:bg-green-700 transition-all duration-300 shadow-md transform hover:scale-105">
-    Login
-  </button>
-</section>
+      <section className="py-20 bg-gradient-to-tl from-teal-200 to-white text-center animate-gradient">
+        <h2 className="text-5xl font-bold text-teal-700 mb-10 animate-fade-in-up-zoom">
+          Welcome to the Agriyields Traceability Portal
+        </h2>
+        <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8 animate-fade-in-color">
+          Data-driven monitoring and insights for your area of interest using satellite imagery, crop yield forecasts with ease.
+        </p>
 
 
-      {/* Features Section */}
-      <section id="features" className="py-16 bg-white text-center">
-        <h3 className="text-3xl font-bold mb-10">Features</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
-          <div className="p-6 bg-gray-100 rounded-lg shadow hover:shadow-lg transition flex flex-col items-center">
-            <FaLeaf className="text-green-600 text-5xl mb-4" />
-            <h4 className="text-2xl font-semibold mb-2">Forest Management</h4>
-            <p>Monitor crop growth and yields efficiently with real-time data.</p>
-          </div>
-          <div className="p-6 bg-gray-100 rounded-lg shadow hover:shadow-lg transition flex flex-col items-center">
-            <FaRegIdBadge className="text-green-600 text-5xl mb-4" />
-            <h4 className="text-2xl font-semibold mb-2">Digital Trace ID</h4>
-            <p>Easily generate QR codes for your produce and track inventory.</p>
-          </div>
-          <div className="p-6 bg-gray-100 rounded-lg shadow hover:shadow-lg transition flex flex-col items-center">
-            <FaTractor className="text-green-600 text-5xl mb-4" />
-            <h4 className="text-2xl font-semibold mb-2">Farm Management</h4>
-            <p>Stay on top of your farm’s productivity with detailed yield reports.</p>
-          </div>
+        <div className="flex flex-col md:flex-row justify-center gap-6 items-center">
+          <a
+            href="/login"
+            className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-3 rounded-full shadow-lg text-lg text-center"
+          >
+            Get Started
+          </a>
+          <a
+            href="/learn-more"
+            className="bg-white hover:bg-gray-100 text-teal-500 border border-teal-500 px-8 py-3 rounded-full shadow-lg text-lg text-center"
+          >
+            Learn More
+          </a>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mt-12 max-w-6xl mx-auto">
+          {[
+            {
+              title: "Forest Management",
+              icon: FaTree,
+              description: "Monitor crop growth and yields efficiently with real-time data.",
+              bgColor: "bg-gradient-to-br from-blue-100 to-teal-50",
+              iconColor: "text-blue-500",
+            },
+            {
+              title: "Digital Trace ID",
+              icon: FaQrcode,
+              description: "Easily generate QR codes for your produce and track inventory.",
+              bgColor: "bg-gradient-to-br from-green-100 to-lime-50",
+              iconColor: "text-green-500",
+            },
+            {
+              title: "Farm Management",
+              icon: FaTractor,
+              description: "Easily generate QR codes for your produce and track inventory.",
+              bgColor: "bg-gradient-to-br from-purple-100 to-pink-50",
+              iconColor: "text-purple-500",
+            },
+          ].map(({ title, icon: Icon, description, bgColor, iconColor }, index) => (
+            <div
+              key={index}
+              className={`${bgColor} rounded-xl shadow-lg p-8 text-center hover:shadow-2xl hover:scale-105 transition-all duration-300`}
+            >
+              <div
+                className={`w-16 h-16 flex items-center justify-center rounded-full shadow-md mb-6 ${iconColor} bg-white`}
+              >
+                <Icon className="text-3xl" />
+              </div>
+              <h4 className="text-2xl font-bold text-gray-800 mb-4">{title}</h4>
+              <p className="text-gray-600">{description}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* About Section */}
-      <section id="about" className="py-16 bg-green-100 text-center">
-        <h3 className="text-3xl font-bold mb-6">About Us</h3>
-        <p className="max-w-xl mx-auto text-gray-700">
-          We are a team of passionate individuals committed to empowering farmers with technology.
-          Our mission is to make agriculture smarter, more sustainable, and more efficient.
-        </p>
+      {/* Features Section */}
+      <section
+        id="features"
+        className="py-20 bg-gradient-to-br from-teal-50 via-white to-blue-100"
+      >
+        <h3 className="text-4xl font-extrabold text-center text-teal-700 mb-16 animate-fade-in-up">
+          Features
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 max-w-7xl mx-auto px-6">
+          {[
+            {
+              Icon: FaCloudSunRain,
+              title: "Climate",
+              description:
+                "Gain insights into weather patterns and climate trends to optimize crop growth.",
+              color: "bg-purple-400",
+              textColor: "text-purple-600",
+            },
+            {
+              Icon: FaLeaf,
+              title: "Environment",
+              description:
+                "Analyze environmental factors to promote sustainable farming practices.",
+              color: "bg-pink-400",
+              textColor: "text-pink-600",
+            },
+            {
+              Icon: FaTree,
+              title: "Carbon Offset Project",
+              description:
+                "Contribute to sustainability by managing and tracking carbon offset initiatives.",
+              color: "bg-teal-400",
+              textColor: "text-teal-600",
+            },
+            {
+              Icon: FaChartLine,
+              title: "Multiple Report",
+              description:
+                "Access detailed reports and analytics for informed decision-making on your farm.",
+              color: "bg-purple-400",
+              textColor: "text-purple-600",
+            }
+          ].map(({ Icon, title, description, color, textColor }, index) => (
+            <div
+              key={index}
+              className="relative bg-white rounded-2xl p-8 shadow-md hover:shadow-2xl hover:scale-105 transition-transform duration-300"
+            >
+              <div
+                className={`${color} text-white w-16 h-16 flex items-center justify-center rounded-full shadow-lg mb-6`}
+              >
+                <Icon className="text-2xl" />
+              </div>
+              <h4
+                className={`text-2xl font-bold mb-4 animate-fade-in ${textColor}`}
+              >
+                {title}
+              </h4>
+              <p className="text-gray-600 leading-relaxed">{description}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-16 bg-white text-center">
-        <h3 className="text-3xl font-bold mb-6">Contact Us</h3>
-        <p className="max-w-md mx-auto text-gray-700 mb-6">
-          Have questions or want to learn more? Reach out to us!
+      <section
+        id="contact"
+        className="py-20 bg-gradient-to-tl from-teal-200 to-white"
+      >
+        <h3 className="text-4xl font-bold text-center text-teal-700 mb-10">
+          Contact Us
+        </h3>
+        <p className="text-lg text-gray-600 text-center max-w-3xl mx-auto mb-12">
+          Join us in transforming the way you manage your farm. Explore the features
+          and benefits today!
         </p>
         <div className="flex justify-center gap-8">
-          <button className="bg-green-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-green-700 transition flex items-center gap-2">
-            <FaEnvelope /> Email Us
-          </button>
-          <button className="bg-green-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-green-700 transition flex items-center gap-2">
-            <FaPhone /> Call Us
-          </button>
+          {[
+            { label: "Email Us", Icon: FaEnvelope, href: "/contactus" },
+            { label: "Sign Up", Icon: FaPhone, href: "/signup" },
+          ].map(({ label, Icon, href }, index) => (
+            <a
+              key={index}
+              href={href}
+              className="bg-teal-500 text-white px-10 py-3 rounded-full font-medium flex items-center gap-2 shadow-lg hover:bg-teal-700 transition-transform transform hover:scale-105"
+            >
+              <Icon /> {label}
+            </a>
+          ))}
         </div>
       </section>
 
+
       {/* Footer */}
-      <footer className="bg-green-600 text-white text-center p-4">
-        <p>&copy; 2024 Agriyields Traceability Portal. All rights reserved.</p>
+      <footer className="bg-teal-700 text-white text-center py-4">
+        <p>
+          &copy; {new Date().getFullYear()}  Agriyields traceability portal. All rights reserved.
+        </p>
+        <motion.a
+          href="mailto:lwetutb@gmail.com"
+          className="text-gray-300 hover:text-gray-200 flex items-center justify-center mt-2"
+          whileHover={{ scale: 1.1 }}
+        >
+          <FaEnvelope className="w-5 h-5 mr-1" />
+          support@nkusu.com
+        </motion.a>
       </footer>
     </div>
   );
