@@ -6268,10 +6268,10 @@ char-regex@^1.0.2:
   resolved "https://registry.npmjs.org/char-regex/-/char-regex-1.0.2.tgz"
   integrity sha512-kWWXztvZ5SBQV+eRgKFeh8q5sLuZY2+8WUIzlxWVTg+oGwY14qylx1KbKzHd8P6ZYkAg0xyIDU9JMHhyJMZ1jw==
 
-chart.js@^4.4.3:
-  version "4.4.3"
-  resolved "https://registry.npmjs.org/chart.js/-/chart.js-4.4.3.tgz"
-  integrity sha512-qK1gkGSRYcJzqrrzdR6a+I0vQ4/R+SoODXyAjscQ/4mzuNzySaMCd+hyVxitSY1+L2fjPD1Gbn+ibNqRmwQeLw==
+chart.js@^4.4.6:
+  version "4.4.6"
+  resolved "https://registry.yarnpkg.com/chart.js/-/chart.js-4.4.6.tgz#da39b84ca752298270d4c0519675c7659936abec"
+  integrity sha512-8Y406zevUPbbIBA/HRk33khEmQPk5+cxeflWE/2rx1NJsjVWMPw/9mSP9rxHP5eqi6LNoPBVMfZHxbwLSgldYA==
   dependencies:
     "@kurkle/color" "^0.3.0"
 
@@ -14359,7 +14359,7 @@ react-calendar@^5.0.0:
 
 react-chartjs-2@^5.2.0:
   version "5.2.0"
-  resolved "https://registry.npmjs.org/react-chartjs-2/-/react-chartjs-2-5.2.0.tgz"
+  resolved "https://registry.yarnpkg.com/react-chartjs-2/-/react-chartjs-2-5.2.0.tgz#43c1e3549071c00a1a083ecbd26c1ad34d385f5d"
   integrity sha512-98iN5aguJyVSxp5U3CblRLH67J8gkfyGNbiK3c+l1QI/G4irHMPQw44aEPmjVag+YKTyQ260NcF82GTQ3bdscA==
 
 react-clock@^5.0.0:
@@ -14478,6 +14478,11 @@ react-globe.gl@^2.27.6:
     globe.gl "^2.33"
     prop-types "15"
     react-kapsule "^2.5"
+
+react-heatmap-grid@^0.9.1:
+  version "0.9.1"
+  resolved "https://registry.yarnpkg.com/react-heatmap-grid/-/react-heatmap-grid-0.9.1.tgz#c80a5adb1c57ec29bdedc30269d39ddb5fdcd731"
+  integrity sha512-rsN2IfFh85cBl4y3cPJrabA60uuS96BKbWeX4BV4pTaKy/qqn8o8dDwd436LBg/EJad2S4Di948XaxpxwsapGw==
 
 react-icons@^5.2.1:
   version "5.2.1"
