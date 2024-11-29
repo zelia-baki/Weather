@@ -102,20 +102,43 @@ const calculateDegreeDays = () => {
         fill: true,
       },
       {
-        label: 'Growing Degree Days (GDD)',
-        data: gdd,
-        backgroundColor: 'rgba(153, 102, 255, 0.2)',
-        borderColor: 'rgba(153, 102, 255, 1)',
+        label: "Cooling Degree Days",
+        data: CoolingDegreeDays,
+        backgroundColor: 'rgba(255, 206, 86, 0.2)', // Transparent yellow
+        borderColor: 'rgba(255, 206, 86, 1)', // Solid yellow
         borderWidth: 2,
         tension: 0.4,
-        fill: true,
       },
-    ],
+    ]
   };
 
-  const handleFetch = () => {
-    setIsLoading(true);
-    fetchWeatherData(latitude, longitude);
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#333', // Color for the legend text
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: (tooltipItem) => `Value: ${tooltipItem.raw}`, // Customize tooltip label
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#333', // Color for x-axis labels
+        },
+      },
+      y: {
+        ticks: {
+          color: '#333', // Color for y-axis labels
+        },
+      },
+    },
   };
 
   return (
@@ -146,4 +169,4 @@ const calculateDegreeDays = () => {
   );
 };
 
-export default DegreeDaysPage;
+export default Graph;

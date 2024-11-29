@@ -81,7 +81,7 @@ const LandingPage = () => {
           Welcome to the Agriyields Traceability Portal
         </h2>
         <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8 animate-fade-in-color">
-          Data-driven monitoring and insights for your area of interest using satellite imagery, crop yield forecasts with ease.
+          Data driven monitoring and insights for your area of interest using next generation satellite imagery.
         </p>
 
 
@@ -105,21 +105,21 @@ const LandingPage = () => {
             {
               title: "Forest Management",
               icon: FaTree,
-              description: "Monitor crop growth and yields efficiently with real-time data.",
+              description: "Real time data insights for biodiversity and forestry conservation, antideforestation, afforestation & reforesatation.",
               bgColor: "bg-gradient-to-br from-blue-100 to-teal-50",
               iconColor: "text-blue-500",
             },
             {
               title: "Digital Trace ID",
               icon: FaQrcode,
-              description: "Easily generate QR codes for your produce and track inventory.",
+              description: "Track your produce and inventory, trace supply chains from farm to fork by generating secure digital certificates & stamps.",
               bgColor: "bg-gradient-to-br from-green-100 to-lime-50",
               iconColor: "text-green-500",
             },
             {
               title: "Farm Management",
               icon: FaTractor,
-              description: "Easily generate QR codes for your produce and track inventory.",
+              description: "Manage and monitor your farms operations with actionable geospatial data insights, monitor crop.",
               bgColor: "bg-gradient-to-br from-purple-100 to-pink-50",
               iconColor: "text-purple-500",
             },
@@ -154,7 +154,7 @@ const LandingPage = () => {
               Icon: FaCloudSunRain,
               title: "Climate",
               description:
-                "Gain insights into weather patterns and climate trends to optimize crop growth.",
+                "Gain insights into how changing patterns in weather and climate affect your business by conducting area based risk assessments.",
               color: "bg-purple-400",
               textColor: "text-purple-600",
             },
@@ -162,15 +162,15 @@ const LandingPage = () => {
               Icon: FaLeaf,
               title: "Environment",
               description:
-                "Analyze environmental factors to promote sustainable farming practices.",
+                "Leverage the power of advanced Geospatial data analytics and machine learning to conduct environmental risk assessments and feasibility, EUDR risk assessment & compliance verification with precision and accurancy.",
               color: "bg-pink-400",
               textColor: "text-pink-600",
             },
             {
               Icon: FaTree,
-              title: "Carbon Offset Project",
+              title: "Carbon Offset Projects",
               description:
-                "Contribute to sustainability by managing and tracking carbon offset initiatives.",
+                "Contribute to environmental & climate sustainability and the net Zero agenda by managing and tracking carbon and other GHG emissions.",
               color: "bg-teal-400",
               textColor: "text-teal-600",
             },
@@ -212,8 +212,7 @@ const LandingPage = () => {
           Contact Us
         </h3>
         <p className="text-lg text-gray-600 text-center max-w-3xl mx-auto mb-12">
-          Join us in transforming the way you manage your farm. Explore the features
-          and benefits today!
+          Join the big data revolution, explore and transform the way you do business by reachin out to us.
         </p>
         <div className="flex justify-center gap-8">
           {[
@@ -243,7 +242,7 @@ const LandingPage = () => {
           whileHover={{ scale: 1.1 }}
         >
           <FaEnvelope className="w-5 h-5 mr-1" />
-          support@nkusu.com
+          nkusu@agriyields.com
         </motion.a>
       </footer>
     </div>

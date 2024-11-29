@@ -24,6 +24,7 @@ const GenerateQrCodeAndReceipt = () => {
   const [farms, setFarms] = useState([]);
   const [qrCodes, setQrCodes] = useState([]);
   const [districts, setDistricts] = useState([]);
+  const [countries, setCountries] = useState([]);
   const storeNames = ['Store A', 'Store B', 'Store C']; // Example options for Store Name
 
   const qrCodeContainerRef = useRef(null); // Référence pour le conteneur des QR codes
@@ -87,6 +88,19 @@ const GenerateQrCodeAndReceipt = () => {
     }
   }, [qrCodes]);
 
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await axios.get('/api/countries');  // Call the API endpoint
+        setCountries(response.data);  // Update the state with the list of countries
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+      }
+    };
+
+    fetchCountries();  // Call fetchCountries on component mount
+  }, []);
+
   const fetchDistricts = async () => {
     try {
       const response = await axiosInstance.get('/api/district/');
@@ -118,7 +132,7 @@ const GenerateQrCodeAndReceipt = () => {
   };
 
   return (
-    <div className="bg-gradient-to-r from-teal-50 via-green-50 to-yellow-50 min-h-screen flex justify-center items-center p-10">
+    <div className="bg-gradient-to-r  via-white-50 to-white-50 min-h-screen flex justify-center items-center p-10">
       <div className="container mx-auto">
         <h1 className="text-5xl font-extrabold mb-12 text-center text-teal-700">
           Generate Digital Codes and E-Receipt for Farmer
@@ -182,7 +196,7 @@ const GenerateQrCodeAndReceipt = () => {
                 />
               </div>
               <div className="mb-6">
-              <label className="text-lg text-gray-800 mb-2" htmlFor="district_id">
+                <label className="text-lg text-gray-800 mb-2" htmlFor="district_id">
                   District
                 </label>
                 <select
@@ -200,6 +214,26 @@ const GenerateQrCodeAndReceipt = () => {
                   ))}
                 </select>
               </div>
+              <div className="mb-6">
+                  <label htmlFor="country_of_origin" className="text-lg text-gray-800 mb-2 block">
+                    Country :
+                  </label>
+                  <select
+                    id="country_of_origin"
+                    name="country_of_origin"
+                    value={formData.country_of_origin}
+                    onChange={handleChange}
+                    className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
+                    required
+                  >
+                    <option value="">Select Country</option>
+                    {countries.map(country => (
+                      <option key={country.id} value={country.name}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
               <div className="flex flex-col mb-6">
                 <label className="text-lg text-gray-800 mb-2">Produce Category and Grade</label>
