@@ -5,7 +5,7 @@ import { useLocation, Link } from "react-router-dom";
 import html2canvas from "html2canvas";
 import Loading from '../main/Loading.jsx';
 import Heatmap from 'react-heatmap-grid';
-
+import * as turf from '@turf/turf';
 
 
 const FullReport = () => {
@@ -15,6 +15,8 @@ const FullReport = () => {
   const [error, setError] = useState(null);
   const location = useLocation();
   const farmId = location.state?.farmId || "WAK0001"; // Ensure fallback is a string
+  const [areaInSquareMeters, setAreaInSquareMeters] = useState(null);
+  const [areaInHectares, setAreaInHectares] = useState(null);
   const reportRef = useRef();
   const [dimensions, setDimensions] = useState({
     width: window.innerWidth,
@@ -35,6 +37,24 @@ const FullReport = () => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+  const calculatePolygonArea = (coordinates) => {
+    // Construct GeoJSON polygon
+    const polygon = {
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [coordinates],
+      },
+    };
+
+    // Use turf to calculate area (in square meters)
+    const areaInSquareMeters = turf.area(polygon);
+
+    // Convert area to hectares (optional)
+    const areaInHectares = areaInSquareMeters / 10000;
+
+    return { areaInSquareMeters, areaInHectares };
+  };
 
   const dataheat = [
     [1, 1, 1, 1, 1],
@@ -69,7 +89,6 @@ const FullReport = () => {
       </span>
     );
   };
-
   useEffect(() => {
     const fetchFarmReport = async () => {
       try {
@@ -78,11 +97,21 @@ const FullReport = () => {
           setError(response.data.error);
         } else {
           setFarmInfo(response.data.farm_info);
-          setGeoData(response.data.report || []);
-          console.log("GeoData:", response.data.report);
+          const reportData = response.data.report || [];
+          setGeoData(reportData);
+          console.log(geoData)
+
+          // Calculate area if polygon data is available
+          if (reportData.length > 0 && reportData[0].coordinates.length > 0) {
+            const coordinates = reportData[0].coordinates[0]; // Adjust based on your structure
+            const { areaInSquareMeters, areaInHectares } = calculatePolygonArea(coordinates);
+            setAreaInSquareMeters(areaInSquareMeters);
+            setAreaInHectares(areaInHectares);
+          }
         }
       } catch (err) {
         setError('Failed to fetch farm report.');
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -90,7 +119,6 @@ const FullReport = () => {
 
     fetchFarmReport();
   }, [farmId]);
-
 
   const generateMapboxUrl = (coordinates) => {
     const geojson = {
@@ -115,13 +143,14 @@ const FullReport = () => {
     const element = reportRef.current;
     const pdf = new jsPDF("p", "mm", "a4");
     const pages = element.querySelectorAll(".page");
-  
+    const email = "nkusu@agriyields.com"; // Replace with your email
+
     for (let i = 0; i < pages.length; i++) {
-      // Make sure to wait until all images are loaded
+      // Wait until all images in the current page are loaded
       await new Promise((resolve) => {
-        const images = pages[i].getElementsByTagName('img');
+        const images = pages[i].getElementsByTagName("img");
         let loadedCount = 0;
-  
+
         if (images.length === 0) {
           resolve(); // No images to load
         } else {
@@ -136,7 +165,8 @@ const FullReport = () => {
           });
         }
       });
-  
+
+      // Generate a canvas from the page
       const canvas = await html2canvas(pages[i], {
         scale: 2,
         useCORS: true, // Enable CORS
@@ -144,14 +174,23 @@ const FullReport = () => {
       const imgData = canvas.toDataURL("image/png");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-  
+
+      // Add the image to the PDF
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      if (i < pages.length - 1) pdf.addPage();
+
+      // Add the email text to the bottom right corner
+      const margin = 10; // Margin from the edge
+      const emailX = pdfWidth - pdf.getTextWidth(email) - margin; // Calculate X position
+      const emailY = pdf.internal.pageSize.getHeight() - margin; // Calculate Y position
+      pdf.setFontSize(10); // Set font size
+      pdf.text(email, emailX, emailY); // Add email text
+
+      if (i < pages.length - 1) pdf.addPage(); // Add a new page if not the last
     }
-  
+
+    // Save the PDF
     pdf.save("EUDR_Report.pdf");
   };
-
 
 
   if (loading) return <Loading />;
@@ -182,6 +221,15 @@ const FullReport = () => {
       <div ref={reportRef}>
         {/* Page 1 */}
         <div className="page bg-white p-6 shadow-md mb-4">
+          <img
+            src="/logo.jpg"
+            alt="Description of image"
+            style={{
+              float: 'right',
+              width: '200px',
+              height: 'auto'
+            }}
+          />
           <h1 className="text-3xl font-bold mb-6 text-center">NKUSU/AGRIYIELDS REPORT</h1>
           {farmInfo && (
             <p className="p-4">
@@ -276,16 +324,39 @@ const FullReport = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td className="border border-gray-400 px-4 py-2">Tropical Tree Cover Percent</td>
-                  <td className="border border-gray-400 px-4 py-2">0-97%</td>
+                  <td className="border border-gray-400 px-4 py-2">Project Area</td>
+                  <td className="border border-gray-400 px-4 py-2">
+                    {areaInSquareMeters && areaInHectares && (
+                      <div>
+
+                        <p>{areaInSquareMeters.toFixed(2)} m²</p>
+                        <p>{areaInHectares.toFixed(2)} ha</p>
+                      </div>
+                    )}
+
+
+
+                  </td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-400 px-4 py-2">Tree Cover Height (2020)</td>
-                  <td className="border border-gray-400 px-4 py-2">0 to 23 meters</td>
+                  <td className="border border-gray-400 px-4 py-2">Country Deforestation Risk Level</td>
+                  <td className="border border-gray-400 px-4 py-2">High</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-400 px-4 py-2">Protected Areas</td>
-                  <td className="border border-gray-400 px-4 py-2">No protected areas identified</td>
+                  <td className="border border-gray-400 px-4 py-2">EUDR compliance</td>
+                  <td className="border border-gray-400 px-4 py-2">
+                    
+                    {geoData[0].data_fields.area__ha && geoData[0].data_fields.area__ha==0 ? (
+                      <div>
+
+                        <p>100% compliance</p>
+                      
+                      </div>
+                    ) :(
+                      <p>Not compliant </p>
+                    )
+                  
+                  }</td>
                 </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">Landmark Indigenous and Community Lands</td>
@@ -314,7 +385,7 @@ const FullReport = () => {
           </div>
         </div>
 
-        {/* Additional Pages */}
+        {/* Additional Pages
         {[...Array(7)].map((_, index) => (
           <div key={index} className="page bg-white p-6 shadow-md mb-4">
             <h2 className="text-2xl font-bold">Page {index + 2}</h2>
@@ -323,7 +394,7 @@ const FullReport = () => {
               <p className="text-gray-500">Figure Placeholder</p>
             </div>
           </div>
-        ))}
+        ))} */}
       </div>
 
       {/* Generate PDF Button */}
