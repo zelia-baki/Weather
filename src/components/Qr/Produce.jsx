@@ -8,6 +8,7 @@ const GenerateQrCodeAndReceipt = () => {
     phone_number: '',
     district_id: '',
     agroInputCategory: '',
+    country_of_origin: '',
     agroInputType: '',
     season: '',
     produce_weight: '',
@@ -64,6 +65,19 @@ const GenerateQrCodeAndReceipt = () => {
     fetchFarms();
   }, []);
 
+  // useEffect(() => {
+  //   const fetchCountries = async () => {
+  //     try {
+  //       const response = await axios.get('/api/countries');  // Call the API endpoint
+  //       setCountries(response.data);  // Update the state with the list of countries
+  //     } catch (error) {
+  //       console.error('Error fetching countries:', error);
+  //     }
+  //   };
+
+  //   fetchCountries();  // Call fetchCountries on component mount
+  // }, []);
+
   useEffect(() => {
     if (qrCodes.length > 0 && qrCodeContainerRef.current) {
       qrCodeContainerRef.current.innerHTML = '';
@@ -88,18 +102,7 @@ const GenerateQrCodeAndReceipt = () => {
     }
   }, [qrCodes]);
 
-  useEffect(() => {
-    const fetchCountries = async () => {
-      try {
-        const response = await axios.get('/api/countries');  // Call the API endpoint
-        setCountries(response.data);  // Update the state with the list of countries
-      } catch (error) {
-        console.error('Error fetching countries:', error);
-      }
-    };
 
-    fetchCountries();  // Call fetchCountries on component mount
-  }, []);
 
   const fetchDistricts = async () => {
     try {
@@ -113,7 +116,13 @@ const GenerateQrCodeAndReceipt = () => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
+ const handleChangeCountrie = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value
+    }));
+  };
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prevData => ({ ...prevData, [name]: value }));
@@ -214,7 +223,7 @@ const GenerateQrCodeAndReceipt = () => {
                   ))}
                 </select>
               </div>
-              <div className="mb-6">
+              {/* <div className="mb-6">
                   <label htmlFor="country_of_origin" className="text-lg text-gray-800 mb-2 block">
                     Country :
                   </label>
@@ -222,7 +231,7 @@ const GenerateQrCodeAndReceipt = () => {
                     id="country_of_origin"
                     name="country_of_origin"
                     value={formData.country_of_origin}
-                    onChange={handleChange}
+                    onChange={handleChangeCountrie}
                     className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                     required
                   >
@@ -233,7 +242,7 @@ const GenerateQrCodeAndReceipt = () => {
                       </option>
                     ))}
                   </select>
-                </div>
+                </div> */}
 
               <div className="flex flex-col mb-6">
                 <label className="text-lg text-gray-800 mb-2">Produce Category and Grade</label>
@@ -307,7 +316,7 @@ const GenerateQrCodeAndReceipt = () => {
 
               <div className="mb-6">
                 <label className="text-lg text-gray-800 mb-2" htmlFor="price_per_kg">
-                  Price Per Kg (USD)
+                  Price Per Kg (UGX)
                 </label>
                 <input
                   type="number"
@@ -323,7 +332,7 @@ const GenerateQrCodeAndReceipt = () => {
 
               <div className="mb-6">
                 <label className="text-lg text-gray-800 mb-2" htmlFor="total_value">
-                  Total Value (USD)
+                  Total Value (UGX)
                 </label>
                 <input
                   type="number"

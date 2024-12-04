@@ -174,46 +174,54 @@ const MapboxExample = () => {
     mapRef.current.on('click', async (event) => {
       const { lng, lat } = event.lngLat;
 
-      // Perform reverse geocoding to get the place name
-      const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}`;
-      const response = await fetch(reverseGeocodeUrl);
+      try {
+        // Reverse geocoding to get the place name
+        const reverseGeocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}`;
+        const response = await fetch(reverseGeocodeUrl);
+        const data = await response.json();
 
-      const data = await response.json();
-      console.log(data);
-      const city = data.features[0]?.place_name || 'Unknown location';
+        const city = data.features[0]?.place_name || 'Unknown location';
+        setPlaceName(city); // Update place name state
 
-      const weatherData = await fetchWeatherData(lat, lng);
+        // Fetch weather data for clicked coordinates
+        const weatherData = await fetchWeatherData(lat, lng);
 
-      setTemperature(weatherData.temperature);
-      setHumidity(weatherData.humidity);
-      setPrecipitation(weatherData.precipitation);
-      setEt0(weatherData.et0_fao_evapotranspiration);
-      setShortwaveRadiation(weatherData.shortwave_radiation);
-      setWindSpeed1000hPa(weatherData.windSpeed1000hPa);
+        setTemperature(weatherData.temperature);
+        setHumidity(weatherData.humidity);
+        setPrecipitation(weatherData.precipitation);
+        setEt0(weatherData.et0_fao_evapotranspiration);
+        setShortwaveRadiation(weatherData.shortwave_radiation);
+        setWindSpeed1000hPa(weatherData.windSpeed1000hPa);
 
-      // Calculate ETc
-      const calculatedEtC = calculateETc(weatherData.et0_fao_evapotranspiration, Kc);
-      setEtC(calculatedEtC);
+        // Calculate ETc
+        const calculatedEtC = calculateETc(weatherData.et0_fao_evapotranspiration, Kc);
+        setEtC(calculatedEtC);
 
-      // If a popup already exists, remove it
-      if (popupRef.current) {
-        popupRef.current.remove();
+        // If a popup already exists, remove it
+        if (popupRef.current) {
+          popupRef.current.remove();
+        }
+
+        // Create a new popup with weather data
+        popupRef.current = new mapboxgl.Popup()
+          .setLngLat([lng, lat])
+          .setHTML(
+            `<p><strong>Coordinates:</strong></p>
+             <p>Lng: ${lng.toFixed(4)}, Lat: ${lat.toFixed(4)}</p>
+             <p><strong>City:</strong> ${city}</p>
+             <p><strong>Temperature:</strong> ${weatherData.temperature !== null ? `${weatherData.temperature}°C` : 'N/A'}</p>
+             <p><strong>Humidity:</strong> ${weatherData.humidity !== null ? `${weatherData.humidity}%` : 'N/A'}</p>
+             <p><strong>Precipitation:</strong> ${weatherData.precipitation !== null ? `${weatherData.precipitation} mm` : 'N/A'}</p>
+             <p><strong>Shortwave Radiation:</strong> ${weatherData.shortwave_radiation !== null ? `${weatherData.shortwave_radiation} W/m²` : 'N/A'}</p>
+             <p><strong>Wind Speed (1000hPa):</strong> ${weatherData.windSpeed1000hPa !== null ? `${weatherData.windSpeed1000hPa} m/s` : 'N/A'}</p>`
+          )
+          .addTo(mapRef.current);
+      } catch (error) {
+        console.error('Error fetching data or creating popup:', error);
+        setNotification({ type: 'error', message: 'Failed to fetch weather data.' });
       }
-
-      // Create a new popup and set its coordinates and content with weather info
-      popupRef.current = new mapboxgl.Popup()
-        .setLngLat([lng, lat])
-        .setHTML(
-          `<p>Coordinates:</p><p>Lng: ${lng.toFixed(4)}, Lat: ${lat.toFixed(4)}</p>
-           <p>City: ${city}</p>
-           <p>Temperature: ${weatherData.temperature !== null ? `${weatherData.temperature}°C` : 'N/A'}</p>
-           <p>Humidity: ${weatherData.humidity !== null ? `${weatherData.humidity}%` : 'N/A'}</p>
-           <p>Precipitation: ${weatherData.precipitation !== null ? `${weatherData.precipitation} mm` : 'N/A'}</p>
-           <p>Shortwave Radiation: ${weatherData.shortwave_radiation !== null ? `${weatherData.shortwave_radiation} W/m²` : 'N/A'}</p>
-           <p>Wind Speed (1000hPa): ${weatherData.windSpeed1000hPa !== null ? `${weatherData.windSpeed1000hPa} m/s` : 'N/A'}</p>`
-        )
-        .addTo(mapRef.current);
     });
+
 
     return () => {
       mapRef.current.remove();
@@ -238,46 +246,46 @@ const MapboxExample = () => {
         {/* Weather Info */}
 
 
-<div className="relative w-full md:w-1/3 bg-white p-6 rounded-lg shadow-lg transition-all hover:shadow-xl hover:bg-gray-50">
-  <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-    <WiDaySunny className="mr-2 text-yellow-500" size={24} />
-    Weather Information
-  </h3>
-  <div className="space-y-4">
-  <div className="flex items-center text-gray-700">
-      <FiMapPin className="mr-2 text-red-500" size={20} />
-      <span className="font-medium">Location:</span> {placeName}
-    </div>
-    <div className="flex items-center text-gray-700">
-      <WiDaySunny className="mr-2 text-orange-400" size={20} />
-      <span className="font-medium">Temperature:</span> {temperature !== null ? `${temperature}°C` : 'N/A'}
-    </div>
-    <div className="flex items-center text-gray-700">
-      <WiHumidity className="mr-2 text-blue-500" size={20} />
-      <span className="font-medium">Humidity:</span> {humidity !== null ? `${humidity}%` : 'N/A'}
-    </div>
-    <div className="flex items-center text-gray-700">
-      <WiRain className="mr-2 text-blue-600" size={20} />
-      <span className="font-medium">Precipitation:</span> {precipitation !== null ? `${precipitation} mm` : 'N/A'}
-    </div>
-    <div className="flex items-center text-gray-700">
-      <WiCloud className="mr-2 text-gray-500" size={20} />
-      <span className="font-medium">ET₀:</span> {et0 !== null ? `${et0} mm/day` : 'N/A'}
-    </div>
-    <div className="flex items-center text-gray-700">
-      <WiCloud className="mr-2 text-gray-500" size={20} />
-      <span className="font-medium">ETc:</span> {etC !== null ? `${etC} mm/day` : 'N/A'}
-    </div>
-    <div className="flex items-center text-gray-700">
-      <WiSolarEclipse className="mr-2 text-yellow-600" size={20} />
-      <span className="font-medium">Shortwave Radiation:</span> {shortwaveRadiation !== null ? `${shortwaveRadiation} W/m²` : 'N/A'}
-    </div>
-    <div className="flex items-center text-gray-700">
-      <WiWindy className="mr-2 text-green-500" size={20} />
-      <span className="font-medium">Wind Speed (1000hPa):</span> {windSpeed1000hPa !== null ? `${windSpeed1000hPa} m/s` : 'N/A'}
-    </div>
-  </div>
-</div>
+        <div className="relative w-full md:w-1/3 bg-white p-6 rounded-lg shadow-lg transition-all hover:shadow-xl hover:bg-gray-50">
+          <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+            <WiDaySunny className="mr-2 text-yellow-500" size={24} />
+            Weather Information
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center text-gray-700">
+              <FiMapPin className="mr-2 text-red-500" size={20} />
+              <span className="font-medium">Location:</span> {placeName}
+            </div>
+            <div className="flex items-center text-gray-700">
+              <WiDaySunny className="mr-2 text-orange-400" size={20} />
+              <span className="font-medium">Temperature:</span> {temperature !== null ? `${temperature}°C` : 'N/A'}
+            </div>
+            <div className="flex items-center text-gray-700">
+              <WiHumidity className="mr-2 text-blue-500" size={20} />
+              <span className="font-medium">Humidity:</span> {humidity !== null ? `${humidity}%` : 'N/A'}
+            </div>
+            <div className="flex items-center text-gray-700">
+              <WiRain className="mr-2 text-blue-600" size={20} />
+              <span className="font-medium">Precipitation:</span> {precipitation !== null ? `${precipitation} mm` : 'N/A'}
+            </div>
+            <div className="flex items-center text-gray-700">
+              <WiCloud className="mr-2 text-gray-500" size={20} />
+              <span className="font-medium">ET₀:</span> {et0 !== null ? `${et0} mm/day` : 'N/A'}
+            </div>
+            <div className="flex items-center text-gray-700">
+              <WiCloud className="mr-2 text-gray-500" size={20} />
+              <span className="font-medium">ETc:</span> {etC !== null ? `${etC} mm/day` : 'N/A'}
+            </div>
+            <div className="flex items-center text-gray-700">
+              <WiSolarEclipse className="mr-2 text-yellow-600" size={20} />
+              <span className="font-medium">Shortwave Radiation:</span> {shortwaveRadiation !== null ? `${shortwaveRadiation} W/m²` : 'N/A'}
+            </div>
+            <div className="flex items-center text-gray-700">
+              <WiWindy className="mr-2 text-green-500" size={20} />
+              <span className="font-medium">Wind Speed (1000hPa):</span> {windSpeed1000hPa !== null ? `${windSpeed1000hPa} m/s` : 'N/A'}
+            </div>
+          </div>
+        </div>
 
 
 
