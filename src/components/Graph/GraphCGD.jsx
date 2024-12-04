@@ -169,4 +169,4 @@ const calculateDegreeDays = () => {
   );
 };
 
-export default Graph;
+export default DegreeDaysPage;

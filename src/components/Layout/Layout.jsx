@@ -11,12 +11,12 @@ const Layout = ({ children }) => {
         weatherDropdown: false,
     });
     const [isAdmin, setIsAdmin] = useState(false);
-  const [userType, setUserType] = useState('');
+    const [userType, setUserType] = useState('');
 
-    const toggleDropdown = (menu) => {
+    const toggleDropdown = (dropdown, value) => {
         setDropdownsVisible((prevState) => ({
             ...prevState,
-            [menu]: !prevState[menu],
+            [dropdown]: value,
         }));
     };
 
@@ -24,7 +24,7 @@ const Layout = ({ children }) => {
         localStorage.removeItem("token");
         window.location.href = "/login";
     };
-    
+
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -64,9 +64,12 @@ const Layout = ({ children }) => {
                 {/* Navigation */}
                 <nav className="hidden md:flex space-x-8 text-lg font-medium">
                     {/* Forest Dropdown */}
-                    <div className="relative">
+                    <div
+                        className="relative"
+                        onMouseEnter={() => toggleDropdown("forestDropdown", true)}
+                        onMouseLeave={() => toggleDropdown("forestDropdown", false)}
+                    >
                         <button
-                            onClick={() => toggleDropdown("forestDropdown")}
                             className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
                         >
                             Forest
@@ -85,17 +88,20 @@ const Layout = ({ children }) => {
                     </div>
 
                     {/* Farm Dropdown */}
-                    <div className="relative">
-                        <button
-                            onClick={() => toggleDropdown("farmDropdown")}
-                            className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
-                        >
+                    <div
+                        className="relative"
+                        onMouseEnter={() => toggleDropdown("farmDropdown", true)}
+                        onMouseLeave={() => toggleDropdown("farmDropdown", false)}
+                    >                        <button
+                        onClick={() => toggleDropdown("farmDropdown")}
+                        className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                    >
                             Farm
                         </button>
                         {dropdownsVisible.farmDropdown && (
                             <div className="dropdown absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg">
                                 <ul className="text-gray-700">
-                                <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                    <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/farmergroup" className="block w-full h-full">
                                             Farmer Group
                                         </a>
@@ -126,11 +132,14 @@ const Layout = ({ children }) => {
                     </div>
 
                     {/* Digital Trace Dropdown */}
-                    <div className="relative">
-                        <button
-                            onClick={() => toggleDropdown("digitalTraceDropdown")}
-                            className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
-                        >
+                    <div
+                        className="relative"
+                        onMouseEnter={() => toggleDropdown("digitalTraceDropdown", true)}
+                        onMouseLeave={() => toggleDropdown("digitalTraceDropdown", false)}
+                    >                        <button
+                        onClick={() => toggleDropdown("digitalTraceDropdown")}
+                        className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                    >
                             Digital Trace
                         </button>
                         {dropdownsVisible.digitalTraceDropdown && (
@@ -162,11 +171,14 @@ const Layout = ({ children }) => {
                     </div>
 
                     {/* Weather Dropdown */}
-                    <div className="relative">
-                        <button
-                            onClick={() => toggleDropdown("weatherDropdown")}
-                            className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
-                        >
+                    <div
+                        className="relative"
+                        onMouseEnter={() => toggleDropdown("weatherDropdown", true)}
+                        onMouseLeave={() => toggleDropdown("weatherDropdown", false)}
+                    >                        <button
+                        onClick={() => toggleDropdown("weatherDropdown")}
+                        className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                    >
                             Weather
                         </button>
                         {dropdownsVisible.weatherDropdown && (
@@ -195,23 +207,23 @@ const Layout = ({ children }) => {
 
 
                 <div className="flex items-center gap-4">
-        {isAdmin && (
-            <Link
-                to="/usermanager"
-                className="flex items-center p-2 text-sm font-medium text-white bg-teal-500 rounded-lg shadow-md hover:bg-teal-600 transition-all duration-300"
-            >
-                <FaUser className="mr-2" />
-                Manage account
-            </Link>
-        )}
-        <button
-            onClick={handleLogOut}
-            className="bg-teal-100 text-teal-700 font-semibold px-4 py-2 rounded-lg shadow-md flex items-center gap-2 hover:bg-gray-300 hover:text-gray-900 transition-all duration-200"
-        >
-            <FiLogOut className="text-xl" />
-            Log Out
-        </button>
-    </div>
+                    {isAdmin && (
+                        <Link
+                            to="/usermanager"
+                            className="flex items-center p-2 text-sm font-medium text-white bg-teal-500 rounded-lg shadow-md hover:bg-teal-600 transition-all duration-300"
+                        >
+                            <FaUser className="mr-2" />
+                            Manage account
+                        </Link>
+                    )}
+                    <button
+                        onClick={handleLogOut}
+                        className="bg-teal-100 text-teal-700 font-semibold px-4 py-2 rounded-lg shadow-md flex items-center gap-2 hover:bg-gray-300 hover:text-gray-900 transition-all duration-200"
+                    >
+                        <FiLogOut className="text-xl" />
+                        Log Out
+                    </button>
+                </div>
 
             </header>
 

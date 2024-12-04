@@ -179,7 +179,6 @@ const PointForm = () => {
                     ))}
                   </select>
                 </div>
-
                 {/* Other Form Fields */}
                 {[
                   { label: 'Farmer Group Name', name: 'farmergroup_name', type: 'text' },
