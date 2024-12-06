@@ -212,7 +212,7 @@ const LandingPage = () => {
           Contact Us
         </h3>
         <p className="text-lg text-gray-600 text-center max-w-3xl mx-auto mb-12">
-          Join the big data revolution, explore and transform the way you do business by reachin out to us.
+          Join the big data revolution, explore and transform the way you do business by reaching out to us.
         </p>
         <div className="flex justify-center gap-8">
           {[

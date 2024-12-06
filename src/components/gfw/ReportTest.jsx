@@ -251,30 +251,33 @@ const FullReport = () => {
             <div className="flex justify-center items-center space-x-4">
               <div className="p-2">
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">1. Deforestation Risk Assessment:</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">1. R A D D Alert:</h3>
                   <div className="text-gray-700">
-                    Categorization based on the <strong>Forest Negligible Risk Analysis:</strong>
+                  This dataset verifies if there was recent deforestation, <strong> checked every 6-12days:</strong>
                     <ul className="list-inside list-disc text-gray-700">
+                      <p>Not applicable to most parts of Uganda, only parts of Lake Albert region neighbouring DRCongo</p>
                       <li><strong>1</strong> = Non-negligible risk.</li>
                       <li><strong>2</strong> = Negligible risk.</li>
                     </ul>
                   </div>
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">2. Presence in Protected Areas:</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">2. Tree Cover Loss (EUDR, Article 2):</h3>
                   <div className="text-gray-700">
-                    Indication of whether the farm overlaps with Peru's protected areas:
+                  Area in which Tree loss was identified since Dec 2020:
                     <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>FALSE</strong> = No presence in protected areas.</li>
+                      <li><strong>Zero </strong> = Plot/Farm is fully compliant with EUDR Law.</li>
+                      <li><strong>non Zero </strong> = Plot/Farm likely non compliant with EUDR Law.</li>
                     </ul>
                   </div>
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">3. Land Rights:</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">3. Forest Cover:</h3>
                   <div className="text-gray-700">
-                    Examination of the farm's inclusion in the <strong>Land Rights layer:</strong>
+                  EU joint Research Centre Geostore for checking existence or not of forest cover as of 2020
                     <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>FALSE</strong> = No presence of recognized land rights.</li>
+                    <li><strong>Zero </strong> = Plot/Farm is fully compliant with EUDR Law.</li>
+                    <li><strong>non Zero </strong> = Plot/Farm likely non compliant with EUDR Law.</li>
                     </ul>
                   </div>
                 </div>
@@ -289,13 +292,42 @@ const FullReport = () => {
                   <div className="text-gray-700">
                     Identification of primary deforestation drivers:
                     <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>1</strong> = Commodity-driven deforestation.</li>
-                      <li><strong>2</strong> = Shifting agriculture.</li>
+                      <li><strong>1</strong> = Commodity driven deforestation.</li>
+                      <li><strong>2</strong> = Shifting Agriculture.</li>
+                      <li><strong>3</strong> = Forestry.</li>
+                      <li><strong>4</strong> = Wildfire.</li>
+                      <li><strong>5</strong> = Urbanization.</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">5. Protected Area (EUDR Article 10):</h3>
+                  <div className="text-gray-700">
+                  check whether plot of land is in areas Gazzetted as Protected Areas e.g swamps, national parks etc
+                    <ul className="list-inside list-disc text-gray-700">
+                      <li><strong>1</strong> = Commodity driven deforestation.</li>
+                      <li><strong>2</strong> = Shifting Agriculture.</li>
+                      <li><strong>3</strong> = Forestry.</li>
+                      <li><strong>4</strong> = Wildfire.</li>
+                      <li><strong>5</strong> = Urbanization.</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">5. indigenous and community lands (EUDR Article 10):</h3>
+                  <div className="text-gray-700">
+                  lands or plots existing within land gazetted as indigenous or community land
+                    <ul className="list-inside list-disc text-gray-700">
+                      <li><strong>1</strong> = Commodity driven deforestation.</li>
+                      <li><strong>2</strong> = Shifting Agriculture.</li>
+                      <li><strong>3</strong> = Forestry.</li>
+                      <li><strong>4</strong> = Wildfire.</li>
+                      <li><strong>5</strong> = Urbanization.</li>
                     </ul>
                   </div>
                 </div>
               </div>
-              <div className="p-11">
+              {/* <div className="p-11">
                 <Heatmap
                   data={dataheat}
                   xLabels={xLabels}
@@ -310,7 +342,7 @@ const FullReport = () => {
                   cellRender={renderCell}
                   className="rounded-lg " // Adds rounded corners
                 />
-              </div>
+              </div> */}
             </div>
           </div>
           <div className="bg-white m-6 p-11 shadow-md mb-4">
