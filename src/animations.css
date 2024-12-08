@@ -43,3 +43,12 @@
         transform: translateY(0);
     }
 }
+.dropdown ul li:hover {
+  background-color: #2C7A7B; /* Couleur plus douce et moins claire que #2F855A */
+  color: #fff; /* Texte en blanc */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); /* Ombre douce */
+  transform: scale(1.03); /* Agrandissement très léger */
+  transition: all 0.3s ease-in-out; /* Transition fluide */
+}
+
+

@@ -26,6 +26,23 @@ const MapboxExample = () => {
 
   // Kc value
   const Kc = 1.2;
+  // Function to interpret precipitation
+  const interpret_precipitation = (mm) => {
+    if (mm < 1) {
+      return "No rain expected; manual or irrigation watering may be necessary for your crops.";
+    } else if (1 <= mm && mm <= 2) {
+      return "Light rain expected, providing minimal moisture, which might not meet crop needs.";
+    } else if (3 <= mm && mm <= 10) {
+      return "Moderate rain expected, ideal for maintaining soil moisture and supporting crop growth.";
+    } else if (11 <= mm && mm <= 20) {
+      return "Abundant rain expected, offering favorable conditions for crops sensitive to moisture.";
+    } else if (21 <= mm && mm <= 50) {
+      return "Heavy rain expected, beneficial for crops, but monitor drainage to prevent waterlogging.";
+    } else {
+      return "Torrential rain expected, with a risk of flooding that may damage crops. Preventive measures are advised.";
+    }
+  };
+
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
@@ -212,7 +229,7 @@ const MapboxExample = () => {
              <p><strong>Temperature:</strong> ${weatherData.temperature !== null ? `${weatherData.temperature}°C` : 'N/A'}</p>
              <p><strong>Humidity:</strong> ${weatherData.humidity !== null ? `${weatherData.humidity}%` : 'N/A'}</p>
              <p><strong>Precipitation:</strong> ${weatherData.precipitation !== null ? `${weatherData.precipitation} mm` : 'N/A'}</p>
-             <p><strong>Shortwave Radiation:</strong> ${weatherData.shortwave_radiation !== null ? `${weatherData.shortwave_radiation} W/m²` : 'N/A'}</p>
+             <p><strong>~</strong> ${weatherData.precipitation !== null ? `${interpret_precipitation(weatherData.precipitation)}` : 'N/A'}</p>             <p><strong>Shortwave Radiation:</strong> ${weatherData.shortwave_radiation !== null ? `${weatherData.shortwave_radiation} W/m²` : 'N/A'}</p>
              <p><strong>Wind Speed (1000hPa):</strong> ${weatherData.windSpeed1000hPa !== null ? `${weatherData.windSpeed1000hPa} m/s` : 'N/A'}</p>`
           )
           .addTo(mapRef.current);
@@ -252,10 +269,12 @@ const MapboxExample = () => {
             Weather Information
           </h3>
           <div className="space-y-4">
-            <div className="flex items-center text-gray-700">
-              <FiMapPin className="mr-2 text-red-500" size={20} />
-              <span className="font-medium">Location:</span> {placeName}
+            <div className="flex items-center text-gray-700 space-x-2">
+              <FiMapPin className="text-red-500" size={20} />
+              <span className="font-medium">Location:</span>
+              <span className="text-gray-600">{placeName}</span>
             </div>
+
             <div className="flex items-center text-gray-700">
               <WiDaySunny className="mr-2 text-orange-400" size={20} />
               <span className="font-medium">Temperature:</span> {temperature !== null ? `${temperature}°C` : 'N/A'}
@@ -265,9 +284,19 @@ const MapboxExample = () => {
               <span className="font-medium">Humidity:</span> {humidity !== null ? `${humidity}%` : 'N/A'}
             </div>
             <div className="flex items-center text-gray-700">
-              <WiRain className="mr-2 text-blue-600" size={20} />
+              <WiRain className="mr-2 text-blue-500" size={24} />
+              <p>
               <span className="font-medium">Precipitation:</span> {precipitation !== null ? `${precipitation} mm` : 'N/A'}
+                <br />
+                {precipitation !== null && (
+                  <span className="text-sm text-gray-600">
+                    ~ {interpret_precipitation(precipitation)}
+                  </span>
+                )}
+              </p>
             </div>
+
+
             <div className="flex items-center text-gray-700">
               <WiCloud className="mr-2 text-gray-500" size={20} />
               <span className="font-medium">ET₀:</span> {et0 !== null ? `${et0} mm/day` : 'N/A'}
