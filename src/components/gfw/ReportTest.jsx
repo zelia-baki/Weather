@@ -99,7 +99,7 @@ const FullReport = () => {
           setFarmInfo(response.data.farm_info);
           const reportData = response.data.report || [];
           setGeoData(reportData);
-          console.log(geoData)
+          console.log('here is geodata', geoData);
 
           // Calculate area if polygon data is available
           if (reportData.length > 0 && reportData[0].coordinates.length > 0) {
@@ -107,6 +107,7 @@ const FullReport = () => {
             const { areaInSquareMeters, areaInHectares } = calculatePolygonArea(coordinates);
             setAreaInSquareMeters(areaInSquareMeters);
             setAreaInHectares(areaInHectares);
+            console.log(areaInSquareMeters);
           }
         }
       } catch (err) {
@@ -234,11 +235,20 @@ const FullReport = () => {
           {farmInfo && (
             <p className="p-4">
               This report provides an overview of Farm ID <strong>{farmInfo.farm_id}</strong>, owned by <strong>{farmInfo.name}</strong>,
-              located in <strong>{farmInfo.subcounty}</strong>, [District]. The farm is a member of the {farmInfo.subcounty} and plays a significant role in the local agricultural landscape. With geolocation coordinates <strong>{farmInfo.geolocation}</strong>,
-              the farm specializes in <strong>{farmInfo.crops[0].crop}</strong> and operates within a region characterized by Landtype: <strong>{farmInfo.crops[0].land_type}</strong>.
+              located in <strong>{farmInfo.subcounty}</strong>, [District]. The farm is a member of the {farmInfo.subcounty} and plays a significant role in the local agricultural landscape.
+              With geolocation coordinates <strong>{farmInfo.geolocation}</strong>,
+              {farmInfo.crops && farmInfo.crops.length > 0 ? (
+                <>
+                  the farm specializes in <strong>{farmInfo.crops[0].crop}</strong> and operates within a region characterized by Landtype: <strong>{farmInfo.crops[0].land_type}</strong>.
+                </>
+              ) : (
+                <span> no specific crops mentioned.</span>
+              )}
               This report outlines the farm's activities, challenges, and opportunities to support its continued growth and sustainability.
             </p>
           )}
+
+
           <p className="mt-4 pb-6 p-4">
             Regulation (EU) 2023/1115 governs the availability and export of commodities and products linked to deforestation and degradation.
             The following analysis provides insights into compliance.
@@ -251,9 +261,9 @@ const FullReport = () => {
             <div className="flex justify-center items-center space-x-4">
               <div className="p-2">
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">1. R A D D Alert:</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">1. R A D D Alert(EUDR, Article 2):</h3>
                   <div className="text-gray-700">
-                  This dataset verifies if there was recent deforestation, <strong> checked every 6-12days:</strong>
+                    This dataset verifies if there was recent deforestation, <strong> checked every 6-12days:</strong>
                     <ul className="list-inside list-disc text-gray-700">
                       <p>Not applicable to most parts of Uganda, only parts of Lake Albert region neighbouring DRCongo</p>
                       <li><strong>1</strong> = Non-negligible risk.</li>
@@ -264,7 +274,7 @@ const FullReport = () => {
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">2. Tree Cover Loss (EUDR, Article 2):</h3>
                   <div className="text-gray-700">
-                  Area in which Tree loss was identified since Dec 2020:
+                    Area in which Tree loss was identified since Dec 2020:
                     <ul className="list-inside list-disc text-gray-700">
                       <li><strong>Zero </strong> = Plot/Farm is fully compliant with EUDR Law.</li>
                       <li><strong>non Zero </strong> = Plot/Farm likely non compliant with EUDR Law.</li>
@@ -272,25 +282,25 @@ const FullReport = () => {
                   </div>
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">3. Forest Cover:</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">3. Forest Cover (EUDR, Article 2):</h3>
                   <div className="text-gray-700">
-                  EU joint Research Centre Geostore for checking existence or not of forest cover as of 2020
+                    EU joint Research Centre Geostore for checking existence or not of forest cover as of 2020
                     <ul className="list-inside list-disc text-gray-700">
-                    <li><strong>Zero </strong> = Plot/Farm is fully compliant with EUDR Law.</li>
-                    <li><strong>non Zero </strong> = Plot/Farm likely non compliant with EUDR Law.</li>
+                      <li><strong>Zero </strong> = Plot/Farm is fully compliant with EUDR Law.</li>
+                      <li><strong>non Zero </strong> = Plot/Farm likely non compliant with EUDR Law.</li>
                     </ul>
                   </div>
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">4. Tree Cover Extent:</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">4. Tree Cover Extent (EUDR, Article 2):</h3>
                   <p className="text-gray-700">
                     Analysis of tree cover, expressed in deciles (ranging from <strong>0-100</strong>), to evaluate forest coverage.
                   </p>
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">5. Tree Cover Loss Drivers:</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">5. Tree Cover Loss Drivers (EUDR Article 10):</h3>
                   <div className="text-gray-700">
-                    Identification of primary deforestation drivers:
+                    What causes Deforestation & Degradation, :
                     <ul className="list-inside list-disc text-gray-700">
                       <li><strong>1</strong> = Commodity driven deforestation.</li>
                       <li><strong>2</strong> = Shifting Agriculture.</li>
@@ -303,26 +313,21 @@ const FullReport = () => {
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">5. Protected Area (EUDR Article 10):</h3>
                   <div className="text-gray-700">
-                  check whether plot of land is in areas Gazzetted as Protected Areas e.g swamps, national parks etc
+                    check whether plot of land is in areas Gazzetted as Protected Areas e.g swamps, national parks etc
                     <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>1</strong> = Commodity driven deforestation.</li>
-                      <li><strong>2</strong> = Shifting Agriculture.</li>
-                      <li><strong>3</strong> = Forestry.</li>
-                      <li><strong>4</strong> = Wildfire.</li>
-                      <li><strong>5</strong> = Urbanization.</li>
+                      <li><strong>1</strong> = check whether plot of land is in areas Gazzetted as Protected Areas e.g swamps, national parks etc.</li>
+                      <li><strong>1, 1a, 1b, II, III, IV, V, VI</strong> = Plot in WDPA protected area.</li>
+                      <li><strong>2</strong> = Plot in other IUCN vulnerable Area.</li>
                     </ul>
                   </div>
                 </div>
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">5. indigenous and community lands (EUDR Article 10):</h3>
                   <div className="text-gray-700">
-                  lands or plots existing within land gazetted as indigenous or community land
-                    <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>1</strong> = Commodity driven deforestation.</li>
-                      <li><strong>2</strong> = Shifting Agriculture.</li>
-                      <li><strong>3</strong> = Forestry.</li>
-                      <li><strong>4</strong> = Wildfire.</li>
-                      <li><strong>5</strong> = Urbanization.</li>
+                    lands or plots existing within land gazetted as indigenous or community land                    <ul className="list-inside list-disc text-gray-700">
+                      <li><strong>0</strong> = No presence of indigenous and community lands.</li>
+                      <li><strong>1</strong> = Presence of indigenous and community lands.</li>
+                      <li><strong>null</strong> = not known, land is not gazetted.</li>
                     </ul>
                   </div>
                 </div>
@@ -377,18 +382,18 @@ const FullReport = () => {
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">EUDR compliance</td>
                   <td className="border border-gray-400 px-4 py-2">
-                    
-                    {geoData[0].data_fields.area__ha && geoData[0].data_fields.area__ha==0 ? (
+
+                    {geoData[0].data_fields.area__ha && geoData[0].data_fields.area__ha == 0 ? (
                       <div>
 
                         <p>100% compliance</p>
-                      
+
                       </div>
-                    ) :(
+                    ) : (
                       <p>Not compliant </p>
                     )
-                  
-                  }</td>
+
+                    }</td>
                 </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">Landmark Indigenous and Community Lands</td>
