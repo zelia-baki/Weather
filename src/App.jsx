@@ -116,6 +116,7 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Landipage />} />
         <Route path="/landipage" element={<Landing />} />
+        {/* <Route path="/graphcgd" element={<GraphCGD />} /> */}
         <Route path="/login" element={<Login />} />
         <Route path="/contactus" element={<ContactUs />} />
         <Route path="/signup" element={<SignUp/>} />

@@ -54,7 +54,7 @@ const HomePage = () => {
       textColor: "text-blue-700",
       color: "bg-blue-500", // Nouvelle couleur tendance
       buttonText: "View Weather",
-      link: "/cardex",
+      link: "/weathermap",
       isBlurred: false,
     },
     {

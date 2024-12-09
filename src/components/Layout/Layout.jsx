@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { FaFeather } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
-import { jwtDecode } from 'jwt-decode';  // Correct import
+import { Link } from "react-router-dom";
 
 const Layout = ({ children }) => {
     const [dropdownsVisible, setDropdownsVisible] = useState({
@@ -11,8 +11,8 @@ const Layout = ({ children }) => {
         weatherDropdown: false,
     });
     const [isAdmin, setIsAdmin] = useState(false);
-    const [userType, setUserType] = useState('');
 
+    // Utilisation de useCallback pour empêcher les redémarrages inutiles de la fonction
     const toggleDropdown = (dropdown, value) => {
         setDropdownsVisible((prevState) => ({
             ...prevState,
@@ -25,7 +25,7 @@ const Layout = ({ children }) => {
         window.location.href = "/login";
     };
 
-
+    // Ferme les menus si l'utilisateur clique en dehors
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (
@@ -47,6 +47,25 @@ const Layout = ({ children }) => {
         };
     }, []);
 
+    // Délai d'affichage pour empêcher la disparition trop rapide du menu
+    const handleMouseEnter = (dropdown) => {
+        setTimeout(() => {
+            setDropdownsVisible((prevState) => ({
+                ...prevState,
+                [dropdown]: true,
+            }));
+        }, 200); // Délai de 200 ms avant d'afficher le menu
+    };
+
+    const handleMouseLeave = (dropdown) => {
+        setTimeout(() => {
+            setDropdownsVisible((prevState) => ({
+                ...prevState,
+                [dropdown]: false,
+            }));
+        }, 200); // Délai de 200 ms avant de masquer le menu
+    };
+
     return (
         <div className="bg-white min-h-screen font-poppins text-gray-800">
             {/* Header */}
@@ -66,8 +85,8 @@ const Layout = ({ children }) => {
                     {/* Forest Dropdown */}
                     <div
                         className="relative"
-                        onMouseEnter={() => toggleDropdown("forestDropdown", true)}
-                        onMouseLeave={() => toggleDropdown("forestDropdown", false)}
+                        onMouseEnter={() => handleMouseEnter("forestDropdown")}
+                        onMouseLeave={() => handleMouseLeave("forestDropdown")}
                     >
                         <button
                             className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
@@ -76,7 +95,7 @@ const Layout = ({ children }) => {
                         </button>
                         {dropdownsVisible.forestDropdown && (
                             <div className="dropdown absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg">
-                                <ul className="text-gray-700">
+                                <ul className="text-gray-700 font-light text-base font-sans" style={{ fontFamily: 'Arial, sans-serif' }}>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/forestpage" className="block w-full h-full">
                                             Forest Data
@@ -90,17 +109,17 @@ const Layout = ({ children }) => {
                     {/* Farm Dropdown */}
                     <div
                         className="relative"
-                        onMouseEnter={() => toggleDropdown("farmDropdown", true)}
-                        onMouseLeave={() => toggleDropdown("farmDropdown", false)}
-                    >                        <button
-                        onClick={() => toggleDropdown("farmDropdown")}
-                        className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                        onMouseEnter={() => handleMouseEnter("farmDropdown")}
+                        onMouseLeave={() => handleMouseLeave("farmDropdown")}
                     >
+                        <button
+                            className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                        >
                             Farm
                         </button>
                         {dropdownsVisible.farmDropdown && (
                             <div className="dropdown absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg">
-                                <ul className="text-gray-700">
+                                <ul className="text-gray-700 font-light text-base font-sans" style={{ fontFamily: 'Arial, sans-serif' }}>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/farmergroup" className="block w-full h-full">
                                             Farmer Group
@@ -134,17 +153,17 @@ const Layout = ({ children }) => {
                     {/* Digital Trace Dropdown */}
                     <div
                         className="relative"
-                        onMouseEnter={() => toggleDropdown("digitalTraceDropdown", true)}
-                        onMouseLeave={() => toggleDropdown("digitalTraceDropdown", false)}
-                    >                        <button
-                        onClick={() => toggleDropdown("digitalTraceDropdown")}
-                        className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                        onMouseEnter={() => handleMouseEnter("digitalTraceDropdown")}
+                        onMouseLeave={() => handleMouseLeave("digitalTraceDropdown")}
                     >
+                        <button
+                            className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                        >
                             Digital Trace
                         </button>
                         {dropdownsVisible.digitalTraceDropdown && (
                             <div className="dropdown absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg">
-                                <ul className="text-gray-700">
+                                <ul className="text-gray-700 font-light text-base font-sans" style={{ fontFamily: 'Arial, sans-serif' }}>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/qrproduce" className="block w-full h-full">
                                             Produce Stamps
@@ -173,17 +192,17 @@ const Layout = ({ children }) => {
                     {/* Weather Dropdown */}
                     <div
                         className="relative"
-                        onMouseEnter={() => toggleDropdown("weatherDropdown", true)}
-                        onMouseLeave={() => toggleDropdown("weatherDropdown", false)}
-                    >                        <button
-                        onClick={() => toggleDropdown("weatherDropdown")}
-                        className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                        onMouseEnter={() => handleMouseEnter("weatherDropdown")}
+                        onMouseLeave={() => handleMouseLeave("weatherDropdown")}
                     >
+                        <button
+                            className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                        >
                             Weather
                         </button>
                         {dropdownsVisible.weatherDropdown && (
                             <div className="dropdown absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg">
-                                <ul className="text-gray-700">
+                                <ul className="text-gray-700 font-light text-base font-sans" style={{ fontFamily: 'Arial, sans-serif' }}>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/weathermap" className="block w-full h-full">
                                             Map Weather
@@ -205,14 +224,12 @@ const Layout = ({ children }) => {
                     </div>
                 </nav>
 
-
                 <div className="flex items-center gap-4">
                     {isAdmin && (
                         <Link
                             to="/usermanager"
                             className="flex items-center p-2 text-sm font-medium text-white bg-teal-500 rounded-lg shadow-md hover:bg-teal-600 transition-all duration-300"
                         >
-                            <FaUser className="mr-2" />
                             Manage account
                         </Link>
                     )}
@@ -224,18 +241,12 @@ const Layout = ({ children }) => {
                         Log Out
                     </button>
                 </div>
-
             </header>
 
             {/* Content Below Navbar */}
-            <div className="mt-12 px-6">
-                {children}
-            </div>
+            <div className="mt-12 px-6">{children}</div>
         </div>
     );
-
 };
-
-
 
 export default Layout;

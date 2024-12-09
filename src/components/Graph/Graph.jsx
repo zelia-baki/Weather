@@ -5,9 +5,12 @@ import axios from 'axios';
 import { FiInfo } from 'react-icons/fi'; // Importing an info icon
 
 function Graph() {
-  const [latitude, setLatitude] = useState('1.373333');
-  const [longitude, setLongitude] = useState('32.290275');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [weatherData, setWeatherData] = useState([]);
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('');
+  const [province, setProvince] = useState('');
 
   const fetchWeatherData = async () => {
     try {
@@ -30,8 +33,27 @@ function Graph() {
     }
   };
 
+  const fetchLocationData = async () => {
+    try {
+      const mapboxToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q'; // Replace with your Mapbox API key
+      const mapboxUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}`;
+      const response = await axios.get(mapboxUrl);
+
+      const features = response.data.features[0];
+      if (features) {
+        setCity(features.text); // General place name (e.g., city)
+        setCountry(features.context.find((ctx) => ctx.id.includes('country')).text); // Country
+        setProvince(features.context.find((ctx) => ctx.id.includes('region')).text); // Province/Region
+      }
+    } catch (error) {
+      console.error('Error fetching location data:', error);
+    }
+  };
+
   const handleSearch = () => {
     fetchWeatherData();
+    fetchLocationData(); // Fetch location data when searching
+
   };
 
   const weatherLabels = weatherData.map((item) => item.date.toLocaleDateString());
@@ -128,6 +150,10 @@ function Graph() {
             >
               Search
             </button>
+          </div>
+                {/* Display Location */}
+                <div className="mb-6">
+            <p className="font-semibold text-gray-700">Location: {city}, {province}, {country} </p>
           </div>
 
           {/* Styled explanatory box for axes */}
