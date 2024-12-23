@@ -10,7 +10,7 @@ import * as turf from '@turf/turf';
 
 const FullReport = () => {
   const [farmInfo, setFarmInfo] = useState(null);
-  const [geoData, setGeoData] = useState([]);
+  const [geoData, setGeoData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const location = useLocation();
@@ -22,6 +22,17 @@ const FullReport = () => {
     width: window.innerWidth,
     height: window.innerHeight,
   });
+  const [resultStatus, setResultStatus] = useState([]);
+  const [coverExtentDecileData, setCoverExtentDecileData] = useState({
+    nonZeroValues: [],       // Initialize as an empty array
+    nonZeroCount: 0,        // Initialize count to 0
+    percentageCoverExtent: 0 // Initialize percentage to 0
+  });
+
+
+
+
+
   useEffect(() => {
     const handleResize = () => {
       setDimensions({
@@ -37,6 +48,87 @@ const FullReport = () => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  useEffect(() => {
+    if (Array.isArray(geoData) && geoData.length > 2) {
+      console.log('Updated geoData:', geoData);
+      console.log('cover extent:', geoData[2]?.data_fields);
+
+      const dataFieldscoverExtent = Array.isArray(geoData[2]?.data_fields) ? geoData[2].data_fields : [];
+      let nonZeroValues = [];
+      let nonZeroCount = 0;
+      console.log('############', dataFieldscoverExtent);
+
+      dataFieldscoverExtent.forEach((value) => {
+        console.log('########', value.wri_tropical_tree_cover_extent__decile);
+        if (value.wri_tropical_tree_cover_extent__decile !== 0) {
+          nonZeroValues.push(value.wri_tropical_tree_cover_extent__decile); // Only pushing non-zero values
+          nonZeroCount++;
+        }
+      });
+
+      const totalCountCoverExtent = dataFieldscoverExtent.length;
+      const percentageCoverExtent = totalCountCoverExtent > 0
+        ? (nonZeroCount / totalCountCoverExtent) * 100
+        : 0;
+
+      const cover_extent_decile = {
+        nonZeroValues: nonZeroValues,
+        nonZeroCount: nonZeroCount,
+        percentageCoverExtent: percentageCoverExtent,
+      };
+
+      setCoverExtentDecileData(cover_extent_decile);
+      console.log('cover extent decile:', coverExtentDecileData);
+
+
+      
+
+      
+
+      const results = {};
+      const coverLoss = geoData[1]?.data_fields?.area__ha || 0;
+      if (coverLoss === 0) {
+        const landIndigenous = geoData[6]?.data_fields;
+
+        if (!landIndigenous || landIndigenous.length === 0) {
+          results.indigenousStatus = "Not known, land is not gazetted";
+        } else if (landIndigenous.includes(1)) { // Check if 1 is present in the array
+          results.indigenousStatus = "Presence of indigenous and community lands";
+        } else {
+          results.indigenousStatus = "No presence of indigenous and community lands";
+        }
+
+        const protectedAreas = Array.isArray(geoData[7]?.data_fields) ? geoData[7].data_fields : [];
+        const protectedCounts = { 0: 0, 1: 0, 2: 0, other: 0 };
+
+        protectedAreas.forEach((field) => {
+          const value = field?.wdpa_protected_areas__iucn_cat ?? 0;
+          if (value in protectedCounts) {
+            protectedCounts[value]++;
+          } else {
+            protectedCounts.other++;
+          }
+        });
+
+        const total = protectedAreas.length;
+        const percentages = total > 0 ? {
+          notInProtectedArea: ((protectedCounts[0] / total) * 100).toFixed(2) + "%",
+          inProtectedArea: ((protectedCounts[1] / total) * 100).toFixed(2) + "%",
+          inOtherIUCNVulnerableArea: ((protectedCounts[2] / total) * 100).toFixed(2) + "%",
+        } : {
+          notInProtectedArea: "0%",
+          inProtectedArea: "0%",
+          inOtherIUCNVulnerableArea: "0%",
+        };
+
+        results.protectedStatus = percentages;
+      }
+
+      setResultStatus(results);
+    }
+  }, [geoData]);
+
   const calculatePolygonArea = (coordinates) => {
     // Construct GeoJSON polygon
     const polygon = {
@@ -91,28 +183,35 @@ const FullReport = () => {
   };
   useEffect(() => {
     const fetchFarmReport = async () => {
+      console.log('Fetching farm report for farmId:', farmId);
       try {
         const response = await axiosInstance.get(`/api/gfw/farm/${farmId}/report`);
         if (response.data.error) {
+          console.error('Error in API response:', response.data.error);
           setError(response.data.error);
         } else {
+          console.log('API Response:', response.data);
           setFarmInfo(response.data.farm_info);
           const reportData = response.data.report || [];
-          setGeoData(reportData);
-          console.log('here is geodata', geoData);
+          console.log('Report Data:', reportData);
 
-          // Calculate area if polygon data is available
-          if (reportData.length > 0 && reportData[0].coordinates.length > 0) {
-            const coordinates = reportData[0].coordinates[0]; // Adjust based on your structure
+          setGeoData(reportData);
+
+
+          if (reportData.length > 0 && reportData[0]?.coordinates?.length > 0) {
+            const coordinates = reportData[0].coordinates[0];
+            console.log('Coordinates:', coordinates);
             const { areaInSquareMeters, areaInHectares } = calculatePolygonArea(coordinates);
             setAreaInSquareMeters(areaInSquareMeters);
             setAreaInHectares(areaInHectares);
-            console.log(areaInSquareMeters);
+            console.log('Area in m²:', areaInSquareMeters, 'Area in ha:', areaInHectares);
+          } else {
+            console.warn('No valid polygon data in report');
           }
         }
       } catch (err) {
         setError('Failed to fetch farm report.');
-        console.error(err);
+        console.error('Error fetching farm report:', err.response?.data || err.message);
       } finally {
         setLoading(false);
       }
@@ -265,9 +364,9 @@ const FullReport = () => {
                   <div className="text-gray-700">
                     This dataset verifies if there was recent deforestation, <strong> checked every 6-12days:</strong>
                     <ul className="list-inside list-disc text-gray-700">
-                      <p>Not applicable to most parts of Uganda, only parts of Lake Albert region neighbouring DRCongo</p>
-                      <li><strong>1</strong> = Non-negligible risk.</li>
-                      <li><strong>2</strong> = Negligible risk.</li>
+                      <p>applicable to most parts of Uganda, only parts of Lake Albert region neighbouring DRCongo</p>
+                      <li><strong>1</strong> = Non risk.</li>
+                      <li><strong>2</strong> = risk.</li>
                     </ul>
                   </div>
                 </div>
@@ -276,8 +375,8 @@ const FullReport = () => {
                   <div className="text-gray-700">
                     Area in which Tree loss was identified since Dec 2020:
                     <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>Zero </strong> = Plot/Farm is fully compliant with EUDR Law.</li>
-                      <li><strong>non Zero </strong> = Plot/Farm likely non compliant with EUDR Law.</li>
+                      <li><strong> </strong> Plot/Farm is fully compliant with EUDR Law.</li>
+                      <li><strong>non Zero </strong> Plot/Farm likely non compliant with EUDR Law.</li>
                     </ul>
                   </div>
                 </div>
@@ -286,8 +385,8 @@ const FullReport = () => {
                   <div className="text-gray-700">
                     EU joint Research Centre Geostore for checking existence or not of forest cover as of 2020
                     <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>Zero </strong> = Plot/Farm is fully compliant with EUDR Law.</li>
-                      <li><strong>non Zero </strong> = Plot/Farm likely non compliant with EUDR Law.</li>
+                      <li><strong> </strong> Plot/Farm is fully compliant with EUDR Law.</li>
+                      <li><strong>non Zero </strong> = Farm likely non compliant with EUDR Law.</li>
                     </ul>
                   </div>
                 </div>
@@ -302,9 +401,9 @@ const FullReport = () => {
                   <div className="text-gray-700">
                     What causes Deforestation & Degradation, :
                     <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>1</strong> = Commodity driven deforestation.</li>
-                      <li><strong>2</strong> = Shifting Agriculture.</li>
-                      <li><strong>3</strong> = Forestry.</li>
+                      <li><strong>1</strong> = Driven deforestation.</li>
+                      <li><strong>2</strong> = Shifting.</li>
+                      <li><strong>3</strong> = Restry.</li>
                       <li><strong>4</strong> = Wildfire.</li>
                       <li><strong>5</strong> = Urbanization.</li>
                     </ul>
@@ -313,11 +412,11 @@ const FullReport = () => {
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">5. Protected Area (EUDR Article 10):</h3>
                   <div className="text-gray-700">
-                    check whether plot of land is in areas Gazzetted as Protected Areas e.g swamps, national parks etc
+                    whether plot of land is in areas Gazzetted as Protected Areas e.g swamps, national parks etc
                     <ul className="list-inside list-disc text-gray-700">
                       <li><strong>1</strong> = check whether plot of land is in areas Gazzetted as Protected Areas e.g swamps, national parks etc.</li>
-                      <li><strong>1, 1a, 1b, II, III, IV, V, VI</strong> = Plot in WDPA protected area.</li>
-                      <li><strong>2</strong> = Plot in other IUCN vulnerable Area.</li>
+                      <li><strong>1, 1a, 1b, II, III, IV, V</strong> Plot in WDPA protected area.</li>
+                      <li><strong>2</strong> = Plot in other IUCN vulnerable .</li>
                     </ul>
                   </div>
                 </div>
@@ -325,9 +424,9 @@ const FullReport = () => {
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">5. indigenous and community lands (EUDR Article 10):</h3>
                   <div className="text-gray-700">
                     lands or plots existing within land gazetted as indigenous or community land                    <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>0</strong> = No presence of indigenous and community lands.</li>
-                      <li><strong>1</strong> = Presence of indigenous and community lands.</li>
-                      <li><strong>null</strong> = not known, land is not gazetted.</li>
+                      <li><strong>0</strong> = indigenous and community lands.</li>
+                      <li><strong>1</strong> = Presence of indigenous lands.</li>
+                      <li><strong>null</strong> = not, land is not gazetted.</li>
                     </ul>
                   </div>
                 </div>
@@ -377,27 +476,67 @@ const FullReport = () => {
                 </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">Country Deforestation Risk Level</td>
-                  <td className="border border-gray-400 px-4 py-2">High</td>
+                  <td className="border border-gray-400 px-4 py-2">Medium</td>
                 </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">EUDR compliance</td>
                   <td className="border border-gray-400 px-4 py-2">
 
-                    {geoData[0].data_fields.area__ha && geoData[0].data_fields.area__ha == 0 ? (
+                    {geoData[0].data_fields.area__ha === '0' || geoData[0].data_fields.area__ha === 0 ? (
                       <div>
-
                         <p>100% compliance</p>
-
                       </div>
                     ) : (
-                      <p>Not compliant </p>
-                    )
+                      <p>Not compliant</p>
+                    )}
 
-                    }</td>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2">Protected Area Status</td>
+                  <td className="border border-gray-400 px-4 py-2">
+                    <li>Not in WDPA Protected Area: {resultStatus.protectedStatus?.notInProtectedArea}</li>
+                    <li>In WDPA Protected Area: {resultStatus.protectedStatus?.inProtectedArea}</li>
+                    <li>
+                      In Other IUCN Vulnerable Area: {resultStatus.protectedStatus?.inOtherIUCNVulnerableArea}
+                    </li>
+
+                  </td>
                 </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">Landmark Indigenous and Community Lands</td>
-                  <td className="border border-gray-400 px-4 py-2">None</td>
+                  <td className="border border-gray-400 px-4 py-2"><strong></strong> {resultStatus.indigenousStatus || "N/A"}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2">Cover Extent</td>
+                  <td className="border border-gray-400 px-4 py-2">
+                    <ul>
+                      <li>
+                        Cover extent percentage:{" "}
+                        {coverExtentDecileData.nonZeroValues.length > 0
+                          ? coverExtentDecileData.nonZeroValues.join(", ")
+                          : "No data available"}
+                      </li>
+                      <li>Non Zero Count: {coverExtentDecileData.nonZeroCount}</li>
+                      <li>
+                        Percentage of coverage: {coverExtentDecileData.percentageCoverExtent.toFixed(2)}%
+                      </li>
+                    </ul>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2">Cover Extent Area</td>
+                  <td className="border border-gray-400 px-4 py-2">
+
+                    {geoData[4].data_fields.area__ha === '0' || geoData[4].data_fields.area__ha === 0 ? (
+                      <div>
+                        <p>{geoData[4].data_fields.area__ha} ha (LOW)</p>
+                      </div>
+                    ) : (
+                      <p>{geoData[4].data_fields.area__ha} ha (HIGH)</p>
+                    )}
+
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -407,9 +546,9 @@ const FullReport = () => {
             Analysis of deforestation drivers shows significant influences from urbanization and shifting agriculture.
           </p>
           <ul className="list-disc pl-6">
-            <li>Urbanization: Identified as a key driver</li>
-            <li>Shifting Agriculture: Major contributor to forest loss</li>
-            <li>Commodity-driven deforestation: Moderate impact</li>
+            <li>Urbanization: key driver</li>
+            <li>Shifting: Major contributor to forest loss</li>
+            <li>Commodity-driven : Moderate impact</li>
           </ul>
           <div className="items-center justify-center mt-6 mb-6">
             <div className="overflow-hidden">
