@@ -365,8 +365,6 @@ const FullReport = () => {
                     This dataset verifies if there was recent deforestation, <strong> checked every 6-12days:</strong>
                     <ul className="list-inside list-disc text-gray-700">
                       <p>applicable to most parts of Uganda, only parts of Lake Albert region neighbouring DRCongo</p>
-                      <li><strong>1</strong> = Non risk.</li>
-                      <li><strong>2</strong> = risk.</li>
                     </ul>
                   </div>
                 </div>
@@ -400,34 +398,18 @@ const FullReport = () => {
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">5. Tree Cover Loss Drivers (EUDR Article 10):</h3>
                   <div className="text-gray-700">
                     What causes Deforestation & Degradation, :
-                    <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>1</strong> = Driven deforestation.</li>
-                      <li><strong>2</strong> = Shifting.</li>
-                      <li><strong>3</strong> = Restry.</li>
-                      <li><strong>4</strong> = Wildfire.</li>
-                      <li><strong>5</strong> = Urbanization.</li>
-                    </ul>
                   </div>
                 </div>
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">5. Protected Area (EUDR Article 10):</h3>
                   <div className="text-gray-700">
                     whether plot of land is in areas Gazzetted as Protected Areas e.g swamps, national parks etc
-                    <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>1</strong> = check whether plot of land is in areas Gazzetted as Protected Areas e.g swamps, national parks etc.</li>
-                      <li><strong>1, 1a, 1b, II, III, IV, V</strong> Plot in WDPA protected area.</li>
-                      <li><strong>2</strong> = Plot in other IUCN vulnerable .</li>
-                    </ul>
                   </div>
                 </div>
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">5. indigenous and community lands (EUDR Article 10):</h3>
                   <div className="text-gray-700">
-                    lands or plots existing within land gazetted as indigenous or community land                    <ul className="list-inside list-disc text-gray-700">
-                      <li><strong>0</strong> = indigenous and community lands.</li>
-                      <li><strong>1</strong> = Presence of indigenous lands.</li>
-                      <li><strong>null</strong> = not, land is not gazetted.</li>
-                    </ul>
+                    lands or plots existing within land gazetted as indigenous or community land
                   </div>
                 </div>
               </div>
