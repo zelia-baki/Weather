@@ -37,9 +37,9 @@ import GraphCGD from './components/Graph/GraphCGD.jsx';
 import ProtectedRoute from './ProtectedRoute'; // Import ProtectedRoute
 import FarmerGroupManager from './components/Farmergroup/FarmerGroup.jsx';
 import FarmManager from './components/Farm/FarmManager.jsx';
-import FarmManager1 from './components/Farm/FarmManager1.jsx';
+// import FarmManager1 from './components/Farm/FarmManager1.jsx';
 import FarmDataManager from './components/Farm/FarmDataManager.jsx';
-import Export2 from './components/Qr/exportEXemple.jsx';
+// import Export2 from './components/Qr/exportEXemple.jsx';
 import UserManagement from './components/Users/UserManagement.jsx';
 import WeatherAndSolar from './components/Weather/WeatherAndSolar.jsx'
 import CropManager from './components/crop/CropManager.jsx';
@@ -52,7 +52,7 @@ import CategoryManager from './components/Category/CategoryManager.jsx';
 import WeathearMap from './components/mapbox/WeatherMap.jsx';
 import Test from './components/gfw/ReportTest.jsx';
 import BarNav from './components/main/BarNav.jsx';
-
+import CarbonReport from './components/gfw/CarbonReport.jsx';
 
 
 
@@ -88,6 +88,7 @@ function App() {
 
     { path: "/qrfertilizer", component: <Fertilizer /> , adminOnly: false},
     { path: "/reportfarmer", component: <FarmReport /> , adminOnly: false},
+    { path: "/reportcarbon", component: <CarbonReport /> , adminOnly: false},
     { path: "/reportforest", component: <ForestReport /> , adminOnly: false},
     { path: "/createUsers", component: <CreateUsers /> , adminOnly: false},
     { path: "/graphcgd", component: <GraphCGD /> , adminOnly: false},
@@ -95,7 +96,6 @@ function App() {
 
     { path: "/farmergroup", component: <FarmerGroupManager /> , adminOnly: false},
     { path: "/farmmanager", component: <FarmManager /> , adminOnly: false},
-    { path: "/farmmanager1", component: <FarmManager1 /> , adminOnly: false},
     { path: "/farmdatamanager", component: <FarmDataManager /> , adminOnly: false},
     { path: "/usermanager", component: <UserManagement /> , adminOnly: false},
     { path: "/weatherandsolar", component: <WeatherAndSolar /> , adminOnly: false},

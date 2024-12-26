@@ -416,7 +416,10 @@ const FarmComponent = () => {
                   Create Maps
                 </Link>
                 <Link to="/reportfarmer" state={{ farmId: farm.id }} className="bg-red-200 text-red-800 py-1 px-3 rounded hover:bg-red-300 transition duration-300">
-                  View Report
+                  Farmer Report
+                </Link>
+                <Link to="/reportcarbon" state={{ farmId: farm.id }} className="bg-red-200 text-red-800 py-1 px-3 rounded hover:bg-red-300 transition duration-300">
+                  Carbon Report
                 </Link>
 
               </div>
