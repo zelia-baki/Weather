@@ -22,12 +22,33 @@ const FullReport = () => {
     width: window.innerWidth,
     height: window.innerHeight,
   });
-  const [resultStatus, setResultStatus] = useState([]);
+  const [resultStatus, setResultStatus] = useState({
+    protectedStatus: {
+      counts: {},
+      percentages: {},
+    },
+    indigenousStatus: '',
+  });
   const [coverExtentDecileData, setCoverExtentDecileData] = useState({
     nonZeroValues: [],       // Initialize as an empty array
     nonZeroCount: 0,        // Initialize count to 0
-    percentageCoverExtent: 0 // Initialize percentage to 0
+    percentageCoverExtent: 0, // Initialize percentage to 0
+    valueCountArray: []
   });
+
+  const [tscDriverDriver, setTscDriverDriver] = useState({
+    mostCommonValue: 0,
+    frequencyCounts: 0,
+  });
+
+
+  const reasonsMap = {
+    1: "Not Compliant (Commodity driven deforestation)",
+    2: "Fully Compliant (Shifting Agriculture)",
+    3: "Not Compliant (Forestry)",
+    4: "Not Compliant (Wildfire)",
+    5: "Ur (Urbanization)"
+  };
 
 
 
@@ -52,42 +73,93 @@ const FullReport = () => {
   useEffect(() => {
     if (Array.isArray(geoData) && geoData.length > 2) {
       console.log('Updated geoData:', geoData);
-      console.log('cover extent:', geoData[2]?.data_fields);
-
+      console.log('tsc driver driver:', geoData[3]?.data_fields);
       const dataFieldscoverExtent = Array.isArray(geoData[2]?.data_fields) ? geoData[2].data_fields : [];
       let nonZeroValues = [];
       let nonZeroCount = 0;
-      console.log('############', dataFieldscoverExtent);
+      let valueCounts = {};
 
+      // Parcourir les données pour collecter les valeurs non nulles et compter les occurrences
       dataFieldscoverExtent.forEach((value) => {
-        console.log('########', value.wri_tropical_tree_cover_extent__decile);
-        if (value.wri_tropical_tree_cover_extent__decile !== 0) {
-          nonZeroValues.push(value.wri_tropical_tree_cover_extent__decile); // Only pushing non-zero values
+        const decile = value.wri_tropical_tree_cover_extent__decile;
+
+        if (decile !== 0) {
+          nonZeroValues.push(decile); // Ajouter la valeur non nulle
           nonZeroCount++;
+
+          // Comptage des occurrences
+          if (valueCounts[decile]) {
+            valueCounts[decile]++;
+          } else {
+            valueCounts[decile] = 1;
+          }
         }
       });
 
+      // Calcul du pourcentage
       const totalCountCoverExtent = dataFieldscoverExtent.length;
       const percentageCoverExtent = totalCountCoverExtent > 0
         ? (nonZeroCount / totalCountCoverExtent) * 100
         : 0;
 
+      // Transformer l'objet des comptes en tableau
+      const valueCountArray = Object.entries(valueCounts).map(([key, count]) => ({
+        value: Number(key),
+        count: count,
+      }));
+
+      // Ajouter les résultats au même objet
       const cover_extent_decile = {
         nonZeroValues: nonZeroValues,
         nonZeroCount: nonZeroCount,
         percentageCoverExtent: percentageCoverExtent,
+        valueCountArray: valueCountArray, // Nouveau tableau des occurrences
       };
 
       setCoverExtentDecileData(cover_extent_decile);
+
       console.log('cover extent decile:', coverExtentDecileData);
 
 
-      
 
-      
+      //################################################################
+
+      const geoData3Fields = Array.isArray(geoData[3]?.data_fields) ? geoData[3].data_fields : [];
+      let frequencyCounts = {};
+      let mostCommonValue = null;
+      let maxFrequency = 0;
+
+
+      geoData3Fields.forEach((field) => {
+        const fieldValue = field?.tsc_tree_cover_loss_drivers__driver; // Adjust the key as needed
+        if (fieldValue !== undefined && fieldValue !== null) {
+          frequencyCounts[fieldValue] = (frequencyCounts[fieldValue] || 0) + 1;
+          if (frequencyCounts[fieldValue] > maxFrequency) {
+            mostCommonValue = fieldValue;
+            maxFrequency = frequencyCounts[fieldValue];
+          }
+        }
+      });
+
+      const analysisResult = {
+        mostCommonValue,
+        frequencyCounts,
+      };
+
+      console.log('analyst', analysisResult);
+
+      setTscDriverDriver(analysisResult);
+      console.log('tsc driver driver:', tscDriverDriver);
+
+
+
+
 
       const results = {};
       const coverLoss = geoData[1]?.data_fields?.area__ha || 0;
+      const protectedAreas = geoData[7]?.data_fields ? geoData[7].data_fields : [];
+      const protectedCounts = {};
+
       if (coverLoss === 0) {
         const landIndigenous = geoData[6]?.data_fields;
 
@@ -98,34 +170,36 @@ const FullReport = () => {
         } else {
           results.indigenousStatus = "No presence of indigenous and community lands";
         }
+      }
+      protectedAreas.forEach((field) => {
+        // Obtenir la valeur cible
+        const value = field?.wdpa_protected_areas__iucn_cat ?? 0;
+        // Initialiser le compteur si nécessaire, puis incrémenter
+        if (protectedCounts[value] !== undefined) {
+          protectedCounts[value]++;
+        } else {
+          protectedCounts[value] = 1;
+        }
+      });
 
-        const protectedAreas = Array.isArray(geoData[7]?.data_fields) ? geoData[7].data_fields : [];
-        const protectedCounts = { 0: 0, 1: 0, 2: 0, other: 0 };
-
-        protectedAreas.forEach((field) => {
-          const value = field?.wdpa_protected_areas__iucn_cat ?? 0;
-          if (value in protectedCounts) {
-            protectedCounts[value]++;
-          } else {
-            protectedCounts.other++;
-          }
-        });
-
-        const total = protectedAreas.length;
-        const percentages = total > 0 ? {
-          notInProtectedArea: ((protectedCounts[0] / total) * 100).toFixed(2) + "%",
-          inProtectedArea: ((protectedCounts[1] / total) * 100).toFixed(2) + "%",
-          inOtherIUCNVulnerableArea: ((protectedCounts[2] / total) * 100).toFixed(2) + "%",
-        } : {
-          notInProtectedArea: "0%",
-          inProtectedArea: "0%",
-          inOtherIUCNVulnerableArea: "0%",
-        };
-
-        results.protectedStatus = percentages;
+      const total = protectedAreas.length;
+      const percentages = {};
+      if (total > 0) {
+        for (const [key, count] of Object.entries(protectedCounts)) {
+          percentages[key] = ((count / total) * 100).toFixed(2) + "%";
+        }
+      } else {
+        percentages["No Data"] = "0%";
       }
 
+      results.protectedStatus = {
+        counts: protectedCounts,   // Nombre d'occurrences pour chaque valeur
+        percentages: percentages, // Pourcentages pour chaque valeur
+      };
+
+
       setResultStatus(results);
+      console.log("Résultats calculés :", resultStatus);
     }
   }, [geoData]);
 
@@ -295,7 +369,8 @@ const FullReport = () => {
 
   if (loading) return <Loading />;
   if (error) return <p className="text-red-600">{error}</p>;
-
+  const percentage =
+    (geoData[1].data_fields.area__ha / areaInHectares) * 100;
 
   if (error === 'No polygon found. Please create a polygon for this forest.') {
     return (
@@ -458,31 +533,88 @@ const FullReport = () => {
                 </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">Country Deforestation Risk Level</td>
-                  <td className="border border-gray-400 px-4 py-2">Medium</td>
+                  <td className="border border-gray-400 px-4 py-2">Medium <strong>Percentage:</strong> {percentage.toFixed(2)}%</td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-400 px-4 py-2">EUDR compliance</td>
+                  <td className="border border-gray-400 px-4 py-2">RADD Alert</td>
                   <td className="border border-gray-400 px-4 py-2">
-
                     {geoData[0].data_fields.area__ha === '0' || geoData[0].data_fields.area__ha === 0 ? (
                       <div>
-                        <p>100% compliance</p>
+                        <p>{geoData[0].data_fields.area__ha} ha (no Radd alert)</p>
                       </div>
                     ) : (
-                      <p>Not compliant</p>
+                      <p>{geoData[0].data_fields.area__ha} ha (Alert )</p>
+                    )}
+
+
+                  </td>
+                </tr>
+
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2">Tree Cover Loss</td>
+                  <td className="border border-gray-400 px-4 py-2">
+                    {geoData[1].data_fields.area__ha === '0' || geoData[1].data_fields.area__ha === 0 ? (
+                      <div>
+                        <p>{geoData[1].data_fields.area__ha} ha (no tree loss since 2020)</p>
+                      </div>
+                    ) : (
+                      <p>{geoData[1].data_fields.area__ha} ha of tree cover loss</p>
                     )}
 
                   </td>
                 </tr>
                 <tr>
+                  <td className="border border-gray-400 px-4 py-2">EUDR compliance</td>
+                  <td className="border border-gray-400 px-4 py-2">
+                    {geoData[1]?.data_fields?.area__ha !== undefined && geoData[1]?.data_fields?.area__ha !== null ? (
+                      parseFloat(geoData[1].data_fields.area__ha) !== 0 ? (
+                        tscDriverDriver?.mostCommonValue === 5 ? (
+                          <div>
+                            <p>Ur</p>
+                          </div>
+                        ) : tscDriverDriver?.mostCommonValue === 2 ? (
+                          <div>
+                            <p>Fully compliant</p>
+                          </div>
+                        ) : tscDriverDriver?.mostCommonValue === 1 || tscDriverDriver?.mostCommonValue === 3 || tscDriverDriver?.mostCommonValue === 4 ? (
+                          <div>
+                            <p>Not Compliant</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <p>Unknown Value</p>
+                          </div>
+                        )
+                      ) : (
+                        <p>100% Compliance</p>
+                      )
+                    ) : (
+                      <p>Data Not Available</p>
+                    )}
+                  </td>
+
+
+
+                </tr>
+                <tr>
                   <td className="border border-gray-400 px-4 py-2">Protected Area Status</td>
                   <td className="border border-gray-400 px-4 py-2">
-                    <li>Not in WDPA Protected Area: {resultStatus.protectedStatus?.notInProtectedArea}</li>
-                    <li>In WDPA Protected Area: {resultStatus.protectedStatus?.inProtectedArea}</li>
-                    <li>
-                      In Other IUCN Vulnerable Area: {resultStatus.protectedStatus?.inOtherIUCNVulnerableArea}
-                    </li>
 
+                    <ul>
+                      {Object.keys(resultStatus.protectedStatus.percentages).map((key) => {
+                        const percentage = resultStatus.protectedStatus.percentages[key];
+                        const statusText = key === '0' ? "Plot  not in WDPA protected Area" :
+                          key === '1' ? "Plot in WDPA protected area" :
+                            key === '2' ? "Plot in other IUCN vulnerable Area" :
+                              "Unknown";
+
+                        return (
+                          <li key={key}>
+                            Percentage: {percentage} - Status: {statusText}
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </td>
                 </tr>
                 <tr>
@@ -493,19 +625,50 @@ const FullReport = () => {
                   <td className="border border-gray-400 px-4 py-2">Cover Extent</td>
                   <td className="border border-gray-400 px-4 py-2">
                     <ul>
-                      <li>
-                        Cover extent percentage:{" "}
+                      {/* <li>
+                        Cover extent values:{" "}
                         {coverExtentDecileData.nonZeroValues.length > 0
                           ? coverExtentDecileData.nonZeroValues.join(", ")
                           : "No data available"}
-                      </li>
+                      </li> */}
                       <li>Non Zero Count: {coverExtentDecileData.nonZeroCount}</li>
                       <li>
-                        Percentage of coverage: {coverExtentDecileData.percentageCoverExtent.toFixed(2)}%
+                        Percentage of coverage:{" "}
+                        {coverExtentDecileData.percentageCoverExtent.toFixed(2)}%
+                      </li>
+                      <li>
+                        <strong>Value Count Details:</strong>
+                        {coverExtentDecileData.valueCountArray.length > 0 ? (
+                          <ul className="mt-2">
+                            {coverExtentDecileData.valueCountArray.map((item, index) => (
+                              <li key={index}>
+                                percentage: {item.value} %, Count: {item.count}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          "No data available"
+                        )}
                       </li>
                     </ul>
                   </td>
                 </tr>
+
+                <tr>
+                  <td className="border border-gray-400 px-4 py-2">Tree Cover Drivers</td>
+                  <td className="border border-gray-400 px-4 py-2">
+
+
+                    {tscDriverDriver?.mostCommonValue in reasonsMap ? (
+                      <p>{reasonsMap[tscDriverDriver?.mostCommonValue]}</p>
+                    ) : (
+                      <p>Unknown Value</p>
+                    )}
+
+
+                  </td>
+                </tr>
+
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">Cover Extent Area</td>
                   <td className="border border-gray-400 px-4 py-2">
@@ -527,11 +690,6 @@ const FullReport = () => {
           <p>
             Analysis of deforestation drivers shows significant influences from urbanization and shifting agriculture.
           </p>
-          <ul className="list-disc pl-6">
-            <li>Urbanization: key driver</li>
-            <li>Shifting: Major contributor to forest loss</li>
-            <li>Commodity-driven : Moderate impact</li>
-          </ul>
           <div className="items-center justify-center mt-6 mb-6">
             <div className="overflow-hidden">
               <img
