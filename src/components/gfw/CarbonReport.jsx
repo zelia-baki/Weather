@@ -25,9 +25,9 @@ const CarbonReport = () => {
         height: window.innerHeight,
     });
 
-    const carbonGrossEmissions = Array.isArray(geoData) && geoData.length > 0 ? geoData[0]?.data_fields?.area__ha || 0 : 0;
-    const carbonGrossRemovals = Array.isArray(geoData) && geoData.length > 1 ? geoData[1]?.data_fields?.area__ha || 0 : 0;
-    const carbonNetFlux = Array.isArray(geoData) && geoData.length > 2 ? geoData[2]?.data_fields?.area__ha || 0 : 0;
+    const carbonGrossEmissions = Array.isArray(geoData) && geoData.length > 0 ? geoData[0]?.data_fields?.gfw_forest_carbon_gross_emissions__Mg_CO2e || 0 : 0;
+    const carbonGrossRemovals = Array.isArray(geoData) && geoData.length > 1 ? geoData[1]?.data_fields?.gfw_forest_carbon_gross_removals__Mg_CO2e || 0 : 0;
+    const carbonNetFlux = Array.isArray(geoData) && geoData.length > 2 ? geoData[2]?.data_fields?.gfw_forest_carbon_net_flux__Mg_CO2e || 0 : 0;
 
     const data = {
         labels: ['Carbon Gross Emissions', 'Carbon Gross Removals', 'Carbon Net Flux'],
@@ -283,22 +283,10 @@ const CarbonReport = () => {
                     <h1 className="text-3xl font-bold mb-6 text-center">NKUSU/AGRIYIELDS REPORT</h1>
                     {farmInfo && (
                         <p className="p-4">
-                            This report provides an overview of Farm ID <strong>{farmInfo.farm_id}</strong>, owned by <strong>{farmInfo.name}</strong>,
-                            located in <strong>{farmInfo.subcounty}</strong>, [District]. The farm is a member of the {farmInfo.subcounty} and plays a significant role in the local agricultural landscape.
-                            With geolocation coordinates <strong>{farmInfo.geolocation}</strong>,
-                            {farmInfo.crops && farmInfo.crops.length > 0 ? (
-                                <>
-                                    the farm specializes in <strong>{farmInfo.crops[0].crop}</strong> and operates within a region characterized by Landtype: <strong>{farmInfo.crops[0].land_type}</strong>.
-                                </>
-                            ) : (
-                                <span> no specific crops mentioned.</span>
-                            )}
-                            This report outlines the farm's activities, challenges, and opportunities to support its continued growth and sustainability.
+                            Carbon report for Farm ID <strong>{farmInfo.farm_id}</strong>, owned by <strong>{farmInfo.name}</strong>
                         </p>
                     )}
-                    <div className="bg-white m-6 p-11 shadow-md mb-4">
-                        <h2 className="text-2xl font-bold mb-4">Carbon Report</h2>
-                    </div>
+                    
                     <h2 className="text-2xl font-bold mb-4">Risk Assessment Breakdown</h2>
                     <p>
                         Analysis of Carbon
@@ -308,22 +296,23 @@ const CarbonReport = () => {
                         <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-lg">
                             <thead className="bg-gray-100">
                                 <tr>
-                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Risk Assessment</th>
-                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Area in Ha</th>
+                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Carbon</th>
+                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Mg_CO2e</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr className="hover:bg-gray-100">
                                     <td className="py-2 px-4 border-b border-gray-300">carbon gross emissions</td>
-                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[0]?.data_fields.area__ha}</td>
+                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[0]?.data_fields.gfw_forest_carbon_gross_emissions__Mg_CO2e
+                                    }</td>
                                 </tr>
                                 <tr className="hover:bg-gray-100">
                                     <td className="py-2 px-4 border-b border-gray-300">carbon gross removals</td>
-                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[1]?.data_fields.area__ha}</td>
+                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[1]?.data_fields.gfw_forest_carbon_gross_removals__Mg_CO2e}</td>
                                 </tr>
                                 <tr className="hover:bg-gray-100">
                                     <td className="py-2 px-4 border-b border-gray-300">carbon net flux</td>
-                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[2]?.data_fields.area__ha}</td>
+                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[2]?.data_fields.gfw_forest_carbon_net_flux__Mg_CO2e}</td>
                                 </tr>
                             </tbody>
                         </table>
