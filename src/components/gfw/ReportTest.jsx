@@ -568,23 +568,7 @@ const FullReport = () => {
                   <td className="border border-gray-400 px-4 py-2">
                     {geoData[1]?.data_fields?.area__ha !== undefined && geoData[1]?.data_fields?.area__ha !== null ? (
                       parseFloat(geoData[1].data_fields.area__ha) !== 0 ? (
-                        tscDriverDriver?.mostCommonValue === 5 ? (
-                          <div>
-                            <p>Ur</p>
-                          </div>
-                        ) : tscDriverDriver?.mostCommonValue === 2 ? (
-                          <div>
-                            <p>Fully compliant</p>
-                          </div>
-                        ) : tscDriverDriver?.mostCommonValue === 1 || tscDriverDriver?.mostCommonValue === 3 || tscDriverDriver?.mostCommonValue === 4 ? (
-                          <div>
-                            <p>Not Compliant</p>
-                          </div>
-                        ) : (
-                          <div>
-                            <p>Unknown Value</p>
-                          </div>
-                        )
+                        <p>Not Compliant</p>
                       ) : (
                         <p>100% Compliance</p>
                       )

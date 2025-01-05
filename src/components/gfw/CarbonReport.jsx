@@ -296,7 +296,7 @@ const CarbonReport = () => {
                             <thead className="bg-gray-100">
                                 <tr>
                                     <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Category</th>
-                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Mt_CO2e</th>
+                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Mg_CO2e</th>
                                 </tr>
                             </thead>
                             <tbody>
