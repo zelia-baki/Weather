@@ -52,8 +52,6 @@ const FullReport = () => {
 
 
 
-
-
   useEffect(() => {
     const handleResize = () => {
       setDimensions({
@@ -672,7 +670,11 @@ const FullReport = () => {
           </div>
           <h2 className="text-2xl font-bold mb-4">Risk Assessment Breakdown</h2>
           <p>
-            Analysis of deforestation drivers shows significant influences from urbanization and shifting agriculture.
+            Analysis of deforestation drivers shows significant influences from {tscDriverDriver?.mostCommonValue in reasonsMap ? (
+                      <p>{reasonsMap[tscDriverDriver?.mostCommonValue]}</p>
+                    ) : (
+                      <p>Unknown Value</p>
+                    )}
           </p>
           <div className="items-center justify-center mt-6 mb-6">
             <div className="overflow-hidden">

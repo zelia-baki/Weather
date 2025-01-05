@@ -53,7 +53,7 @@ const FarmDataManager = () => {
 
   const fetchFarmsList = async () => {
     try {
-      const response = await axiosInstance.get('/api/farm/');
+      const response = await axiosInstance.get('/api/farm/all');
       setFarmsList(response.data.farms);
     } catch (error) {
       console.error("Error fetching farms list:", error);

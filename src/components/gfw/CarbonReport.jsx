@@ -315,7 +315,10 @@ const CarbonReport = () => {
                                 </tr>
                                 <tr className="hover:bg-gray-100">
                                     <td className="py-2 px-4 border-b border-gray-300">Carbon Sequestration potential</td>
-                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[3]?.data_fields.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C}</td>
+                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[3]?.data_fields.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C} belowground
+                                        <br />
+                                    {geoData[4]?.data_fields.gfw_reforestable_extent_aboveground_carbon_potential_sequestration__Mg_C} aboveground
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
