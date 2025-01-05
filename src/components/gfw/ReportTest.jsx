@@ -43,11 +43,11 @@ const FullReport = () => {
 
 
   const reasonsMap = {
-    1: "Not Compliant (Commodity driven deforestation)",
-    2: "Fully Compliant (Shifting Agriculture)",
-    3: "Not Compliant (Forestry)",
-    4: "Not Compliant (Wildfire)",
-    5: "Ur (Urbanization)"
+    1: "Commodity driven deforestation",
+    2: "Shifting Agriculture",
+    3: "Forestry",
+    4: "Wildfire",
+    5: "Urbanization"
   };
 
 
