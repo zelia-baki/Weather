@@ -141,9 +141,9 @@ const Layout = ({ children }) => {
                                         </a>
                                     </li>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
-                                        <a href="/mapviewall" className="block w-full h-full">
-                                            View All
-                                        </a>
+                                        <Link to="/mapviewall" state={{ owner_type: 'farmer' }} className="block w-full h-full">
+                                            View all
+                                        </Link>
                                     </li>
                                 </ul>
                             </div>

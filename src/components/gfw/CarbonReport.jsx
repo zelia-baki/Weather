@@ -28,14 +28,16 @@ const CarbonReport = () => {
     const carbonGrossEmissions = Array.isArray(geoData) && geoData.length > 0 ? geoData[0]?.data_fields?.gfw_forest_carbon_gross_emissions__Mg_CO2e || 0 : 0;
     const carbonGrossRemovals = Array.isArray(geoData) && geoData.length > 1 ? geoData[1]?.data_fields?.gfw_forest_carbon_gross_removals__Mg_CO2e || 0 : 0;
     const carbonNetFlux = Array.isArray(geoData) && geoData.length > 2 ? geoData[2]?.data_fields?.gfw_forest_carbon_net_flux__Mg_CO2e || 0 : 0;
+    const carbonSequestration = Array.isArray(geoData) && geoData.length > 3 ? geoData[3]?.data_fields?.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C || 0 : 0;
+
 
     const data = {
-        labels: ['Carbon Gross Emissions', 'Carbon Gross Removals', 'Carbon Net Flux'],
+        labels: ['Carbon Gross Emissions', 'Carbon Gross Removals', 'Carbon Net Flux' , 'Carbon Sequestration'],
         datasets: [
             {
-                data: [carbonGrossEmissions, carbonGrossRemovals, carbonNetFlux],
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-                hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+                data: [carbonGrossEmissions, carbonGrossRemovals, carbonNetFlux, carbonSequestration],
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56','#FFCC00'],
+                hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56','#FFCC00'],
             },
         ],
     };
@@ -284,35 +286,36 @@ const CarbonReport = () => {
                     {farmInfo && (
                         <p className="p-4">
                             Carbon report for Farm ID <strong>{farmInfo.farm_id}</strong>, owned by <strong>{farmInfo.name}</strong>
+                            Located at <strong>{farmInfo.geolocation}</strong>,
                         </p>
                     )}
-                    
-                    <h2 className="text-2xl font-bold mb-4">Risk Assessment Breakdown</h2>
-                    <p>
-                        Analysis of Carbon
-                    </p>
+                
                     <div className="container mx-auto p-4">
-                        <h2 className="text-xl font-semibold mb-4">Risk Assessment Table</h2>
+                        <h2 className="text-xl font-semibold mb-4">Carbon Assessment summary</h2>
                         <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-lg">
                             <thead className="bg-gray-100">
                                 <tr>
-                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Carbon</th>
-                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Mg_CO2e</th>
+                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Category</th>
+                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Mt_CO2e</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr className="hover:bg-gray-100">
-                                    <td className="py-2 px-4 border-b border-gray-300">carbon gross emissions</td>
+                                    <td className="py-2 px-4 border-b border-gray-300">Carbon gross emissions</td>
                                     <td className="py-2 px-4 border-b border-gray-300">{geoData[0]?.data_fields.gfw_forest_carbon_gross_emissions__Mg_CO2e
                                     }</td>
                                 </tr>
                                 <tr className="hover:bg-gray-100">
-                                    <td className="py-2 px-4 border-b border-gray-300">carbon gross removals</td>
+                                    <td className="py-2 px-4 border-b border-gray-300">Carbon gross absorption</td>
                                     <td className="py-2 px-4 border-b border-gray-300">{geoData[1]?.data_fields.gfw_forest_carbon_gross_removals__Mg_CO2e}</td>
                                 </tr>
                                 <tr className="hover:bg-gray-100">
-                                    <td className="py-2 px-4 border-b border-gray-300">carbon net flux</td>
+                                    <td className="py-2 px-4 border-b border-gray-300">Carbon net Emmisions</td>
                                     <td className="py-2 px-4 border-b border-gray-300">{geoData[2]?.data_fields.gfw_forest_carbon_net_flux__Mg_CO2e}</td>
+                                </tr>
+                                <tr className="hover:bg-gray-100">
+                                    <td className="py-2 px-4 border-b border-gray-300">Carbon Sequestration potential</td>
+                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[3]?.data_fields.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C}</td>
                                 </tr>
                             </tbody>
                         </table>
