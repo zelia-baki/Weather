@@ -11,7 +11,6 @@ import Login from './components/main/Login';
 import Home from './components/main/Home';
 import Tabcrop from './components/crop/tabcrop';
 import Layout from './components/Layout/Layout.jsx';
-import Forest from './components/Forest/Forest.jsx';
 import ForestPage from './components/Forest/Fore/ForestPage.jsx';
 import Create from './components/Farm/Create.jsx';
 import Farmdata from './components/Farm/Farmdata.jsx';
@@ -53,6 +52,7 @@ import WeathearMap from './components/mapbox/WeatherMap.jsx';
 import Test from './components/gfw/ReportTest.jsx';
 import BarNav from './components/main/BarNav.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
+import CarbonReportForest from './components/gfw/CarbonReportForest.jsx';
 
 
 
@@ -63,7 +63,6 @@ function App() {
     { path: "/card", component: <Card /> , adminOnly: false},
     { path: "/mapbox", component: <MapboxExample /> , adminOnly: false},
     { path: "/tabcrop", component: <Tabcrop /> , adminOnly: false},
-    { path: "/forest", component: <Forest /> , adminOnly: false},
     { path: "/forestpage", component: <ForestPage /> , adminOnly: false},
     { path: "/createfarm", component: <Create /> , adminOnly: false},
     { path: "/farmdata", component: <Farmdata /> , adminOnly: false},
@@ -89,6 +88,7 @@ function App() {
     { path: "/qrfertilizer", component: <Fertilizer /> , adminOnly: false},
     { path: "/reportfarmer", component: <FarmReport /> , adminOnly: false},
     { path: "/reportcarbon", component: <CarbonReport /> , adminOnly: false},
+    { path: "/reportcarbonforest", component: <CarbonReportForest/>, adminOnly: false},
     { path: "/reportforest", component: <ForestReport /> , adminOnly: false},
     { path: "/createUsers", component: <CreateUsers /> , adminOnly: false},
     { path: "/graphcgd", component: <GraphCGD /> , adminOnly: false},
