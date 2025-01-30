@@ -53,6 +53,7 @@ import Test from './components/gfw/ReportTest.jsx';
 import BarNav from './components/main/BarNav.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
 import CarbonReportForest from './components/gfw/CarbonReportForest.jsx';
+import StoreProductManager from './components/store/StoreProductManager.jsx'; 
 
 
 
@@ -103,7 +104,8 @@ function App() {
     { path: "/irrigationmanager", component: <IrrigationManager /> , adminOnly: false},
     { path: "/cropcoefficientmanager", component: <CropCoefficientManager/>, adminOnly: false},
     { path: "/grademanager", component: <GradeManager/>, adminOnly: false},
-    { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false}
+    { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false},
+    { path: "/storeProductManager", component: <StoreProductManager/>, adminOnly: false}
 
 
     // { path: "/export2", component: <Export2 /> }
