@@ -44,7 +44,7 @@ const HomePage = () => {
       textColor: "text-green-700",
       buttonText: "Manage Forest",
       color: "bg-teal-500", // Nouvelle couleur tendance
-      link: "/forest",
+      link: "/forestpage",
       isBlurred: !(userRole === "admin" || userRole === "forest"),
     },
     {

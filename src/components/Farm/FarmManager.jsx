@@ -96,11 +96,12 @@ const FarmComponent = () => {
       district_id: farm.district_id,
       farmergroup_id: farm.farmergroup_id,
       geolocation: farm.geolocation,
-      phonenumber: farm.phonenumber1,
+      phonenumber1: farm.phonenumber1,
       phonenumber2: farm.phonenumber2,
       gender: farm.gender,
       cin: farm.cin,
     });
+    console.log(formData);
     setCurrentFarmId(farm.id);
     setIsModalOpen(true);
   };
@@ -137,7 +138,7 @@ const FarmComponent = () => {
       village: '',
       farmergroup_id: '',
       geolocation: '',
-      phonenumber1: '',
+      phonenumber: '',
       phonenumber2: '',
       gender: '',
       cin: '',
@@ -315,6 +316,7 @@ const FarmComponent = () => {
                     onChange={handleChange}
                     className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
+                  
                 </div>
 
                 <div className="mb-4">
@@ -416,7 +418,10 @@ const FarmComponent = () => {
                   Create Maps
                 </Link>
                 <Link to="/reportfarmer" state={{ farmId: farm.id }} className="bg-red-200 text-red-800 py-1 px-3 rounded hover:bg-red-300 transition duration-300">
-                  View Report
+                  Farmer Report
+                </Link>
+                <Link to="/reportcarbon" state={{ farmId: farm.id }} className="bg-red-200 text-red-800 py-1 px-3 rounded hover:bg-red-300 transition duration-300">
+                  Carbon Report
                 </Link>
 
               </div>
