@@ -33,6 +33,7 @@ const MapboxExample = () => {
 
   // Kc value
   const Kc = 1.2;
+  let calculatedEtC= 0 ;
   // Function to interpret precipitation
   const interpret_precipitation = (mm) => {
     if (mm < 1) {
@@ -77,7 +78,8 @@ const MapboxExample = () => {
       fetchKc();
     }
     if (kcVal && et0) {
-      calculateETc(et0, kcVal);
+      calculatedEtC = calculateETc(et0, kcVal);
+      setEtC(calculatedEtC)
     }
   }, [selectedCrop, kcVal, et0]);
   
@@ -257,8 +259,7 @@ const MapboxExample = () => {
         setWindSpeed1000hPa(weatherData.windSpeed1000hPa);
 
         // Calculate ETc
-        const calculatedEtC = calculateETc(weatherData.et0_fao_evapotranspiration, Kc);
-        setEtC(calculatedEtC);
+        
 
         // If a popup already exists, remove it
         if (popupRef.current) {
