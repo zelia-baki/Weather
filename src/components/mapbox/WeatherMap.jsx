@@ -257,6 +257,8 @@ const MapboxExample = () => {
         setEt0(weatherData.et0_fao_evapotranspiration);
         setShortwaveRadiation(weatherData.shortwave_radiation);
         setWindSpeed1000hPa(weatherData.windSpeed1000hPa);
+        
+        
 
         // Calculate ETc
         
@@ -334,12 +336,7 @@ const MapboxExample = () => {
               <WiRain className="mr-2 text-blue-500" size={24} />
               <p>
                 <span className="font-medium">Precipitation:</span> {precipitation !== null ? `${precipitation} mm` : 'N/A'}
-                <br />
-                {precipitation !== null && (
-                  <span className="text-sm text-gray-600">
-                    ~ {interpret_precipitation(precipitation)}
-                  </span>
-                )}
+                <br />cd <i></i>
               </p>
             </div>
 
