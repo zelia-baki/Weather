@@ -56,7 +56,7 @@ const PointForm = () => {
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const response = await axios.get('/api/countries');  // Call the API endpoint
+        const response = await axiosInstance.get('/api/countries');  // Call the API endpoint
         setCountries(response.data);  // Update the state with the list of countries
       } catch (error) {
         console.error('Error fetching countries:', error);
