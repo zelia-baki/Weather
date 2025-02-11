@@ -11,7 +11,6 @@ import Login from './components/main/Login';
 import Home from './components/main/Home';
 import Tabcrop from './components/crop/tabcrop';
 import Layout from './components/Layout/Layout.jsx';
-import Forest from './components/Forest/Forest.jsx';
 import ForestPage from './components/Forest/Fore/ForestPage.jsx';
 import Create from './components/Farm/Create.jsx';
 import Farmdata from './components/Farm/Farmdata.jsx';
@@ -37,9 +36,9 @@ import GraphCGD from './components/Graph/GraphCGD.jsx';
 import ProtectedRoute from './ProtectedRoute'; // Import ProtectedRoute
 import FarmerGroupManager from './components/Farmergroup/FarmerGroup.jsx';
 import FarmManager from './components/Farm/FarmManager.jsx';
-import FarmManager1 from './components/Farm/FarmManager1.jsx';
+// import FarmManager1 from './components/Farm/FarmManager1.jsx';
 import FarmDataManager from './components/Farm/FarmDataManager.jsx';
-import Export2 from './components/Qr/exportEXemple.jsx';
+// import Export2 from './components/Qr/exportEXemple.jsx';
 import UserManagement from './components/Users/UserManagement.jsx';
 import WeatherAndSolar from './components/Weather/WeatherAndSolar.jsx'
 import CropManager from './components/crop/CropManager.jsx';
@@ -50,9 +49,12 @@ import ContactUs from './components/main/ContactUs.jsx';
 import SignUp from './components/main/SignUp.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 import WeathearMap from './components/mapbox/WeatherMap.jsx';
+import WeatherDashboard from './components/mapbox/WeatherDasboard.jsx';
 import Test from './components/gfw/ReportTest.jsx';
 import BarNav from './components/main/BarNav.jsx';
-
+import CarbonReport from './components/gfw/CarbonReport.jsx';
+import CarbonReportForest from './components/gfw/CarbonReportForest.jsx';
+import StoreProductManager from './components/store/StoreProductManager.jsx'; 
 
 
 
@@ -63,7 +65,6 @@ function App() {
     { path: "/card", component: <Card /> , adminOnly: false},
     { path: "/mapbox", component: <MapboxExample /> , adminOnly: false},
     { path: "/tabcrop", component: <Tabcrop /> , adminOnly: false},
-    { path: "/forest", component: <Forest /> , adminOnly: false},
     { path: "/forestpage", component: <ForestPage /> , adminOnly: false},
     { path: "/createfarm", component: <Create /> , adminOnly: false},
     { path: "/farmdata", component: <Farmdata /> , adminOnly: false},
@@ -83,11 +84,15 @@ function App() {
     { path: "/qrconservation", component: <Conservation /> , adminOnly: false},
     { path: "/qrexport", component: <Export /> , adminOnly: false},
     { path: "/weathermap", component: <WeathearMap  /> , adminOnly: false},
+    { path: "/weatherdas", component: <WeatherDashboard   /> , adminOnly: false},
+
 
     // { path: "/qrexport2", component: <Export /> , adminOnly: false},
 
     { path: "/qrfertilizer", component: <Fertilizer /> , adminOnly: false},
     { path: "/reportfarmer", component: <FarmReport /> , adminOnly: false},
+    { path: "/reportcarbon", component: <CarbonReport /> , adminOnly: false},
+    { path: "/reportcarbonforest", component: <CarbonReportForest/>, adminOnly: false},
     { path: "/reportforest", component: <ForestReport /> , adminOnly: false},
     { path: "/createUsers", component: <CreateUsers /> , adminOnly: false},
     { path: "/graphcgd", component: <GraphCGD /> , adminOnly: false},
@@ -95,7 +100,6 @@ function App() {
 
     { path: "/farmergroup", component: <FarmerGroupManager /> , adminOnly: false},
     { path: "/farmmanager", component: <FarmManager /> , adminOnly: false},
-    { path: "/farmmanager1", component: <FarmManager1 /> , adminOnly: false},
     { path: "/farmdatamanager", component: <FarmDataManager /> , adminOnly: false},
     { path: "/usermanager", component: <UserManagement /> , adminOnly: false},
     { path: "/weatherandsolar", component: <WeatherAndSolar /> , adminOnly: false},
@@ -103,7 +107,8 @@ function App() {
     { path: "/irrigationmanager", component: <IrrigationManager /> , adminOnly: false},
     { path: "/cropcoefficientmanager", component: <CropCoefficientManager/>, adminOnly: false},
     { path: "/grademanager", component: <GradeManager/>, adminOnly: false},
-    { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false}
+    { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false},
+    { path: "/storeProductManager", component: <StoreProductManager/>, adminOnly: false}
 
 
     // { path: "/export2", component: <Export2 /> }

@@ -5,6 +5,8 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { FiMapPin } from 'react-icons/fi'; // Added map pin icon for location
+import axiosInstance from '../../axiosInstance.jsx';
+
 
 import { WiDaySunny, WiHumidity, WiRain, WiWindy, WiCloud, WiSolarEclipse } from 'react-icons/wi'; // Example icons
 import DailyChart from '../Graph/DailyGraph.jsx';
@@ -23,9 +25,15 @@ const MapboxExample = () => {
   const [windSpeed1000hPa, setWindSpeed1000hPa] = useState(null);
   const popupRef = useRef(null);
   const [hourlyWeatherData, setHourlyWeatherData] = useState({ temperature: [], humidity: [], precipitation: [] });
+  const [cropsList, setCropsList] = useState([]); // Add state for crops list
+  const [selectedCrop, setSelectedCrop] = useState("");
+  const [kcVal, setKcVal] = useState(null);
+  const [error, setError] = useState("");
+
 
   // Kc value
   const Kc = 1.2;
+  let calculatedEtC= 0 ;
   // Function to interpret precipitation
   const interpret_precipitation = (mm) => {
     if (mm < 1) {
@@ -43,6 +51,49 @@ const MapboxExample = () => {
     }
   };
 
+  const fetchCropsList = async () => {
+    try {
+      const response = await axiosInstance.get('/api/crop/');
+      setCropsList(response.data.crops); // Set crops list
+    } catch (error) {
+      console.error("Error fetching crops list:", error);
+    }
+  };
+  const fetchKc = async () => {
+    try {
+      const response = await axiosInstance.get(`/api/kc/getbycrop/${selectedCrop}`);
+      console.log(response.data.kc_value[0].kc_value);
+      setKcVal(response.data.kc_value[0].kc_value);
+      console.log(kcVal);
+    } catch (error) {
+      console.error('Error fetching crops:', error);
+    }
+  };
+  const calculateETc = (et0Value, kc) => {
+    if (et0Value === null) return null; // Avoid calculation if ET0 is null
+    return et0Value * kc; // Calculate ETc
+  };
+  useEffect(() => {
+    if (selectedCrop) {
+      fetchKc();
+    }
+    if (kcVal && et0) {
+      calculatedEtC = calculateETc(et0, kcVal);
+      setEtC(calculatedEtC)
+    }
+  }, [selectedCrop, kcVal, et0]);
+  
+  
+  useEffect(() => {
+    fetchCropsList();
+    console.log(cropsList);
+  }, []);
+
+  const handleCropSelect = (e) => {
+    console.log("Selected crop ID:", e.target.value);
+    setSelectedCrop(e.target.value);
+    console.log(selectedCrop); // Assure-toi d’avoir un useState pour stocker l’ID
+  };  
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
@@ -116,12 +167,13 @@ const MapboxExample = () => {
       const latitude = geometry.coordinates[1];
       const longitude = geometry.coordinates[0];
       const weatherData = await fetchWeatherData(latitude, longitude);
-
+      console.log(weatherData);
       // Update state with fetched weather data
       setTemperature(weatherData.temperature);
       setHumidity(weatherData.humidity);
       setPrecipitation(weatherData.precipitation);
       setEt0(weatherData.et0_fao_evapotranspiration);
+      console.log(et0);
       setShortwaveRadiation(weatherData.shortwave_radiation);
       setWindSpeed1000hPa(weatherData.windSpeed1000hPa);
       setHourlyWeatherData({
@@ -131,8 +183,6 @@ const MapboxExample = () => {
       });
 
       // Calculate ETc
-      const calculatedEtC = calculateETc(weatherData.et0_fao_evapotranspiration, Kc);
-      setEtC(calculatedEtC);
     });
 
     // Fetch weather data function
@@ -182,10 +232,8 @@ const MapboxExample = () => {
     };
 
     // Function to calculate ETc
-    const calculateETc = (et0Value, kc) => {
-      if (et0Value === null) return null; // Avoid calculation if ET0 is null
-      return et0Value * kc; // Calculate ETc
-    };
+   
+
 
     // Add click event to show popup with coordinates and fetch weather data
     mapRef.current.on('click', async (event) => {
@@ -209,10 +257,11 @@ const MapboxExample = () => {
         setEt0(weatherData.et0_fao_evapotranspiration);
         setShortwaveRadiation(weatherData.shortwave_radiation);
         setWindSpeed1000hPa(weatherData.windSpeed1000hPa);
+        
+        
 
         // Calculate ETc
-        const calculatedEtC = calculateETc(weatherData.et0_fao_evapotranspiration, Kc);
-        setEtC(calculatedEtC);
+        
 
         // If a popup already exists, remove it
         if (popupRef.current) {
@@ -286,13 +335,8 @@ const MapboxExample = () => {
             <div className="flex items-center text-gray-700">
               <WiRain className="mr-2 text-blue-500" size={24} />
               <p>
-              <span className="font-medium">Precipitation:</span> {precipitation !== null ? `${precipitation} mm` : 'N/A'}
-                <br />
-                {precipitation !== null && (
-                  <span className="text-sm text-gray-600">
-                    ~ {interpret_precipitation(precipitation)}
-                  </span>
-                )}
+                <span className="font-medium">Precipitation:</span> {precipitation !== null ? `${precipitation} mm` : 'N/A'}
+                <br />cd <i></i>
               </p>
             </div>
 
@@ -304,6 +348,17 @@ const MapboxExample = () => {
             <div className="flex items-center text-gray-700">
               <WiCloud className="mr-2 text-gray-500" size={20} />
               <span className="font-medium">ETc:</span> {etC !== null ? `${etC} mm/day` : 'N/A'}
+              <select
+            name="crop_id"
+            onChange={handleCropSelect}
+            required
+            className="w-full p-2 border rounded-md shadow-sm"
+          >
+            <option value="">Select a Crop</option>
+            {cropsList.map((crop) => (
+              <option key={crop.id} value={crop.id}>{crop.name}</option>
+            ))}
+          </select>
             </div>
             <div className="flex items-center text-gray-700">
               <WiSolarEclipse className="mr-2 text-yellow-600" size={20} />

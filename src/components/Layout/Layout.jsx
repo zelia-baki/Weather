@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { FaFeather } from "react-icons/fa";
+import { MdManageAccounts } from "react-icons/md";
 import { FiLogOut } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
@@ -11,7 +12,18 @@ const Layout = ({ children }) => {
         weatherDropdown: false,
     });
     const [isAdmin, setIsAdmin] = useState(false);
+    
+    useEffect(() => {
+        const userRole = localStorage.getItem("userRole");
+        if (userRole === "admin") {
+            setIsAdmin(true);
+        } else {
+            setIsAdmin(false); // Optionnel : pour être sûr que le statut est réinitialisé
+        }
+        console.log("Is Admin:", userRole);
+    }, []);
 
+    
     // Utilisation de useCallback pour empêcher les redémarrages inutiles de la fonction
     const toggleDropdown = (dropdown, value) => {
         setDropdownsVisible((prevState) => ({
@@ -141,9 +153,9 @@ const Layout = ({ children }) => {
                                         </a>
                                     </li>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
-                                        <a href="/mapviewall" className="block w-full h-full">
-                                            View All
-                                        </a>
+                                        <Link to="/mapviewall" state={{ owner_type: 'farmer' }} className="block w-full h-full">
+                                            View all
+                                        </Link>
                                     </li>
                                 </ul>
                             </div>
@@ -218,6 +230,11 @@ const Layout = ({ children }) => {
                                             Graph HDD and CDD
                                         </a>
                                     </li>
+                                    <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                        <a href="/weatherdas" className="block w-full h-full">
+                                            Anomaly Alert
+                                        </a>
+                                    </li>
                                 </ul>
                             </div>
                         )}
@@ -225,14 +242,15 @@ const Layout = ({ children }) => {
                 </nav>
 
                 <div className="flex items-center gap-4">
-                    {isAdmin && (
-                        <Link
-                            to="/usermanager"
-                            className="flex items-center p-2 text-sm font-medium text-white bg-teal-500 rounded-lg shadow-md hover:bg-teal-600 transition-all duration-300"
-                        >
-                            Manage account
-                        </Link>
-                    )}
+                
+                {isAdmin && (
+    <Link to="/usermanager" className="text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline">
+        <MdManageAccounts className="inline-block" /> User Manager
+    </Link>
+)}
+
+    
+                    
                     <button
                         onClick={handleLogOut}
                         className="bg-teal-100 text-teal-700 font-semibold px-4 py-2 rounded-lg shadow-md flex items-center gap-2 hover:bg-gray-300 hover:text-gray-900 transition-all duration-200"

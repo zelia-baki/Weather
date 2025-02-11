@@ -48,6 +48,7 @@ const MapboxExample = () => {
       try {
         const response = await axiosInstance.get(`/api/points/getallbyownertype/${owner_type}`);
         const data = response.data;
+        console.log(data);
 
         if (!data.polygons || data.polygons.length === 0) {
           setNotification({
