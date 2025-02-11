@@ -11,6 +11,8 @@ const DegreeDaysPage = () => {
   const [cityName, setCityName] = useState(''); // City name from Mapbox API
   const [provinceName, setProvinceName] = useState(''); // Province name from Mapbox API
   const [countryName, setCountryName] = useState(''); // Country name from Mapbox API
+  const [crop, setCrop] = useState(''); // Crop selection
+
 
   const mapboxToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q'; // Replace with your Mapbox API key
 
@@ -191,13 +193,10 @@ const DegreeDaysPage = () => {
           placeholder="Longitude"
           className="mr-2 p-2 border rounded"
         />
-        {/* <button
-          onClick={() => fetchWeatherData(latitude, longitude)} // Call the fetchWeatherData function
-          className="p-2 bg-blue-500 text-white rounded"
-        >
-          Fetch Data
-        </button> */}
+      
       </div>
+      {/* Crop selection */}
+      
       {/* {isLoading && <p>Loading data...</p>} */}
       <div className="bg-white shadow-md rounded-lg p-2">
         <h4 className="text-lg font-medium text-gray-700">

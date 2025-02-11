@@ -16,7 +16,7 @@ const CropCoefficientManager = () => {
 
   const fetchCoefficients = async () => {
     try {
-      const response = await axiosInstance.get('/api/cropcoefficient/');
+      const response = await axiosInstance.get('/api/kc/');
       setCoefficients(response.data.coefficients);
     } catch (error) {
       console.error('Error fetching crop coefficients:', error);
@@ -52,9 +52,9 @@ const CropCoefficientManager = () => {
     e.preventDefault();
     try {
       if (editingId) {
-        await axiosInstance.put(`/api/cropcoefficient/${editingId}/edit`, formData);
+        await axiosInstance.put(`/api/kc/${editingId}/edit`, formData);
       } else {
-        await axiosInstance.post('/api/cropcoefficient/create', formData);
+        await axiosInstance.post('/api/kc/create', formData);
       }
       setFormData({ crop_id: '', stage: '', kc_value: '' });
       setEditingId(null);
@@ -75,7 +75,7 @@ const CropCoefficientManager = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axiosInstance.delete(`/api/cropcoefficient/${id}/delete`);
+      await axiosInstance.delete(`/api/kc/${id}/delete`);
       fetchCoefficients(); // Refresh the coefficients list
     } catch (error) {
       console.error('Error deleting crop coefficient:', error);

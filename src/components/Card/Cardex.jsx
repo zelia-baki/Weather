@@ -10,7 +10,7 @@ const WeatherLanding = () => {
           Weather Dashboard
         </h1>
         <p className="text-lg mt-4 font-medium text-gray-700">
-          Prédictions météorologiques précises pour une meilleure planification.
+        Accurate weather predictions for better planning.
         </p>
       </header>
 
@@ -19,18 +19,18 @@ const WeatherLanding = () => {
         {/* Graphique Journalier */}
         <div className="bg-white shadow-lg rounded-lg p-6 hover:scale-105 transform transition duration-300">
           <FaCloudSun className="text-blue-500 text-4xl mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold text-center">Graphique Journalier</h2>
+          <h2 className="text-2xl font-semibold text-center">Daily Chart</h2>
           <p className="text-center mt-2 text-gray-600">
-            Visualisez les variations météorologiques au cours de la journée.
+          View weather variations throughout the day.
           </p>
         </div>
 
         {/* Prédictions sur 10 jours */}
         <div className="bg-white shadow-lg rounded-lg p-6 hover:scale-105 transform transition duration-300">
           <FaChartLine className="text-green-500 text-4xl mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold text-center">Prédictions sur 10 jours</h2>
+          <h2 className="text-2xl font-semibold text-center">10-day predictions</h2>
           <p className="text-center mt-2 text-gray-600">
-            Découvrez les tendances météo pour les jours à venir.
+          Discover the weather trends for the coming days.
           </p>
         </div>
 
@@ -39,7 +39,7 @@ const WeatherLanding = () => {
           <FaSeedling className="text-yellow-500 text-4xl mx-auto mb-4" />
           <h2 className="text-2xl font-semibold text-center">HDD, CDD, GDD</h2>
           <p className="text-center mt-2 text-gray-600">
-            Analysez les indices climatiques pour l'agriculture et l'énergie.
+          Analyze climate indices for agriculture and energy.
           </p>
         </div>
       </div>

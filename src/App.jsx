@@ -49,6 +49,7 @@ import ContactUs from './components/main/ContactUs.jsx';
 import SignUp from './components/main/SignUp.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 import WeathearMap from './components/mapbox/WeatherMap.jsx';
+import WeatherDashboard from './components/mapbox/WeatherDasboard.jsx';
 import Test from './components/gfw/ReportTest.jsx';
 import BarNav from './components/main/BarNav.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
@@ -83,6 +84,8 @@ function App() {
     { path: "/qrconservation", component: <Conservation /> , adminOnly: false},
     { path: "/qrexport", component: <Export /> , adminOnly: false},
     { path: "/weathermap", component: <WeathearMap  /> , adminOnly: false},
+    { path: "/weatherdas", component: <WeatherDashboard   /> , adminOnly: false},
+
 
     // { path: "/qrexport2", component: <Export /> , adminOnly: false},
 
