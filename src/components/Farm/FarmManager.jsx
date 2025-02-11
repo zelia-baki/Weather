@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axiosInstance from '../../axiosInstance'; // Import your Axios instance
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2'; // Import SweetAlert
+import Papa from 'papaparse'; // CSV Parser
 
 const FarmComponent = () => {
   const [farms, setFarms] = useState([]);
@@ -25,12 +26,48 @@ const FarmComponent = () => {
   const [farmerGroups, setFarmerGroups] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
+  const [csvFile, setCsvFile] = useState(null);
 
   useEffect(() => {
     fetchFarms(currentPage);
     fetchDistricts();
     fetchFarmerGroups();
   }, [currentPage]);
+
+  const handleFileChange = (event) => {
+    setCsvFile(event.target.files[0]);
+  };
+
+  const handleBulkUpload = async () => {
+    if (!csvFile) {
+      Swal.fire('Error!', 'Please select a CSV file.', 'error');
+      return;
+    }
+  
+    // Read CSV File
+    Papa.parse(csvFile, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (result) => {
+        console.log(result.data);
+        if (result.errors.length > 0) {
+          Swal.fire('Error!', 'Invalid CSV format.', 'error');
+          return;
+        }
+  
+        try {
+          await axiosInstance.post('/api/farm/bulk_create', result.data);
+          Swal.fire('Success!', 'Farmers uploaded successfully.', 'success');
+        } catch (error) {
+          console.error('Error uploading farmers:', error);
+          const errorMessage =
+            error.response?.data?.message || 'An error occurred while uploading farmers.';
+          Swal.fire('Error!', errorMessage, 'error');
+        }
+      },
+    });
+  };
+  
 
   const fetchFarms = async (page) => {
     try {
@@ -169,6 +206,14 @@ const FarmComponent = () => {
       >
         Create Farm
       </button>
+
+      {/* Bulk Upload Section */}
+      <div className="mb-4">
+        <input type="file" accept=".csv" onChange={handleFileChange} className="mb-2 border p-2 rounded" />
+        <button onClick={handleBulkUpload} className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+          Upload Farmers
+        </button>
+      </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
@@ -316,7 +361,7 @@ const FarmComponent = () => {
                     onChange={handleChange}
                     className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
-                  
+
                 </div>
 
                 <div className="mb-4">
