@@ -1,7 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { FaFeather } from "react-icons/fa";
+import { jwtDecode } from 'jwt-decode';
+
 
 const LandingPage = ({ children }) => {
+
+    const [userRole, setUserRole] = useState(null);
+    
+      useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const decodedToken = jwtDecode(token);
+          const role = decodedToken.sub?.user_type || '';
+          console.log(role);
+          setUserRole(role);
+        }
+      }, []);
+
     const [dropdownsVisible, setDropdownsVisible] = useState({
         forestDropdown: false,
         farmDropdown: false,
@@ -103,7 +118,7 @@ const LandingPage = ({ children }) => {
                                     </li>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/district" className="block w-full h-full">
-                                            District
+                                            District   mnmmmmmmmmmmmmm
                                         </a>
                                     </li>
                                 </ul>
