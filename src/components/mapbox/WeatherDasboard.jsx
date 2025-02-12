@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { Line } from 'react-chartjs-2';
 import axiosInstance from '../../axiosInstance.jsx';
+import { WiThermometer, WiThermometerExterior, WiHumidity, WiStrongWind, WiRain } from "react-icons/wi";
+import emailjs from 'emailjs-com';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -9,15 +11,14 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 const WeatherDashboard = () => {
     const [location, setLocation] = useState({ lat: 0, lon: 0 });
     const [weatherData, setWeatherData] = useState(null);
-    const [forecastData, setForecastData] = useState(null);
-    const [query, setQuery] = useState('');
     const [map, setMap] = useState(null);
     const [anomalyAlert, setAnomalyAlert] = useState(null);
     const [farms, setFarms] = useState([]);
-    const [selectedFarmId, setSelectedFarmId] = useState(''); // Added state for selected farm ID
-    const [weatherReport, setWeatherReport] = useState("");
+    const [selectedFarmId, setSelectedFarmId] = useState('');
+    const [forecastDays, setForecastDays] = useState([]);
+    const [query, setQuery] = useState('');
 
-
+    // Fetch farms list
     useEffect(() => {
         const fetchFarms = async () => {
             try {
@@ -31,22 +32,18 @@ const WeatherDashboard = () => {
         fetchFarms();
     }, []);
 
+    // Handle farm selection
     const handleFarmIdChange = async (e) => {
         const farm_id = e.target.value;
-        setSelectedFarmId(farm_id); // Update selected farm ID
-        console.log(farm_id);
+        setSelectedFarmId(farm_id);
         if (farm_id) {
             try {
                 const response = await axiosInstance.get(`/api/farm/${farm_id}`);
                 if (response.data.status === 'success') {
                     const geolocation = response.data.data.geolocation;
-                    console.log(geolocation);
                     if (geolocation && geolocation.includes(',')) {
                         const [longitude, latitude] = geolocation.split(',');
-                        setLocation({
-                            lat: parseFloat(latitude),
-                            lon: parseFloat(longitude)
-                        });
+                        setLocation({ lat: parseFloat(latitude), lon: parseFloat(longitude) });
                     }
                 }
             } catch (error) {
@@ -55,173 +52,212 @@ const WeatherDashboard = () => {
         }
     };
 
+    // Update map and fetch weather data when location changes
     useEffect(() => {
         if (location.lat && location.lon) {
-            console.log(location.lat, location.lon);
             fetchWeatherData(location.lat, location.lon);
             fetchForecastData(location.lat, location.lon);
 
-            // Update the map center when location changes
             if (map) {
                 map.flyTo({
                     center: [location.lat, location.lon],
                     zoom: 10,
-                    essential: true
+                    essential: true,
                 });
-
-                // Add marker at the new location
-                new mapboxgl.Marker()
-                    .setLngLat([location.lat, location.lon])
-                    .addTo(map);
+                new mapboxgl.Marker().setLngLat([location.lat, location.lon]).addTo(map);
             }
         }
     }, [location, map]);
 
+    // Fetch current weather data
     const fetchWeatherData = (lat, lon) => {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lon}&longitude=${lat}&hourly=temperature_2m,relative_humidity_2m,precipitation,et0_fao_evapotranspiration,shortwave_radiation,wind_speed_1000hPa&forecast_days=3`)
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lon}&longitude=${lat}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=3`)
             .then(response => response.json())
             .then(data => {
                 setWeatherData(data);
-                console.log(data.hourly);
             });
     };
 
+    // Fetch forecast data and generate forecast days array
     const fetchForecastData = (lat, lon) => {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lon}&longitude=${lat}&hourly=temperature_2m,relative_humidity_2m,precipitation,et0_fao_evapotranspiration,shortwave_radiation,wind_speed_1000hPa&forecast_days=3`)
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lon}&longitude=${lat}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=3`)
             .then(response => response.json())
             .then(data => {
-                console.log(data);
-                generateWeatherReport(data);
+                generateForecastDays(data);
+                detectAnomalies(data);
             });
     };
-    const generateWeatherReport = (data) => {
+
+    // Generate forecast days array from the API data
+    const generateForecastDays = (data) => {
         if (!data || !data.hourly || !data.hourly.time) {
-            setWeatherReport("Weather data unavailable.");
+            setForecastDays([]);
             return;
         }
 
-        let report = "Weather forecast for the next 3 days:\n\n";
-
+        const daysArray = [];
         for (let day = 0; day < 3; day++) {
-            const date = new Date();
-            date.setDate(date.getDate() + day);
-            const dayString = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-            const temps = [];
-            const humidities = [];
-            const precipitations = [];
-            const winds = [];
-
+            const currentDate = new Date();
+            currentDate.setDate(currentDate.getDate() + day);
+            const dayString = currentDate.toLocaleDateString('en-US', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long'
+            });
+            let temps = [], humidities = [], precipitations = [], winds = [];
             data.hourly.time.forEach((time, index) => {
                 const forecastDate = new Date(time);
-                if (forecastDate.getDate() === date.getDate()) {
+                if (forecastDate.getDate() === currentDate.getDate()) {
                     temps.push(data.hourly.temperature_2m[index]);
                     humidities.push(data.hourly.relative_humidity_2m[index]);
                     precipitations.push(data.hourly.precipitation[index]);
                     winds.push(data.hourly.wind_speed_1000hPa[index]);
                 }
             });
-
             if (temps.length === 0) continue;
-
             const avgTemp = (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1);
-            const maxTemp = Math.max(...temps).toFixed(1);
             const minTemp = Math.min(...temps).toFixed(1);
+            const maxTemp = Math.max(...temps).toFixed(1);
             const avgHumidity = (humidities.reduce((a, b) => a + b, 0) / humidities.length).toFixed(1);
             const totalPrecipitation = precipitations.reduce((a, b) => a + b, 0).toFixed(1);
             const avgWind = (winds.reduce((a, b) => a + b, 0) / winds.length).toFixed(1);
-            
-            report += `📅 **${dayString}** :\n`;
-            report += `🌡 Average Temperature: ${avgTemp}°C (Min: ${minTemp}°C, Max: ${maxTemp}°C)\n`;
-            report += `💧 Average Humidity: ${avgHumidity}%\n`;
-            report += `🌬 Wind Speed: ${avgWind} km/h\n`;
-            if (totalPrecipitation > 0) {
-                report += `🌧 Expected Precipitation: ${totalPrecipitation} mm\n`;
-            } else {
-                report += `☀ No precipitation expected\n`;
-            }
-            
-            // Qualitative analysis
+            let forecastComment = "";
             if (totalPrecipitation > 10) {
-                report += `🌧 **Forecast:** Heavy rain expected, don't forget your umbrella!\n\n`;
+                forecastComment = "Heavy rain expected, don't forget your umbrella!";
             } else if (avgTemp > 30) {
-                report += `🔥 **Forecast:** Hot day ahead, stay hydrated.\n\n`;
+                forecastComment = "Hot day ahead, stay hydrated.";
             } else if (avgTemp < 10) {
-                report += `❄ **Forecast:** Cold weather, dress warmly.\n\n`;
+                forecastComment = "Cold weather, dress warmly.";
             } else {
-                report += `🌤 **Forecast:** Pleasant weather with stable conditions.\n\n`;
+                forecastComment = "Pleasant weather with stable conditions.";
             }
-            
-        }
-
-        setWeatherReport(report);
-        console.log(report);
-    };
-
-    const detectAnomalies = (data) => {
-        const thresholdLow = 10;
-        const thresholdHigh = 30;
-
-        if (data && data.hourly && data.hourly.time) {
-            const twoDaysForecast = data.hourly.time.filter((_, index) => {
-                const date = new Date(data.hourly.time[index]);
-                return date.getHours() === 12 && date.getDate() === new Date().getDate() + 2;
+            daysArray.push({
+                day: dayString,
+                avgTemp,
+                minTemp,
+                maxTemp,
+                avgHumidity,
+                totalPrecipitation,
+                avgWind,
+                forecastComment
             });
+        }
+        setForecastDays(daysArray);
+    };
 
-            if (twoDaysForecast.length > 0) {
-                const temp = data.hourly.temperature_2m[twoDaysForecast[0]];
-                if (temp < thresholdLow || temp > thresholdHigh) {
-                    setAnomalyAlert(`Anomaly detected: Temperature forecast for 2 days later is ${temp.toFixed(1)}°C. Caution!`);
-                } else {
-                    setAnomalyAlert(null);
-                }
+    // Detect anomalies and send an email alert via EmailJS
+    const detectAnomalies = (data) => {
+        const tempThresholdLow = 10;
+        const tempThresholdHigh = 30;
+        const drynessHumidityThreshold = 30;
+        const heavyRainThreshold = 5;
+        const strongWindThreshold = 20;
+
+        if (!data || !data.hourly || !data.hourly.time) return;
+
+        let anomalies = [];
+        data.hourly.time.forEach((time, index) => {
+            const forecastDate = new Date(time);
+            const temperature = data.hourly.temperature_2m[index];
+            const humidity = data.hourly.relative_humidity_2m[index];
+            const precipitation = data.hourly.precipitation[index];
+            const windSpeed = data.hourly.wind_speed_1000hPa[index];
+
+            let hourAnomalies = [];
+            if (temperature < tempThresholdLow) {
+                hourAnomalies.push(`low temperature (${temperature.toFixed(1)}°C)`);
+            } else if (temperature > tempThresholdHigh) {
+                hourAnomalies.push(`high temperature (${temperature.toFixed(1)}°C)`);
             }
+            if (humidity < drynessHumidityThreshold) {
+                hourAnomalies.push(`dry conditions (humidity ${humidity.toFixed(1)}%)`);
+            }
+            if (precipitation > heavyRainThreshold) {
+                hourAnomalies.push(`heavy rain (${precipitation.toFixed(1)} mm)`);
+            }
+            if (windSpeed > strongWindThreshold) {
+                hourAnomalies.push(`strong wind (${windSpeed.toFixed(1)} km/h)`);
+            }
+            if (hourAnomalies.length > 0) {
+                const timeStr = forecastDate.toLocaleString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+                anomalies.push(`At ${timeStr} on ${forecastDate.toLocaleDateString('en-US')}: ${hourAnomalies.join(', ')}`);
+            }
+        });
+        if (anomalies.length > 0) {
+            const alertMessage = `⚠️ Alert: Anomalies detected:\n${anomalies.join('\n')}`;
+            setAnomalyAlert(alertMessage);
+            sendEmailAlert(alertMessage);
+        } else {
+            setAnomalyAlert(null);
         }
     };
 
+    // Send email alert using EmailJS
+    const sendEmailAlert = (message) => {
+        const selectedFarm = farms.find((farm) => farm.id === selectedFarmId);
+        const recipientEmail = selectedFarm && selectedFarm.email ? selectedFarm.email : 'default@example.com';
+
+        const templateParams = {
+            to_name: selectedFarm ? selectedFarm.name : 'Farmer',
+            farmer_email: recipientEmail,
+            message: message,
+        };
+
+        emailjs
+            .send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams, 'YOUR_USER_ID')
+            .then((response) => {
+                console.log('Email sent successfully!', response.status, response.text);
+            })
+            .catch((error) => {
+                console.error('Failed to send email:', error);
+            });
+    };
+
+    // Initialize Mapbox map
     useEffect(() => {
         mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
         const newMap = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
             center: [0, 0],
-            zoom: 2
+            zoom: 2,
         });
 
         newMap.on('click', (e) => {
             setLocation({
                 lat: e.lngLat.lat,
-                lon: e.lngLat.lng
+                lon: e.lngLat.lng,
             });
         });
 
         setMap(newMap);
-
         return () => newMap.remove();
     }, []);
 
+    // Handle search using Mapbox (optional)
     const handleSearch = () => {
         if (query) {
             fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`)
-                .then(response => response.json())
-                .then(data => {
+                .then((response) => response.json())
+                .then((data) => {
                     if (data.features && data.features.length > 0) {
                         const { center } = data.features[0];
                         const [lon, lat] = center;
                         setLocation({ lat, lon });
                         map.flyTo({ center: [lon, lat], zoom: 10 });
-
-                        // Add marker on search location
-                        new mapboxgl.Marker()
-                            .setLngLat([lon, lat])
-                            .addTo(map);
+                        new mapboxgl.Marker().setLngLat([lon, lat]).addTo(map);
                     }
                 });
         }
     };
 
+    // Configure chart data
     const weatherChartData = {
-        labels: ['8h', '10h', '12h', '14h', '16h', '18h'],
+        labels: ['8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM'],
         datasets: [
             {
                 label: 'Temperature (°C)',
@@ -239,54 +275,129 @@ const WeatherDashboard = () => {
     };
 
     return (
-        <div className="flex">
+        <div className="min-h-screen bg-white-50 p-6">
+            <div className="container mx-auto">
+                <header className="mb-8">
+                    <h1 className="text-4xl font-bold text-gray-800">Anomaly Alert Detection</h1>
+                    {/* <p className="mt-2 text-gray-600">Simple an.</p> */}
+                </header>
 
+                {/* Farm selection */}
+                <section className="mb-8">
+                    <div className="bg-white rounded-lg shadow p-6">
+                        <label className="block text-gray-700 mb-2" htmlFor="farm_id">
+                            Farm ID:
+                        </label>
+                        <select
+                            id="farm_id"
+                            name="farm_id"
+                            value={selectedFarmId}
+                            onChange={handleFarmIdChange}
+                            className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            required
+                        >
+                            <option value="">Select Farm</option>
+                            {farms.map((farm) => (
+                                <option key={farm.id} value={farm.id}>
+                                    {farm.name} - {farm.subcounty}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </section>
 
-            <div className="flex-1 p-6">
-
-                <div className="mb-6">
-                    <label className="text-lg text-gray-800 mb-2 block" htmlFor="farm_id">
-                        Farm ID:
-                    </label>
-                    <select
-                        id="farm_id"
-                        name="farm_id"
-                        value={selectedFarmId} // Bind to selectedFarmId state
-                        onChange={handleFarmIdChange}
-                        className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                        required
-                    >
-                        <option value="">Select Farm</option>
-                        {farms.map(farm => (
-                            <option key={farm.id} value={farm.id}>
-                                {farm.name} - {farm.subcounty}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="col-span-1">
+                {/* Main content: Map & Forecast Cards */}
+                <section className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Map (spanning 2 columns on large screens) */}
+                    <div className="lg:col-span-2 rounded-lg shadow overflow-hidden">
                         <div id="map" className="h-96"></div>
                     </div>
 
-                    <div className="col-span-1 h-100">
-                        <h1 className="text-2xl font-bold mb-4">Weather Forecast (3 Days)</h1>
+                    {/* Forecast Cards */}
+                    <div className="bg-white rounded-lg shadow p-6">
+                        <h2 className="text-2xl font-bold mb-4">3-Day Forecast</h2>
+                        {forecastDays.length > 0 ? (
+                            <div className="space-y-4">
+                                {forecastDays.map((day, index) => (
+                                    <div key={index} className="p-4 border rounded hover:shadow-lg transition-shadow duration-200">
+                                        <h3 className="text-xl font-semibold mb-2">{day.day}</h3>
+                                        <div className="text-gray-700 space-y-2">
+                                            {/* Avg Temp */}
+                                            <div className="flex items-center">
+                                                <WiThermometer className="text-blue-500 w-5 h-5 mr-2" />
+                                                <p>Avg Temp: {day.avgTemp}°C</p>
+                                            </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <pre>{weatherReport}</pre>
-                        </div>
+                                            {/* Min/Max Temp */}
+                                            <div className="flex items-center">
+                                                <WiThermometerExterior className="text-orange-500 w-5 h-5 mr-2" />
+                                                <p>Min: {day.minTemp}°C, Max: {day.maxTemp}°C</p>
+                                            </div>
+
+                                            {/* Humidity */}
+                                            <div className="flex items-center">
+                                                <WiHumidity className="text-teal-500 w-5 h-5 mr-2" />
+                                                <p>Humidity: {day.avgHumidity}%</p>
+                                            </div>
+
+                                            {/* Wind */}
+                                            <div className="flex items-center">
+                                                <WiStrongWind className="text-gray-500 w-5 h-5 mr-2" />
+                                                <p>Wind: {day.avgWind} km/h</p>
+                                            </div>
+
+                                            {/* Precipitation */}
+                                            <div className="flex items-center">
+                                                <WiRain className="text-blue-700 w-5 h-5 mr-2" />
+                                                <p>Precipitation: {day.totalPrecipitation} mm</p>
+                                            </div>
+                                        </div>
+
+                                        <p className="mt-2 text-blue-600 font-medium">{day.forecastComment}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-600">No forecast available.</p>
+                        )}
                     </div>
+                </section>
 
-
-                    <div className="col-span-1">
+                {/* Weather Chart */}
+                <section className="mb-8">
+                    <div className="bg-white rounded-lg shadow p-6">
+                        <h2 className="text-2xl font-bold mb-4">Weather Chart</h2>
                         <Line data={weatherChartData} />
                     </div>
+                </section>
 
-                </div>
+                {/* Anomaly Alert */}
+                {anomalyAlert && (
+                    <section className="mb-8">
+                        <div className="flex items-start bg-red-50 border-l-4 border-red-500 p-6 rounded-lg shadow-md">
+                            {/* Exclamation Icon */}
+                            <svg
+                                className="w-6 h-6 text-red-500 mr-4 flex-shrink-0"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    fillRule="evenodd"
+                                    d="M8.257 3.099c.765-1.36 2.675-1.36 3.44 0l6.518 11.59c.75 1.334-.213 3.011-1.72 3.011H3.459c-1.507 0-2.47-1.677-1.72-3.011l6.518-11.59zM11 13a1 1 0 10-2 0 1 1 0 002 0zm-1-2a.75.75 0 01-.75-.75V7a.75.75 0 011.5 0v3.25A.75.75 0 0110 11z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
+                            {/* Alert Content */}
+                            <div>
+                                <h3 className="font-bold text-xl text-red-600 mb-1">Alert</h3>
+                                <p className="text-red-700 text-sm whitespace-pre-wrap">{anomalyAlert}</p>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
             </div>
         </div>
     );
 };
-
 export default WeatherDashboard;
