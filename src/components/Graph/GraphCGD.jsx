@@ -18,7 +18,7 @@ const DegreeDaysPage = () => {
 
   // Function to fetch the city, province, and country name using Mapbox reverse geocoding
   const fetchCityProvinceCountry = async (lat, lon) => {
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${mapboxToken}&language=fr`;
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${mapboxToken}&language=EN`;
 
     try {
       const response = await fetch(url);
