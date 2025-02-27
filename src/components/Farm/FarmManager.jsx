@@ -281,7 +281,7 @@ const FarmComponent = () => {
                     value={formData.parishe}
                     onChange={handleChange}
                     className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
+                    
                   />
                 </div>
 
@@ -295,7 +295,7 @@ const FarmComponent = () => {
                     value={formData.district_id}
                     onChange={handleChange}
                     className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
+                    
                   >
                     <option value="">Select District</option>
                     {districts.map((district) => (
