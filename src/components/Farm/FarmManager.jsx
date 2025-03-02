@@ -6,6 +6,8 @@ import Papa from 'papaparse'; // CSV Parser
 
 const FarmComponent = () => {
   const [farms, setFarms] = useState([]);
+  const [countriesList, setCountriesList] = useState([]);
+
   const [formData, setFormData] = useState({
     name: '',
     subcounty: '',
@@ -32,6 +34,7 @@ const FarmComponent = () => {
     fetchFarms(currentPage);
     fetchDistricts();
     fetchFarmerGroups();
+    fetchCountryList(); // Fetch country list
   }, [currentPage]);
 
   const handleFileChange = (event) => {
@@ -43,7 +46,7 @@ const FarmComponent = () => {
       Swal.fire('Error!', 'Please select a CSV file.', 'error');
       return;
     }
-  
+
     // Read CSV File
     Papa.parse(csvFile, {
       header: true,
@@ -54,7 +57,7 @@ const FarmComponent = () => {
           Swal.fire('Error!', 'Invalid CSV format.', 'error');
           return;
         }
-  
+
         try {
           await axiosInstance.post('/api/farm/bulk_create', result.data);
           Swal.fire('Success!', 'Farmers uploaded successfully.', 'success');
@@ -67,7 +70,7 @@ const FarmComponent = () => {
       },
     });
   };
-  
+
 
   const fetchFarms = async (page) => {
     try {
@@ -188,6 +191,14 @@ const FarmComponent = () => {
       setCurrentPage(page);
     }
   };
+  const fetchCountryList = async () => {
+    try {
+      const response = await axiosInstance.get('/api/pays/');
+      setCountriesList(response.data.pays);
+    } catch (error) {
+      console.error("Error fetching country data:", error);
+    }
+  };
 
   return (
     <div className="p-6 bg-white shadow-md rounded-lg">
@@ -238,22 +249,25 @@ const FarmComponent = () => {
                     required
                   />
                 </div>
-
-                <div className="mb-4">
-                  <label htmlFor="subcounty" className="block text-gray-600 font-medium mb-2">
-                    Subcounty
-                  </label>
-                  <input
-                    id="subcounty"
-                    type="text"
+                <div>
+                  <label htmlFor="subcounty">Destination Country:</label>
+                  <select
                     name="subcounty"
-                    placeholder="Enter Subcounty"
                     value={formData.subcounty}
                     onChange={handleChange}
-                    className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full p-2 border rounded-md shadow-sm"
                     required
-                  />
+                  >
+                    <option value="">Select Country</option>
+                    {countriesList.map((country) => (
+                      <option key={country.nom_en_gb} value={country.nom_en_gb}>
+                        {country.nom_en_gb} / {country.nom_fr_fr}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+                
 
                 <div className="mb-4">
                   <label htmlFor="parishe" className="block text-gray-600 font-medium mb-2">
@@ -267,7 +281,7 @@ const FarmComponent = () => {
                     value={formData.parishe}
                     onChange={handleChange}
                     className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
+                    
                   />
                 </div>
 
@@ -281,7 +295,7 @@ const FarmComponent = () => {
                     value={formData.district_id}
                     onChange={handleChange}
                     className="border border-green-400 p-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-green-500"
-                    required
+                    
                   >
                     <option value="">Select District</option>
                     {districts.map((district) => (
