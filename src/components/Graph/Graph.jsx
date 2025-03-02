@@ -3,6 +3,7 @@ import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS } from 'chart.js/auto';
 import axios from 'axios';
 import { FiInfo } from 'react-icons/fi'; // Importing an info icon
+import { WiThermometer, WiThermometerExterior, WiHumidity, WiStrongWind, WiRain } from 'react-icons/wi'; // Importing weather icons
 
 function Graph() {
   const [latitude, setLatitude] = useState('');
@@ -20,7 +21,7 @@ function Graph() {
 
       const hourlyData = response.data.hourly;
       const dailyData = Array.from({ length: 10 }).map((_, i) => ({
-        date: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
+        date: new Date(Date.now() + i * 24 * 60 * 60 * 1000), // Ensure this is a valid Date object
         temperature: hourlyData.temperature_2m.slice(i * 24, (i + 1) * 24).reduce((a, b) => a + b, 0) / 24,
         humidity: hourlyData.relative_humidity_2m.slice(i * 24, (i + 1) * 24).reduce((a, b) => a + b, 0) / 24,
         windSpeed: hourlyData.wind_speed_1000hPa.slice(i * 24, (i + 1) * 24).reduce((a, b) => a + b, 0) / 24,
@@ -53,10 +54,22 @@ function Graph() {
   const handleSearch = () => {
     fetchWeatherData();
     fetchLocationData(); // Fetch location data when searching
-
   };
 
-  const weatherLabels = weatherData.map((item) => item.date.toLocaleDateString());
+  // Format data for the 10-day forecast
+  const forecastDays = weatherData.map((day, index) => ({
+    day: day.date.toLocaleDateString('en-US', { weekday: 'long' }),
+    date: day.date, // Ensure this is a valid Date object
+    avgTemp: day.temperature.toFixed(1),
+    minTemp: (day.temperature - 5).toFixed(1), // Example calculation for min temp
+    maxTemp: (day.temperature + 5).toFixed(1), // Example calculation for max temp
+    avgHumidity: day.humidity.toFixed(1),
+    avgWind: day.windSpeed.toFixed(1),
+    totalPrecipitation: day.precipitation.toFixed(1),
+    forecastComment: `Expect ${day.precipitation > 5 ? 'rain' : 'clear skies'}.`, // Example comment
+  }));
+
+  const weatherLabels = weatherData.map((item) => item.date.toLocaleDateString('en-US'));
   const weatherTemperatures = weatherData.map((item) => item.temperature);
   const weatherHumidities = weatherData.map((item) => item.humidity);
   const weatherWindSpeeds = weatherData.map((item) => item.windSpeed);
@@ -151,8 +164,9 @@ function Graph() {
               Search
             </button>
           </div>
-                {/* Display Location */}
-                <div className="mb-6">
+
+          {/* Display Location */}
+          <div className="mb-6">
             <p className="font-semibold text-gray-700">Location: {city}, {province}, {country} </p>
           </div>
 
@@ -164,9 +178,63 @@ function Graph() {
             </p>
           </div>
 
-          {/* Display the chart */}
-          <div className="mt-6">
-            <Line data={chartData} options={options} />
+          {/* Main Content: Forecast and Chart Side by Side */}
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* 10-Day Forecast Section */}
+            <div className="bg-white rounded-lg shadow p-4 w-full md:w-1/3 overflow-y-auto max-h-[400px]">
+              <h2 className="text-xl font-semibold mb-3">10-Day Forecast</h2>
+              {forecastDays.length > 0 ? (
+                <div className="space-y-3">
+                  {forecastDays.map((day, index) => (
+                    <div key={index} className="p-3 border rounded hover:shadow-md transition-shadow duration-200">
+                      <h3 className="text-lg font-normal mb-1">
+                        {day.day} - {day.date instanceof Date ? day.date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : 'Invalid Date'}
+                      </h3>
+                      <div className="text-gray-600 space-y-1">
+                        {/* Avg Temp */}
+                        <div className="flex items-center">
+                          <WiThermometer className="text-blue-500 w-4 h-4 mr-2" />
+                          <p className="text-sm">Avg Temp: {day.avgTemp}°C</p>
+                        </div>
+
+                        {/* Min/Max Temp */}
+                        <div className="flex items-center">
+                          <WiThermometerExterior className="text-orange-500 w-4 h-4 mr-2" />
+                          <p className="text-sm">Min: {day.minTemp}°C, Max: {day.maxTemp}°C</p>
+                        </div>
+
+                        {/* Humidity */}
+                        <div className="flex items-center">
+                          <WiHumidity className="text-teal-500 w-4 h-4 mr-2" />
+                          <p className="text-sm">Humidity: {day.avgHumidity}%</p>
+                        </div>
+
+                        {/* Wind */}
+                        <div className="flex items-center">
+                          <WiStrongWind className="text-gray-500 w-4 h-4 mr-2" />
+                          <p className="text-sm">Wind: {day.avgWind} km/h</p>
+                        </div>
+
+                        {/* Precipitation */}
+                        <div className="flex items-center">
+                          <WiRain className="text-blue-700 w-4 h-4 mr-2" />
+                          <p className="text-sm">Precipitation: {day.totalPrecipitation} mm</p>
+                        </div>
+                      </div>
+
+                      <p className="mt-1 text-blue-500 text-sm">{day.forecastComment}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No forecast available.</p>
+              )}
+            </div>
+
+            {/* Display the chart */}
+            <div className="bg-white rounded-lg shadow p-6 w-full md:w-2/3">
+              <Line data={chartData} options={options} />
+            </div>
           </div>
         </div>
       </div>
