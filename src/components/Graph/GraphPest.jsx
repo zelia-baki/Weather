@@ -109,7 +109,7 @@ const DegreeDaysPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto mt-10 p-4">
-      <h3 className="text-5xl font-bold text-teal-700 mb-8">Growing Degree Days (GDD)</h3>
+      <h3 className="text-5xl font-bold text-teal-700 mb-8">Growing Degree Days (GDD) For Pest</h3>
       
       {/* Data Input Section */}
       <div className="bg-gray-100 p-6 rounded-lg shadow-md mb-8">
