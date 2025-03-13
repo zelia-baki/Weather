@@ -57,13 +57,14 @@ import CarbonReportForest from './components/gfw/CarbonReportForest.jsx';
 import StoreProductManager from './components/store/StoreProductManager.jsx'; 
 import Onemonth from './components/Graph/Cgd1mois.jsx'
 import Threemonth from './components/Graph/Cgdthree.jsx';
-
+import GraphPest from './components/Graph/GraphPest.jsx';
 
 
 
 function App() {
   const layoutRoutes = [
     { path: "/graph", component: <Graph /> , adminOnly: false},
+    { path: "/graphpest", component: <GraphPest /> , adminOnly: false},
     { path: "/card", component: <Card /> , adminOnly: false},
     { path: "/mapbox", component: <MapboxExample /> , adminOnly: false},
     { path: "/tabcrop", component: <Tabcrop /> , adminOnly: false},
