@@ -17,8 +17,9 @@ const WeatherDashboard = () => {
     const [selectedFarmId, setSelectedFarmId] = useState('');
     const [forecastDays, setForecastDays] = useState([]);
     const [query, setQuery] = useState('');
+    const [forecastRange, setForecastRange] = useState(3); // Nouvel état pour la plage de prévision
 
-    // Fetch farms list
+    // Récupération de la liste des fermes
     useEffect(() => {
         const fetchFarms = async () => {
             try {
@@ -32,7 +33,7 @@ const WeatherDashboard = () => {
         fetchFarms();
     }, []);
 
-    // Handle farm selection
+    // Sélection d'une ferme
     const handleFarmIdChange = async (e) => {
         const farm_id = e.target.value;
         setSelectedFarmId(farm_id);
@@ -52,7 +53,7 @@ const WeatherDashboard = () => {
         }
     };
 
-    // Update map and fetch weather data when location changes
+    // Mise à jour de la map et récupération des données lorsque la localisation ou la plage de prévision change
     useEffect(() => {
         if (location.lat && location.lon) {
             fetchWeatherData(location.lat, location.lon);
@@ -67,20 +68,20 @@ const WeatherDashboard = () => {
                 new mapboxgl.Marker().setLngLat([location.lat, location.lon]).addTo(map);
             }
         }
-    }, [location, map]);
+    }, [location, map, forecastRange]);
 
-    // Fetch current weather data
+    // Récupération des données météo actuelles
     const fetchWeatherData = (lat, lon) => {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lon}&longitude=${lat}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=3`)
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lon}&longitude=${lat}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=${forecastRange}`)
             .then(response => response.json())
             .then(data => {
                 setWeatherData(data);
             });
     };
 
-    // Fetch forecast data and generate forecast days array
+    // Récupération des données de prévision et génération du tableau des jours
     const fetchForecastData = (lat, lon) => {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lon}&longitude=${lat}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=3`)
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lon}&longitude=${lat}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=${forecastRange}`)
             .then(response => response.json())
             .then(data => {
                 generateForecastDays(data);
@@ -88,7 +89,7 @@ const WeatherDashboard = () => {
             });
     };
 
-    // Generate forecast days array from the API data
+    // Génération du tableau des jours de prévision
     const generateForecastDays = (data) => {
         if (!data || !data.hourly || !data.hourly.time) {
             setForecastDays([]);
@@ -96,7 +97,7 @@ const WeatherDashboard = () => {
         }
 
         const daysArray = [];
-        for (let day = 0; day < 3; day++) {
+        for (let day = 0; day < forecastRange; day++) {
             const currentDate = new Date();
             currentDate.setDate(currentDate.getDate() + day);
             const dayString = currentDate.toLocaleDateString('en-US', {
@@ -145,7 +146,7 @@ const WeatherDashboard = () => {
         setForecastDays(daysArray);
     };
 
-    // Detect anomalies and send an email alert via EmailJS
+    // Détection des anomalies et envoi d'une alerte par EmailJS
     const detectAnomalies = (data) => {
         const tempThresholdLow = 10;
         const tempThresholdHigh = 30;
@@ -196,7 +197,7 @@ const WeatherDashboard = () => {
         }
     };
 
-    // Send email alert using EmailJS
+    // Envoi de l'alerte par EmailJS
     const sendEmailAlert = (message) => {
         const selectedFarm = farms.find((farm) => farm.id === selectedFarmId);
         const recipientEmail = selectedFarm && selectedFarm.email ? selectedFarm.email : 'default@example.com';
@@ -217,7 +218,7 @@ const WeatherDashboard = () => {
             });
     };
 
-    // Initialize Mapbox map
+    // Initialisation de la map Mapbox
     useEffect(() => {
         mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
         const newMap = new mapboxgl.Map({
@@ -238,7 +239,7 @@ const WeatherDashboard = () => {
         return () => newMap.remove();
     }, []);
 
-    // Handle search using Mapbox (optional)
+    // Recherche via Mapbox (optionnel)
     const handleSearch = () => {
         if (query) {
             fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`)
@@ -255,7 +256,7 @@ const WeatherDashboard = () => {
         }
     };
 
-    // Configure chart data
+    // Configuration des données pour le graphique météo
     const weatherChartData = {
         labels: ['8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM'],
         datasets: [
@@ -279,10 +280,9 @@ const WeatherDashboard = () => {
             <div className="container mx-auto">
                 <header className="mb-8">
                     <h1 className="text-4xl font-bold text-gray-800">Anomaly Alert Detection</h1>
-                    {/* <p className="mt-2 text-gray-600">Simple an.</p> */}
                 </header>
 
-                {/* Farm selection */}
+                {/* Sélection de la ferme */}
                 <section className="mb-8">
                     <div className="bg-white rounded-lg shadow p-6">
                         <label className="block text-gray-700 mb-2" htmlFor="farm_id">
@@ -306,47 +306,67 @@ const WeatherDashboard = () => {
                     </div>
                 </section>
 
-                {/* Main content: Map & Forecast Cards */}
+                {/* Dropdown pour sélectionner la plage de prévision */}
+        {/* Dropdown pour sélectionner la plage de prévision */}
+<section className="mb-8">
+  <div className="bg-white rounded-lg shadow-md p-6 flex items-center space-x-4">
+    <label htmlFor="forecastRange" className="text-lg font-semibold text-gray-700">
+      Forecast Range:
+    </label>
+    <select
+      id="forecastRange"
+      value={forecastRange}
+      onChange={(e) => setForecastRange(parseInt(e.target.value))}
+      className="block w-full max-w-xs py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 ease-in-out"
+    >
+      <option value={3}>3-Day Forecast</option>
+      <option value={10}>10-Day Forecast</option>
+    </select>
+  </div>
+</section>
+
+
+                {/* Contenu principal : Map et cartes de prévision */}
                 <section className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Map (spanning 2 columns on large screens) */}
+                    {/* Map (occupant 2 colonnes sur grand écran) */}
                     <div className="lg:col-span-2 rounded-lg shadow overflow-hidden">
                         <div id="map" className="h-96"></div>
                     </div>
 
-                    {/* Forecast Cards */}
+                    {/* Cartes de prévision */}
                     <div className="bg-white rounded-lg shadow p-6">
-                        <h2 className="text-2xl font-bold mb-4">3-Day Forecast</h2>
+                        <h2 className="text-2xl font-bold mb-4">{forecastRange}-Day Forecast</h2>
                         {forecastDays.length > 0 ? (
                             <div className="space-y-4">
                                 {forecastDays.map((day, index) => (
                                     <div key={index} className="p-4 border rounded hover:shadow-lg transition-shadow duration-200">
                                         <h3 className="text-xl font-semibold mb-2">{day.day}</h3>
                                         <div className="text-gray-700 space-y-2">
-                                            {/* Avg Temp */}
+                                            {/* Température moyenne */}
                                             <div className="flex items-center">
                                                 <WiThermometer className="text-blue-500 w-5 h-5 mr-2" />
                                                 <p>Avg Temp: {day.avgTemp}°C</p>
                                             </div>
 
-                                            {/* Min/Max Temp */}
+                                            {/* Température min/max */}
                                             <div className="flex items-center">
                                                 <WiThermometerExterior className="text-orange-500 w-5 h-5 mr-2" />
                                                 <p>Min: {day.minTemp}°C, Max: {day.maxTemp}°C</p>
                                             </div>
 
-                                            {/* Humidity */}
+                                            {/* Humidité */}
                                             <div className="flex items-center">
                                                 <WiHumidity className="text-teal-500 w-5 h-5 mr-2" />
                                                 <p>Humidity: {day.avgHumidity}%</p>
                                             </div>
 
-                                            {/* Wind */}
+                                            {/* Vent */}
                                             <div className="flex items-center">
                                                 <WiStrongWind className="text-gray-500 w-5 h-5 mr-2" />
                                                 <p>Wind: {day.avgWind} km/h</p>
                                             </div>
 
-                                            {/* Precipitation */}
+                                            {/* Précipitations */}
                                             <div className="flex items-center">
                                                 <WiRain className="text-blue-700 w-5 h-5 mr-2" />
                                                 <p>Precipitation: {day.totalPrecipitation} mm</p>
@@ -363,7 +383,7 @@ const WeatherDashboard = () => {
                     </div>
                 </section>
 
-                {/* Weather Chart */}
+                {/* Graphique météo */}
                 <section className="mb-8">
                     <div className="bg-white rounded-lg shadow p-6">
                         <h2 className="text-2xl font-bold mb-4">Weather Chart</h2>
@@ -371,11 +391,10 @@ const WeatherDashboard = () => {
                     </div>
                 </section>
 
-                {/* Anomaly Alert */}
+                {/* Alerte d'anomalie */}
                 {anomalyAlert && (
                     <section className="mb-8">
                         <div className="flex items-start bg-red-50 border-l-4 border-red-500 p-6 rounded-lg shadow-md">
-                            {/* Exclamation Icon */}
                             <svg
                                 className="w-6 h-6 text-red-500 mr-4 flex-shrink-0"
                                 fill="currentColor"
@@ -387,7 +406,6 @@ const WeatherDashboard = () => {
                                     clipRule="evenodd"
                                 />
                             </svg>
-                            {/* Alert Content */}
                             <div>
                                 <h3 className="font-bold text-xl text-red-600 mb-1">Alert</h3>
                                 <p className="text-red-700 text-sm whitespace-pre-wrap">{anomalyAlert}</p>
@@ -395,7 +413,6 @@ const WeatherDashboard = () => {
                         </div>
                     </section>
                 )}
-
             </div>
         </div>
     );
