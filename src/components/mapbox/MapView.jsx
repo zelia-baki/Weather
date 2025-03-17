@@ -15,6 +15,8 @@ const MapboxExample = () => {
   const geolocation = location.state?.geolocation;
   let longitude = "32.5825"; // Default longitude for Kampala, Uganda
   let latitude = "0.3476";   // Default latitude for Kampala, Uganda
+  const [treeCount, setTreeCount] = useState(null);
+
 
   if (geolocation && geolocation.includes(',')) {
     [longitude, latitude] = geolocation.split(',');
@@ -139,7 +141,7 @@ const MapboxExample = () => {
           // Calculate the area of the polygon
           const area = turf.area(geojson.features[0]);
           setArea(Math.round(area * 100) / 100); // Round area to 2 decimal places
-
+          setTreeCount(Math.round(area / 4));
           // Calculate the centroid and add a marker
           const centroid = turf.centroid(geojson.features[0]);
           const centroidMarker = new mapboxgl.Marker({ color: 'red' })
@@ -200,7 +202,7 @@ const MapboxExample = () => {
             <div className="rounded-full bg-slate-700 h-10 w-10"></div>
             <div className="mt-4">
               <h3 className="text-lg font-semibold">Additional Information</h3>
-              <p>This is where you can add more details related to the map or your application.</p>
+              <p><strong>Estimated Trees:</strong> {treeCount ? treeCount : 'Calculating...'}</p>
             </div>
           </div>
         </div>
