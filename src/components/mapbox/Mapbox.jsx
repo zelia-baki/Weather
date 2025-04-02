@@ -13,7 +13,7 @@ import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 const MapboxExample = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
-  const drawRef = useRef(); // Add a ref to keep track of MapboxDraw
+  const drawRef = useRef();
   const location = useLocation(); 
   const owner_id = location.state?.owner_id;
   const geolocation = location.state?.geolocation;
@@ -24,23 +24,23 @@ const MapboxExample = () => {
   const [notification, setNotification] = useState(null);
   const [newCoordinate, setNewCoordinate] = useState({ lng: "", lat: "" });
   
-  let longitude = "32.5825"; // Default longitude for Kampala, Uganda
-    let latitude = "0.3476";   // Default latitude for Kampala, Uganda
+  let longitude = "32.5825";
+  let latitude = "0.3476";
 
-    if (geolocation && geolocation.includes(',')) {
-      [longitude, latitude] = geolocation.split(',');
-    }
-
+  if (geolocation && geolocation.includes(',')) {
+    [longitude, latitude] = geolocation.split(',');
+  }
 
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
 
-    mapRef.current = new mapboxgl.Map({
+    const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/satellite-v9",
-      center: [latitude, longitude],
+      center: [longitude, latitude],
       zoom: 8,
     });
+    mapRef.current = map;
 
     const draw = new MapboxDraw({
       displayControlsDefault: false,
@@ -50,9 +50,8 @@ const MapboxExample = () => {
       },
       defaultMode: "draw_polygon",
     });
-
-    mapRef.current.addControl(draw);
-    drawRef.current = draw; // Store draw instance in the ref
+    map.addControl(draw);
+    drawRef.current = draw;
 
     const coordinatesGeocoder = (query) => {
       const matches = query.match(
@@ -140,12 +139,11 @@ const MapboxExample = () => {
   }, [owner_id]);
 
   // Update the polygon on the map with new coordinates
-  const updatePolygon = (newCoords) => {
+const updatePolygon = (newCoords) => {
     const draw = drawRef.current;
     const existingPolygon = draw.getAll();
 
     if (existingPolygon.features.length > 0) {
-      // Update existing polygon's coordinates
       draw.delete(existingPolygon.features[0].id);
     }
 
@@ -159,6 +157,7 @@ const MapboxExample = () => {
   };
 
   // Handle adding new coordinates to the polygon
+
   const handleAddCoordinate = () => {
     const { lng, lat } = newCoordinate;
     if (!lng || !lat) {
@@ -169,25 +168,68 @@ const MapboxExample = () => {
     const newCoord = [parseFloat(lng), parseFloat(lat)];
 
     setPolygonCoordinates((prevCoords) => {
-      const updatedCoords = [...prevCoords];
-      if (updatedCoords.length > 0) {
-        updatedCoords[0].push(newCoord); // Add new point to existing polygon
+      let updatedCoords = [...prevCoords];
+      if (updatedCoords.length === 0) {
+        updatedCoords.push([newCoord]);
       } else {
-        updatedCoords.push([newCoord]); // Start new polygon
+        const currentRing = updatedCoords[0];
+        if (currentRing.length >= 3 &&
+            currentRing[currentRing.length - 1][0] === currentRing[0][0] &&
+            currentRing[currentRing.length - 1][1] === currentRing[0][1]) {
+          const withoutClosing = currentRing.slice(0, -1);
+          withoutClosing.push(newCoord);
+          withoutClosing.push([currentRing[0][0], currentRing[0][1]]);
+          updatedCoords[0] = withoutClosing;
+        } else {
+          currentRing.push(newCoord);
+          if (currentRing.length >= 3) {
+            const firstPoint = currentRing[0];
+            const lastPoint = currentRing[currentRing.length - 1];
+            if (firstPoint[0] !== lastPoint[0] || firstPoint[1] !== lastPoint[1]) {
+              currentRing.push([firstPoint[0], firstPoint[1]]);
+            }
+          }
+        }
       }
 
-      updatePolygon(updatedCoords); // Update polygon on the map
-
+      updatePolygon(updatedCoords);
       return updatedCoords;
     });
 
-    // Clear input fields
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: newCoord,
+        zoom: 15,
+        essential: true
+      });
+    }
+
     setNewCoordinate({ lng: "", lat: "" });
+    console.log("polygon coord",polygonCoordinates); 
   };
 
   const handleValidate = async () => {
-    console.log("Selection validated:", roundedArea, "Owner ID:", owner_id);
 
+    if (polygonCoordinates.length === 0 || polygonCoordinates[0].length < 4) {
+      setNotification({
+        type: "error",
+        message: "Please draw a valid polygon with at least 3 points.",
+      });
+      return;
+    }
+
+    const linearRing = polygonCoordinates[0];
+    const first = linearRing[0];
+    const last = linearRing[linearRing.length - 1];
+    if (first[0] !== last[0] || first[1] !== last[1]) {
+      setNotification({
+        type: "error",
+        message: "The polygon is not closed. The first and last points must be the same.",
+      });
+      return;
+    }
+
+    // Envoi des données au backend...
     try {
       const { data } = await axiosInstance.get(`/api/points/exists/${owner_type}/${owner_id}`);
       if (data.exists) {
@@ -198,11 +240,11 @@ const MapboxExample = () => {
         return;
       }
 
-      const points = polygonCoordinates[0].map(coord => ({
+      const points = linearRing.map(coord => ({
         longitude: coord[0],
         latitude: coord[1]
-      }));
-      console.log(owner_id, owner_type);
+    }));
+    
 
       for (const point of points) {
         await axiosInstance.post('/api/points/create', {
@@ -223,13 +265,9 @@ const MapboxExample = () => {
         type: "error",
         message: error.response ? error.response.data : error.message,
       });
-      console.error('Error sending request:', error.response ? error.response.data : error.message);
-    } finally {
-      setTimeout(() => {
-        setNotification(null);
-      }, 5000);
     }
   };
+  
 
   return (
     <div className="relative h-full">
