@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { FaFeather } from "react-icons/fa";
 import { MdManageAccounts } from "react-icons/md";
 import { FiLogOut } from "react-icons/fi";
+import parrot from '../img/parrot.jpg';
 import { Link } from "react-router-dom";
 import { jwtDecode } from 'jwt-decode';
 
@@ -88,9 +89,16 @@ const Layout = ({ children }) => {
             <header className="bg-gradient-to-r from-teal-700 to-blue-800 text-white px-6 py-4 flex items-center justify-between shadow-lg sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
                 {/* Logo */}
                 <h1 className="text-4xl font-extrabold flex items-center gap-3 group">
-                    <span className="bg-white text-teal-700 p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
+                    {/* <span className="bg-white text-teal-700 p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
                         <FaFeather />
-                    </span>
+                    </span> */}
+                    <span className="bg-white p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
+                        <img 
+                          src={parrot} 
+                          alt="Description de l'image" 
+                          className="w-16 h-16 rounded-full object-cover" 
+                        />
+                      </span>
                     <span className="group-hover:text-teal-300 transition-all duration-300">
                         Nkusu
                     </span>

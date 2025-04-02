@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import parrot from '../img/parrot.jpg';
+
 import { FaTree, FaQrcode, FaSeedling, FaCloudSunRain, FaFeather, FaLeaf } from 'react-icons/fa';
 import { jwtDecode } from 'jwt-decode';
 import 'tailwindcss/tailwind.css';
@@ -103,9 +105,16 @@ const HomePage = () => {
       {/* Header */}
       <header className="bg-gradient-to-r from-teal-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between shadow-lg sticky top-0 z-50 backdrop-blur-md bg-opacity-90 w-full">
         <h1 className="text-4xl font-extrabold flex items-center gap-3 group">
-          <span className="bg-white text-teal-600 p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
+          {/* <span className="bg-white text-teal-600 p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
             <FaFeather />
-          </span>
+          </span> */}
+          <span className="bg-white p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
+              <img 
+                src={parrot} 
+                alt="Description de l'image" 
+                className="w-16 h-16 rounded-full object-cover" 
+              />
+            </span>
           <span className="group-hover:text-teal-300 transition-all duration-300">
             Nkusu
           </span>

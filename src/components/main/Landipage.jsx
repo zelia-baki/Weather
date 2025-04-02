@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { motion } from 'framer-motion';
+import parrot from '../img/parrot.jpg';
 import "../../animations.css"; // Assuming your animations.css is in the same folder
 import {
   FaGlobe,
@@ -43,10 +44,16 @@ const LandingPage = () => {
       <header className="bg-gradient-to-r from-teal-700 to-blue-800 text-white px-6 py-4 flex items-center justify-between shadow-lg sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
         {/* Logo animé */}
         <h1 className="text-4xl font-extrabold flex items-center gap-3 group">
-          <span className="bg-white text-teal-700 p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
+          {/* <span className="bg-white text-teal-700 p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
             <FaFeather />
-          </span>
-
+          </span> */}
+    <span className="bg-white p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
+    <img 
+      src={parrot} 
+      alt="Description de l'image" 
+      className="w-16 h-16 rounded-full object-cover" 
+    />
+  </span>
 
           <span className="group-hover:text-teal-300 transition-all duration-300">
             Nkusu
