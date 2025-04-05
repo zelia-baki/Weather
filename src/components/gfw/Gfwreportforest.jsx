@@ -531,7 +531,7 @@ const FullReport = () => {
                 </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">Country Deforestation Risk Level</td>
-                  <td className="border border-gray-400 px-4 py-2">Medium <strong>Percentage:</strong> {percentage.toFixed(2)}%</td>
+                  <td className="border border-gray-400 px-4 py-2">LOW <strong>Percentage:</strong> {percentage.toFixed(2)}%</td>
                 </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">RADD Alert</td>

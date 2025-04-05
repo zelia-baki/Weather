@@ -65,18 +65,18 @@ const GenerateQrCodeAndReceipt = () => {
     fetchFarms();
   }, []);
 
-  // useEffect(() => {
-  //   const fetchCountries = async () => {
-  //     try {
-  //       const response = await axios.get('/api/countries');  // Call the API endpoint
-  //       setCountries(response.data);  // Update the state with the list of countries
-  //     } catch (error) {
-  //       console.error('Error fetching countries:', error);
-  //     }
-  //   };
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await axiosInstance.get('/api/pays/');
+        setCountries(response.data.pays || []);
+      } catch (error) {
+        console.error('Error fetching countries:', error);
+      }
+    };
 
-  //   fetchCountries();  // Call fetchCountries on component mount
-  // }, []);
+    fetchCountries();
+  }, []);
 
   useEffect(() => {
     if (qrCodes.length > 0 && qrCodeContainerRef.current) {
@@ -223,7 +223,7 @@ const GenerateQrCodeAndReceipt = () => {
                   ))}
                 </select>
               </div>
-              {/* <div className="mb-6">
+              <div className="mb-6">
                   <label htmlFor="country_of_origin" className="text-lg text-gray-800 mb-2 block">
                     Country :
                   </label>
@@ -237,12 +237,12 @@ const GenerateQrCodeAndReceipt = () => {
                   >
                     <option value="">Select Country</option>
                     {countries.map(country => (
-                      <option key={country.id} value={country.name}>
-                        {country.name}
+                      <option key={country.id} value={country.nom_en_gb}>
+                      {country.nom_en_gb}
                       </option>
                     ))}
                   </select>
-                </div> */}
+                </div>
 
               <div className="flex flex-col mb-6">
                 <label className="text-lg text-gray-800 mb-2">Produce Category and Grade</label>
