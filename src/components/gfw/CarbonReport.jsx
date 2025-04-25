@@ -90,6 +90,8 @@ const CarbonReport = () => {
             },
         };
 
+        
+
         // Use turf to calculate area (in square meters)
         const areaInSquareMeters = turf.area(polygon);
 
@@ -185,6 +187,7 @@ const CarbonReport = () => {
                 }
             ]
         };
+        console.log(JSON.stringify(geojson));
         const encodedGeojson = encodeURIComponent(JSON.stringify(geojson));
         console.log(dimensions);
         const x = Math.min(dimensions.width, 1280);

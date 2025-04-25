@@ -58,6 +58,7 @@ import StoreProductManager from './components/store/StoreProductManager.jsx';
 import Onemonth from './components/Graph/Cgd1mois.jsx'
 import Threemonth from './components/Graph/Cgdthree.jsx';
 import GraphPest from './components/Graph/GraphPest.jsx';
+import UserDash from './components/Dashboard/UserDashBoard.jsx';
 
 
 
@@ -113,7 +114,11 @@ function App() {
     { path: "/cropcoefficientmanager", component: <CropCoefficientManager/>, adminOnly: false},
     { path: "/grademanager", component: <GradeManager/>, adminOnly: false},
     { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false},
-    { path: "/storeProductManager", component: <StoreProductManager/>, adminOnly: false}
+    { path: "/storeProductManager", component: <StoreProductManager/>, adminOnly: false},
+
+
+    { path: "/userDash", component: <UserDash /> , adminOnly: false},
+
 
 
     // { path: "/export2", component: <Export2 /> }
