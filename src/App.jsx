@@ -115,8 +115,6 @@ function App() {
     { path: "/grademanager", component: <GradeManager/>, adminOnly: false},
     { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false},
     { path: "/storeProductManager", component: <StoreProductManager/>, adminOnly: false},
-
-
     { path: "/userDash", component: <UserDash /> , adminOnly: false},
 
 

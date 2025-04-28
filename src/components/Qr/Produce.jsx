@@ -21,7 +21,7 @@ const GenerateQrCodeAndReceipt = () => {
     batch_number: '', // Add batch_number here
 
   });
-
+  const [stores, setStores] = useState([]);
   const [farms, setFarms] = useState([]);
   const [qrCodes, setQrCodes] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -62,8 +62,18 @@ const GenerateQrCodeAndReceipt = () => {
       }
     };
     fetchDistricts();
+    fetchStores();
     fetchFarms();
   }, []);
+
+  const fetchStores = async () => {
+    try {
+      const response = await axiosInstance.get('/api/store/');
+      setStores(response.data.stores);
+    } catch (error) {
+      console.error('Error fetching stores:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -116,7 +126,7 @@ const GenerateQrCodeAndReceipt = () => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
- const handleChangeCountrie = (e) => {
+  const handleChangeCountrie = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
@@ -224,25 +234,25 @@ const GenerateQrCodeAndReceipt = () => {
                 </select>
               </div>
               <div className="mb-6">
-                  <label htmlFor="country_of_origin" className="text-lg text-gray-800 mb-2 block">
-                    Country :
-                  </label>
-                  <select
-                    id="country_of_origin"
-                    name="country_of_origin"
-                    value={formData.country_of_origin}
-                    onChange={handleChangeCountrie}
-                    className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
-                    required
-                  >
-                    <option value="">Select Country</option>
-                    {countries.map(country => (
-                      <option key={country.id} value={country.nom_en_gb}>
+                <label htmlFor="country_of_origin" className="text-lg text-gray-800 mb-2 block">
+                  Country :
+                </label>
+                <select
+                  id="country_of_origin"
+                  name="country_of_origin"
+                  value={formData.country_of_origin}
+                  onChange={handleChangeCountrie}
+                  className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
+                  required
+                >
+                  <option value="">Select Country</option>
+                  {countries.map(country => (
+                    <option key={country.id} value={country.nom_en_gb}>
                       {country.nom_en_gb}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div className="flex flex-col mb-6">
                 <label className="text-lg text-gray-800 mb-2">Produce Category and Grade</label>
@@ -376,11 +386,9 @@ const GenerateQrCodeAndReceipt = () => {
                   className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                   required
                 >
-                  <option value="">Select Store ID</option>
-                  {storeNames.map((store, index) => (
-                    <option key={index} value={index + 1}>
-                      {store}
-                    </option>
+                  <option value="">Select Store</option>
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>{store.id}</option>
                   ))}
                 </select>
               </div>
@@ -397,11 +405,9 @@ const GenerateQrCodeAndReceipt = () => {
                   className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                   required
                 >
-                  <option value="">Select Store Name</option>
-                  {storeNames.map((store, index) => (
-                    <option key={index} value={store}>
-                      {store}
-                    </option>
+                  <option value="">Select Store</option>
+                  {stores.map((store) => (
+                    <option key={store.name} value={store.name}>{store.name}</option>
                   ))}
                 </select>
               </div>
