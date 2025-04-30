@@ -54,7 +54,7 @@ import Test from './components/gfw/ReportTest.jsx';
 import BarNav from './components/main/BarNav.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
 import CarbonReportForest from './components/gfw/CarbonReportForest.jsx';
-import StoreProductManager from './components/store/StoreProductManager.jsx'; 
+import StoreProductManager from './components/store/StoreProductManager.jsx'; //store/////////////////////////////////////
 import Onemonth from './components/Graph/Cgd1mois.jsx'
 import Threemonth from './components/Graph/Cgdthree.jsx';
 import GraphPest from './components/Graph/GraphPest.jsx';

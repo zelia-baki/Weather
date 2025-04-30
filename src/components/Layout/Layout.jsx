@@ -169,6 +169,11 @@ const Layout = ({ children }) => {
                                             View all
                                         </Link>
                                     </li>
+                                    <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                        <Link to="/storeProductManager" state={{ owner_type: 'farmer' }} className="block w-full h-full">
+                                            Store
+                                        </Link>
+                                    </li>
                                 </ul>
                             </div>
                         )}
@@ -257,6 +262,29 @@ const Layout = ({ children }) => {
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/weatherdas" className="block w-full h-full">
                                             Anomaly Alert
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                    {/* Dashboard Dropdown */}
+                    <div
+                        className="relative"
+                        onMouseEnter={() => handleMouseEnter("dashDropdown")}
+                        onMouseLeave={() => handleMouseLeave("dashDropdown")}
+                    >
+                        <button
+                            className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                        >
+                            Dashboard
+                        </button>
+                        {dropdownsVisible.dashDropdown && (
+                            <div className="dropdown absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg">
+                                <ul className="text-gray-700 font-light text-base font-sans" style={{ fontFamily: 'Arial, sans-serif' }}>
+                                    <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                        <a href="/userDash" className="block w-full h-full">
+                                            Dashboard
                                         </a>
                                     </li>
                                 </ul>
