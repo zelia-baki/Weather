@@ -37,8 +37,8 @@ const FullReport = () => {
   });
 
   const [tscDriverDriver, setTscDriverDriver] = useState({
-    mostCommonValue: '',
-    frequencyCounts: '',
+    mostCommonValue: 0,
+    frequencyCounts: 0,
   });
 
 
@@ -61,97 +61,79 @@ const FullReport = () => {
   }, []);
 
   useEffect(() => {
-    console.log("start")
-    if (geoData && typeof geoData === 'object' && Object.keys(geoData).length > 2) {
-      console.log('===> Début traitement "jrc global forest cover"');
-
-      const coverDataArray = geoData["jrc global forest cover"];
-
-      let dataFieldsCoverExtent = [];
-
-      if (Array.isArray(coverDataArray)) {
-        const coverItem = coverDataArray.find(item => item.pixel === "wri_tropical_tree_cover_extent__decile");
-        dataFieldsCoverExtent = coverItem?.data_fields || [];
-      }
-
-      const nonZeroValues = [];
+    if (Array.isArray(geoData) && geoData.length > 2) {
+      const dataFieldscoverExtent = Array.isArray(geoData["jrc global forest cover"])
+        ? geoData["jrc global forest cover"]
+          .find(item => item.pixel === "wri_tropical_tree_cover_extent__decile")?.data_fields || []
+        : [];
+      let nonZeroValues = [];
       let nonZeroCount = 0;
-      const valueCounts = {};
+      let valueCounts = {};
 
-      // 📊 Parcours des données
-      dataFieldsCoverExtent.forEach((field) => {
-        const decile = field?.wri_tropical_tree_cover_extent__decile;
+      // Parcourir les données pour collecter les valeurs non nulles et compter les occurrences
+      dataFieldscoverExtent.forEach((value) => {
+        const decile = value.wri_tropical_tree_cover_extent__decile;
 
-        if (decile && decile !== 0) {
-          nonZeroValues.push(decile);
+        if (decile !== 0) {
+          nonZeroValues.push(decile); // Ajouter la valeur non nulle
           nonZeroCount++;
 
-          valueCounts[decile] = (valueCounts[decile] || 0) + 1;
+          // Comptage des occurrences
+          if (valueCounts[decile]) {
+            valueCounts[decile]++;
+          } else {
+            valueCounts[decile] = 1;
+          }
         }
       });
 
-      // 🧮 Calcul du pourcentage de valeurs non nulles
-      const totalCount = dataFieldsCoverExtent.length;
-      const percentageCoverExtent = totalCount > 0
-        ? (nonZeroCount / totalCount) * 100
+      // Calcul du pourcentage
+      const totalCountCoverExtent = dataFieldscoverExtent.length;
+      const percentageCoverExtent = totalCountCoverExtent > 0
+        ? (nonZeroCount / totalCountCoverExtent) * 100
         : 0;
 
-      // 🔄 Préparation du tableau d'occurrences
+      // Transformer l'objet des comptes en tableau
       const valueCountArray = Object.entries(valueCounts).map(([key, count]) => ({
         value: Number(key),
-        count,
+        count: count,
       }));
 
-      // 📦 Création de l'objet résultat
-      const coverExtentDecileResult = {
-        nonZeroValues,
-        nonZeroCount,
-        percentageCoverExtent,
-        valueCountArray,
+      // Ajouter les résultats au même objet
+      const cover_extent_decile = {
+        nonZeroValues: nonZeroValues,
+        nonZeroCount: nonZeroCount,
+        percentageCoverExtent: percentageCoverExtent,
+        valueCountArray: valueCountArray, // Nouveau tableau des occurrences
       };
 
-      // 🧠 Mise à jour du state
-      setCoverExtentDecileData(coverExtentDecileResult);
+      setCoverExtentDecileData(cover_extent_decile);
 
-      // 🚨 Attention : ce log affichera l’ancienne valeur (avant setState)
-      console.log('✅ Résultat (setCoverExtentDecileData) préparé :', coverExtentDecileResult);
+      console.log('cover extent decile:', coverExtentDecileData);
+
 
 
       //################################################################
 
-      const driverItem = geoData["tsc tree cover loss drivers"]
-        ?.find(item => item.pixel === "tsc_tree_cover_loss_drivers__driver");
+      const geoData3Fields = Array.isArray(geoData["jrc global forest cover"])
+        ? geoData["jrc global forest cover"]
+          .find(item => item.pixel === "tsc_tree_cover_loss_drivers__driver")?.data_fields || []
+        : [];
 
-      const data = driverItem?.data_fields;
       let frequencyCounts = {};
       let mostCommonValue = null;
-
-      if (Array.isArray(data)) {
-        // Si c'est un tableau d'objets
-        data.forEach((field) => {
-          const value = field?.tsc_tree_cover_loss_drivers__driver;
-          if (value) {
-            frequencyCounts[value] = (frequencyCounts[value] || 0) + 1;
-          }
-        });
-      } else if (typeof data === "object" && data !== null) {
-        // Cas d'un seul objet
-        const value = data?.tsc_tree_cover_loss_drivers__driver;
-        if (value) {
-          frequencyCounts[value] = 1;
-        }
-      }
-
-      // Trouver la valeur la plus fréquente
       let maxFrequency = 0;
-      for (const [value, count] of Object.entries(frequencyCounts)) {
-        if (count > maxFrequency) {
-          mostCommonValue = value;
-          maxFrequency = count;
-        }
-      }
 
-      console.log('mostCommonValue', mostCommonValue);
+      geoData3Fields.forEach((field) => {
+        const fieldValue = field?.tsc_tree_cover_loss_drivers__driver;
+        if (fieldValue) {
+          frequencyCounts[fieldValue] = (frequencyCounts[fieldValue] || 0) + 1;
+          if (frequencyCounts[fieldValue] > maxFrequency) {
+            mostCommonValue = fieldValue;
+            maxFrequency = frequencyCounts[fieldValue];
+          }
+        }
+      });
 
       setTscDriverDriver({
         mostCommonValue,
@@ -160,31 +142,21 @@ const FullReport = () => {
 
 
 
-
       // #########################################################################################
-      console.log("===> Début traitement résultats environnementaux");
-
       const results = {};
 
-      // 🔄 1. Cover Loss
-      const coverLoss = geoData?.["tree cover loss"]?.[0]?.data_fields?.area__ha || 0;
-      console.log("📉 tree cover loss (area__ha):", coverLoss);
+      // 🔄 1. Cover Loss (anciennement geoData[1])
+      const coverLoss = geoData["tree cover loss"]?.[0]?.data_fields?.area__ha || 0;
 
-      // 🔄 2. Aires protégées (via "soil carbon" → pixel = wdpa_protected_areas__iucn_cat)
-      let protectedAreas = [];
-
-      if (Array.isArray(geoData?.["soil carbon"])) {
-        const protectedItem = geoData["soil carbon"]
-          .find(item => item.pixel === "wdpa_protected_areas__iucn_cat");
-
-        protectedAreas = protectedItem?.data_fields || [];
-      }
-
-      console.log("🛡️ Protected areas data:", protectedAreas);
+      // 🔄 2. Protected Areas (anciennement geoData[7])
+      const protectedAreas = Array.isArray(geoData["soil carbon"])
+        ? geoData["soil carbon"].find(item => item.pixel === "wdpa_protected_areas__iucn_cat")?.data_fields || []
+        : [];
 
       const protectedCounts = {};
+
       protectedAreas.forEach((field) => {
-        const value = field?.wdpa_protected_areas__iucn_cat ?? "Unknown";
+        const value = field?.wdpa_protected_areas__iucn_cat ?? 0;
         protectedCounts[value] = (protectedCounts[value] || 0) + 1;
       });
 
@@ -192,9 +164,9 @@ const FullReport = () => {
       const percentages = {};
 
       if (totalProtected > 0) {
-        Object.entries(protectedCounts).forEach(([key, count]) => {
+        for (const [key, count] of Object.entries(protectedCounts)) {
           percentages[key] = ((count / totalProtected) * 100).toFixed(2) + "%";
-        });
+        }
       } else {
         percentages["No Data"] = "0%";
       }
@@ -204,25 +176,21 @@ const FullReport = () => {
         percentages,
       };
 
-      // 🔄 3. Terres autochtones (si pas de perte de forêt)
+      // 🔄 3. Indigenous Lands (anciennement geoData[6])
       if (coverLoss === 0) {
-        const landData = geoData?.["landmark indigenous and community lands"]?.[0]?.data_fields || [];
+        const landIndigenous = geoData["landmark indigenous and community lands"]?.[0]?.data_fields || [];
 
-        console.log("🌿 Indigenous lands data:", landData);
-
-        if (!Array.isArray(landData) || landData.length === 0) {
+        if (!Array.isArray(landIndigenous) || landIndigenous.length === 0) {
           results.indigenousStatus = "Not known, land is not gazetted";
-        } else if (landData.some(v => v === 1)) {
+        } else if (landIndigenous.some(v => v === 1)) {
           results.indigenousStatus = "Presence of indigenous and community lands";
         } else {
           results.indigenousStatus = "No presence of indigenous and community lands";
         }
       }
 
-      // ✅ Mise à jour finale du state
       setResultStatus(results);
-      console.log("✅ Résultats environnementaux calculés :", results);
-
+      console.log("Résultats calculés :", results);
 
     }
   }, [geoData]);
@@ -291,28 +259,21 @@ const FullReport = () => {
           console.log('API Response:', response.data);
           setFarmInfo(response.data.farm_info);
           const reportData = response.data.report || [];
-          console.log('Report keys:', reportData);  // Affiche les datasets disponibles
+          console.log('Report Data:', reportData);
 
           setGeoData(reportData);
 
-          // Vérifie qu'on a bien des coordonnées valides dans le dataset "radd alerts"
-          const raddEntries = reportData["radd alerts"];
-          const hasValidCoordinates = Array.isArray(raddEntries) && raddEntries.length > 0 &&
-            Array.isArray(raddEntries[0]?.coordinates?.[0]);
 
-          if (hasValidCoordinates) {
-            const coordinates = raddEntries[0].coordinates[0];
+          if (reportData.length > 0 && reportData[0]?.coordinates?.length > 0) {
+            const coordinates = reportData[0].coordinates[0];
             console.log('Coordinates:', coordinates);
-
             const { areaInSquareMeters, areaInHectares } = calculatePolygonArea(coordinates);
             setAreaInSquareMeters(areaInSquareMeters);
             setAreaInHectares(areaInHectares);
-
             console.log('Area in m²:', areaInSquareMeters, 'Area in ha:', areaInHectares);
           } else {
             console.warn('No valid polygon data in report');
           }
-
         }
       } catch (err) {
         setError('Failed to fetch farm report.');
@@ -522,6 +483,22 @@ const FullReport = () => {
                   </div>
                 </div>
               </div>
+              {/* <div className="p-11">
+                <Heatmap
+                  data={dataheat}
+                  xLabels={xLabels}
+                  yLabels={yLabels}
+                  squares
+                  onClick={(x, y) => alert(`Clicked ${x}, ${y}`)}
+                  cellStyle={(background, value, min, max, data, x, y) => ({
+                    fontSize: "11px",
+                  })}
+                  height={80}  // Increase cell size
+                  width={80}   // Increase cell size
+                  cellRender={renderCell}
+                  className="rounded-lg " // Adds rounded corners
+                />
+              </div> */}
             </div>
           </div>
           <div className="bg-white m-6 p-11 shadow-md mb-4">
@@ -544,6 +521,9 @@ const FullReport = () => {
                         <p>{areaInHectares.toFixed(2)} ha</p>
                       </div>
                     )}
+
+
+
                   </td>
                 </tr>
                 <tr>
@@ -581,8 +561,8 @@ const FullReport = () => {
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">EUDR compliance</td>
                   <td className="border border-gray-400 px-4 py-2">
-                    {geoData['tree cover loss']?.[0]?.data_fields?.area__ha !== undefined && geoData['tree cover loss']?.[0]?.data_fields?.area__ha !== null ? (
-                      parseFloat(geoData['tree cover loss']?.[0]?.data_fields.area__ha) !== 0 ? (
+                    {geoData['tree cover loss']?.data_fields?.area__ha !== undefined && geoData['tree cover loss']?.data_fields?.area__ha !== null ? (
+                      parseFloat(geoData['tree cover loss'].data_fields.area__ha) !== 0 ? (
                         <p>Not Compliant</p>
                       ) : (
                         <p>100% Compliance</p>
@@ -598,33 +578,28 @@ const FullReport = () => {
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">Protected Area Status</td>
                   <td className="border border-gray-400 px-4 py-2">
-                    {resultStatus?.protectedStatus?.percentages ? (
-                      <ul>
-                        {Object.entries(resultStatus.protectedStatus.percentages).map(([key, percentage]) => {
-                          const statusText =
-                            key === '0' ? "Plot not in WDPA protected Area" :
-                              key === '1' ? "Plot in WDPA protected area" :
-                                key === '2' ? "Plot in other IUCN vulnerable Area" :
-                                  key === 'No Data' ? "No data available" :
-                                    "Unknown";
 
-                          return (
-                            <li key={key}>
-                              Percentage: {percentage} - Status: {statusText}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : (
-                      <p>No protected area data available.</p>
-                    )}
+                    <ul>
+                      {Object.keys(resultStatus.protectedStatus.percentages).map((key) => {
+                        const percentage = resultStatus.protectedStatus.percentages[key];
+                        const statusText = key === '0' ? "Plot  not in WDPA protected Area" :
+                          key === '1' ? "Plot in WDPA protected area" :
+                            key === '2' ? "Plot in other IUCN vulnerable Area" :
+                              "Unknown";
+
+                        return (
+                          <li key={key}>
+                            Percentage: {percentage} - Status: {statusText}
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </td>
                 </tr>
-
-                {/* <tr>
+                <tr>
                   <td className="border border-gray-400 px-4 py-2">Landmark Indigenous and Community Lands</td>
                   <td className="border border-gray-400 px-4 py-2"><strong></strong> {resultStatus.indigenousStatus || "N/A"}</td>
-                </tr> */}
+                </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">Cover Extent</td>
                   <td className="border border-gray-400 px-4 py-2">
