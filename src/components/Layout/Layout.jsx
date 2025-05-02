@@ -291,6 +291,29 @@ const Layout = ({ children }) => {
                             </div>
                         )}
                     </div>
+                    {/* EUDR */}
+                    <div
+                        className="relative"
+                        onMouseEnter={() => handleMouseEnter("eudrDropdown")}
+                        onMouseLeave={() => handleMouseLeave("eudrDropdown")}
+                    >
+                        <button
+                            className="dropdown-btn text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline"
+                        >
+                            EUDR
+                        </button>
+                        {dropdownsVisible.eudrDropdown && (
+                            <div className="dropdown absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg">
+                                <ul className="text-gray-700 font-light text-base font-sans" style={{ fontFamily: 'Arial, sans-serif' }}>
+                                    <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                        <a href="/EUDRSubmission" className="block w-full h-full">
+                                            EUDR
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        )}
+                    </div>
                 </nav>
 
                 <div className="flex items-center gap-4">
