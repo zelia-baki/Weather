@@ -59,6 +59,7 @@ import Onemonth from './components/Graph/Cgd1mois.jsx'
 import Threemonth from './components/Graph/Cgdthree.jsx';
 import GraphPest from './components/Graph/GraphPest.jsx';
 import UserDash from './components/Dashboard/UserDashBoard.jsx';
+import EUDRSubmitForm from './components/Eudr/EUDRSubmitForm.jsx';
 
 
 
@@ -116,6 +117,7 @@ function App() {
     { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false},
     { path: "/storeProductManager", component: <StoreProductManager/>, adminOnly: false},
     { path: "/userDash", component: <UserDash /> , adminOnly: false},
+    { path: "/EUDRSubmission", component: <EUDRSubmitForm/>, adminOnly: false},
 
 
 
