@@ -58,7 +58,8 @@
     "sweetalert2": "^11.12.4",
     "sweetalert2-react-content": "^5.0.7",
     "three": "^0.170.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

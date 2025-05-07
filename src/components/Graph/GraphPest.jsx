@@ -17,7 +17,7 @@ const DegreeDaysPage = () => {
     { name: 'Fall Armyworm (Spodoptera frugiperda)', gddThreshold: 150, confirmed: false },
     { name: 'Corn Earworm (Helicoverpa zea)', gddThreshold: 220, confirmed: true },
     { name: 'Black Cutworm (Agrotis ipsilon)', gddThreshold: 300, confirmed: true },
-    { name: 'Peach Twig Borer (Anarsia lineatella)', gddThreshold: 400, confirmed: true },
+    { name: 'Peach Twig Borer (Anarsia lineatella)', gddThreshold: 50, confirmed: true },
     // { name: 'Peach Twig Borer (Anarsia lineatella)', gddThreshold: 51, confirmed: true },
 
   ];
