@@ -116,6 +116,12 @@ const EUDRManager = () => {
 
   const handleSubmit = async () => {
     let parsedGeojson;
+
+    if (!geojson.trim()) {
+      setResponseData({ error: "Veuillez coller ou importer un GeoJSON." });
+      return;
+    }
+
     try {
       parsedGeojson = JSON.parse(geojson);
     } catch (error) {
@@ -124,15 +130,16 @@ const EUDRManager = () => {
     }
 
     try {
-      const res = await axiosInstance.post('/api/eudr/submit', {
+      const res = await axiosInstance.post("/api/eudr/submit", {
         statement: formData,
-        geojson: parsedGeojson
+        geojson: parsedGeojson,
       });
       setResponseData(res.data);
     } catch (error) {
       setResponseData({ error: error.response?.data || error.message });
     }
   };
+
 
 
 
@@ -374,6 +381,28 @@ const EUDRManager = () => {
           value={geojson}
           onChange={(e) => setGeojson(e.target.value)}
         />
+        <label className="block mb-2 font-semibold">Importer un fichier GeoJSON (.json)</label>
+        <input
+          type="file"
+          accept=".json"
+          className="mb-4"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              try {
+                const parsed = JSON.parse(event.target.result);
+                setGeojson(JSON.stringify(parsed, null, 2)); // joliment indenté
+              } catch (err) {
+                alert("Le fichier JSON est invalide.");
+              }
+            };
+            reader.readAsText(file);
+          }}
+        />
+
 
         <label className="flex items-center space-x-2">
           <input

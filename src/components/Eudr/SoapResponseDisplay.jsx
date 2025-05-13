@@ -101,9 +101,9 @@ const SoapResponseDisplay = ({ data }) => {
             )}
 
 
-            {/* ✅ Debug JSON */}
+            ✅ Debug JSON
             <details className="mt-4">
-                <summary className="cursor-pointer text-blue-600 underline">Voir JSON complet</summary>
+                <summary className="cursor-pointer text-blue-600 underline">See JSON</summary>
                 <pre className="bg-white p-2 mt-2 rounded border text-xs overflow-x-auto">
                     {JSON.stringify(data, null, 2)}
                 </pre>
