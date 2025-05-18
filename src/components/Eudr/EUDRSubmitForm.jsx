@@ -118,7 +118,7 @@ const EUDRManager = () => {
     let parsedGeojson;
 
     if (!geojson.trim()) {
-      setResponseData({ error: "Veuillez coller ou importer un GeoJSON." });
+      setResponseData({ error: "Please paste or import a GeoJSON." });
       return;
     }
 
@@ -381,10 +381,10 @@ const EUDRManager = () => {
           value={geojson}
           onChange={(e) => setGeojson(e.target.value)}
         />
-        <label className="block mb-2 font-semibold">Importer un fichier GeoJSON (.json)</label>
+        <label className="block mb-2 font-semibold">Import a GeoJSON (.json, .geojson) file</label>
         <input
           type="file"
-          accept=".json"
+          accept=".json, .geojson"
           className="mb-4"
           onChange={(e) => {
             const file = e.target.files[0];
@@ -396,7 +396,7 @@ const EUDRManager = () => {
                 const parsed = JSON.parse(event.target.result);
                 setGeojson(JSON.stringify(parsed, null, 2)); // joliment indenté
               } catch (err) {
-                alert("Le fichier JSON est invalide.");
+                alert("The JSON file is invalid.");
               }
             };
             reader.readAsText(file);
@@ -441,7 +441,7 @@ const EUDRManager = () => {
         {/* </div> */}
       </div>
       <div className="bg-gray-50 p-6 rounded-xl shadow space-y-4 h-full overflow-auto">
-        <h3 className="text-xl font-semibold text-gray-800">Résultat</h3>
+        <h3 className="text-xl font-semibold text-gray-800">Result</h3>
         <SoapResponseDisplay data={responseData} />
       </div>
     </div>

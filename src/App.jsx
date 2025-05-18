@@ -60,64 +60,66 @@ import Threemonth from './components/Graph/Cgdthree.jsx';
 import GraphPest from './components/Graph/GraphPest.jsx';
 import UserDash from './components/Dashboard/UserDashBoard.jsx';
 import EUDRSubmitForm from './components/Eudr/EUDRSubmitForm.jsx';
+import FeatureRoute from './FeatureRoute';
+import PaymentRequired from './components/main/PaymentRequired';
 
 
 
 function App() {
   const layoutRoutes = [
-    { path: "/graph", component: <Graph /> , adminOnly: false},
-    { path: "/graphpest", component: <GraphPest /> , adminOnly: false},
-    { path: "/card", component: <Card /> , adminOnly: false},
-    { path: "/mapbox", component: <MapboxExample /> , adminOnly: false},
-    { path: "/tabcrop", component: <Tabcrop /> , adminOnly: false},
-    { path: "/forestpage", component: <ForestPage /> , adminOnly: false},
-    { path: "/createfarm", component: <Create /> , adminOnly: false},
-    { path: "/farmdata", component: <Farmdata /> , adminOnly: false},
-    { path: "/cropedit/:id", component: <CropEdit /> , adminOnly: false},
-    { path: "/cardex", component: <Cardex /> , adminOnly: false},
-    { path: "/district", component: <CreateDistrict /> , adminOnly: false},
-    { path: "/cropmanage", component: <Createcrop /> , adminOnly: false},
-    { path: "/districts/:id/view", component: <DistrictView /> , adminOnly: false},
-    { path: "/districts", component: <DistrictList /> , adminOnly: false},
-    { path: "/districts/:id/edit", component: <DistrictEdit /> , adminOnly: false},
-    { path: "/mapview", component: <MapView /> , adminOnly: false},
-    { path: "/mapviewall", component: <MapViewAll /> , adminOnly: false},
-    { path: "/forestpoint", component: <ForestPoint /> , adminOnly: false},
-    { path: "/foresttree", component: <ForestTree /> , adminOnly: false},
-    { path: "/qr", component: <QR /> , adminOnly: false},
-    { path: "/qrproduce", component: <Produce /> , adminOnly: false},
-    { path: "/qrconservation", component: <Conservation /> , adminOnly: false},
-    { path: "/qrexport", component: <Export /> , adminOnly: false},
-    { path: "/weathermap", component: <WeathearMap  /> , adminOnly: false},
-    { path: "/weatherdas", component: <WeatherDashboard   /> , adminOnly: false},
+    { path: "/graph", component: <Graph />, adminOnly: false },
+    { path: "/graphpest", component: <GraphPest />, adminOnly: false },
+    { path: "/card", component: <Card />, adminOnly: false },
+    { path: "/mapbox", component: <MapboxExample />, adminOnly: false },
+    { path: "/tabcrop", component: <Tabcrop />, adminOnly: false },
+    { path: "/forestpage", component: <ForestPage />, adminOnly: false },
+    { path: "/createfarm", component: <Create />, adminOnly: false },
+    { path: "/farmdata", component: <Farmdata />, adminOnly: false },
+    { path: "/cropedit/:id", component: <CropEdit />, adminOnly: false },
+    { path: "/cardex", component: <Cardex />, adminOnly: false },
+    { path: "/district", component: <CreateDistrict />, adminOnly: false },
+    { path: "/cropmanage", component: <Createcrop />, adminOnly: false },
+    { path: "/districts/:id/view", component: <DistrictView />, adminOnly: false },
+    { path: "/districts", component: <DistrictList />, adminOnly: false },
+    { path: "/districts/:id/edit", component: <DistrictEdit />, adminOnly: false },
+    { path: "/mapview", component: <MapView />, adminOnly: false },
+    { path: "/mapviewall", component: <MapViewAll />, adminOnly: false },
+    { path: "/forestpoint", component: <ForestPoint />, adminOnly: false },
+    { path: "/foresttree", component: <ForestTree />, adminOnly: false },
+    { path: "/qr", component: <QR />, adminOnly: false },
+    { path: "/qrproduce", component: <Produce />, adminOnly: false },
+    { path: "/qrexport", component: <Export />, adminOnly: false, feature: "qrexport" },
+    { path: "/reportcarbon", component: <CarbonReport />, adminOnly: false, feature: "reportcarbon" },
+    { path: "/weathermap", component: <WeathearMap />, adminOnly: false },
+    { path: "/weatherdas", component: <WeatherDashboard />, adminOnly: false },
 
 
     // { path: "/qrexport2", component: <Export /> , adminOnly: false},
 
-    { path: "/qrfertilizer", component: <Fertilizer /> , adminOnly: false},
-    { path: "/reportfarmer", component: <FarmReport /> , adminOnly: false},
-    { path: "/reportcarbon", component: <CarbonReport /> , adminOnly: false},
-    { path: "/reportcarbonforest", component: <CarbonReportForest/>, adminOnly: false},
-    { path: "/reportforest", component: <ForestReport /> , adminOnly: false},
-    { path: "/createUsers", component: <CreateUsers /> , adminOnly: false},
-    { path: "/graphcgd", component: <GraphCGD /> , adminOnly: false},
-    { path: "/onemonth", component: <Onemonth /> , adminOnly: false},
-    { path: "/threemonth", component: <Threemonth /> , adminOnly: false},
+    { path: "/qrfertilizer", component: <Fertilizer />, adminOnly: false },
+    { path: "/reportfarmer", component: <FarmReport />, adminOnly: false },
+    { path: "/reportcarbon", component: <CarbonReport />, adminOnly: false },
+    { path: "/reportcarbonforest", component: <CarbonReportForest />, adminOnly: false },
+    { path: "/reportforest", component: <ForestReport />, adminOnly: false },
+    { path: "/createUsers", component: <CreateUsers />, adminOnly: false },
+    { path: "/graphcgd", component: <GraphCGD />, adminOnly: false },
+    { path: "/onemonth", component: <Onemonth />, adminOnly: false },
+    { path: "/threemonth", component: <Threemonth />, adminOnly: false },
 
 
-    { path: "/farmergroup", component: <FarmerGroupManager /> , adminOnly: false},
-    { path: "/farmmanager", component: <FarmManager /> , adminOnly: false},
-    { path: "/farmdatamanager", component: <FarmDataManager /> , adminOnly: false},
-    { path: "/usermanager", component: <UserManagement /> , adminOnly: false},
-    { path: "/weatherandsolar", component: <WeatherAndSolar /> , adminOnly: false},
-    { path: "/cropmanager", component: <CropManager /> , adminOnly: false},
-    { path: "/irrigationmanager", component: <IrrigationManager /> , adminOnly: false},
-    { path: "/cropcoefficientmanager", component: <CropCoefficientManager/>, adminOnly: false},
-    { path: "/grademanager", component: <GradeManager/>, adminOnly: false},
-    { path: "/categorymanager", component: <CategoryManager/>, adminOnly: false},
-    { path: "/storeProductManager", component: <StoreProductManager/>, adminOnly: false},
-    { path: "/userDash", component: <UserDash /> , adminOnly: false},
-    { path: "/EUDRSubmission", component: <EUDRSubmitForm/>, adminOnly: false},
+    { path: "/farmergroup", component: <FarmerGroupManager />, adminOnly: false },
+    { path: "/farmmanager", component: <FarmManager />, adminOnly: false },
+    { path: "/farmdatamanager", component: <FarmDataManager />, adminOnly: false },
+    { path: "/usermanager", component: <UserManagement />, adminOnly: false },
+    { path: "/weatherandsolar", component: <WeatherAndSolar />, adminOnly: false },
+    { path: "/cropmanager", component: <CropManager />, adminOnly: false },
+    { path: "/irrigationmanager", component: <IrrigationManager />, adminOnly: false },
+    { path: "/cropcoefficientmanager", component: <CropCoefficientManager />, adminOnly: false },
+    { path: "/grademanager", component: <GradeManager />, adminOnly: false },
+    { path: "/categorymanager", component: <CategoryManager />, adminOnly: false },
+    { path: "/storeProductManager", component: <StoreProductManager />, adminOnly: false },
+    { path: "/userDash", component: <UserDash />, adminOnly: false },
+    { path: "/EUDRSubmission", component: <EUDRSubmitForm />, adminOnly: false },
 
 
 
@@ -131,15 +133,12 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Landipage />} />
         <Route path="/landipage" element={<Landing />} />
-        {/* <Route path="/graphcgd" element={<GraphCGD />} /> */}
         <Route path="/login" element={<Login />} />
         <Route path="/contactus" element={<ContactUs />} />
-        <Route path="/signup" element={<SignUp/>} />
+        <Route path="/signup" element={<SignUp />} />
         <Route path="/test" element={<Test />} />
         <Route path="/barnav" element={<BarNav />} />
-
-
-
+        <Route path="/payment-required" element={<PaymentRequired />} />
 
         {/* Protected Routes */}
         <Route
@@ -150,13 +149,19 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {layoutRoutes.map(({ path, component, adminOnly }) => (
+        {layoutRoutes.map(({ path, component, adminOnly, feature }) => (
           <Route
             key={path}
             path={path}
             element={
               <ProtectedRoute adminOnly={adminOnly}>
-                <Layout>{component}</Layout>
+                {feature ? (
+                  <FeatureRoute feature={feature}>
+                    <Layout>{component}</Layout>
+                  </FeatureRoute>
+                ) : (
+                  <Layout>{component}</Layout>
+                )}
               </ProtectedRoute>
             }
           />

@@ -306,6 +306,7 @@ const FullReport = () => {
         }
       ]
     };
+    console.log(geojson);
     const encodedGeojson = encodeURIComponent(JSON.stringify(geojson));
     console.log(dimensions);
     const x = Math.min(dimensions.width, 1280);

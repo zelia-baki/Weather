@@ -339,6 +339,7 @@ const FullReport = () => {
         }
       ]
     };
+    console.log("ETOOOOOOOOOOO!!!!!!!!!!!!!!!!!",JSON.stringify(geojson));
     const encodedGeojson = encodeURIComponent(JSON.stringify(geojson));
     console.log(dimensions);
     const x = Math.min(dimensions.width, 1280);

@@ -21,7 +21,7 @@ const SoapResponseDisplay = ({ data }) => {
             {/* ✅ Amend */}
             {data.amendStatus && (
                 <div className="text-green-700 font-medium">
-                    ✅ Amendement effectué avec succès. <br />
+                    ✅ Amendment successfully completed. <br />
                     <strong>Status:</strong> {data.amendStatus}
                 </div>
             )}
@@ -83,7 +83,7 @@ const SoapResponseDisplay = ({ data }) => {
             {/* ✅ Internal Ref: Liste des déclarations */}
             {Array.isArray(data.statements) && (
                 <div>
-                    <h4 className="font-semibold">Déclarations liées au Internal Reference</h4>
+                    <h4 className="font-semibold">Statements related to the Internal Reference</h4>
                     <ul className="divide-y divide-gray-200">
                         {data.statements.map((item, index) => (
                             <li key={index} className="py-2">
