@@ -322,7 +322,7 @@ const Layout = ({ children }) => {
                             <Link to="/usermanager" className="text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline">
                                 <MdManageAccounts className="inline-block" /> User Manager
                             </Link>
-                            <Link to="/featuremanager" className="text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline">
+                            <Link to="/featuresManager" className="text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline">
                                 <MdManageAccounts className="inline-block" /> Feature Manager
                             </Link>
                         </>
