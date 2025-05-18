@@ -5,7 +5,7 @@ import axiosInstance from "../../axiosInstance";
 
 export function SendPaymentModal({ isOpen, onClose, onSuccess, featureName }) {
   const [phone, setPhone] = useState("");
-  const [txnId, setTxnId] = useState("txn_" + Date.now());
+  const [txnId, setTxnId] = useState("123" + Date.now());
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
