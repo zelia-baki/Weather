@@ -62,6 +62,7 @@ import UserDash from './components/Dashboard/UserDashBoard.jsx';
 import EUDRSubmitForm from './components/Eudr/EUDRSubmitForm.jsx';
 import FeatureRoute from './FeatureRoute';
 import PaymentRequired from './components/main/PaymentRequired';
+import FeatureManager from './components/Features/FeatureManager.jsx';
 
 
 
@@ -94,6 +95,7 @@ function App() {
     { path: "/weatherdas", component: <WeatherDashboard />, adminOnly: false },
 
 
+
     // { path: "/qrexport2", component: <Export /> , adminOnly: false},
 
     { path: "/qrfertilizer", component: <Fertilizer />, adminOnly: false },
@@ -120,6 +122,7 @@ function App() {
     { path: "/storeProductManager", component: <StoreProductManager />, adminOnly: false },
     { path: "/userDash", component: <UserDash />, adminOnly: false },
     { path: "/EUDRSubmission", component: <EUDRSubmitForm />, adminOnly: false },
+    { path: "/featuresManager", component: <FeatureManager />, adminOnly: true },
 
 
 

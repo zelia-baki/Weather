@@ -24,7 +24,7 @@ const Layout = ({ children }) => {
             console.log(role);
             setUserRole(role);
             setIsAdmin(role === "admin"); // Directly setting isAdmin
-            console.log(isAdmin);
+            console.log("ato amin'ny layout ",isAdmin);
         }
     }, []);
 
@@ -93,12 +93,12 @@ const Layout = ({ children }) => {
                         <FaFeather />
                     </span> */}
                     <span className="bg-white p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
-                        <img 
-                          src={parrot} 
-                          alt="Description de l'image" 
-                          className="w-16 h-16 rounded-full object-cover" 
+                        <img
+                            src={parrot}
+                            alt="Description de l'image"
+                            className="w-16 h-16 rounded-full object-cover"
                         />
-                      </span>
+                    </span>
                     <span className="group-hover:text-teal-300 transition-all duration-300">
                         Nkusu
                     </span>
@@ -249,15 +249,15 @@ const Layout = ({ children }) => {
                                     </li>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/onemonth" className="block w-full h-full">
-                                        HDD & CDD (1 Months)                                        </a>
+                                            HDD & CDD (1 Months)                                        </a>
                                     </li>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/threemonth" className="block w-full h-full">
-                                        HDD & CDD (3 Months)                                        </a>
+                                            HDD & CDD (3 Months)                                        </a>
                                     </li>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/graphpest" className="block w-full h-full">
-                                        GDD for Pest                                        </a>
+                                            GDD for Pest                                        </a>
                                     </li>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/weatherdas" className="block w-full h-full">
@@ -317,11 +317,15 @@ const Layout = ({ children }) => {
                 </nav>
 
                 <div className="flex items-center gap-4">
-
                     {isAdmin && (
-                        <Link to="/usermanager" className="text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline">
-                            <MdManageAccounts className="inline-block" /> User Manager
-                        </Link>
+                        <>
+                            <Link to="/usermanager" className="text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline">
+                                <MdManageAccounts className="inline-block" /> User Manager
+                            </Link>
+                            <Link to="/featuremanager" className="text-white bg-transparent border-none py-2 px-4 rounded-full focus:outline-none transition-all duration-300 hover:underline">
+                                <MdManageAccounts className="inline-block" /> Feature Manager
+                            </Link>
+                        </>
                     )}
 
 
