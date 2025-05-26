@@ -47,13 +47,13 @@ const LandingPage = () => {
           {/* <span className="bg-white text-teal-700 p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
             <FaFeather />
           </span> */}
-    <span className="bg-white p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
-    <img 
-      src={parrot} 
-      alt="Description de l'image" 
-      className="w-16 h-16 rounded-full object-cover" 
-    />
-  </span>
+          <span className="bg-white p-2 rounded-full shadow-md group-hover:rotate-12 group-hover:scale-110 transform transition-all duration-300">
+            <img
+              src={parrot}
+              alt="Description de l'image"
+              className="w-16 h-16 rounded-full object-cover"
+            />
+          </span>
 
           <span className="group-hover:text-teal-300 transition-all duration-300">
             Nkusu
@@ -71,6 +71,14 @@ const LandingPage = () => {
               {item}
             </a>
           ))}
+          <a
+            key='EUDR'
+            href='/EUDRSubmissionForGuest'
+            className="relative text-white after:absolute after:w-0 after:h-[2px] after:bg-teal-300 after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 hover:after:w-full hover:after:left-0 transition-all duration-300"
+          >
+            Resources
+          </a>
+
         </nav>
 
         {/* CTA Button */}

@@ -1,14 +1,18 @@
+// SendPaymentModal.jsx
 import React, { useState } from "react";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
 import axiosInstance from "../../axiosInstance";
+import { useNavigate } from "react-router-dom"; // 👈 AJOUT
 
-export function SendPaymentModal({ isOpen, onClose, onSuccess, featureName }) {
+export function SendPaymentModal({ isOpen, onClose, featureName }) {
   const [phone, setPhone] = useState("");
   const [txnId, setTxnId] = useState("123" + Date.now());
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
+
+  const navigate = useNavigate(); // 👈 AJOUT
 
   const handlePayment = async (e) => {
     e.preventDefault();
@@ -25,14 +29,14 @@ export function SendPaymentModal({ isOpen, onClose, onSuccess, featureName }) {
       setPolling(true);
       startPolling(txnId, phone);
     } catch (err) {
-      setResponse("Erreur : " + (err.response?.data?.error || err.message));
+      setResponse("Error : " + (err.response?.data?.error || err.message));
       setLoading(false);
     }
   };
 
   const startPolling = (txnId, phone) => {
     let attempts = 0;
-    const maxAttempts = 40; // ≈ 2 minutes
+    const maxAttempts = 40;
     const interval = setInterval(async () => {
       attempts++;
       try {
@@ -69,7 +73,8 @@ export function SendPaymentModal({ isOpen, onClose, onSuccess, featureName }) {
       });
 
       if (accessRes.data.access) {
-        if (onSuccess) onSuccess();
+        // ✅ Redirection directe vers la page protégée
+        navigate(`/features/${featureName}`);
       } else {
         setResponse("Payment confirmed, but access not activated.");
       }
@@ -84,7 +89,6 @@ export function SendPaymentModal({ isOpen, onClose, onSuccess, featureName }) {
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel
           as={motion.div}
@@ -98,7 +102,7 @@ export function SendPaymentModal({ isOpen, onClose, onSuccess, featureName }) {
           <form onSubmit={handlePayment} className="space-y-4">
             <input
               type="tel"
-              placeholder="Numéro de téléphone"
+              placeholder="Your phone number"
               className="w-full p-2 border rounded"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -119,7 +123,7 @@ export function SendPaymentModal({ isOpen, onClose, onSuccess, featureName }) {
               className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
               disabled={loading || polling}
             >
-              {loading ? "Envoi en cours..." : polling ? "Waiting for validation..." : "Send payment"}
+              {loading ? "Sending..." : polling ? "Waiting for validation..." : "Send payment"}
             </button>
           </form>
 

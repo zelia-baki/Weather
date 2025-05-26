@@ -28,7 +28,7 @@ import Produce from './components/Qr/Produce.jsx';
 import Conservation from './components/Qr/Conservation.jsx';
 import Export from './components/Qr/Export2.jsx';
 import Fertilizer from './components/Qr/Fertilizer.jsx';
-import FarmReport from './components/gfw/ReportTest.jsx';
+import FarmReport from './components/gfw/FarmReport.jsx';
 import ForestReport from './components/gfw/Reportgen2Forest.jsx';
 import CreateUsers from './components/Users/CreateUsers.jsx';
 import GraphCGD from './components/Graph/GraphCGD.jsx';
@@ -50,7 +50,6 @@ import SignUp from './components/main/SignUp.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 import WeathearMap from './components/mapbox/WeatherMap.jsx';
 import WeatherDashboard from './components/mapbox/WeatherDasboard.jsx';
-import Test from './components/gfw/ReportTest.jsx';
 import BarNav from './components/main/BarNav.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
 import CarbonReportForest from './components/gfw/CarbonReportForest.jsx';
@@ -63,7 +62,9 @@ import EUDRSubmitForm from './components/Eudr/EUDRSubmitForm.jsx';
 import FeatureRoute from './FeatureRoute';
 import PaymentRequired from './components/main/PaymentRequired';
 import FeatureManager from './components/Features/FeatureManager.jsx';
+import EUDRSubmitFormForGuest from './components/Eudr/EUDRSubmitFormForGuest.jsx'
 
+// import Test from './components/gfw/FarmReport.jsx';
 
 
 function App() {
@@ -139,9 +140,10 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/contactus" element={<ContactUs />} />
         <Route path="/signup" element={<SignUp />} />
-        <Route path="/test" element={<Test />} />
+        {/* <Route path="/test" element={<Test />} /> */}
         <Route path="/barnav" element={<BarNav />} />
         <Route path="/payment-required" element={<PaymentRequired />} />
+        <Route path="/EUDRSubmissionForGuest" element={ <EUDRSubmitFormForGuest />}/>
 
         {/* Protected Routes */}
         <Route

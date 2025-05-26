@@ -2,36 +2,20 @@ import React from 'react';
 
 const Loading = () => {
   return (
-    <div className="flex">
-      <div className="border border-blue-300 shadow rounded-md mt-4 p-4 max-w-sm w-full">
-        <div className="animate-pulse flex space-x-4">
-          <div className="rounded-full bg-slate-700 h-10 w-10"></div>
-          <div className="flex-1 space-y-6 py-1">
-            <div className="h-2 bg-slate-700 rounded"></div>
-            <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="h-2 bg-slate-700 rounded col-span-2"></div>
-                <div className="h-2 bg-slate-700 rounded col-span-1"></div>
-              </div>
-              <div className="h-2 bg-slate-700 rounded"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="border border-blue-300 shadow rounded-md mt-4 ms-4  p-4 flex-1">
-        <div className="animate-pulse flex space-x-4">
-          <div className="rounded-full bg-slate-700 h-10 w-10"></div>
-          <div className="flex-1 space-y-6 py-1">
-            <div className="h-2 bg-slate-700 rounded"></div>
-            <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="h-2 bg-slate-700 rounded col-span-2"></div>
-                <div className="h-2 bg-slate-700 rounded col-span-1"></div>
-              </div>
-              <div className="h-2 bg-slate-700 rounded"></div>
-            </div>
-          </div>
-        </div>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-white to-slate-100">
+      <div className="relative w-32 h-32">
+        {/* Orbital paths */}
+        <div className="absolute inset-0 rounded-full border-2 border-dashed border-gray-300 animate-spin-slow"></div>
+        <div className="absolute inset-4 rounded-full border-2 border-dashed border-blue-400 animate-spin-reverse-slower"></div>
+
+        {/* Orbiting dots */}
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-400 rounded-full shadow-md animate-ping-fast"></div>
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-indigo-400 rounded-full shadow-md animate-ping-slow"></div>
+        <div className="absolute top-1/2 left-0 transform -translate-y-1/2 w-2.5 h-2.5 bg-pink-400 rounded-full shadow-md animate-ping-delay"></div>
+        <div className="absolute top-1/2 right-0 transform -translate-y-1/2 w-2.5 h-2.5 bg-cyan-400 rounded-full shadow-md animate-ping-delay-2"></div>
+        
+        {/* Center pulse */}
+        <div className="absolute inset-1/3 w-12 h-12 bg-blue-100/60 rounded-full animate-pulse shadow-xl backdrop-blur-md" />
       </div>
     </div>
   );

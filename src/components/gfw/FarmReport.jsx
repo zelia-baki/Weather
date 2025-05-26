@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
-import axiosInstance from '../../axiosInstance';
+import axiosInstance from '../../axiosInstance.jsx';
 import { useLocation, Link } from "react-router-dom";
 import html2canvas from "html2canvas";
 import Loading from '../main/Loading.jsx';

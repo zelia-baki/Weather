@@ -4,7 +4,12 @@ import axiosInstance from '../../axiosInstance';
 const FeatureManager = () => {
   const [featurePrices, setFeaturePrices] = useState([]);
   const [accessRecords, setAccessRecords] = useState([]);
-  const [featureFormData, setFeatureFormData] = useState({ feature_name: '', price: '' });
+  const [featureFormData, setFeatureFormData] = useState({
+    feature_name: '',
+    price: '',
+    duration_days: '',
+    usage_limit: ''
+  });
   const [accessFormData, setAccessFormData] = useState({
     user_id: '',
     guest_phone_number: '',
@@ -91,9 +96,15 @@ const FeatureManager = () => {
   };
 
   const handleEditFeature = (item) => {
-    setFeatureFormData({ feature_name: item.feature_name, price: item.price });
+    setFeatureFormData({
+      feature_name: item.feature_name,
+      price: item.price,
+      duration_days: item.duration_days ?? '',
+      usage_limit: item.usage_limit ?? ''
+    });
     setEditingFeatureId(item.id);
   };
+
 
   const handleEditAccess = (item) => {
     setAccessFormData({ ...item });
@@ -126,6 +137,23 @@ const FeatureManager = () => {
       <form onSubmit={handleFeatureSubmit} className="mb-4">
         <input type="text" name="feature_name" value={featureFormData.feature_name} onChange={handleFeatureChange} placeholder="Feature Name" className="border p-2 rounded mr-2" required />
         <input type="number" name="price" value={featureFormData.price} onChange={handleFeatureChange} placeholder="Price" className="border p-2 rounded mr-2" required />
+        <input
+          type="number"
+          name="duration_days"
+          value={featureFormData.duration_days}
+          onChange={handleFeatureChange}
+          placeholder="Duration in days"
+          className="border p-2 rounded mr-2"
+        />
+
+        <input
+          type="number"
+          name="usage_limit"
+          value={featureFormData.usage_limit}
+          onChange={handleFeatureChange}
+          placeholder="Usage Limit"
+          className="border p-2 rounded mr-2"
+        />
         <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
           {editingFeatureId ? 'Update Feature' : 'Add Feature'}
         </button>
