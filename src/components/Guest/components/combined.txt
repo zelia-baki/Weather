@@ -1,0 +1,159 @@
+// components/CarbonReportSection.jsx
+import React from 'react';
+import { Pie } from 'react-chartjs-2';
+import { renderCarbonTable, generateMapboxUrl } from './reportUtils';
+
+const CarbonReportSection = ({ results, reportRef }) => {
+  const dataFields = results[0]?.data_fields || {};
+  const pieData = {
+    labels: ['Carbon Gross Emissions', 'Carbon Gross Removals', 'Carbon Net Flux', 'Carbon Sequestration'],
+    datasets: [{
+      data: [
+        results[0]?.data_fields.gfw_forest_carbon_gross_emissions__Mg_CO2e || 0,
+        results[1]?.data_fields.gfw_forest_carbon_gross_removals__Mg_CO2e || 0,
+        results[2]?.data_fields.gfw_forest_carbon_net_flux__Mg_CO2e || 0,
+        results[3]?.data_fields.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C || 0
+      ],
+      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8BC34A'],
+      hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8BC34A']
+    }]
+  };
+
+  return (
+    <div ref={reportRef} className="page bg-white p-6 shadow-md mb-4 w-full max-w-4xl">
+      <img src="/logo.jpg" alt="Logo" style={{ float: 'right', width: '200px', height: 'auto' }} />
+      <h1 className="text-3xl font-bold mb-6 text-center">NKUSU/AGRIYIELDS REPORT</h1>
+      <p className="p-4">
+        <strong>Carbon Report</strong> generated based on your submitted GeoJSON file.
+      </p>
+      <div className="container mx-auto p-4">
+        <h2 className="text-xl font-semibold mb-4">Carbon Assessment Summary</h2>
+        {renderCarbonTable(dataFields)}
+        <div className="w-full max-w-md mx-auto mt-6">
+          <Pie data={pieData} options={{
+            responsive: true,
+            plugins: {
+              legend: { position: 'top' },
+              title: { display: true, text: 'Carbon Emissions and Sequestration' }
+            }
+          }} />
+        </div>
+        {results[0]?.coordinates?.[0] && (
+          <div className="items-center justify-center mt-6 mb-6">
+            <div className="overflow-hidden">
+              <img
+                src={generateMapboxUrl(results[0].coordinates[0])}
+                alt="Map"
+                className="object-cover w-full h-full"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default CarbonReportSection;
+
+
+// components/EudrReportSection.jsx
+import React from 'react';
+import { renderEudrTable } from './reportUtils';
+
+const EudrReportSection = ({ results, reportRef }) => (
+  <div ref={reportRef} className="page bg-white p-6 shadow-md mb-4 w-full max-w-4xl">
+    <img src="/logo.jpg" alt="Logo" style={{ float: 'right', width: '200px', height: 'auto' }} />
+    <h1 className="text-3xl font-bold mb-6 text-center">NKUSU/AGRIYIELDS REPORT</h1>
+    <p className="p-4">
+      <strong>EUDR Compliance Report</strong> generated based on your submitted GeoJSON file.
+    </p>
+    <div className="container mx-auto p-4">
+      <h2 className="text-xl font-semibold mb-4">Compliance Risk Summary</h2>
+      {renderEudrTable(results[0]?.data_fields || {})}
+    </div>
+  </div>
+);
+
+export default EudrReportSection;
+
+
+
+// utils/reportUtils.js
+export const renderCarbonTable = (dataFields) => (
+  <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+    <thead className="bg-gray-100">
+      <tr>
+        <th className="py-2 px-4 border-b text-left">Category</th>
+        <th className="py-2 px-4 border-b text-left">Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td className="px-4 py-2 border-b">Carbon gross emissions</td><td className="px-4 py-2 border-b">{dataFields.gfw_forest_carbon_gross_emissions__Mg_CO2e || 0}</td></tr>
+      <tr><td className="px-4 py-2 border-b">Carbon gross absorption</td><td className="px-4 py-2 border-b">{dataFields.gfw_forest_carbon_gross_removals__Mg_CO2e || 0}</td></tr>
+      <tr><td className="px-4 py-2 border-b">Carbon net emissions</td><td className="px-4 py-2 border-b">{dataFields.gfw_forest_carbon_net_flux__Mg_CO2e || 0}</td></tr>
+      <tr>
+        <td className="px-4 py-2 border-b">Sequestration potential</td>
+        <td className="px-4 py-2 border-b">
+          {dataFields.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C || 0} (below)<br />
+          {dataFields.gfw_reforestable_extent_aboveground_carbon_potential_sequestration__Mg_C || 0} (above)
+        </td>
+      </tr>
+    </tbody>
+  </table>
+);
+
+export const renderEudrTable = (dataFields) => (
+  <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-lg">
+    <thead className="bg-gray-100">
+      <tr>
+        <th className="py-2 px-4 border-b text-left">Field</th>
+        <th className="py-2 px-4 border-b text-left">Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {Object.entries(dataFields).map(([key, value]) => (
+        <tr key={key}><td className="py-2 px-4 border-b">{key}</td><td className="py-2 px-4 border-b">{String(value)}</td></tr>
+      ))}
+    </tbody>
+  </table>
+);
+
+export const generateMapboxUrl = (coordinates) => {
+  const geojson = {
+    type: "FeatureCollection",
+    features: [{
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [coordinates] },
+      properties: {}
+    }]
+  };
+  const encoded = encodeURIComponent(JSON.stringify(geojson));
+  return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/geojson(${encoded})/auto/800x400?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`;
+};
+
+
+// components/UploadCard.jsx
+import React from 'react';
+
+const UploadCard = ({ title, onFileChange, onUpload, loading, inputName }) => (
+  <div className="bg-white rounded-2xl shadow-md p-6">
+    <h2 className="text-2xl font-bold mb-4">{title}</h2>
+    <input
+      type="file"
+      accept=".geojson,application/geo+json"
+      name={inputName}
+      onChange={(e) => onFileChange(inputName, e)}
+      className="mb-4"
+    />
+    <button
+      onClick={() => onUpload(inputName)}
+      className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+      disabled={loading}
+    >
+      {loading ? 'Loading...' : 'Send and analyze'}
+    </button>
+  </div>
+);
+
+export default UploadCard;

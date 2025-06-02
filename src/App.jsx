@@ -62,7 +62,7 @@ import EUDRSubmitForm from './components/Eudr/EUDRSubmitForm.jsx';
 import FeatureRoute from './FeatureRoute';
 import PaymentRequired from './components/main/PaymentRequired';
 import FeatureManager from './components/Features/FeatureManager.jsx';
-import EUDRSubmitFormForGuest from './components/Eudr/EUDRSubmitFormForGuest.jsx'
+import EUDRSubmitFormForGuest from './components/Guest/EUDRSubmitFormForGuest.jsx'
 
 // import Test from './components/gfw/FarmReport.jsx';
 

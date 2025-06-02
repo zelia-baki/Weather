@@ -74,7 +74,7 @@ export function SendPaymentModal({ isOpen, onClose, featureName }) {
 
       if (accessRes.data.access) {
         // ✅ Redirection directe vers la page protégée
-        navigate(`/features/${featureName}`);
+        navigate(`/${featureName}`);
       } else {
         setResponse("Payment confirmed, but access not activated.");
       }

@@ -1,3 +1,76 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
+
+    .carbon-report-a4 {
+        width: 210mm;
+        min-height: 297mm;
+        padding: 20mm;
+        background: white;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        page-break-after: always;
+        font-family: 'Georgia', serif;
+    }
+
+    .report-header {
+  text-align: center;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+  /* plus besoin de position: relative ici */
+}
+
+
+    .report-logo {
+  width: 120px;
+  position: static; /* plus de absolute */
+}
+
+
+    .report-header h1 {
+        font-size: 24pt;
+        margin-bottom: 0;
+    }
+
+    .report-header h2 {
+        font-size: 14pt;
+        margin: 0;
+        color: #666;
+    }
+
+    .subtitle {
+        font-size: 11pt;
+        color: #888;
+        margin-top: 4px;
+    }
+
+    .report-body {
+        margin-top: 10px;
+        font-size: 12pt;
+    }
+
+    .report-section {
+        margin-top: 10px;
+    }
+
+    .report-section h4 {
+        margin-bottom: 5px;
+    }
+
+    .report-map {
+        width: 100%;
+        max-height: 200px;
+        object-fit: cover;
+        border: 1px solid #ccc;
+    }
+
+    .report-footer {
+        text-align: center;
+        font-size: 10pt;
+        color: #aaa;
+        border-top: 1px solid #ccc;
+        padding-top: 10px;
+        margin-top: 20px;
+    }

@@ -24,7 +24,7 @@ const Layout = ({ children }) => {
             console.log(role);
             setUserRole(role);
             setIsAdmin(role === "admin"); // Directly setting isAdmin
-            console.log("ato amin'ny layout ",isAdmin);
+            console.log("ato amin'ny layout ", isAdmin);
         }
     }, []);
 
@@ -39,6 +39,7 @@ const Layout = ({ children }) => {
 
     const handleLogOut = () => {
         localStorage.removeItem("token");
+        sessionStorage.clear(); // 🔥 très important pour que les usages soient reconsommés à la prochaine session
         window.location.href = "/login";
     };
 

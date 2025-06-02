@@ -294,6 +294,7 @@ const FullReport = () => {
           console.log('Report keys:', reportData);  // Affiche les datasets disponibles
 
           setGeoData(reportData);
+          console.log("ici c'est le contenu de geodata", geoData);
 
           // Vérifie qu'on a bien des coordonnées valides dans le dataset "radd alerts"
           const raddEntries = reportData["radd alerts"];
@@ -335,11 +336,17 @@ const FullReport = () => {
             type: "Polygon",
             coordinates: [coordinates]
           },
-          properties: {}
+          properties:{
+            stroke: "#00FF00",          // Vert vif pour la bordure
+            "stroke-width": 4,          // Bordure épaisse
+            "stroke-opacity": 1,
+            fill: "#00FF00",            // Même vert ou plus doux
+            "fill-opacity": 0.2         // Remplissage léger
+          }
         }
       ]
     };
-    console.log("ETOOOOOOOOOOO!!!!!!!!!!!!!!!!!",JSON.stringify(geojson));
+    console.log("geojson du fermier",JSON.stringify(geojson));
     const encodedGeojson = encodeURIComponent(JSON.stringify(geojson));
     console.log(dimensions);
     const x = Math.min(dimensions.width, 1280);
@@ -511,13 +518,13 @@ const FullReport = () => {
                   </div>
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">5. Protected Area (EUDR Article 10):</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">6. Protected Area (EUDR Article 10):</h3>
                   <div className="text-gray-700">
                     whether plot of land is in areas Gazzetted as Protected Areas e.g swamps, national parks etc
                   </div>
                 </div>
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">5. indigenous and community lands (EUDR Article 10):</h3>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">7. indigenous and community lands (EUDR Article 10):</h3>
                   <div className="text-gray-700">
                     lands or plots existing within land gazetted as indigenous or community land
                   </div>
@@ -525,7 +532,7 @@ const FullReport = () => {
               </div>
             </div>
           </div>
-          <div className="bg-white m-6 p-11 shadow-md mb-4">
+          1<div className="bg-white m-6 p-11 shadow-md mb-4">
             <h2 className="text-2xl font-bold mb-4">Tree Cover and Deforestation Risk</h2>
             <table className="table-auto w-full mt-4 border-collapse border border-gray-400">
               <thead>

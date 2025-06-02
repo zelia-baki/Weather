@@ -302,7 +302,13 @@ const FullReport = () => {
             type: "Polygon",
             coordinates: [coordinates]
           },
-          properties: {}
+          properties:{
+            stroke: "#00FF00",          // Vert vif pour la bordure
+            "stroke-width": 4,          // Bordure épaisse
+            "stroke-opacity": 1,
+            fill: "#00FF00",            // Même vert ou plus doux
+            "fill-opacity": 0.2         // Remplissage léger
+          }
         }
       ]
     };
