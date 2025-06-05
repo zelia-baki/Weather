@@ -118,7 +118,7 @@ const LandingPage = ({ children }) => {
                                     </li>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/district" className="block w-full h-full">
-                                            District   mnmmmmmmmmmmmmm
+                                            District 
                                         </a>
                                     </li>
                                 </ul>

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { renderEudrTable, generateMapboxUrl } from './reportUtils';
+import { renderEudrTable, generateMapboxUrl } from '../utils/reportUtils';
+import parrot from '../../img/parrot.jpg';
+
 // ✅ EN HAUT DU FICHIER
 import * as turf from '@turf/turf';
 
@@ -166,15 +168,31 @@ const EudrReportSection = ({ results, reportRef }) => {
     <div ref={reportRef} className="carbon-report-a4">
       {/* HEADER */}
       <div className="report-header-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ width: '120px' }} />
+        {/* Parrot section */}
+        <div style={{ width: '120px', height: '120px', position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <div className="bg-white rounded-full ">
+            <img
+              src={parrot}
+              alt="Parrot"
+              className="w-24 h-24 rounded-full object-cover"
+            />
+          </div>
+        </div>
+
+        {/* Header titles */}
         <div className="report-header" style={{ textAlign: 'center' }}>
           <h1>NKUSU / AGRIYIELDS REPORT</h1>
           <h2>EUDR COMPLIANCE REPORT</h2>
-          <p className="subtitle">Report generated based on the Regulation (EU) 2023/1115 on deforestation-free products.
-        </p>
+          <p className="subtitle">
+            Report generated based on the Regulation (EU) 2023/1115 on deforestation-free products.
+          </p>
         </div>
-        <img src="/logo.jpg" alt="Logo" className="report-logo" style={{ position: 'static', width: '120px' }} />
+
+        {/* Logo */}
+        <img src="/logo.jpg" alt="Logo" className="report-logo" style={{ width: '120px', height: '120px', objectFit: 'contain' }} />
       </div>
+
+
 
       <div className="report-body">
         <p>This report provides a compliance assessment under the EU Regulation 2023/1115.</p>
@@ -238,11 +256,10 @@ const EudrReportSection = ({ results, reportRef }) => {
               Determines whether the land overlaps with recognized indigenous or community land.
             </p>
           </div>
-          <br />
-          <br />
-          <br />
-          <br />
           {/* Compliance Table */}
+          <div className="html2pdf__page-break"></div>
+
+
           <div className="report-section">
             <h4>Summary Compliance Table</h4>
             {renderEudrTable({

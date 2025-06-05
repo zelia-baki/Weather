@@ -30,7 +30,7 @@ export const renderEudrTable = (data) => {
     coverExtentDecileData = {},
     tscDriverDriver = {}
   } = data;
-
+  
   return (
     <table className="table-auto w-full mt-4 border-collapse border border-gray-400">
       <thead>
@@ -88,11 +88,11 @@ export const renderEudrTable = (data) => {
               <ul>
                 {Object.entries(resultStatus.protectedStatus.percentages).map(([key, percentage]) => {
                   const statusText =
-                    key === '0' ? 'Not in WDPA protected area' :
-                    key === '1' ? 'In WDPA protected area' :
-                    key === '2' ? 'In IUCN vulnerable area' :
-                    key === 'No Data' ? 'No data available' :
-                    'Unknown';
+                  key === '0' ? 'Not in WDPA protected area' :
+                  key === '1' ? 'In WDPA protected area' :
+                  key === '2' ? 'In IUCN vulnerable area' :
+                  key === 'No Data' ? 'No data available' :
+                  'Unknown';
                   return <li key={key}>{statusText}: {percentage}</li>;
                 })}
               </ul>
@@ -105,9 +105,9 @@ export const renderEudrTable = (data) => {
         {/* <tr>
           <td className="border border-gray-400 px-4 py-2">Indigenous Land Status</td>
           <td className="border border-gray-400 px-4 py-2">
-            {resultStatus?.indigenousStatus || 'Unknown'}
+          {resultStatus?.indigenousStatus || 'Unknown'}
           </td>
-        </tr> */}
+          </tr> */}
 
         <tr>
           <td className="border border-gray-400 px-4 py-2">Cover Extent Summary</td>
@@ -171,8 +171,24 @@ export const generateMapboxUrl = (coordinates) => {
       }
     }]
   };
-
+  
   const encoded = encodeURIComponent(JSON.stringify(geojson));
-
+  
   return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/geojson(${encoded})/auto/800x200?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`;
+};
+
+
+export const fetchReportFromFile = async (featureName, file, phone) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const endpoint = `/api/gfw/Geojson/${featureName === 'reportcarbonguest' ? 'CarbonReportFromFile' : 'ReportFromFile'}`;
+
+  const res = await axiosInstance.post(endpoint, formData, {
+    headers: {
+      'X-Guest-ID': localStorage.getItem('guest_id'),
+      'X-Guest-Phone': phone
+    }
+  });
+
+  return res.data.report;
 };

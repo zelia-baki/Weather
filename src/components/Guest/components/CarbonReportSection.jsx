@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pie } from 'react-chartjs-2';
-import { renderCarbonTable, generateMapboxUrl } from './reportUtils';
+import { renderCarbonTable, generateMapboxUrl } from '../utils/reportUtils';
 
 const CarbonReportSection = ({ results, reportRef }) => {
     // Extraction des data_fields à partir des clés du rapport

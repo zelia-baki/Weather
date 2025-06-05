@@ -74,3 +74,8 @@
         padding-top: 10px;
         margin-top: 20px;
     }
+
+.html2pdf__page-break {
+  page-break-before: always;
+}
+

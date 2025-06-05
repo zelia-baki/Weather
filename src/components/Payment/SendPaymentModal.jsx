@@ -1,18 +1,20 @@
-// SendPaymentModal.jsx
 import React, { useState } from "react";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
 import axiosInstance from "../../axiosInstance";
-import { useNavigate } from "react-router-dom"; // 👈 AJOUT
+import { useNavigate } from "react-router-dom";
 
-export function SendPaymentModal({ isOpen, onClose, featureName }) {
-  const [phone, setPhone] = useState("");
+export function SendPaymentModal({ isOpen, onClose, featureName, phone: passedPhone, onPaymentSuccess }) {
   const [txnId, setTxnId] = useState("123" + Date.now());
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
+  const [phoneInput, setPhoneInput] = useState(""); // utilisé seulement si `passedPhone` est absent
 
-  const navigate = useNavigate(); // 👈 AJOUT
+  const navigate = useNavigate();
+
+  const effectivePhone = passedPhone || phoneInput;
+
 
   const handlePayment = async (e) => {
     e.preventDefault();
@@ -20,14 +22,15 @@ export function SendPaymentModal({ isOpen, onClose, featureName }) {
     setResponse("");
     try {
       const res = await axiosInstance.post("/api/payments/initiate", {
-        phone_number: phone,
+        phone_number: effectivePhone,
         feature_name: featureName,
         txn_id: txnId,
       });
 
       setResponse(res.data.msg || "Payment initiated. Please confirm on your phone.");
       setPolling(true);
-      startPolling(txnId, phone);
+      startPolling(txnId, effectivePhone);
+      console.log("featureName",featureName);
     } catch (err) {
       setResponse("Error : " + (err.response?.data?.error || err.message));
       setLoading(false);
@@ -73,8 +76,11 @@ export function SendPaymentModal({ isOpen, onClose, featureName }) {
       });
 
       if (accessRes.data.access) {
-        // ✅ Redirection directe vers la page protégée
-        navigate(`/${featureName}`);
+        if (onPaymentSuccess) {
+          onPaymentSuccess(); // callback pour déclencher la génération du rapport
+        } else {
+          navigate(`/${featureName}`);
+        }
       } else {
         setResponse("Payment confirmed, but access not activated.");
       }
@@ -100,24 +106,25 @@ export function SendPaymentModal({ isOpen, onClose, featureName }) {
             Payment for : {featureName}
           </Dialog.Title>
           <form onSubmit={handlePayment} className="space-y-4">
-            <input
-              type="tel"
-              placeholder="Your phone number"
-              className="w-full p-2 border rounded"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              disabled={loading || polling}
-            />
+            {!passedPhone && (
+              <input
+                type="tel"
+                placeholder="Your phone number"
+                className="w-full p-2 border rounded"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                required
+                disabled={loading || polling}
+              />
+            )}
             <input
               type="text"
               placeholder="Transaction ID"
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded bg-gray-100 text-gray-600 cursor-not-allowed"
               value={txnId}
-              onChange={(e) => setTxnId(e.target.value)}
-              required
-              disabled={loading || polling}
+              readOnly
             />
+
             <button
               type="submit"
               className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"

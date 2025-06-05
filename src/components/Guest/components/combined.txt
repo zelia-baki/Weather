@@ -1,82 +1,548 @@
-// components/CarbonReportSection.jsx
+import React, { useState, useEffect, useRef } from 'react';
+import axiosInstance from '../../axiosInstance';
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+import UploadCard from './components/UploadCard';
+import CarbonReportSection from './components/CarbonReportSection';
+import EudrReportSection from './components/EudrReportSection';
+
+const CarbonReportUploader = () => {
+  const [userInfo, setUserInfo] = useState({ phone: '', email: '' });
+  const [submitted, setSubmitted] = useState(false);
+  const [files, setFiles] = useState({ eudr: null, carbon: null });
+  const [loading, setLoading] = useState({ eudr: false, carbon: false });
+  const [results, setResults] = useState({ eudr: {}, carbon: {} });
+  const [error, setError] = useState({ eudr: '', carbon: '' });
+
+  const reportRefs = {
+    eudr: useRef(),
+    carbon: useRef(),
+  };
+
+  useEffect(() => {
+    let guestId = localStorage.getItem("guest_id");
+    if (!guestId) {
+      guestId = crypto.randomUUID();
+      localStorage.setItem("guest_id", guestId);
+    }
+  }, []);
+
+  const generatePdf = async (inputName) => {
+    const element = reportRefs[inputName].current;
+    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = pdfWidth;
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+    }
+
+    pdf.save(`${inputName.toUpperCase()}_Report.pdf`);
+  };
+
+  const handleFileChange = (inputName, e) => {
+    setFiles((prev) => ({ ...prev, [inputName]: e.target.files[0] }));
+    setResults((prev) => ({ ...prev, [inputName]: {} }));
+    setError((prev) => ({ ...prev, [inputName]: '' }));
+  };
+
+  const handleUpload = async (inputName) => {
+    const file = files[inputName];
+    if (!file) {
+      setError((prev) => ({ ...prev, [inputName]: 'Please select a GeoJSON file.' }));
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    const guestId = localStorage.getItem("guest_id");
+
+    const urlMap = {
+      eudr: '/api/gfw/Geojson/ReportFromFile',
+      carbon: '/api/gfw/Geojson/CarbonReportFromFile',
+    };
+
+    setLoading((prev) => ({ ...prev, [inputName]: true }));
+    setError((prev) => ({ ...prev, [inputName]: '' }));
+
+    try {
+      const response = await axiosInstance.post(urlMap[inputName], formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-Guest-ID': guestId,
+        },
+      });
+      console.log("REPORT:", response.data.report);
+      setResults((prev) => ({ ...prev, [inputName]: response.data.report || {} }));
+    } catch (err) {
+      setError((prev) => ({
+        ...prev,
+        [inputName]: err.response?.data?.error || 'An error has occurred.',
+      }));
+    } finally {
+      setLoading((prev) => ({ ...prev, [inputName]: false }));
+    }
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    if (userInfo.phone && userInfo.email) {
+      localStorage.setItem('guest_phone', userInfo.phone);
+      localStorage.setItem('guest_email', userInfo.email);
+      setSubmitted(true);
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      {!submitted ? (
+        <form onSubmit={handleFormSubmit} className="bg-white p-6 rounded-2xl shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Enter your details to continue</h2>
+          <input type="text" placeholder="Your Phone number" value={userInfo.phone} onChange={(e) => setUserInfo({ ...userInfo, phone: e.target.value })} className="block w-full p-2 border rounded mb-4" required />
+          <input type="email" placeholder="Your Email" value={userInfo.email} onChange={(e) => setUserInfo({ ...userInfo, email: e.target.value })} className="block w-full p-2 border rounded mb-4" required />
+          <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Continue</button>
+        </form>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-6">
+            <UploadCard
+              inputName="eudr"
+              title="Upload your geojson for your farm location details to find out your plot level deforestation risk and EUDR compliance"
+              onFileChange={handleFileChange}
+              onUpload={handleUpload}
+              loading={loading.eudr}
+            />
+            <UploadCard
+              inputName="carbon"
+              title="Upload your geojson to determine if your land is a net carbon sink (Carbon Report)"
+              onFileChange={handleFileChange}
+              onUpload={handleUpload}
+              loading={loading.carbon}
+            />
+          </div>
+
+          {['eudr', 'carbon'].map((key) => (
+            <div key={key} className="flex justify-center flex-col items-center text-xl mt-10">
+              {error[key] && <p className="text-red-600">{error[key]}</p>}
+              {results[key] && Object.keys(results[key]).length > 0 && (
+                <>
+                  {key === 'carbon' ? (
+                    <CarbonReportSection results={results[key]} reportRef={reportRefs[key]} />
+                  ) : (
+                    <EudrReportSection results={results[key]} reportRef={reportRefs[key]} />
+                  )}
+                  <button
+                    onClick={() => generatePdf(key)}
+                    className="bg-blue-500 text-white px-6 py-3 rounded-md mt-6 hover:bg-blue-700 transition duration-300"
+                  >
+                    Télécharger le PDF
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default CarbonReportUploader;
+
+
 import React from 'react';
 import { Pie } from 'react-chartjs-2';
 import { renderCarbonTable, generateMapboxUrl } from './reportUtils';
 
 const CarbonReportSection = ({ results, reportRef }) => {
-  const dataFields = results[0]?.data_fields || {};
-  const pieData = {
-    labels: ['Carbon Gross Emissions', 'Carbon Gross Removals', 'Carbon Net Flux', 'Carbon Sequestration'],
-    datasets: [{
-      data: [
-        results[0]?.data_fields.gfw_forest_carbon_gross_emissions__Mg_CO2e || 0,
-        results[1]?.data_fields.gfw_forest_carbon_gross_removals__Mg_CO2e || 0,
-        results[2]?.data_fields.gfw_forest_carbon_net_flux__Mg_CO2e || 0,
-        results[3]?.data_fields.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C || 0
-      ],
-      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8BC34A'],
-      hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8BC34A']
-    }]
-  };
+    // Extraction des data_fields à partir des clés du rapport
+    const emissions = results["forest carbon gross emissions"]?.[0]?.data_fields || {};
+    const removals = results["forest carbon gross removals"]?.[0]?.data_fields || {};
+    const netFlux = results["forest carbon net flux"]?.[0]?.data_fields || {};
+    const sequestration = results["full extent aboveground carbon potential sequestration"]?.[0]?.data_fields || {};
 
-  return (
-    <div ref={reportRef} className="page bg-white p-6 shadow-md mb-4 w-full max-w-4xl">
-      <img src="/logo.jpg" alt="Logo" style={{ float: 'right', width: '200px', height: 'auto' }} />
-      <h1 className="text-3xl font-bold mb-6 text-center">NKUSU/AGRIYIELDS REPORT</h1>
-      <p className="p-4">
-        <strong>Carbon Report</strong> generated based on your submitted GeoJSON file.
-      </p>
-      <div className="container mx-auto p-4">
-        <h2 className="text-xl font-semibold mb-4">Carbon Assessment Summary</h2>
-        {renderCarbonTable(dataFields)}
-        <div className="w-full max-w-md mx-auto mt-6">
-          <Pie data={pieData} options={{
-            responsive: true,
-            plugins: {
-              legend: { position: 'top' },
-              title: { display: true, text: 'Carbon Emissions and Sequestration' }
-            }
-          }} />
-        </div>
-        {results[0]?.coordinates?.[0] && (
-          <div className="items-center justify-center mt-6 mb-6">
-            <div className="overflow-hidden">
-              <img
-                src={generateMapboxUrl(results[0].coordinates[0])}
-                alt="Map"
-                className="object-cover w-full h-full"
-              />
+    const pieData = {
+        labels: ['Carbon Gross Emissions', 'Carbon Gross Removals', 'Carbon Net Flux', 'Carbon Sequestration'],
+        datasets: [{
+            data: [
+                emissions.gfw_forest_carbon_gross_emissions__Mg_CO2e || 0,
+                removals.gfw_forest_carbon_gross_removals__Mg_CO2e || 0,
+                netFlux.gfw_forest_carbon_net_flux__Mg_CO2e || 0,
+                sequestration.gfw_reforestable_extent_aboveground_carbon_potential_sequestration__Mg_C || 0
+            ],
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8BC34A'],
+            hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8BC34A']
+        }]
+    };
+
+    // Utilisé pour le tableau (affichage simple des principales valeurs)
+    const mergedDataFields = {
+        ...emissions,
+        ...removals,
+        ...netFlux,
+        ...sequestration
+    };
+
+    const coordinates = results["forest carbon gross emissions"]?.[0]?.coordinates?.[0];
+
+    return (
+        <div
+            ref={reportRef}
+            className="carbon-report-a4"
+        >
+            {/* HEADER */}
+            <div className="report-header-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ width: '120px' }} />
+                <div className="report-header" style={{ textAlign: 'center' }}>
+                    <h1>NKUSU / AGRIYIELDS REPORT</h1>
+                    <h2>Carbon Report</h2>
+                    <p className="subtitle">Generated based on your submitted GeoJSON file.</p>
+                </div>
+                <img src="/logo.jpg" alt="Logo" className="report-logo" style={{ position: 'static', width: '120px' }} />
             </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+
+            {/* CONTENT */}
+            <div className="report-body">
+                <h3>Carbon Assessment Summary</h3>
+                {renderCarbonTable(mergedDataFields)}
+
+                {/* PIE CHART */}
+                <div className="report-section">
+                    <h4>Carbon Emissions and Sequestration</h4>
+                    <div style={{ width: '100%', maxWidth: '400px', height: '150px', margin: '0 auto' }}>
+                        <Pie
+                            data={pieData}
+                            options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'top' },
+                                    title: { display: false }
+                                }
+                            }}
+                        />
+                    </div>
+                </div>
+
+                {/* MAP */}
+                {coordinates && (
+                    <div className="report-section">
+                        <h4>Plot Map</h4>
+                        <img
+                            src={generateMapboxUrl(coordinates)}
+                            alt="Map"
+                            className="report-map"
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* FOOTER */}
+            <div className="report-footer">
+                <p>Generated by NKUSU | AGRIYIELDS</p>
+            </div>
+        </div>
+    );
 };
 
 export default CarbonReportSection;
 
 
-// components/EudrReportSection.jsx
-import React from 'react';
-import { renderEudrTable } from './reportUtils';
+import React, { useEffect, useState } from "react";
+import { renderEudrTable, generateMapboxUrl } from './reportUtils';
+// ✅ EN HAUT DU FICHIER
+import * as turf from '@turf/turf';
 
-const EudrReportSection = ({ results, reportRef }) => (
-  <div ref={reportRef} className="page bg-white p-6 shadow-md mb-4 w-full max-w-4xl">
-    <img src="/logo.jpg" alt="Logo" style={{ float: 'right', width: '200px', height: 'auto' }} />
-    <h1 className="text-3xl font-bold mb-6 text-center">NKUSU/AGRIYIELDS REPORT</h1>
-    <p className="p-4">
-      <strong>EUDR Compliance Report</strong> generated based on your submitted GeoJSON file.
-    </p>
-    <div className="container mx-auto p-4">
-      <h2 className="text-xl font-semibold mb-4">Compliance Risk Summary</h2>
-      {renderEudrTable(results[0]?.data_fields || {})}
+
+const EudrReportSection = ({ results, reportRef }) => {
+  const [coverExtentDecileData, setCoverExtentDecileData] = useState({
+    nonZeroValues: [],
+    nonZeroCount: 0,
+    percentageCoverExtent: 0,
+    valueCountArray: []
+  });
+
+  const [resultStatus, setResultStatus] = useState({
+    protectedStatus: {
+      counts: {},
+      percentages: {}
+    },
+    indigenousStatus: ''
+  });
+
+  const [areaInSquareMeters, setAreaInSquareMeters] = useState(null);
+  const [areaInHectares, setAreaInHectares] = useState(null);
+  const [tscDriverDriver, setTscDriverDriver] = useState({
+    mostCommonValue: '',
+    frequencyCounts: ''
+  });
+
+  const [geoData, setGeoData] = useState({});
+  const coordinates = results["jrc global forest cover"]?.[0]?.coordinates?.[0];
+
+
+
+  useEffect(() => {
+    if (!results || Object.keys(results).length < 2) return;
+    setGeoData(results);
+
+    // ===== 1. TREE COVER EXTENT =====
+    const coverDataArray = results["jrc global forest cover"];
+    let dataFieldsCoverExtent = [];
+
+    if (Array.isArray(coverDataArray)) {
+      const coverItem = coverDataArray.find(item => item.pixel === "wri_tropical_tree_cover_extent__decile");
+      dataFieldsCoverExtent = coverItem?.data_fields || [];
+    }
+
+    const nonZeroValues = [];
+    let nonZeroCount = 0;
+    const valueCounts = {};
+
+    dataFieldsCoverExtent.forEach((field) => {
+      const decile = field?.wri_tropical_tree_cover_extent__decile;
+      if (decile && decile !== 0) {
+        nonZeroValues.push(decile);
+        nonZeroCount++;
+        valueCounts[decile] = (valueCounts[decile] || 0) + 1;
+      }
+    });
+
+    const totalCount = dataFieldsCoverExtent.length;
+    const percentageCoverExtent = totalCount > 0 ? (nonZeroCount / totalCount) * 100 : 0;
+    const valueCountArray = Object.entries(valueCounts).map(([key, count]) => ({
+      value: Number(key),
+      count
+    }));
+
+    setCoverExtentDecileData({
+      nonZeroValues,
+      nonZeroCount,
+      percentageCoverExtent,
+      valueCountArray
+    });
+
+    // ===== 2. TREE COVER LOSS DRIVERS =====
+    const driverItem = results["tsc tree cover loss drivers"]
+      ?.find(item => item.pixel === "tsc_tree_cover_loss_drivers__driver");
+
+    const driverData = driverItem?.data_fields;
+    let frequencyCounts = {};
+    let mostCommonValue = null;
+
+    if (Array.isArray(driverData)) {
+      driverData.forEach((field) => {
+        const value = field?.tsc_tree_cover_loss_drivers__driver;
+        if (value) {
+          frequencyCounts[value] = (frequencyCounts[value] || 0) + 1;
+        }
+      });
+    } else if (typeof driverData === "object") {
+      const value = driverData?.tsc_tree_cover_loss_drivers__driver;
+      if (value) frequencyCounts[value] = 1;
+    }
+
+    for (const [value, count] of Object.entries(frequencyCounts)) {
+      if (!mostCommonValue || count > frequencyCounts[mostCommonValue]) {
+        mostCommonValue = value;
+      }
+    }
+
+    setTscDriverDriver({ mostCommonValue, frequencyCounts });
+
+    // ===== 3. COVER LOSS =====
+    const coverLoss = results["tree cover loss"]?.[0]?.data_fields?.area__ha || 0;
+
+    // ===== 4. PROTECTED AREA =====
+    let protectedAreas = [];
+    if (Array.isArray(results?.["soil carbon"])) {
+      const protectedItem = results["soil carbon"]
+        .find(item => item.pixel === "wdpa_protected_areas__iucn_cat");
+
+      protectedAreas = protectedItem?.data_fields || [];
+    }
+
+    const protectedCounts = {};
+    protectedAreas.forEach((field) => {
+      const value = field?.wdpa_protected_areas__iucn_cat ?? "Unknown";
+      protectedCounts[value] = (protectedCounts[value] || 0) + 1;
+    });
+
+    const totalProtected = protectedAreas.length;
+    const percentages = {};
+
+    if (totalProtected > 0) {
+      Object.entries(protectedCounts).forEach(([key, count]) => {
+        percentages[key] = ((count / totalProtected) * 100).toFixed(2) + "%";
+      });
+    } else {
+      percentages["No Data"] = "0%";
+    }
+
+    const envResults = {
+      protectedStatus: {
+        counts: protectedCounts,
+        percentages
+      }
+    };
+
+    // ===== 5. INDIGENOUS LAND =====
+    if (coverLoss === 0) {
+      const landData = results["landmark indigenous and community lands"]?.[0]?.data_fields || [];
+
+      if (!Array.isArray(landData) || landData.length === 0) {
+        envResults.indigenousStatus = "Not known, land is not gazetted";
+      } else if (landData.some(v => v === 1)) {
+        envResults.indigenousStatus = "Presence of indigenous and community lands";
+      } else {
+        envResults.indigenousStatus = "No presence of indigenous and community lands";
+      }
+    }
+
+    setResultStatus(envResults);
+
+    // ===== 6. AREA =====
+    const coords = results["jrc global forest cover"]?.[0]?.coordinates?.[0];
+    if (coords) {
+      const polygon = turf.polygon([coords]);
+      const areaSqM = turf.area(polygon);
+      setAreaInSquareMeters(areaSqM);
+      setAreaInHectares(areaSqM / 10000);
+    }
+
+  }, [results]);
+
+  return (
+    <div ref={reportRef} className="carbon-report-a4">
+      {/* HEADER */}
+      <div className="report-header-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ width: '120px' }} />
+        <div className="report-header" style={{ textAlign: 'center' }}>
+          <h1>NKUSU / AGRIYIELDS REPORT</h1>
+          <h2>EUDR COMPLIANCE REPORT</h2>
+          <p className="subtitle">Report generated based on the Regulation (EU) 2023/1115 on deforestation-free products.
+        </p>
+        </div>
+        <img src="/logo.jpg" alt="Logo" className="report-logo" style={{ position: 'static', width: '120px' }} />
+      </div>
+
+      <div className="report-body">
+        <p>This report provides a compliance assessment under the EU Regulation 2023/1115.</p>
+        <div className="report-body">
+          <p>
+            This report provides a compliance assessment under the European Union Regulation 2023/1115,
+            which governs the import and export of products associated with deforestation and degradation.
+          </p>
+
+          <div className="report-section">
+            <h4>1. RADD Alert (EUDR Article 2)</h4>
+            <p>applicable to most parts of Uganda, only parts of Lake Albert region neighbouring DRCongo</p>
+          </div>
+
+          <div className="report-section">
+            <h4>2. Tree Cover Loss (EUDR, Article 2):</h4>
+            <div className="text-gray-700">
+              Area in which Tree loss was identified since Dec 2020:
+              <ul className="list-inside list-disc text-gray-700">
+                <li><strong> </strong> Plot/Farm is fully compliant with EUDR Law.</li>
+                <li><strong>non Zero </strong> Plot/Farm likely non compliant with EUDR Law.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="report-section">
+            <h4>3. Forest Cover (EUDR, Article 2):</h4>
+            <div className="text-gray-700">
+              EU joint Research Centre Geostore for checking existence or not of forest cover as of 2020
+              <ul className="list-inside list-disc text-gray-700">
+                <li><strong> </strong> Plot/Farm is fully compliant with EUDR Law.</li>
+                <li><strong>non Zero </strong> = Farm likely non compliant with EUDR Law.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="report-section">
+            <h4>4. Tree Cover Extent (EUDR, Article 2):</h4>
+            <p className="text-gray-700">
+              Analysis of tree cover, expressed in deciles (ranging from <strong>0-100</strong>), to evaluate forest coverage.
+            </p>
+          </div>
+
+          <div className="report-section">
+            <h4>5. Tree Cover Loss Drivers (EUDR Article 10):</h4>
+            <p>
+              Identifies the primary causes of deforestation or degradation.
+            </p>
+          </div>
+
+          <div className="report-section">
+            <h4>6. Protected Area (EUDR Article 10):</h4>
+            <p>
+              Indicates if the plot is located in a gazetted protected area (national park, wetland, etc.).
+            </p>
+          </div>
+
+          <div className="report-section">
+            <h4>7. indigenous and community lands (EUDR Article 10):</h4>
+            <p>
+              Determines whether the land overlaps with recognized indigenous or community land.
+            </p>
+          </div>
+          <br />
+          <br />
+          <br />
+          <br />
+          {/* Compliance Table */}
+          <div className="report-section">
+            <h4>Summary Compliance Table</h4>
+            {renderEudrTable({
+              geoData,
+              areaInSquareMeters,
+              areaInHectares,
+              resultStatus,
+              coverExtentDecileData,
+              tscDriverDriver
+            })}
+          </div>
+          {/* MAP */}
+          {coordinates && (
+            <div className="report-section">
+              <h4>Plot Map</h4>
+              <img
+                src={generateMapboxUrl(coordinates)}
+                alt="Map"
+                className="report-map"
+              />
+            </div>
+          )}
+
+          {/* Full data fields */}
+        </div>
+      </div>
+
+      <div className="report-footer">
+        © 2025 Agriyields. Contact: nkusu@agriyields.com
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default EudrReportSection;
-
 
 
 // utils/reportUtils.js
@@ -102,22 +568,140 @@ export const renderCarbonTable = (dataFields) => (
     </tbody>
   </table>
 );
+export const renderEudrTable = (data) => {
+  const {
+    geoData = {},
+    areaInSquareMeters,
+    areaInHectares,
+    resultStatus = {},
+    coverExtentDecileData = {},
+    tscDriverDriver = {}
+  } = data;
 
-export const renderEudrTable = (dataFields) => (
-  <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-    <thead className="bg-gray-100">
-      <tr>
-        <th className="py-2 px-4 border-b text-left">Field</th>
-        <th className="py-2 px-4 border-b text-left">Value</th>
-      </tr>
-    </thead>
-    <tbody>
-      {Object.entries(dataFields).map(([key, value]) => (
-        <tr key={key}><td className="py-2 px-4 border-b">{key}</td><td className="py-2 px-4 border-b">{String(value)}</td></tr>
-      ))}
-    </tbody>
-  </table>
-);
+  return (
+    <table className="table-auto w-full mt-4 border-collapse border border-gray-400">
+      <thead>
+        <tr className="bg-gray-200">
+          <th className="border border-gray-400 px-4 py-2">Metric</th>
+          <th className="border border-gray-400 px-4 py-2">Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td className="border border-gray-400 px-4 py-2">Project Area</td>
+          <td className="border border-gray-400 px-4 py-2">
+            {areaInSquareMeters && areaInHectares ? (
+              <>
+                <p>{areaInSquareMeters.toFixed(2)} m²</p>
+                <p>{areaInHectares.toFixed(2)} ha</p>
+              </>
+            ) : 'Not available'}
+          </td>
+        </tr>
+
+        <tr>
+          <td className="border border-gray-400 px-4 py-2">RADD Alert</td>
+          <td className="border border-gray-400 px-4 py-2">
+            {geoData['radd alerts']?.[0]?.data_fields?.area__ha === 0 ? (
+              <p>0 ha (no RADD alert)</p>
+            ) : (
+              <p>{geoData['radd alerts']?.[0]?.data_fields?.area__ha} ha (Alert)</p>
+            )}
+          </td>
+        </tr>
+
+        <tr>
+          <td className="border border-gray-400 px-4 py-2">Tree Cover Loss</td>
+          <td className="border border-gray-400 px-4 py-2">
+            {geoData['tree cover loss']?.[0]?.data_fields?.area__ha === 0 ? (
+              <p>0 ha (no tree loss since 2020)</p>
+            ) : (
+              <p>{geoData['tree cover loss']?.[0]?.data_fields?.area__ha} ha of tree cover loss</p>
+            )}
+          </td>
+        </tr>
+
+        <tr>
+          <td className="border border-gray-400 px-4 py-2">EUDR Compliance</td>
+          <td className="border border-gray-400 px-4 py-2">
+            {geoData['tree cover loss']?.[0]?.data_fields?.area__ha === 0 ? '100% Compliance' : 'Not Compliant'}
+          </td>
+        </tr>
+
+        <tr>
+          <td className="border border-gray-400 px-4 py-2">Protected Area Status</td>
+          <td className="border border-gray-400 px-4 py-2">
+            {resultStatus?.protectedStatus?.percentages ? (
+              <ul>
+                {Object.entries(resultStatus.protectedStatus.percentages).map(([key, percentage]) => {
+                  const statusText =
+                    key === '0' ? 'Not in WDPA protected area' :
+                    key === '1' ? 'In WDPA protected area' :
+                    key === '2' ? 'In IUCN vulnerable area' :
+                    key === 'No Data' ? 'No data available' :
+                    'Unknown';
+                  return <li key={key}>{statusText}: {percentage}</li>;
+                })}
+              </ul>
+            ) : (
+              <p>No protected area data</p>
+            )}
+          </td>
+        </tr>
+
+        {/* <tr>
+          <td className="border border-gray-400 px-4 py-2">Indigenous Land Status</td>
+          <td className="border border-gray-400 px-4 py-2">
+            {resultStatus?.indigenousStatus || 'Unknown'}
+          </td>
+        </tr> */}
+
+        <tr>
+          <td className="border border-gray-400 px-4 py-2">Cover Extent Summary</td>
+          <td className="border border-gray-400 px-4 py-2">
+            <ul>
+              <li>Non-Zero Count: {coverExtentDecileData.nonZeroCount}</li>
+              <li>Coverage: {coverExtentDecileData.percentageCoverExtent.toFixed(2)}%</li>
+              <li>
+                <strong>Details:</strong>
+                {coverExtentDecileData.valueCountArray.length > 0 ? (
+                  <ul>
+                    {coverExtentDecileData.valueCountArray.map((item, i) => (
+                      <li key={i}>
+                        Decile: {item.value}, Count: {item.count}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  'No data available'
+                )}
+              </li>
+            </ul>
+          </td>
+        </tr>
+
+        <tr>
+          <td className="border border-gray-400 px-4 py-2">Tree Cover Drivers</td>
+          <td className="border border-gray-400 px-4 py-2">
+            {tscDriverDriver?.mostCommonValue || 'Unknown'}
+          </td>
+        </tr>
+
+        <tr>
+          <td className="border border-gray-400 px-4 py-2">Cover Extent Area</td>
+          <td className="border border-gray-400 px-4 py-2">
+            {geoData['wri tropical tree cover extent']?.[0]?.data_fields?.area__ha === 0 ? (
+              <p>0 ha (LOW)</p>
+            ) : (
+              <p>{geoData['wri tropical tree cover extent']?.[0]?.data_fields?.area__ha} ha (HIGH)</p>
+            )}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
+};
+
 
 export const generateMapboxUrl = (coordinates) => {
   const geojson = {
@@ -125,11 +709,19 @@ export const generateMapboxUrl = (coordinates) => {
     features: [{
       type: "Feature",
       geometry: { type: "Polygon", coordinates: [coordinates] },
-      properties: {}
+      properties: {
+        stroke: "#00FF00",          // Vert vif pour la bordure
+        "stroke-width": 4,          // Bordure épaisse
+        "stroke-opacity": 1,
+        fill: "#00FF00",            // Même vert ou plus doux
+        "fill-opacity": 0.2         // Remplissage léger
+      }
     }]
   };
+
   const encoded = encodeURIComponent(JSON.stringify(geojson));
-  return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/geojson(${encoded})/auto/800x400?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`;
+
+  return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/geojson(${encoded})/auto/800x200?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`;
 };
 
 

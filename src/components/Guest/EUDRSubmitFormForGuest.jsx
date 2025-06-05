@@ -1,165 +1,248 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import axiosInstance from '../../axiosInstance';
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
 import UploadCard from './components/UploadCard';
 import CarbonReportSection from './components/CarbonReportSection';
 import EudrReportSection from './components/EudrReportSection';
+import { SendPaymentModal } from '../Payment/SendPaymentModal';
+import { generatePdfBlob } from './utils/pdfUtils';
 
-const CarbonReportUploader = () => {
-  const [userInfo, setUserInfo] = useState({ phone: '', email: '' });
-  const [submitted, setSubmitted] = useState(false);
+const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const EUDRSubmitFormForGuest = () => {
+  const [step, setStep] = useState(1);
   const [files, setFiles] = useState({ eudr: null, carbon: null });
-  const [loading, setLoading] = useState({ eudr: false, carbon: false });
-  const [results, setResults] = useState({ eudr: {}, carbon: {} });
-  const [error, setError] = useState({ eudr: '', carbon: '' });
+  const [userInfo, setUserInfo] = useState({ phone: '', email: '' });
+  const [errors, setErrors] = useState({});
+  const [reports, setReports] = useState({ eudr: null, carbon: null });
+  const [showPaymentModal, setShowPaymentModal] = useState({ eudr: false, carbon: false });
+  const [selectedFeature, setSelectedFeature] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const reportRefs = { eudr: useRef(), carbon: useRef() };
+  const [loadingCard, setLoadingCard] = useState({ eudr: false, carbon: false });
 
-  const reportRefs = {
-    eudr: useRef(),
-    carbon: useRef(),
+  const handleUploadClick = async (inputName) => {
+    setLoadingCard(prev => ({ ...prev, [inputName]: true }));
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Minimum 2s loading
+    setStep(2);
+    setLoadingCard(prev => ({ ...prev, [inputName]: false }));
   };
-
-  useEffect(() => {
-    let guestId = localStorage.getItem("guest_id");
-    if (!guestId) {
-      guestId = crypto.randomUUID();
-      localStorage.setItem("guest_id", guestId);
-    }
-  }, []);
-
-  const generatePdf = async (inputName) => {
-    const element = reportRefs[inputName].current;
-    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const imgWidth = pdfWidth;
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
-    }
-
-    pdf.save(`${inputName.toUpperCase()}_Report.pdf`);
-  };
-
   const handleFileChange = (inputName, e) => {
-    setFiles((prev) => ({ ...prev, [inputName]: e.target.files[0] }));
-    setResults((prev) => ({ ...prev, [inputName]: {} }));
-    setError((prev) => ({ ...prev, [inputName]: '' }));
+    const file = e.target.files[0];
+    setFiles(prev => ({ ...prev, [inputName]: file }));
   };
 
-  const handleUpload = async (inputName) => {
-    const file = files[inputName];
-    if (!file) {
-      setError((prev) => ({ ...prev, [inputName]: 'Please select a GeoJSON file.' }));
-      return;
+  const handleUserInfoSubmit = async (e) => {
+    e.preventDefault();
+    if (userInfo.phone && userInfo.email) {
+      setLoading(true);
+      await wait(2000);
+      localStorage.setItem('guest_phone', userInfo.phone);
+      localStorage.setItem('guest_email', userInfo.email);
+      setStep(3);
+      setLoading(false);
     }
+  };
+
+  const sendPdfByEmail = async (inputName, email) => {
+    try {
+      const pdfBlob = await generatePdfBlob(inputName);
+      if (!pdfBlob) return;
+
+      const reader = new FileReader();
+      reader.readAsArrayBuffer(pdfBlob);
+      reader.onloadend = async () => {
+        const arrayBuffer = reader.result;
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const binary = uint8Array.reduce((data, byte) => data + String.fromCharCode(byte), '');
+        const base64data = btoa(binary);
+        await axiosInstance.post('/api/notifications/email', {
+          to_email: email,
+          report_type: inputName.toUpperCase(),
+          pdf_base64: base64data
+        });
+      };
+    } catch (err) {
+      console.error("Error sending email:", err);
+    }
+  };
+
+  const handleReportReady = async (featureName) => {
+    const key = featureName === 'reporteudrguest' ? 'eudr' : 'carbon';
+    const file = files[key];
+    if (!file) return;
 
     const formData = new FormData();
     formData.append('file', file);
-    const guestId = localStorage.getItem("guest_id");
-
-    const urlMap = {
-      eudr: '/api/gfw/Geojson/ReportFromFile',
-      carbon: '/api/gfw/Geojson/CarbonReportFromFile',
-    };
-
-    setLoading((prev) => ({ ...prev, [inputName]: true }));
-    setError((prev) => ({ ...prev, [inputName]: '' }));
-
+    setLoading(true);
+    await wait(2000);
     try {
-      const response = await axiosInstance.post(urlMap[inputName], formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'X-Guest-ID': guestId,
-        },
-      });
-      console.log("REPORT:", response.data.report);
-      setResults((prev) => ({ ...prev, [inputName]: response.data.report || {} }));
-    } catch (err) {
-      setError((prev) => ({
-        ...prev,
-        [inputName]: err.response?.data?.error || 'An error has occurred.',
-      }));
-    } finally {
-      setLoading((prev) => ({ ...prev, [inputName]: false }));
-    }
-  };
+      const res = await axiosInstance.post(
+        `/api/gfw/Geojson/${featureName === 'reportcarbonguest' ? 'CarbonReportFromFile' : 'ReportFromFile'}`,
+        formData,
+        {
+          headers: {
+            'X-Guest-ID': localStorage.getItem('guest_id'),
+            'X-Guest-Phone': userInfo.phone
+          }
+        }
+      );
 
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    if (userInfo.phone && userInfo.email) {
-      localStorage.setItem('guest_phone', userInfo.phone);
-      localStorage.setItem('guest_email', userInfo.email);
-      setSubmitted(true);
+      setReports(prev => ({ ...prev, [key]: res.data.report }));
+      setStep(4);
+      await sendPdfByEmail(key, userInfo.email);
+      await axiosInstance.post('/api/notifications/sms', {
+        phone: userInfo.phone,
+        message: `✅ Your ${key.toUpperCase()} report is ready. Check your email (${userInfo.email}).`
+      });
+    } catch (err) {
+      setErrors(prev => ({ ...prev, [featureName]: 'Error generating report.' }));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      {!submitted ? (
-        <form onSubmit={handleFormSubmit} className="bg-white p-6 rounded-2xl shadow-md">
-          <h2 className="text-2xl font-bold mb-4">Enter your details to continue</h2>
-          <input type="text" placeholder="Your Phone number" value={userInfo.phone} onChange={(e) => setUserInfo({ ...userInfo, phone: e.target.value })} className="block w-full p-2 border rounded mb-4" required />
-          <input type="email" placeholder="Your Email" value={userInfo.email} onChange={(e) => setUserInfo({ ...userInfo, email: e.target.value })} className="block w-full p-2 border rounded mb-4" required />
-          <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Continue</button>
-        </form>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 gap-6">
-            <UploadCard
-              inputName="eudr"
-              title="Upload your geojson for your farm location details to find out your plot level deforestation risk and EUDR compliance"
-              onFileChange={handleFileChange}
-              onUpload={handleUpload}
-              loading={loading.eudr}
-            />
-            <UploadCard
-              inputName="carbon"
-              title="Upload your geojson to determine if your land is a net carbon sink (Carbon Report)"
-              onFileChange={handleFileChange}
-              onUpload={handleUpload}
-              loading={loading.carbon}
-            />
-          </div>
+    <div className="p-6 max-w-3xl mx-auto">
+      {loading && <div className="text-center text-blue-600 font-semibold fade-in">⏳ Processing...</div>}
 
-          {['eudr', 'carbon'].map((key) => (
-            <div key={key} className="flex justify-center flex-col items-center text-xl mt-10">
-              {error[key] && <p className="text-red-600">{error[key]}</p>}
-              {results[key] && Object.keys(results[key]).length > 0 && (
-                <>
-                  {key === 'carbon' ? (
-                    <CarbonReportSection results={results[key]} reportRef={reportRefs[key]} />
-                  ) : (
-                    <EudrReportSection results={results[key]} reportRef={reportRefs[key]} />
-                  )}
-                  <button
-                    onClick={() => generatePdf(key)}
-                    className="bg-blue-500 text-white px-6 py-3 rounded-md mt-6 hover:bg-blue-700 transition duration-300"
-                  >
-                    Télécharger le PDF
-                  </button>
-                </>
-              )}
-            </div>
-          ))}
-        </>
+      {step === 1 && (
+        <div className="fade-in space-y-4">
+          <UploadCard
+            inputName="eudr"
+            title="Upload your GeoJSON for EUDR compliance"
+            onFileChange={handleFileChange}
+            onUpload={handleUploadClick}
+            loading={loadingCard.eudr}
+          />
+          <UploadCard
+            inputName="carbon"
+            title="Upload your GeoJSON for Carbon report"
+            onFileChange={handleFileChange}
+            onUpload={handleUploadClick}
+            loading={loadingCard.carbon}
+          />
+        </div>
+      )}
+
+
+      {step === 2 && (
+        <form onSubmit={handleUserInfoSubmit} className="bg-white p-6 rounded shadow fade-in transition-all duration-500">
+          <h2 className="text-xl font-bold mb-4">Enter Your Contact Info</h2>
+          <input
+            type="text"
+            value={userInfo.phone}
+            onChange={(e) => setUserInfo({ ...userInfo, phone: e.target.value })}
+            placeholder="Phone number"
+            className="block w-full mb-3 p-2 border rounded"
+            required
+          />
+          <input
+            type="email"
+            value={userInfo.email}
+            onChange={(e) => setUserInfo({ ...userInfo, email: e.target.value })}
+            placeholder="Email"
+            className="block w-full mb-4 p-2 border rounded"
+            required
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded transition duration-300 ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-700'
+              }`}
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                <span>Processing...</span>
+              </>
+            ) : (
+              'Continue to Payment'
+            )}
+          </button>
+        </form>
+      )}
+
+
+      {step === 3 && (
+        <div className="text-center fade-in">
+          <h2 className="text-xl font-semibold mb-4">Click to pay and unlock your reports</h2>
+          {files.eudr && <button disabled={loading} onClick={() => { setSelectedFeature('reporteudrguest'); setShowPaymentModal({ eudr: true, carbon: false }); }} className={`bg-blue-600 text-white px-4 py-2 rounded m-2 ${loading ? 'button-loading' : 'hover:bg-blue-700'}`}>Pay for EUDR</button>}
+          {files.carbon && <button disabled={loading} onClick={() => { setSelectedFeature('reportcarbonguest'); setShowPaymentModal({ carbon: true, eudr: false }); }} className={`bg-blue-600 text-white px-4 py-2 rounded m-2 ${loading ? 'button-loading' : 'hover:bg-blue-700'}`}>Pay for Carbon</button>}
+        </div>
+      )}
+
+      {step === 4 && (
+        <div className="flex flex-col items-center fade-in">
+          {reports.eudr && (
+            <>
+              <EudrReportSection results={reports.eudr} reportRef={reportRefs.eudr} />
+              <button onClick={async () => {
+                const blob = await generatePdfBlob('eudr');
+                if (blob) {
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = 'EUDR_Report.pdf';
+                  link.click();
+                }
+              }} className="bg-blue-500 text-white px-6 py-3 rounded-md mt-6 hover:bg-blue-700 transition duration-300">Download the EUDR PDF</button>
+            </>
+          )}
+
+          {reports.carbon && (
+            <>
+              <CarbonReportSection results={reports.carbon} reportRef={reportRefs.carbon} />
+              <button onClick={async () => {
+                const blob = await generatePdfBlob('carbon');
+                if (blob) {
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = 'Carbon_Report.pdf';
+                  link.click();
+                }
+              }} className="bg-blue-500 text-white px-6 py-3 rounded-md mt-6 hover:bg-blue-700 transition duration-300">Download the Carbon PDF</button>
+            </>
+          )}
+        </div>
+      )}
+
+      {showPaymentModal.eudr && (
+        <SendPaymentModal
+          isOpen={showPaymentModal.eudr}
+          onClose={() => setShowPaymentModal({ ...showPaymentModal, eudr: false })}
+          featureName="reporteudrguest"
+          phone={userInfo.phone}
+          onPaymentSuccess={() => handleReportReady('reporteudrguest')}
+        />
+      )}
+
+      {showPaymentModal.carbon && (
+        <SendPaymentModal
+          isOpen={showPaymentModal.carbon}
+          onClose={() => setShowPaymentModal({ ...showPaymentModal, carbon: false })}
+          featureName="reportcarbonguest"
+          phone={userInfo.phone}
+          onPaymentSuccess={() => handleReportReady('reportcarbonguest')}
+        />
       )}
     </div>
   );
 };
 
-export default CarbonReportUploader;
+export default EUDRSubmitFormForGuest;
