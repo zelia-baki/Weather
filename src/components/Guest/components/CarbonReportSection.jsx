@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pie } from 'react-chartjs-2';
 import { renderCarbonTable, generateMapboxUrl } from '../utils/reportUtils';
+import parrot from '../../img/parrot.jpg';
 
 const CarbonReportSection = ({ results, reportRef }) => {
     // Extraction des data_fields à partir des clés du rapport
@@ -16,7 +17,7 @@ const CarbonReportSection = ({ results, reportRef }) => {
                 emissions.gfw_forest_carbon_gross_emissions__Mg_CO2e || 0,
                 removals.gfw_forest_carbon_gross_removals__Mg_CO2e || 0,
                 netFlux.gfw_forest_carbon_net_flux__Mg_CO2e || 0,
-                sequestration.gfw_reforestable_extent_aboveground_carbon_potential_sequestration__Mg_C || 0
+                // sequestration.gfw_reforestable_extent_aboveground_carbon_potential_sequestration__Mg_C || 0
             ],
             backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8BC34A'],
             hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#8BC34A']
@@ -38,16 +39,31 @@ const CarbonReportSection = ({ results, reportRef }) => {
             ref={reportRef}
             className="carbon-report-a4"
         >
-            {/* HEADER */}
-            <div className="report-header-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ width: '120px' }} />
-                <div className="report-header" style={{ textAlign: 'center' }}>
-                    <h1>NKUSU / AGRIYIELDS REPORT</h1>
-                    <h2>Carbon Report</h2>
-                    <p className="subtitle">Generated based on your submitted GeoJSON file.</p>
-                </div>
-                <img src="/logo.jpg" alt="Logo" className="report-logo" style={{ position: 'static', width: '120px' }} />
-            </div>
+             {/* HEADER */}
+                  <div className="report-header-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {/* Parrot section */}
+                    <div style={{ width: '120px', height: '120px', position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <div className="bg-white rounded-full ">
+                        <img
+                          src={parrot}
+                          alt="Parrot"
+                          className="w-24 h-24 rounded-full object-cover"
+                        />
+                      </div>
+                    </div>
+            
+                    {/* Header titles */}
+                    <div className="report-header" style={{ textAlign: 'center' }}>
+                      {/* <h1>NKUSU / AGRIYIELDS REPORT</h1> */}
+                      <h2>EUDR COMPLIANCE REPORT</h2>
+                      <p className="subtitle">
+                        Report generated based on the Regulation (EU) 2023/1115 on deforestation-free products.
+                      </p>
+                    </div>
+            
+                    {/* Logo */}
+                    <img src="/logo.jpg" alt="Logo" className="report-logo" style={{ width: '120px', height: '120px', objectFit: 'contain' }} />
+                  </div>
 
             {/* CONTENT */}
             <div className="report-body">

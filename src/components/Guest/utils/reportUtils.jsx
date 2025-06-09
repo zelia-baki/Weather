@@ -11,13 +11,13 @@ export const renderCarbonTable = (dataFields) => (
       <tr><td className="px-4 py-2 border-b">Carbon gross emissions</td><td className="px-4 py-2 border-b">{dataFields.gfw_forest_carbon_gross_emissions__Mg_CO2e || 0}</td></tr>
       <tr><td className="px-4 py-2 border-b">Carbon gross absorption</td><td className="px-4 py-2 border-b">{dataFields.gfw_forest_carbon_gross_removals__Mg_CO2e || 0}</td></tr>
       <tr><td className="px-4 py-2 border-b">Carbon net emissions</td><td className="px-4 py-2 border-b">{dataFields.gfw_forest_carbon_net_flux__Mg_CO2e || 0}</td></tr>
-      <tr>
+      {/* <tr>
         <td className="px-4 py-2 border-b">Sequestration potential</td>
         <td className="px-4 py-2 border-b">
           {dataFields.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C || 0} (below)<br />
           {dataFields.gfw_reforestable_extent_aboveground_carbon_potential_sequestration__Mg_C || 0} (above)
         </td>
-      </tr>
+      </tr> */}
     </tbody>
   </table>
 );

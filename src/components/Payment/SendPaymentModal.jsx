@@ -12,14 +12,18 @@ export function SendPaymentModal({ isOpen, onClose, featureName, phone: passedPh
   const [phoneInput, setPhoneInput] = useState(""); // utilisé seulement si `passedPhone` est absent
 
   const navigate = useNavigate();
-
   const effectivePhone = passedPhone || phoneInput;
-
 
   const handlePayment = async (e) => {
     e.preventDefault();
     setLoading(true);
     setResponse("");
+
+    // ✅ Supprimer le token JWT s'il s'agit d'un invité
+    if (passedPhone) {
+      localStorage.removeItem("token");
+    }
+
     try {
       const res = await axiosInstance.post("/api/payments/initiate", {
         phone_number: effectivePhone,
@@ -30,7 +34,7 @@ export function SendPaymentModal({ isOpen, onClose, featureName, phone: passedPh
       setResponse(res.data.msg || "Payment initiated. Please confirm on your phone.");
       setPolling(true);
       startPolling(txnId, effectivePhone);
-      console.log("featureName",featureName);
+      console.log("featureName", featureName);
     } catch (err) {
       setResponse("Error : " + (err.response?.data?.error || err.message));
       setLoading(false);

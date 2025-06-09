@@ -44,27 +44,45 @@ const EUDRSubmitFormForGuest = () => {
   };
 
   const sendPdfByEmail = async (inputName, email) => {
+    console.log(`📤 Début d'envoi d'email avec ${inputName.toUpperCase()} vers ${email}`);
+
     try {
-      const pdfBlob = await generatePdfBlob(inputName);
-      if (!pdfBlob) return;
+      const ref = reportRefs[inputName];
+      const pdfBlob = await generatePdfBlob(ref, inputName);
+      console.log('📄 PDF généré', pdfBlob);
 
       const reader = new FileReader();
       reader.readAsArrayBuffer(pdfBlob);
+
       reader.onloadend = async () => {
+        console.log('🧠 Conversion base64 en cours...');
         const arrayBuffer = reader.result;
         const uint8Array = new Uint8Array(arrayBuffer);
         const binary = uint8Array.reduce((data, byte) => data + String.fromCharCode(byte), '');
         const base64data = btoa(binary);
-        await axiosInstance.post('/api/notifications/email', {
-          to_email: email,
-          report_type: inputName.toUpperCase(),
-          pdf_base64: base64data
-        });
+
+        try {
+          console.log("📡 Envoi vers /api/notifications/email");
+          await axiosInstance.post('/api/notifications/email', {
+            to_email: email,
+            report_type: inputName.toUpperCase(),
+            pdf_base64: base64data
+          });
+          console.log('✅ Email envoyé via backend');
+        } catch (error) {
+          console.error('❌ Erreur lors de l’envoi vers le backend :', error);
+        }
       };
+
+      reader.onerror = (err) => {
+        console.error('❌ Erreur FileReader :', err);
+      };
+
     } catch (err) {
-      console.error("Error sending email:", err);
+      console.error('❌ Erreur dans sendPdfByEmail :', err);
     }
   };
+
 
   const handleReportReady = async (featureName) => {
     const key = featureName === 'reporteudrguest' ? 'eudr' : 'carbon';
@@ -88,11 +106,22 @@ const EUDRSubmitFormForGuest = () => {
       );
 
       setReports(prev => ({ ...prev, [key]: res.data.report }));
+      const reportData = reports;
+      console.log(reportData);
+      let message = '';
+
+      if (key === 'carbon') {
+        const value =  'X'; // adjust based on actual key
+        message = `🌱 Your farm is a net carbon sink with ${value}/22 MT CO₂e. For more details, check your email.`;
+      } else if (key === 'eudr') {
+        const value =  'X'; // adjust based on actual key
+        message = `🌍 The result shows that your plot of land is ${value} hectares. For more details, check your email.`;
+      }
       setStep(4);
       await sendPdfByEmail(key, userInfo.email);
       await axiosInstance.post('/api/notifications/sms', {
         phone: userInfo.phone,
-        message: `✅ Your ${key.toUpperCase()} report is ready. Check your email (${userInfo.email}).`
+        message: `✅ ${message} ${userInfo.email}.`
       });
     } catch (err) {
       setErrors(prev => ({ ...prev, [featureName]: 'Error generating report.' }));
@@ -109,7 +138,7 @@ const EUDRSubmitFormForGuest = () => {
         <div className="fade-in space-y-4">
           <UploadCard
             inputName="eudr"
-            title="Upload your GeoJSON for EUDR compliance"
+            title="Upload farm location details to find out your plot level deforestation risk and EUDR compliance"
             onFileChange={handleFileChange}
             onUpload={handleUploadClick}
             loading={loadingCard.eudr}
@@ -192,7 +221,7 @@ const EUDRSubmitFormForGuest = () => {
             <>
               <EudrReportSection results={reports.eudr} reportRef={reportRefs.eudr} />
               <button onClick={async () => {
-                const blob = await generatePdfBlob('eudr');
+                const blob = await generatePdfBlob(reportRefs.eudr, 'eudr');
                 if (blob) {
                   const url = URL.createObjectURL(blob);
                   const link = document.createElement('a');
