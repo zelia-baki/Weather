@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Line } from "react-chartjs-2";
 import axiosInstance from "../../axiosInstance";
-import axios from "axios"; // Import pour la requête Mapbox
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,8 +9,9 @@ import {
   LineElement,
   Title,
   Tooltip,
-  Legend,
+  Legend
 } from "chart.js";
+import annotationPlugin from "chartjs-plugin-annotation";
 
 ChartJS.register(
   CategoryScale,
@@ -20,7 +20,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  annotationPlugin
 );
 
 const DegreeDaysLineChart = () => {
@@ -29,22 +30,20 @@ const DegreeDaysLineChart = () => {
   const [hdd, setHdd] = useState([]);
   const [cdd, setCdd] = useState([]);
   const [gdd, setGdd] = useState([]);
+  const [cumulativeGDD, setCumulativeGDD] = useState([]);
   const [latitude, setLatitude] = useState(0);
   const [longitude, setLongitude] = useState(0);
-  const [cumulativeGDD, setCumulativeGDD] = useState([]);
-  const [isPlantingFavorable, setIsPlantingFavorable] = useState(false);
-  const [favorableDate, setFavorableDate] = useState("");
-  const [crop, setCrop] = useState("");
+
   const [crops, setCrops] = useState([]);
-
-  // États pour les fermes et la localisation
   const [farms, setFarms] = useState([]);
+  const [crop, setCrop] = useState("");
   const [selectedFarmId, setSelectedFarmId] = useState("");
-  const [city, setCity] = useState("");
-  const [province, setProvince] = useState("");
-  const [country, setCountry] = useState("");
+  const [selectedPlantingDate, setSelectedPlantingDate] = useState("");
+  const [isDateSaved, setIsDateSaved] = useState(false);
 
-  // Seuils de GDD pour chaque culture
+  const [favorableDate, setFavorableDate] = useState("");
+  const [favorableDateInterval, setFavorableDateInterval] = useState(null);
+
   const cropThresholds = {
     corn: 100,
     wheat: 150,
@@ -52,305 +51,244 @@ const DegreeDaysLineChart = () => {
     cocoa: 200,
     coffee_robusta: 180,
     coffee_arabica: 170,
-    oil_palm: 250,
-    soya_bean: 120,
+    Oil_Palm: 250,
     rubber: 300,
-    hass_avocado: 220,
-    snickerdoodle: 10,
-    test: 50,
-    liter: 1000,
+    hass_avocado: 220
   };
 
-  // Récupération dynamique des cultures
+  // Initial loading of crops and farms list
   useEffect(() => {
-    const fetchCrops = async () => {
-      try {
-        const response = await axiosInstance.get("/api/crop/");
-        setCrops(response.data.crops);
-      } catch (err) {
-        console.error("Error fetching crops:", err);
-      }
-    };
-    fetchCrops();
+    axiosInstance.get("/api/crop/")
+      .then(res => setCrops(res.data.crops || []))
+      .catch(console.error);
+    axiosInstance.get("/api/farm/all")
+      .then(res => setFarms(res.data.farms || []))
+      .catch(console.error);
   }, []);
 
-  // Récupération dynamique des fermes
-  useEffect(() => {
-    const fetchFarms = async () => {
-      try {
-        const { data } = await axiosInstance.get("/api/farm/all");
-        setFarms(data.farms || []);
-      } catch (error) {
-        console.error("Error fetching farms:", error);
-      }
-    };
-    fetchFarms();
-  }, []);
+  // Fetch farm geolocation and latest planting date when selecting a farm
+  const fetchLatestPlantingDate = async (farm_id) => {
+    try {
+      const { data } = await axiosInstance.get(
+        `/api/farmdata/latest-planting-date/${farm_id}`
+      );
+      setSelectedPlantingDate(data.planting_date || "");
+      setIsDateSaved(true);
+    } catch (err) {
+      console.error("Error fetching latest planting date:", err);
+      setSelectedPlantingDate("");
+      setIsDateSaved(false);
+    }
+  };
 
-  // Gestion de la sélection d'une ferme
-  const handleFarmChange = async (e) => {
+  const handleFarmChange = (e) => {
     const farmId = e.target.value;
     setSelectedFarmId(farmId);
+    setIsDateSaved(false);
     if (farmId) {
-      try {
-        const response = await axiosInstance.get(`/api/farm/${farmId}`);
-        if (response.data.status === "success") {
-          const geolocation = response.data.data.geolocation;
-          if (geolocation && geolocation.includes(",")) {
-            const [lon, lat] = geolocation.split(",");
+      axiosInstance.get(`/api/farm/${farmId}`)
+        .then(({ data }) => {
+          const geo = data.data.geolocation;
+          if (geo && geo.includes(",")) {
+            const [lon, lat] = geo.split(",");
             setLatitude(parseFloat(lat));
             setLongitude(parseFloat(lon));
           }
-        }
-      } catch (error) {
-        console.error("Error fetching farm properties:", error);
-      }
+        })
+        .catch(console.error);
+
+      fetchLatestPlantingDate(farmId);
     }
   };
 
-  // Récupération des données météo depuis l'API Open-Meteo
-  const fetchWeatherData = async (lat, lon) => {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min&timezone=auto&past_days=30`;
+  const onPlantDateChange = (e) => {
+    setSelectedPlantingDate(e.target.value);
+    setIsDateSaved(false);
+  };
 
+  const handleSaveClick = async () => {
+    if (!selectedFarmId || !crop || !selectedPlantingDate) return;
+    const cropObj = crops.find(c => c.name.toLowerCase() === crop.toLowerCase());
+    if (!cropObj) return;
     try {
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.daily) {
-        const { temperature_2m_max: maxTemps, temperature_2m_min: minTemps, time } = data.daily;
-        setDates(time);
-
-        const baseTempHDD_CDD = 18;
-        const thresholdGDD = 10;
-
-        const temps = maxTemps.map((max, i) => ({
-          max,
-          min: minTemps[i],
-          avg: (max + minTemps[i]) / 2,
-        }));
-
-        setDailyTemps(temps);
-
-        // Calcul des HDD, CDD et GDD
-        const hddValues = temps.map((temp) =>
-          Math.max(0, baseTempHDD_CDD - temp.avg)
-        );
-        const cddValues = temps.map((temp) =>
-          Math.max(0, temp.avg - baseTempHDD_CDD)
-        );
-        const gddValues = temps.map((temp) =>
-          Math.max(0, temp.avg - thresholdGDD)
-        );
-
-        setHdd(hddValues);
-        setCdd(cddValues);
-        setGdd(gddValues);
-
-        // Calcul cumulatif des GDD
-        const cumulativeGDDValues = gddValues.reduce((acc, curr) => {
-          acc.push((acc.length > 0 ? acc[acc.length - 1] : 0) + curr);
-          return acc;
-        }, []);
-        setCumulativeGDD(cumulativeGDDValues);
-
-        // Vérification des conditions de plantation
-        if (crop && cropThresholds[crop]) {
-          const threshold = cropThresholds[crop];
-          const favorableIndex = cumulativeGDDValues.findIndex(
-            (value) => value >= threshold
-          );
-          if (favorableIndex !== -1) {
-            setIsPlantingFavorable(true);
-            setFavorableDate(time[favorableIndex]);
-          } else {
-            setIsPlantingFavorable(false);
-            setFavorableDate("");
-          }
+      await axiosInstance.get("/api/farmdata/save-planting-date", {
+        params: {
+          farm_id: selectedFarmId,
+          crop_id: cropObj.id,
+          planting_date: selectedPlantingDate
         }
-      }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des données météorologiques:", error);
+      });
+      setIsDateSaved(true);
+      fetchLatestPlantingDate(selectedFarmId);
+    } catch (err) {
+      console.error("Error saving planting date:", err);
     }
   };
 
-  // Récupération des données de localisation via l'API Mapbox
-  const fetchLocationData = async () => {
-    try {
-      const mapboxToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
-      const mapboxUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}`;
-      const response = await axios.get(mapboxUrl);
-      
-      const feature = response.data.features[0];
-      if (feature) {
-        setCity(feature.text || "");
-        if (feature.context && feature.context.length > 0) {
-          const countryCtx = feature.context.find((ctx) => ctx.id.includes("country"));
-          const regionCtx = feature.context.find((ctx) => ctx.id.includes("region"));
-          setCountry(countryCtx ? countryCtx.text : "");
-          setProvince(regionCtx ? regionCtx.text : "");
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching location data:", error);
-    }
-  };
-
-  // Lancer le fetch des données météo et de localisation dès que latitude ou longitude change
   useEffect(() => {
-    if (latitude && longitude) {
-      fetchWeatherData(latitude, longitude);
-      fetchLocationData();
-    }
+    if (!latitude || !longitude) return;
+    const fetchWeatherData = async () => {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min&timezone=auto&past_days=30`;
+        const resp = await fetch(url);
+        const json = await resp.json();
+        if (!json.daily) return;
+        const { temperature_2m_max, temperature_2m_min, time } = json.daily;
+        const temps = temperature_2m_max.map((max, i) => ({
+          max, min: temperature_2m_min[i], avg: (max + temperature_2m_min[i]) / 2
+        }));
+        const baseTemp = 18;
+        setDates(time);
+        setHdd(temps.map(t => Math.max(0, baseTemp - t.avg)));
+        setCdd(temps.map(t => Math.max(0, t.avg - baseTemp)));
+        const gVals = temps.map(t => Math.max(0, t.avg - 10));
+        setGdd(gVals);
+        const cumul = [];
+        gVals.forEach((v, i) => cumul.push((cumul[i-1]||0) + v));
+        setCumulativeGDD(cumul);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchWeatherData();
   }, [latitude, longitude]);
 
-  // Mettre à jour les conditions de plantation lorsque la culture change
   useEffect(() => {
-    if (crop && cumulativeGDD.length > 0) {
-      const threshold = cropThresholds[crop];
-      const favorableIndex = cumulativeGDD.findIndex((value) => value >= threshold);
-      if (favorableIndex !== -1) {
-        setIsPlantingFavorable(true);
-        setFavorableDate(dates[favorableIndex]);
-      } else {
-        setIsPlantingFavorable(false);
-        setFavorableDate("");
-      }
+    if (!crop || cumulativeGDD.length === 0) return;
+    const threshold = cropThresholds[crop.toLowerCase()];
+    if (!threshold) return;
+    const idx = cumulativeGDD.findIndex(sum => sum >= threshold);
+    if (idx === -1) {
+      setFavorableDate("");
+      setFavorableDateInterval(null);
+      return;
     }
+    const start = dates[idx];
+    let end = start;
+    for (let j = idx; j < dates.length; j++) {
+      if (cumulativeGDD[j] >= threshold) end = dates[j];
+    }
+    setFavorableDate(start);
+    setFavorableDateInterval({ start, end });
   }, [crop, cumulativeGDD, dates]);
 
-  // Données pour le graphique
-  const data = {
+  const isDateFavorable = useMemo(() => {
+    if (!selectedPlantingDate || !favorableDateInterval) return false;
+    const sel = new Date(selectedPlantingDate);
+    const start = new Date(favorableDateInterval.start);
+    const end = new Date(favorableDateInterval.end);
+    return sel >= start && sel <= end;
+  }, [selectedPlantingDate, favorableDateInterval]);
+
+  const chartData = {
     labels: dates,
     datasets: [
-      {
-        label: "HDD (Heating Degree Days)",
-        data: hdd,
-        borderColor: "rgba(75, 192, 192, 1)",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-        borderWidth: 2,
-        tension: 0.4,
-        fill: true,
-      },
-      {
-        label: "CDD (Cooling Degree Days)",
-        data: cdd,
-        borderColor: "rgba(153, 102, 255, 1)",
-        backgroundColor: "rgba(153, 102, 255, 0.2)",
-        borderWidth: 2,
-        tension: 0.4,
-        fill: true,
-      },
-      {
-        label: "GDD (Growing Degree Days)",
-        data: gdd,
-        borderColor: "rgba(255, 159, 64, 1)",
-        backgroundColor: "rgba(255, 159, 64, 0.2)",
-        borderWidth: 2,
-        tension: 0.4,
-        fill: true,
-      },
-    ],
+      { label: "HDD", data: hdd, tension: 0.4 },
+      { label: "CDD", data: cdd, tension: 0.4 },
+      { label: "GDD", data: gdd, tension: 0.4 }
+    ]
   };
-
-  // Options du graphique
-  const options = {
+  const chartOptions = {
     responsive: true,
     plugins: {
-      legend: {
-        position: "top",
-      },
-      tooltip: {
-        mode: "index",
-        intersect: false,
-      },
+      legend: { position: "top" },
+      annotation: {
+        annotations: selectedPlantingDate
+          ? {
+              plantingLine: {
+                type: "line",
+                scaleID: "x",
+                value: selectedPlantingDate,
+                borderColor: "red",
+                borderWidth: 2,
+                label: { content: "Planting Date", enabled: true, position: "start" }
+              }
+            }
+          : {}
+      }
     },
     scales: {
-      x: {
-        title: {
-          display: true,
-          text: "Dates",
-        },
-      },
-      y: {
-        title: {
-          display: true,
-          text: "Degree Days",
-        },
-      },
-    },
+      x: { title: { display: true, text: "Dates" } },
+      y: { title: { display: true, text: "Degree Days" } }
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto mt-8">
+    <div className="max-w-5xl mx-auto mt-10 p-4">
       <h1 className="text-2xl font-bold text-center mb-6">
-        HDD, CDD, GDD over 30 Days
+        Tracking HDD, CDD, and GDD over 30 Days
       </h1>
-      <div className="mb-4 flex flex-wrap items-center">
-        {/* Sélection de la ferme */}
+
+      <div className="mb-6 flex flex-wrap gap-2 items-center">
         <select
           value={selectedFarmId}
           onChange={handleFarmChange}
-          className="p-2 border rounded mr-2"
+          className="p-2 border rounded"
         >
           <option value="">Select a farm</option>
-          {farms.map((farm) => (
-            <option key={farm.id} value={farm.id}>
-              {farm.name} - {farm.subcounty}
+          {farms.map(f => (
+            <option key={f.id} value={f.id}>
+              {f.name} – {f.subcounty}
             </option>
           ))}
         </select>
-        {/* Saisie manuelle des coordonnées (optionnel) */}
-        <input
-          type="number"
-          placeholder="Latitude"
-          value={latitude}
-          onChange={(e) => setLatitude(e.target.value)}
-          className="p-2 border rounded mr-2"
-        />
-        <input
-          type="number"
-          placeholder="Longitude"
-          value={longitude}
-          onChange={(e) => setLongitude(e.target.value)}
-          className="p-2 border rounded"
-        />
-        {/* Sélection de la culture */}
+
         <select
           value={crop}
-          onChange={(e) => setCrop(e.target.value)}
-          className="p-2 border rounded ml-2"
+          onChange={e => { setCrop(e.target.value); setIsDateSaved(false); }}
+          className="p-2 border rounded"
         >
           <option value="">Select a crop</option>
-          {crops.map((c) => (
-            <option key={c.id} value={c.name}>
-              {c.name}
+          {crops.map(c => (
+            <option key={c.id} value={c.name}>{c.name}</option>
+          ))}
+        </select>
+
+        <select
+          value={selectedPlantingDate}
+          onChange={onPlantDateChange}
+          disabled={isDateSaved}
+          className="p-2 border rounded"
+        >
+          <option value="">Choose planting date</option>
+          {dates.map((date, i) => (
+            <option key={i} value={date}>
+              {date}{date === favorableDate ? " (Recommended)" : ""}
             </option>
           ))}
         </select>
+
+        <button
+         onClick={handleSaveClick}
+          disabled={!selectedPlantingDate || !crop || isDateSaved}
+           className="ml-2 px-4 py-2 bg-blue-600 text-white rounded"
+         >
+          {isDateSaved ? "Saved ✓" : "Save date"}
+        </button>
       </div>
-      <div className="mb-6">
-        <p className="font-semibold text-gray-700">
-          Location: {city}, {province}, {country}
+
+      {selectedPlantingDate && crop && (
+        <p className={`mt-2 text-center font-semibold ${
+          isDateFavorable ? 'text-green-700' : 'text-red-600'
+        }`}>
+          {isDateFavorable
+            ? `👍 ${selectedPlantingDate} is favorable for planting ${crop}.`
+            : `⚠️ ${selectedPlantingDate} is not within the favorable period for ${crop}.`}
         </p>
-      </div>
-      <Line data={data} options={options} />
-      {crop && (
-        <div className="mt-4 text-center">
-          <p className="text-lg font-medium">
-            Cumulative GDD: {cumulativeGDD[cumulativeGDD.length - 1] || 0}
-          </p>
-          {isPlantingFavorable ? (
-            <p className="text-lg font-medium">
-              Conditions are favorable for planting {crop} starting from{" "}
-              <strong>{favorableDate}</strong>.
-            </p>
-          ) : (
-            <p className="text-lg font-medium">
-              Conditions are not yet favorable for planting {crop}.
-            </p>
-          )}
+      )}
+
+      {favorableDate && (
+        <p className="mt-4 text-center text-blue-600 font-bold">
+          ✅ Recommended date for {crop}: <span className="text-green-700">{favorableDate}</span>
+        </p>
+      )}
+      {favorableDateInterval && (
+        <div className="text-green-600 font-medium mt-2 text-center">
+          🌱 Favorable period: from {favorableDateInterval.start} to {favorableDateInterval.end}
         </div>
       )}
+
+      <Line data={chartData} options={chartOptions} />
     </div>
   );
 };
