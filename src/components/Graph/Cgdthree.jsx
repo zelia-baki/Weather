@@ -47,19 +47,24 @@ const DegreeDaysLineChart = () => {
 
   // Seuils de GDD pour chaque culture
   const cropThresholds = {
-    corn: 100,
-    wheat: 150,
-    soybeans: 120,
-    cocoa: 200,
-    coffee_robusta: 180,
-    coffee_arabica: 170,
-    oil_palm: 250,
-    soya_bean: 120,
-    rubber: 300,
-    hass_avocado: 220,
-    snickerdoodle: 10,
-    test: 50,
-    liter: 1000,
+  Cocoa: 250,
+  "Coffee Robusta": 300,
+  "Coffee Arabica": 280,
+  "Oil Palm": 350,
+  "Soya Bean": 200,
+  Rubber: 300,
+  "Hass Avocado": 250,
+  Macadamia: 280,
+  Maize: 200,
+  Sunflower: 180,
+  "Sweet Potato": 200,
+  Potato: 200,
+  Tomato: 220,
+  Millet: 180,
+  Sorghum: 200,
+  Groundnut: 200,
+  Ginger: 280,
+  Pineapple: 300
   };
 
   // Récupération dynamique des cultures
