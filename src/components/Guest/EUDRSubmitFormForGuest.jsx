@@ -107,15 +107,15 @@ const EUDRSubmitFormForGuest = () => {
 
       setReports(prev => ({ ...prev, [key]: res.data.report }));
       const reportData = reports;
-      console.log(reportData);
+      console.log("reportData",reportData);
       let message = '';
 
       if (key === 'carbon') {
         const value =  'X'; // adjust based on actual key
-        message = `🌱 Your farm is a net carbon sink with ${value}/22 MT CO₂e. For more details, check your email.`;
+        message = `Your farm is a net carbon sink with ${value}/22 MT CO₂e. For more details, check your email.`;
       } else if (key === 'eudr') {
         const value =  'X'; // adjust based on actual key
-        message = `🌍 The result shows that your plot of land is ${value} hectares. For more details, check your email.`;
+        message = `The result shows that your plot of land is ${value} hectares. For more details, check your email.`;
       }
       setStep(4);
       await sendPdfByEmail(key, userInfo.email);

@@ -1,25 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
 import axiosInstance from "../../axiosInstance";
 import { useNavigate } from "react-router-dom";
 
-export function SendPaymentModal({ isOpen, onClose, featureName, phone: passedPhone, onPaymentSuccess }) {
+export function SendPaymentModal({
+  isOpen,
+  onClose,
+  featureName,
+  phone: passedPhone,
+  onPaymentSuccess,
+}) {
   const [txnId, setTxnId] = useState("123" + Date.now());
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);
-  const [phoneInput, setPhoneInput] = useState(""); // utilisé seulement si `passedPhone` est absent
+  const [phoneInput, setPhoneInput] = useState("");
+  const [priceInfo, setPriceInfo] = useState(null);
 
   const navigate = useNavigate();
   const effectivePhone = passedPhone || phoneInput;
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const res = await axiosInstance.get("/api/feature/price/");
+        const priceData = res.data.find((f) => f.feature_name === featureName);
+        setPriceInfo(priceData);
+      } catch (err) {
+        console.error("Failed to fetch price info:", err);
+      }
+    };
+
+    if (isOpen) fetchPrice();
+  }, [isOpen, featureName]);
 
   const handlePayment = async (e) => {
     e.preventDefault();
     setLoading(true);
     setResponse("");
 
-    // ✅ Supprimer le token JWT s'il s'agit d'un invité
     if (passedPhone) {
       localStorage.removeItem("token");
     }
@@ -34,7 +54,6 @@ export function SendPaymentModal({ isOpen, onClose, featureName, phone: passedPh
       setResponse(res.data.msg || "Payment initiated. Please confirm on your phone.");
       setPolling(true);
       startPolling(txnId, effectivePhone);
-      console.log("featureName", featureName);
     } catch (err) {
       setResponse("Error : " + (err.response?.data?.error || err.message));
       setLoading(false);
@@ -81,7 +100,7 @@ export function SendPaymentModal({ isOpen, onClose, featureName, phone: passedPh
 
       if (accessRes.data.access) {
         if (onPaymentSuccess) {
-          onPaymentSuccess(); // callback pour déclencher la génération du rapport
+          onPaymentSuccess(); // e.g. reload a report
         } else {
           navigate(`/${featureName}`);
         }
@@ -106,9 +125,19 @@ export function SendPaymentModal({ isOpen, onClose, featureName, phone: passedPh
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl"
         >
-          <Dialog.Title className="text-lg font-bold mb-4">
-            Payment for : {featureName}
+          <Dialog.Title className="text-xl font-bold mb-4">
+            Payment for: <span className="text-green-600">{featureName}</span>
           </Dialog.Title>
+
+          {priceInfo && (
+            <div className="mb-4 text-gray-700">
+              <p className="font-medium">Price: {priceInfo.price} UGX</p>
+              {priceInfo.duration_days && (
+                <p className="text-sm">Access duration: {priceInfo.duration_days} days</p>
+              )}
+            </div>
+          )}
+
           <form onSubmit={handlePayment} className="space-y-4">
             {!passedPhone && (
               <input
@@ -121,6 +150,13 @@ export function SendPaymentModal({ isOpen, onClose, featureName, phone: passedPh
                 disabled={loading || polling}
               />
             )}
+
+            {effectivePhone && (
+              <p className="text-sm text-gray-600">
+                Sending payment with phone: +<strong>{effectivePhone}</strong>
+              </p>
+            )}
+
             <input
               type="text"
               placeholder="Transaction ID"
@@ -134,7 +170,7 @@ export function SendPaymentModal({ isOpen, onClose, featureName, phone: passedPh
               className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
               disabled={loading || polling}
             >
-              {loading ? "Sending..." : polling ? "Waiting for validation..." : "Send payment"}
+              {loading ? "Sending..." : polling ? "Waiting for confirmation..." : "Send Payment"}
             </button>
           </form>
 

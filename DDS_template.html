@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Due Diligence Statement</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td,
+        th {
+            border: 1px solid black;
+            padding: 6px;
+            vertical-align: top;
+        }
+
+        .header {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .section-title {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .dds-declaration {
+            border: 1px solid green;
+            background-color: #f9fff9;
+            padding: 6px;
+        }
+
+        .signature-space {
+            height: 60px;
+            padding-top: 20px;
+        }
+
+        .signature-line {
+            border-top: 1px solid black;
+            margin-top: 20px;
+            display: inline-block;
+            width: 100%;
+            height: 20px;
+        }
+
+        .no-inner-borders td {
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <table>
+        <!-- Header with flags and logos -->
+        <tr class="no-inner-borders">
+            <td colspan="2" rowspan="2">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/4e/Flag_of_Uganda.svg" alt="Uganda Flag"
+                    width="150">
+            </td>
+            <td colspan="3" rowspan="1" class="header">
+                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Coat_of_arms_of_Uganda.svg/250px-Coat_of_arms_of_Uganda.svg.png" alt="Uganda Flag"
+                    width="50">
+                    <p>REPUBLIC OF UGANDA</p>
+            </td>
+            <td colspan="2" rowspan="2" style="text-align: right; vertical-align: top;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/d/db/European_Commission_Logo.svg"
+                    alt="EU Commission" width="200">
+            </td>
+        </tr>
+        <tr class="no-inner-borders">
+            <td colspan="5"></td>
+        </tr>
+
+
+
+        <!-- Section Title -->
+        <tr class="section-title">
+            <td colspan="3">DUE DILIGENCE STATEMENT</td>
+            <td></td>
+            <td colspan="3">REFERENCE NUMBER</td>
+        </tr>
+
+        <!-- Data Fields -->
+        <tr>
+            <td>ACTIVITY TYPE</td>
+            <td colspan="2">{{activity_type}}</td>
+            <td></td>
+            <td>BORDER CROSS COUNTRY</td>
+            <td colspan="2">{{border_cross_country}}</td>
+        </tr>
+
+        <tr>
+            <td>HS HEADING(CODE)</td>
+            <td colspan="2">{{hs_heading}}</td>
+            <td></td>
+            <td>GOODS DESCRIPTION</td>
+            <td colspan="2">{{goods}}</td>
+        </tr>
+
+        <tr>
+            <td colspan="2">COMMENTS(ADDITIONAL INFORMATION)</td>
+            <td>VOLUME</td>
+            <td>{{Volume}}</td>
+            <td>NETWEIGHT</td>
+            <td colspan="2">{{}net_weight}</td>
+        </tr>
+
+        <tr>
+            <td>SCIENTIFIC NAME</td>
+            <td colspan="2">{{scientifi_name}}</td>
+            <td></td>
+            <td>COMMON NAME</td>
+            <td colspan="2">{{common_name}}</td>
+        </tr>
+
+        <tr>
+            <td>SUPPLEMENTARY UNIT</td>
+            <td>{{s_unit}}</td>
+            <td>QUALIFIER UNIT</td>
+            <td>{{q-unit}}</td>
+            <td>VERIFICATION CODE</td>
+            <td colspan="2">{{verification_code}}</td>
+        </tr>
+
+        <tr>
+            <td>PRODUCER NAME</td>
+            <td colspan="3">{{producer_name}}</td>
+            <td>PRODUCER COUNTRY</td>
+            <td colspan="2">{{producer_country}}</td>
+        </tr>
+
+        <!-- OPERATOR INFO -->
+        <tr class="section-title">
+            <td colspan="7">OPERATOR INFO</td>
+        </tr>
+        <tr>
+            <td>EORI</td>
+            <td>HRUG000004679</td>
+            <td></td>
+            <td>PHONE</td>
+            <td>256783130358</td>
+            <td>EMAIL</td>
+            <td><a href="mailto:jwetub@agrivields.com">jwetub@agrivields.com</a></td>
+        </tr>
+        <tr>
+            <td>COUNTRY OF ACTIVITY</td>
+            <td colspan="2"></td>
+            <td>ADDRESS</td>
+            <td colspan="3">T2 BUILDING PAPAYE RISE KIWATULE, KAMPALA</td>
+        </tr>
+
+        <!-- DDS Declaration -->
+        <tr>
+            <td colspan="2" class="dds-declaration"><strong>DDS DECLARATION</strong></td>
+            <td colspan="5">
+                By submitting this due diligence statement the operator confirms that due diligence in accordance with
+                Regulation (EU) 2023/1115 was carried out and that no or only a negligible risk was found that the
+                relevant products do not comply with Article 3, point (a) or (b), of that Regulation.
+            </td>
+        </tr>
+
+        <!-- Signature Section -->
+        <tr>
+            <td colspan="2" rowspan="2">Signed for and on behalf of:</td>
+            <td colspan="2"></td>
+            <td>PLACE</td>
+            <td colspan="2" class="signature-space"> {{place}}</td>
+        </tr>
+        <tr class="signature-space"></tr>
+
+        <tr>
+            <td>DATE</td>
+            <td colspan="3" class="signature-space">{{date}}</td>
+            <td colspan="3" class="signature-space"></td>
+        </tr>
+
+        <tr>
+            <td colspan="3">Name and Function<br>
+                <div class="signature-line"></div>
+            </td>
+            <td></td>
+            <td colspan="2">SIGNATURE<br>
+                <div class="signature-line"></div>
+            </td>
+            <td></td>
+        </tr>
+    </table>
+
+</body>
+
+</html>

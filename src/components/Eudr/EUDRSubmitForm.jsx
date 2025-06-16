@@ -442,7 +442,12 @@ const EUDRManager = () => {
       </div>
       <div className="bg-gray-50 p-6 rounded-xl shadow space-y-4 h-full overflow-auto">
         <h3 className="text-xl font-semibold text-gray-800">Result</h3>
-        <SoapResponseDisplay data={responseData} />
+        <SoapResponseDisplay
+          data={responseData}
+          referenceNumber={referenceCheck}
+          verificationCode={verificationCode}
+        />
+
       </div>
     </div>
   );
