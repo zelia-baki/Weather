@@ -128,9 +128,9 @@ const EUDRSubmitFormForGuest = () => {
           value = (Math.abs(carbonValue) / 22).toFixed(2);
 
           if (carbonValue > 0) {
-            interpretation = `Your plot of land is a net carbon emitter estimated to abou ${value} MT CO₂e per year.`;
+            interpretation = `Your plot of land is a net carbon emitter estimated to about ${value} MT CO2e per year.`;
           } else if (carbonValue < 0) {
-            interpretation = `Your plot of land is a net carbon sink estimated to abou ${value} MT CO₂e per year.`;
+            interpretation = `Your plot of land is a net carbon sink estimated to about ${value} MT CO2e per year.`;
           } else {
             interpretation = `Your plot of land has a neutral carbon balance (0 MT CO₂e) per year.`;
           }
