@@ -173,7 +173,7 @@ const EUDRSubmitFormForGuest = () => {
           />
           <UploadCard
             inputName="carbon"
-            title="Upload your GeoJSON for Carbon report The primary goal of the UNFCCC & Paris Agreement is to keep global average temperature rise well below 2degC, as close as possible to 1.5degC above pre-Industrial levels by reducing greenhouse gas emissions.  This call starts with you .. Find out whether your plot of land is a net carbon sink or emitter and take remedial actions..."
+            title="The primary goal of the UNFCCC & Paris Agreement is to keep global average temperature rise well below 2degC, as close as possible to 1.5degC above pre-Industrial levels by reducing greenhouse gas emissions.  This call starts with you .. Find out whether your plot of land is a net carbon sink or emitter and take remedial actions..."
             onFileChange={handleFileChange}
             onUpload={handleUploadClick}
             loading={loadingCard.carbon}
