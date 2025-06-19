@@ -29,7 +29,6 @@ const CarbonReportSection = ({ results, reportRef }) => {
         ...emissions,
         ...removals,
         ...netFlux,
-        ...sequestration
     };
 
     const coordinates = results["forest carbon gross emissions"]?.[0]?.coordinates?.[0];

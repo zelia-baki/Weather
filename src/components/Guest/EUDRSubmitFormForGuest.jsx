@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
 import UploadCard from './components/UploadCard';
 import CarbonReportSection from './components/CarbonReportSection';
@@ -19,6 +19,7 @@ const EUDRSubmitFormForGuest = () => {
   const [loading, setLoading] = useState(false);
   const reportRefs = { eudr: useRef(), carbon: useRef() };
   const [loadingCard, setLoadingCard] = useState({ eudr: false, carbon: false });
+  const [rdata, setrdata] = useState({});
 
   const handleUploadClick = async (inputName) => {
     setLoadingCard(prev => ({ ...prev, [inputName]: true }));
@@ -42,6 +43,10 @@ const EUDRSubmitFormForGuest = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    console.log("📦 Nouvelle valeur de reports :", reports);
+  }, [reports]);
 
   const sendPdfByEmail = async (inputName, email) => {
     console.log(`📤 Début d'envoi d'email avec ${inputName.toUpperCase()} vers ${email}`);
@@ -104,19 +109,42 @@ const EUDRSubmitFormForGuest = () => {
           }
         }
       );
-
+      let rdata = res.data.report;
+      console.log("✅ rdata complet :", rdata["landmark indigenous and community lands"]?.[0]?.data_fields);
       setReports(prev => ({ ...prev, [key]: res.data.report }));
-      const reportData = reports;
-      console.log("reportData",reportData);
+      const reportData = res.data.report;
+
+      console.log("reportData", reportData['tree cover loss']?.[0]?.data_fields?.area__ha);
       let message = '';
 
       if (key === 'carbon') {
-        const value =  'X'; // adjust based on actual key
-        message = `Your farm is a net carbon sink with ${value}/22 MT CO₂e. For more details, check your email.`;
+        // Récupère la valeur du flux net de carbone
+        const carbonValue = reportData?.["forest carbon net flux"]?.[0]?.data_fields?.gfw_forest_carbon_net_flux__Mg_CO2e;
+
+        let value = "X";
+        let interpretation = "Carbon data not available";
+
+        if (typeof carbonValue === 'number') {
+          value = (Math.abs(carbonValue) / 22).toFixed(2);
+
+          if (carbonValue > 0) {
+            interpretation = `Your plot of land is a net carbon emitter estimated to abou ${value} MT CO₂e per year.`;
+          } else if (carbonValue < 0) {
+            interpretation = `Your plot of land is a net carbon sink estimated to abou ${value} MT CO₂e per year.`;
+          } else {
+            interpretation = `Your plot of land has a neutral carbon balance (0 MT CO₂e) per year.`;
+          }
+        }
+
+        message = `${interpretation} For more details, contact us on WhatsApp +256783130358 or lwetutb@agriyields.com, nkusu@agriyields.com.`;
+
       } else if (key === 'eudr') {
-        const value =  'X'; // adjust based on actual key
-        message = `The result shows that your plot of land is ${value} hectares. For more details, check your email.`;
+        const areaHa = reportData?.['tree cover loss']?.[0]?.data_fields?.area__ha;
+        const value = areaHa === 0 ? '100% EUDR Compliant' : 'Not EUDR Compliant';
+
+        message = `The result shows that your plot of land is ${value}. For more details, contact us on WhatsApp +256783130358 or lwetutb@agriyields.com nkusu@agriyields.com`;
       }
+
       setStep(4);
       await sendPdfByEmail(key, userInfo.email);
       await axiosInstance.post('/api/notifications/sms', {
@@ -145,7 +173,7 @@ const EUDRSubmitFormForGuest = () => {
           />
           <UploadCard
             inputName="carbon"
-            title="Upload your GeoJSON for Carbon report"
+            title="Upload your GeoJSON for Carbon report The primary goal of the UNFCCC & Paris Agreement is to keep global average temperature rise well below 2degC, as close as possible to 1.5degC above pre-Industrial levels by reducing greenhouse gas emissions.  This call starts with you .. Find out whether your plot of land is a net carbon sink or emitter and take remedial actions..."
             onFileChange={handleFileChange}
             onUpload={handleUploadClick}
             loading={loadingCard.carbon}
@@ -237,7 +265,7 @@ const EUDRSubmitFormForGuest = () => {
             <>
               <CarbonReportSection results={reports.carbon} reportRef={reportRefs.carbon} />
               <button onClick={async () => {
-                const blob = await generatePdfBlob('carbon');
+                const blob = await generatePdfBlob(reportRefs.carbon, 'carbon');
                 if (blob) {
                   const url = URL.createObjectURL(blob);
                   const link = document.createElement('a');

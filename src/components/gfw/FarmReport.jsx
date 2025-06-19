@@ -532,7 +532,7 @@ const FullReport = () => {
               </div>
             </div>
           </div>
-          1<div className="bg-white m-6 p-11 shadow-md mb-4">
+          <div className="bg-white m-6 p-11 shadow-md mb-4">
             <h2 className="text-2xl font-bold mb-4">Tree Cover and Deforestation Risk</h2>
             <table className="table-auto w-full mt-4 border-collapse border border-gray-400">
               <thead>
@@ -556,7 +556,7 @@ const FullReport = () => {
                 </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">Country Deforestation Risk Level</td>
-                  <td className="border border-gray-400 px-4 py-2">LOW <strong>Percentage:</strong> {percentage.toFixed(2)}%</td>
+                  <td className="border border-gray-400 px-4 py-2">STANDARD ,<strong>Percentage:</strong> {percentage.toFixed(2)}%</td>
                 </tr>
                 <tr>
                   <td className="border border-gray-400 px-4 py-2">RADD Alert</td>
