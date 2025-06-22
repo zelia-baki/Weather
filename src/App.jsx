@@ -54,7 +54,8 @@ import BarNav from './components/main/BarNav.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
 import CarbonReportForest from './components/gfw/CarbonReportForest.jsx';
 import StoreProductManager from './components/store/StoreProductManager.jsx'; //store/////////////////////////////////////
-import Onemonth from './components/Graph/Cgd1mois.jsx'
+import Onemonth from './components/Graph/Cgd1mois.jsx'/*------------------------------*/
+import PlantingDate from './components/Graph/PlantationDate.jsx'
 import Threemonth from './components/Graph/Cgdthree.jsx';
 import GraphPest from './components/Graph/GraphPest.jsx';
 import UserDash from './components/Dashboard/UserDashBoard.jsx';
@@ -107,6 +108,7 @@ function App() {
     { path: "/createUsers", component: <CreateUsers />, adminOnly: false },
     { path: "/graphcgd", component: <GraphCGD />, adminOnly: false },
     { path: "/onemonth", component: <Onemonth />, adminOnly: false },
+    { path: "/plantingdate", component: <PlantingDate />, adminOnly: false },
     { path: "/threemonth", component: <Threemonth />, adminOnly: false },
 
 
