@@ -146,8 +146,16 @@ const cropThresholds = {
     if (!latitude || !longitude) return;
     const fetchWeatherData = async () => {
       try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min&timezone=auto&past_days=30`;
-        const resp = await fetch(url);
+        const today = new Date();
+      const startDate = today.toISOString().split("T")[0];
+
+      const endDate = new Date();
+      endDate.setDate(today.getDate() + 16);
+      const formattedEndDate = endDate.toISOString().split("T")[0];
+
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${startDate}&end_date=${formattedEndDate}`;
+
+      const resp = await fetch(url);
         const json = await resp.json();
         if (!json.daily) return;
 
