@@ -161,15 +161,27 @@ const DegreeDaysLineChart = () => {
         const now = new Date(today);
 
         let url = "";
-        if (selectedDate < now) {
-          url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${selectedPlantingDate}&end_date=${today}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
-          console.log(url,selectedDate,now);
-        } else {
-url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min&timezone=auto&past_days=30`; 
-          console.log(url,selectedDate,now);
+if (selectedDate < now) {
+  // La date de plantation est dans le passé → utiliser l'API archive
+  const today = new Date().toISOString().split("T")[0];
+  const start = new Date(selectedDate).toISOString().split("T")[0];
 
-  
-     }
+  url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${start}&end_date=${today}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+  console.log("Archive URL:", url);
+
+} else {
+  // La date de plantation est aujourd'hui ou dans le futur → utiliser l'API forecast
+  const today = new Date();
+  const startDate = today.toISOString().split("T")[0];
+
+  const endDate = new Date();
+  endDate.setDate(today.getDate() + 15); // max = 16 jours
+  const formattedEndDate = endDate.toISOString().split("T")[0];
+
+  url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${startDate}&end_date=${formattedEndDate}`;
+  console.log("Forecast URL:", url);
+}
+
 
         const resp = await fetch(url);
         const json = await resp.json();
