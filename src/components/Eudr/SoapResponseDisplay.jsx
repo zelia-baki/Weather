@@ -2,7 +2,8 @@ import React, { useRef } from "react";
 import DueDiligenceStatement from './DueDiligenceStatement';
 import { generatePdfBlob } from '../Guest/utils/pdfUtils.js';
 
-const SoapResponseDisplay = ({ data, referenceNumber, verificationCode }) => {
+const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPreview }) => {
+
     const ddsRef = useRef(null);
 
     const handleDownload = async () => {
@@ -119,9 +120,10 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode }) => {
             )}
 
             {/* ✅ DDS Statement intégré */}
-            {referenceNumber && verificationCode && (
+            {showPreview && referenceNumber && verificationCode && (
+
                 <div className="mt-6 border rounded-lg p-4 bg-white shadow">
-                        <h4 className="text-lg font-semibold mb-2">Due Diligence Statement (preview)</h4>
+                    <h4 className="text-lg font-semibold mb-2">Due Diligence Statement (preview)</h4>
                     <div ref={ddsRef}>
                         <DueDiligenceStatement
                             activity_type={data.activityType}

@@ -33,7 +33,8 @@ const FullReport = () => {
     nonZeroValues: [],       // Initialize as an empty array
     nonZeroCount: 0,        // Initialize count to 0
     percentageCoverExtent: 0, // Initialize percentage to 0
-    valueCountArray: []
+    valueCountArray: [],
+    totalcount: 0
   });
 
   const [tscDriverDriver, setTscDriverDriver] = useState({
@@ -69,6 +70,7 @@ const FullReport = () => {
       let nonZeroValues = [];
       let nonZeroCount = 0;
       let valueCounts = {};
+      
 
       // Parcourir les données pour collecter les valeurs non nulles et compter les occurrences
       dataFieldscoverExtent.forEach((value) => {
@@ -105,6 +107,7 @@ const FullReport = () => {
         nonZeroCount: nonZeroCount,
         percentageCoverExtent: percentageCoverExtent,
         valueCountArray: valueCountArray, // Nouveau tableau des occurrences
+        totalcount : totalCountCoverExtent,
       };
 
       setCoverExtentDecileData(cover_extent_decile);
@@ -623,6 +626,7 @@ const FullReport = () => {
                       </li>
                       <li>
                         <strong>Value Count Details:</strong>
+                      <li>total count : {coverExtentDecileData.totalcount}</li>
                         {coverExtentDecileData.valueCountArray.length > 0 ? (
                           <ul className="mt-2">
                             {coverExtentDecileData.valueCountArray.map((item, index) => (

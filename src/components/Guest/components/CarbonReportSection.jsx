@@ -54,9 +54,8 @@ const CarbonReportSection = ({ results, reportRef }) => {
                     {/* Header titles */}
                     <div className="report-header" style={{ textAlign: 'center' }}>
                       {/* <h1>NKUSU / AGRIYIELDS REPORT</h1> */}
-                      <h2>EUDR COMPLIANCE REPORT</h2>
+                      <h2>Carbon Emissions Assessment Summary</h2>
                       <p className="subtitle">
-                        Report generated based on the Regulation (EU) 2023/1115 on deforestation-free products.
                       </p>
                     </div>
             

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { renderEudrTable, generateMapboxUrl } from '../utils/reportUtils';
-import parrot from '../../img/parrot.jpg';
+import parrot from '../../img/parrotlogo.svg';
 
 // ✅ EN HAUT DU FICHIER
 import * as turf from '@turf/turf';
 
 
-const EudrReportSection = ({ results, reportRef }) => {
+const EudrReportSection = ({ results, reportRef, farmInfo}) => {
   const [coverExtentDecileData, setCoverExtentDecileData] = useState({
     nonZeroValues: [],
     nonZeroCount: 0,
@@ -192,6 +192,22 @@ const EudrReportSection = ({ results, reportRef }) => {
         <img src="/logo.jpg" alt="Logo" className="report-logo" style={{ width: '120px', height: '120px', objectFit: 'contain' }} />
       </div>
 
+      {farmInfo && (
+        <p className="p-4">
+          This report provides an overview of Farm ID <strong>{farmInfo.farm_id}</strong>, owned by <strong>{farmInfo.name}</strong>,
+          located in <strong>{farmInfo.subcounty}</strong>, [District]. The farm is a member of the {farmInfo.subcounty} and plays a significant role in the local agricultural landscape.
+          With geolocation coordinates <strong>{farmInfo.geolocation}</strong>,
+          {farmInfo.crops && farmInfo.crops.length > 0 ? (
+            <>
+              the farm specializes in <strong>{farmInfo.crops[0].crop}</strong> and operates within a region characterized by Landtype: <strong>{farmInfo.crops[0].land_type}</strong>.
+            </>
+          ) : (
+            <span> no specific crops mentioned.</span>
+          )}
+          This report outlines the farm's activities, challenges, and opportunities to support its continued growth and sustainability.
+        </p>
+      )}
+
 
 
       <div className="report-body">
@@ -274,7 +290,14 @@ const EudrReportSection = ({ results, reportRef }) => {
           {/* MAP */}
           {coordinates && (
             <div className="report-section">
-              <h4>Plot Map</h4>
+              <h2 className="text-2xl font-bold mb-4">Risk Assessment Breakdown</h2>
+              <p>
+                Analysis of deforestation drivers shows significant influences from {tscDriverDriver?.mostCommonValue ? (
+                  <p>{tscDriverDriver?.mostCommonValue}</p>
+                ) : (
+                  <p>Unknown Value</p>
+                )}
+              </p>
               <img
                 src={generateMapboxUrl(coordinates)}
                 alt="Map"

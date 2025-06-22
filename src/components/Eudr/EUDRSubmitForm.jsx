@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
 import SoapResponseDisplay from "./SoapResponseDisplay";
+import { SendPaymentModal } from '../Payment/SendPaymentModal';
+
 
 const EUDRManager = () => {
+  const [showResult, setShowResult] = useState(false);
+  const [showpreview, setShowPrev] = useState(false);
+
   const [formData, setFormData] = useState({
     internalReferenceNumber: '',
     activityType: '',
@@ -41,6 +46,7 @@ const EUDRManager = () => {
   const [ddsIdentifier, setDdsIdentifier] = useState('');
   const [referenceCheck, setReferenceCheck] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
+  const [verificationMode, setVerificationMode] = useState(false);
   const [responseData, setResponseData] = useState(null);
   const activityTypes = ["DOMESTIC", "TRADE", "IMPORT", "EXPORT"];
   const countries = [
@@ -67,6 +73,9 @@ const EUDRManager = () => {
 
     fetchAllCountries();
   }, []);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentFeatureName] = useState('eudrsubmission'); // ou autre nom de fonctionnalité dans la base
+
 
   const fetchAllCountries = async () => {
     try {
@@ -115,6 +124,8 @@ const EUDRManager = () => {
 
 
   const handleSubmit = async () => {
+    setVerificationMode(false);
+
     let parsedGeojson;
 
     if (!geojson.trim()) {
@@ -138,12 +149,15 @@ const EUDRManager = () => {
     } catch (error) {
       setResponseData({ error: error.response?.data || error.message });
     }
+    setShowResult(true);
   };
 
 
 
 
   const handleAmend = async () => {
+    setVerificationMode(false);
+
     let parsedGeojson;
     try {
       parsedGeojson = JSON.parse(geojson);
@@ -160,40 +174,52 @@ const EUDRManager = () => {
       });
 
       setResponseData(res.data); // plus besoin de parser
+
     } catch (error) {
       setResponseData({ error: error.response?.data || error.message });
     }
+    setShowResult(true);
   };
 
 
 
   const handleRetract = async () => {
+    setVerificationMode(false);
+
     const res = await axiosInstance.delete(`/api/eudr/retract/${ddsIdentifier}`);
     setResponseData(res.data);
+    setShowResult(true);
   };
 
   const handleGetByInternalRef = async () => {
+    setVerificationMode(false);
+
     const res = await axiosInstance.get(`/api/eudr/info/by-internal-ref/${formData.internalReferenceNumber}`);
     setResponseData(res.data);
+    setShowResult(true);
   };
 
   const handleGetByDdsId = async () => {
+    setVerificationMode(false);
+
     try {
       const res = await axiosInstance.get(`/api/eudr/info/by-dds-id/${ddsIdentifier}`);
       setResponseData(res.data); // plus besoin de parser
+      setShowResult(true);
     } catch (error) {
       setResponseData({ error: error.response?.data || error.message });
     }
   };
 
-
   const handleGetByRefAndVerification = async () => {
+    setVerificationMode(true);
     const res = await axiosInstance.post('/api/eudr/info/by-ref-verification', {
       reference: referenceCheck,
       verification: verificationCode
     });
     setResponseData(res.data);
   };
+
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full h-screen p-6">
@@ -430,7 +456,14 @@ const EUDRManager = () => {
         <div className="grid grid-cols-2 gap-4">
           <input className="border p-2 rounded" placeholder="Reference" value={referenceCheck} onChange={(e) => setReferenceCheck(e.target.value)} />
           <input className="border p-2 rounded" placeholder="Verification Code" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} />
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 col-span-2" onClick={handleGetByRefAndVerification}>Verify</button>
+          <button
+            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 col-span-2"
+            onClick={() => setShowPaymentModal(true)}
+          >
+            Verify
+          </button>
+
+
         </div>
 
         {responseData && (
@@ -438,17 +471,42 @@ const EUDRManager = () => {
             {JSON.stringify(responseData, null, 2)}
           </pre>
         )}
+
+
+
         {/* </div> */}
       </div>
-      <div className="bg-gray-50 p-6 rounded-xl shadow space-y-4 h-full overflow-auto">
-        <h3 className="text-xl font-semibold text-gray-800">Result</h3>
-        <SoapResponseDisplay
-          data={responseData}
-          referenceNumber={referenceCheck}
-          verificationCode={verificationCode}
-        />
+      {responseData && (!verificationMode || (verificationMode && showResult)) && (
+        <div className="bg-gray-50 p-6 rounded-xl shadow space-y-4 h-full overflow-auto">
+          <h3 className="text-xl font-semibold text-gray-800">Result</h3>
+          <SoapResponseDisplay
+            data={responseData}
+            referenceNumber={referenceCheck}
+            verificationCode={verificationCode}
+            showPreview={showpreview}
+            // showPreview={false}
+          />
+        </div>
+      )}
 
-      </div>
+
+
+
+      {showPaymentModal && (
+        <SendPaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          featureName={paymentFeatureName}
+          phone={formData.operator.phone}
+          onPaymentSuccess={() => {
+            setShowPaymentModal(false);
+            handleGetByRefAndVerification();
+            setShowResult(true);
+            setShowPrev(true);
+          }}
+        />
+      )}
+
     </div>
   );
 };

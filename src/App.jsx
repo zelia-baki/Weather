@@ -101,7 +101,7 @@ function App() {
     // { path: "/qrexport2", component: <Export /> , adminOnly: false},
 
     { path: "/qrfertilizer", component: <Fertilizer />, adminOnly: false },
-    { path: "/reportfarmer", component: <FarmReport />, adminOnly: false },
+    { path: "/reportfarmer", component: <FarmReport />, adminOnly: false , feature: "reportfarmer"},
     { path: "/reportcarbon", component: <CarbonReport />, adminOnly: false },
     { path: "/reportcarbonforest", component: <CarbonReportForest />, adminOnly: false },
     { path: "/reportforest", component: <ForestReport />, adminOnly: false },

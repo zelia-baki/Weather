@@ -139,11 +139,29 @@ const EUDRSubmitFormForGuest = () => {
         message = `${interpretation} For more details, contact us on WhatsApp +256783130358 or lwetutb@agriyields.com, nkusu@agriyields.com.`;
 
       } else if (key === 'eudr') {
-        const areaHa = reportData?.['tree cover loss']?.[0]?.data_fields?.area__ha;
-        const value = areaHa === 0 ? '100% EUDR Compliant' : 'Not EUDR Compliant';
+        const areaHa = rdata['tree cover loss']?.data_fields?.area__ha;
 
-        message = `The result shows that your plot of land is ${value}. For more details, contact us on WhatsApp +256783130358 or lwetutb@agriyields.com nkusu@agriyields.com`;
+        let valueElement;
+        if (areaHa !== undefined && areaHa !== null) {
+          valueElement = parseFloat(areaHa) !== 0 ? (
+            <p>Not Compliant</p>
+          ) : (
+            <p>100% Compliance</p>
+          );
+        } else {
+          valueElement = <p>Data Not Available</p>;
+        }
+
+        message = `The result shows that your plot of land is ${typeof areaHa === 'number' && areaHa !== 0
+            ? 'Not Compliant'
+            : areaHa === 0
+              ? '100% Compliant'
+              : 'Data Not Available'
+          }. For more details, contact us on WhatsApp +256783130358 or lwetutb@agriyields.com nkusu@agriyields.com`;
+
+        value = valueElement;
       }
+
 
       setStep(4);
       await sendPdfByEmail(key, userInfo.email);

@@ -30,7 +30,12 @@ export const renderEudrTable = (data) => {
     coverExtentDecileData = {},
     tscDriverDriver = {}
   } = data;
-  
+
+  const coverLossArea = geoData['tree cover loss']?.[0]?.data_fields?.area__ha || 0;
+  const percentage = (coverLossArea && areaInHectares)
+    ? (coverLossArea / areaInHectares) * 100
+    : 0;
+
   return (
     <table className="table-auto w-full mt-4 border-collapse border border-gray-400">
       <thead>
@@ -50,6 +55,10 @@ export const renderEudrTable = (data) => {
               </>
             ) : 'Not available'}
           </td>
+        </tr>
+        <tr>
+          <td className="border border-gray-400 px-4 py-2">Country Deforestation Risk Level</td>
+          <td className="border border-gray-400 px-4 py-2">STANDARD ,<strong>Percentage:</strong> {percentage.toFixed(2)}%</td>
         </tr>
 
         <tr>
@@ -88,16 +97,16 @@ export const renderEudrTable = (data) => {
               <ul>
                 {Object.entries(resultStatus.protectedStatus.percentages).map(([key, percentage]) => {
                   const statusText =
-                  key === '0' ? 'Not in WDPA protected area' :
-                  key === '1' ? 'In WDPA protected area' :
-                  key === '2' ? 'In IUCN vulnerable area' :
-                  key === 'No Data' ? 'No data available' :
-                  'Unknown';
+                    key === '0' ? 'Not in WDPA protected area' :
+                      key === '1' ? 'In WDPA protected area' :
+                        key === '2' ? 'In IUCN vulnerable area' :
+                          key === 'No Data' ? 'No data available' :
+                            'Unknown';
                   return <li key={key}>{statusText}: {percentage}</li>;
                 })}
               </ul>
             ) : (
-              <p>No protected area data</p>
+              <p>No protected area data available.</p>
             )}
           </td>
         </tr>
@@ -171,9 +180,9 @@ export const generateMapboxUrl = (coordinates) => {
       }
     }]
   };
-  
+
   const encoded = encodeURIComponent(JSON.stringify(geojson));
-  
+
   return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/geojson(${encoded})/auto/800x200?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`;
 };
 
