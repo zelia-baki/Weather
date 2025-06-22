@@ -253,6 +253,10 @@ const Layout = ({ children }) => {
                                             HDD & CDD (1 Months)                                        </a>
                                     </li>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                        <a href="/plantingdate" className="block w-full h-full">
+                                            Planting Date (1 Months)                                        </a>
+                                    </li>
+                                    <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/threemonth" className="block w-full h-full">
                                             HDD & CDD (3 Months)                                        </a>
                                     </li>
