@@ -64,7 +64,7 @@ import FeatureRoute from './FeatureRoute';
 import PaymentRequired from './components/main/PaymentRequired';
 import FeatureManager from './components/Features/FeatureManager.jsx';
 import EUDRSubmitFormForGuest from './components/Guest/EUDRSubmitFormForGuest.jsx'
-
+import SectionFutur from './components/Layout/SectionFutur.jsx'
 // import Test from './components/gfw/FarmReport.jsx';
 
 
@@ -95,6 +95,7 @@ function App() {
     { path: "/reportcarbon", component: <CarbonReport />, adminOnly: false, feature: "reportcarbon" },
     { path: "/weathermap", component: <WeathearMap />, adminOnly: false },
     { path: "/weatherdas", component: <WeatherDashboard />, adminOnly: false },
+
 
 
 
@@ -146,6 +147,8 @@ function App() {
         <Route path="/barnav" element={<BarNav />} />
         <Route path="/payment-required" element={<PaymentRequired />} />
         <Route path="/EUDRSubmissionForGuest" element={ <EUDRSubmitFormForGuest />}/>
+        <Route path="/sectionfutur" element={ <SectionFutur />}/>
+
 
         {/* Protected Routes */}
         <Route
@@ -153,6 +156,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Home />
+
             </ProtectedRoute>
           }
         />
