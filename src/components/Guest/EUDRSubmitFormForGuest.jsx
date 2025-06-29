@@ -98,6 +98,7 @@ const EUDRSubmitFormForGuest = () => {
     formData.append('file', file);
     setLoading(true);
     await wait(2000);
+
     try {
       const res = await axiosInstance.post(
         `/api/gfw/Geojson/${featureName === 'reportcarbonguest' ? 'CarbonReportFromFile' : 'ReportFromFile'}`,
@@ -109,17 +110,34 @@ const EUDRSubmitFormForGuest = () => {
           }
         }
       );
-      let rdata = res.data.report;
-      console.log("✅ rdata complet :", rdata["landmark indigenous and community lands"]?.[0]?.data_fields);
-      setReports(prev => ({ ...prev, [key]: res.data.report }));
-      const reportData = res.data.report;
 
-      console.log("reportData", reportData['tree cover loss']?.[0]?.data_fields?.area__ha);
+      const rdata = res.data.report;
+      const hasValidData = rdata && Object.keys(rdata).length > 0;
+
+      if (!hasValidData) {
+        console.warn("⚠️ Rapport vide ou invalide :", rdata);
+        setErrors(prev => ({ ...prev, [featureName]: 'No report data available.' }));
+        return;
+      }
+
+      console.log("✅ rdata complet :", rdata);
+
+      setReports(prev => {
+        const newReports = { ...prev, [key]: rdata };
+        console.log("✅ Nouveau rapport injecté :", newReports);
+
+        setTimeout(() => {
+          console.log("🚀 Passage à l'étape 4 pour affichage du rapport");
+          setStep(4);
+        }, 100);
+
+        return newReports;
+      });
+
       let message = '';
 
       if (key === 'carbon') {
-        // Récupère la valeur du flux net de carbone
-        const carbonValue = reportData?.["forest carbon net flux"]?.[0]?.data_fields?.gfw_forest_carbon_net_flux__Mg_CO2e;
+        const carbonValue = rdata?.["forest carbon net flux"]?.[0]?.data_fields?.gfw_forest_carbon_net_flux__Mg_CO2e;
 
         let value = "X";
         let interpretation = "Carbon data not available";
@@ -139,18 +157,9 @@ const EUDRSubmitFormForGuest = () => {
         message = `${interpretation} For more details, contact us on WhatsApp +256783130358 or lwetutb@agriyields.com, nkusu@agriyields.com.`;
 
       } else if (key === 'eudr') {
-        const areaHa = rdata['tree cover loss']?.data_fields?.area__ha;
+        const areaHa = rdata["tree cover loss"]?.[0]?.data_fields?.area__ha;
 
-        let valueElement;
-        if (areaHa !== undefined && areaHa !== null) {
-          valueElement = parseFloat(areaHa) !== 0 ? (
-            <p>Not Compliant</p>
-          ) : (
-            <p>100% Compliance</p>
-          );
-        } else {
-          valueElement = <p>Data Not Available</p>;
-        }
+        console.log("🍒🍒🍒🍒🍒🍒", areaHa);
 
         message = `The result shows that your plot of land is ${typeof areaHa === 'number' && areaHa !== 0
             ? 'Not Compliant'
@@ -158,23 +167,35 @@ const EUDRSubmitFormForGuest = () => {
               ? '100% Compliant'
               : 'Data Not Available'
           }. For more details, contact us on WhatsApp +256783130358 or lwetutb@agriyields.com nkusu@agriyields.com`;
-
-        value = valueElement;
       }
 
+      // ✅ Envoi du SMS
+      if (!userInfo.phone) {
+        console.warn("⚠️ Aucun numéro de téléphone fourni. SMS non envoyé.");
+      } else if (hasValidData) {
+        try {
+          console.log("📨 Envoi du SMS à :", userInfo.phone);
+          console.log("📨 voici le sms envoyer :", message);
 
-      setStep(4);
-      await sendPdfByEmail(key, userInfo.email);
-      await axiosInstance.post('/api/notifications/sms', {
-        phone: userInfo.phone,
-        message: `✅ ${message} ${userInfo.email}.`
-      });
+          const smsResponse = await axiosInstance.post('/api/notifications/sms', {
+            phone: userInfo.phone,
+            message: `${message} (${userInfo.email})`
+          });
+          console.log("📬 Réponse API SMS :", smsResponse.data);
+        } catch (smsErr) {
+          console.error("❌ Erreur lors de l’envoi du SMS :", smsErr.response?.data || smsErr.message);
+        }
+      }
+
     } catch (err) {
+      console.error("❌ Erreur lors de la génération du rapport :", err);
       setErrors(prev => ({ ...prev, [featureName]: 'Error generating report.' }));
     } finally {
       setLoading(false);
     }
   };
+
+
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -256,7 +277,10 @@ const EUDRSubmitFormForGuest = () => {
       {step === 3 && (
         <div className="text-center fade-in">
           <h2 className="text-xl font-semibold mb-4">Click to pay and unlock your reports</h2>
-          {files.eudr && <button disabled={loading} onClick={() => { setSelectedFeature('reporteudrguest'); setShowPaymentModal({ eudr: true, carbon: false }); }} className={`bg-blue-600 text-white px-4 py-2 rounded m-2 ${loading ? 'button-loading' : 'hover:bg-blue-700'}`}>Pay for EUDR</button>}
+          {files.eudr && <button disabled={loading} onClick={() => {
+            setSelectedFeature('reporteudrguest');
+            setShowPaymentModal({ eudr: true, carbon: false });
+          }} className={`bg-blue-600 text-white px-4 py-2 rounded m-2 ${loading ? 'button-loading' : 'hover:bg-blue-700'}`}>Pay for EUDR</button>}
           {files.carbon && <button disabled={loading} onClick={() => { setSelectedFeature('reportcarbonguest'); setShowPaymentModal({ carbon: true, eudr: false }); }} className={`bg-blue-600 text-white px-4 py-2 rounded m-2 ${loading ? 'button-loading' : 'hover:bg-blue-700'}`}>Pay for Carbon</button>}
         </div>
       )}

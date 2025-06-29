@@ -16,17 +16,18 @@
     }
 
     .report-header {
-  text-align: center;
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 10px;
-  /* plus besoin de position: relative ici */
-}
+        text-align: center;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 10px;
+        /* plus besoin de position: relative ici */
+    }
 
 
     .report-logo {
-  width: 120px;
-  position: static; /* plus de absolute */
-}
+        width: 120px;
+        position: static;
+        /* plus de absolute */
+    }
 
 
     .report-header h1 {
@@ -52,7 +53,7 @@
     }
 
     .report-section {
-        margin-top: 10px;
+        margin-top: 0px;
     }
 
     .report-section h4 {
@@ -75,7 +76,7 @@
         margin-top: 20px;
     }
 
-.html2pdf__page-break {
-  page-break-before: always;
-}
-
+    .html2pdf__page-break {
+        page-break-before: always;
+        padding: 0;
+    }

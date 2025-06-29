@@ -88,33 +88,27 @@ const EUDRManager = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Champs de type producers.quelquechose (tableau index 0)
     if (name.startsWith("producers.")) {
       const field = name.split(".")[1];
       setFormData((prev) => ({
         ...prev,
         producers: [
           {
-            ...prev.producers[0],
-            [field]: field === "country" ? value.toUpperCase() : value
+            ...prev.producers?.[0],
+            [field]: value
           }
         ]
       }));
-      return;
-    }
-
-    // Champs imbriqués comme goodsMeasure.volume ou speciesInfo.commonName
-    if (name.includes(".")) {
-      const [group, field] = name.split(".");
+    } else if (name.includes(".")) {
+      const [parent, child] = name.split(".");
       setFormData((prev) => ({
         ...prev,
-        [group]: {
-          ...prev[group],
-          [field]: value
+        [parent]: {
+          ...prev[parent],
+          [child]: value
         }
       }));
     } else {
-      // Champs simples
       setFormData((prev) => ({
         ...prev,
         [name]: value
@@ -149,6 +143,7 @@ const EUDRManager = () => {
     } catch (error) {
       setResponseData({ error: error.response?.data || error.message });
     }
+    console.log("Producers submitted:", formData.producers);
     setShowResult(true);
   };
 
@@ -217,6 +212,7 @@ const EUDRManager = () => {
       reference: referenceCheck,
       verification: verificationCode
     });
+    console.log(res.data.remote_data);
     setResponseData(res.data);
   };
 
@@ -462,6 +458,17 @@ const EUDRManager = () => {
           >
             Verify
           </button>
+          <button
+            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 col-span-2"
+            onClick={() => {
+              handleGetByRefAndVerification();
+              setShowResult(true);
+              setShowPrev(true);
+            }}
+
+          >
+            Verify 2
+          </button>
 
 
         </div>
@@ -470,6 +477,18 @@ const EUDRManager = () => {
           <pre className="bg-gray-100 p-4 rounded text-sm overflow-x-auto">
             {JSON.stringify(responseData, null, 2)}
           </pre>
+        )}
+        {responseData?.local_data?.producers_json && (
+          <div className="mt-4">
+            <h4 className="text-lg font-bold">Local Producers</h4>
+            <ul className="list-disc list-inside">
+              {JSON.parse(responseData.local_data.producers_json).map((producer, index) => (
+                <li key={index}>
+                  <strong>Name:</strong> {producer.name} - <strong>Country:</strong> {producer.country}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
 
@@ -484,7 +503,7 @@ const EUDRManager = () => {
             referenceNumber={referenceCheck}
             verificationCode={verificationCode}
             showPreview={showpreview}
-            // showPreview={false}
+          // showPreview={false}
           />
         </div>
       )}

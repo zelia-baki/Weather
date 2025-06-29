@@ -16,6 +16,9 @@ const DueDiligenceStatement = ({
     producer_country,
     place,
     date,
+    referenceNumber,
+    country_of_activity,
+    operator_country,
 }) => {
     return (
         <>
@@ -28,7 +31,7 @@ const DueDiligenceStatement = ({
 
         td, th {
           border: 1px solid black;
-          padding: 6px;
+          padding: 10px;
           vertical-align: top;
         }
 
@@ -68,7 +71,7 @@ const DueDiligenceStatement = ({
       `}
             </style>
 
-            <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>
+            <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', margin: '20px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <tbody>
                         <tr>
@@ -107,28 +110,25 @@ const DueDiligenceStatement = ({
                         <tr><td colSpan="5"></td></tr>
 
                         <tr style={{ backgroundColor: '#f2f2f2', fontWeight: 'bold', textAlign: 'center' }}>
-                            <td colSpan="3">DUE DILIGENCE STATEMENT</td>
-                            <td></td>
-                            <td colSpan="3">REFERENCE NUMBER</td>
+                            <td colSpan="4" style={{ height: '10px', padding: '20px' }}>DUE DILIGENCE STATEMENT</td>
+                            <td colSpan="3" style={{ height: '10px', padding: '20px' }}>REFERENCE NUMBER :  {referenceNumber}</td>
                         </tr>
 
-                        <tr>
+                        <tr style={{ margin: "10px" }}>
                             <td>ACTIVITY TYPE</td>
-                            <td colSpan="2">{activity_type}</td>
-                            <td></td>
+                            <td colSpan="3">{activity_type}</td>
                             <td>BORDER CROSS COUNTRY</td>
                             <td colSpan="2">{border_cross_country}</td>
                         </tr>
 
-                        <tr>
+                        <tr style={{ margin: "10px" }}>
                             <td>HS HEADING(CODE)</td>
-                            <td colSpan="2">{hs_heading}</td>
-                            <td></td>
+                            <td colSpan="3">{hs_heading}</td>
                             <td>GOODS DESCRIPTION</td>
                             <td colSpan="2">{goods}</td>
                         </tr>
 
-                        <tr>
+                        <tr style={{ margin: "10px" }}>
                             <td colSpan="2">COMMENTS(ADDITIONAL INFORMATION)</td>
                             <td>VOLUME</td>
                             <td>{Volume}</td>
@@ -136,15 +136,14 @@ const DueDiligenceStatement = ({
                             <td colSpan="2">{net_weight}</td>
                         </tr>
 
-                        <tr>
+                        <tr style={{ margin: "10px" }}>
                             <td>SCIENTIFIC NAME</td>
-                            <td colSpan="2">{scientifi_name}</td>
-                            <td></td>
+                            <td colSpan="3">{scientifi_name}</td>
                             <td>COMMON NAME</td>
                             <td colSpan="2">{common_name}</td>
                         </tr>
 
-                        <tr>
+                        <tr style={{ margin: "10px" }}>
                             <td>SUPPLEMENTARY UNIT</td>
                             <td>{s_unit}</td>
                             <td>QUALIFIER UNIT</td>
@@ -153,7 +152,7 @@ const DueDiligenceStatement = ({
                             <td colSpan="2">{verification_code}</td>
                         </tr>
 
-                        <tr>
+                        <tr style={{ margin: "10px" }}>
                             <td>PRODUCER NAME</td>
                             <td colSpan="3">{producer_name}</td>
                             <td>PRODUCER COUNTRY</td>
@@ -161,22 +160,21 @@ const DueDiligenceStatement = ({
                         </tr>
 
                         <tr style={{ backgroundColor: '#f2f2f2', fontWeight: 'bold', textAlign: 'center' }}>
-                            <td colSpan="7">OPERATOR INFO</td>
+                            <td colSpan="7" style={{ height: '10px', padding: '20px' }}>OPERATOR INFO</td>
                         </tr>
 
-                        <tr>
+                        <tr style={{ margin: "20px" }}>
                             <td>EORI</td>
-                            <td>HRUG000004679</td>
-                            <td></td>
+                            <td colSpan="2">HRUG000004679</td>
                             <td>PHONE</td>
                             <td>256783130358</td>
                             <td>EMAIL</td>
-                            <td><a href="mailto:jwetub@agrivields.com">jwetub@agrivields.com</a></td>
+                            <td><a href="mailto:jwetub@agrivields.com">lwetutb@agrivields.com</a></td>
                         </tr>
 
                         <tr>
                             <td>COUNTRY OF ACTIVITY</td>
-                            <td colSpan="2"></td>
+                            <td colSpan="2">{operator_country}</td>
                             <td>ADDRESS</td>
                             <td colSpan="3">T2 BUILDING PAPAYE RISE KIWATULE, KAMPALA</td>
                         </tr>
@@ -207,16 +205,16 @@ const DueDiligenceStatement = ({
                         </tr>
 
                         <tr>
-                            <td colSpan="3">
-                                Name and Function<br />
+                            <td colSpan="5" style={{ height: '150px', paddingTop: '50px' }}>
+                                Name and Function : <br />
                                 <div style={{ borderTop: '1px solid black', marginTop: '20px', height: '20px' }}></div>
+                                <div style={{ borderTop: '1px solid black', marginTop: '20px', height: '20px' }}></div>
+
                             </td>
-                            <td></td>
-                            <td colSpan="2">
+                            <td colSpan="2" style={{ height: '150px', paddingTop: '50px' }}>
                                 SIGNATURE<br />
-                                <div style={{ borderTop: '1px solid black', marginTop: '20px', height: '20px' }}></div>
+                                <div style={{ borderTop: '1px solid black', marginTop: '40px', height: '20px' }}></div>
                             </td>
-                            <td></td>
                         </tr>
                     </tbody>
                 </table>

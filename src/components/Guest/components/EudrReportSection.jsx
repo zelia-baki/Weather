@@ -6,7 +6,10 @@ import parrot from '../../img/parrotlogo.svg';
 import * as turf from '@turf/turf';
 
 
-const EudrReportSection = ({ results, reportRef, farmInfo}) => {
+const EudrReportSection = ({ results, reportRef, farmInfo }) => {
+  console.log("📍 EudrReportSection monté");
+  console.log("📦 Résultats reçus :", results);
+
   const [coverExtentDecileData, setCoverExtentDecileData] = useState({
     nonZeroValues: [],
     nonZeroCount: 0,
@@ -35,7 +38,9 @@ const EudrReportSection = ({ results, reportRef, farmInfo}) => {
 
 
   useEffect(() => {
-    if (!results || Object.keys(results).length < 2) return;
+    if (!results || typeof results !== 'object' || Object.keys(results).length === 0) return;
+
+    console.log("🚩 Données reçues dans EudrReportSection :", results);
     setGeoData(results);
 
     // ===== 1. TREE COVER EXTENT =====
@@ -274,8 +279,6 @@ const EudrReportSection = ({ results, reportRef, farmInfo}) => {
           </div>
           {/* Compliance Table */}
           <div className="html2pdf__page-break"></div>
-
-
           <div className="report-section">
             <h4>Summary Compliance Table</h4>
             {renderEudrTable({

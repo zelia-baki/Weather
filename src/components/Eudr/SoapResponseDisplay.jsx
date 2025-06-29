@@ -3,8 +3,8 @@ import DueDiligenceStatement from './DueDiligenceStatement';
 import { generatePdfBlob } from '../Guest/utils/pdfUtils.js';
 
 const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPreview }) => {
-
     const ddsRef = useRef(null);
+    console.log("🍃🍃", data.statements);
 
     const handleDownload = async () => {
         if (!ddsRef.current) return;
@@ -21,25 +21,47 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPrev
         }
     };
 
-    console.log("data", data);
-    if (!data) {
-        return <p className="text-gray-500 italic">Aucune donnée affichée pour le moment.</p>;
+    if (!data) return <p className="text-gray-500 italic">Aucune donnée affichée pour le moment.</p>;
+
+    // ✅ Gestion sûre de l'erreur
+    if (data.error) {
+        const errorMessage = typeof data.error === 'string' ? data.error : JSON.stringify(data.error, null, 2);
+        return (
+            <div className="text-red-600 font-semibold whitespace-pre-wrap">
+                {errorMessage}
+            </div>
+        );
+    }
+    let producer = null;
+    let commodity = {};
+
+    if (data?.local_data?.producers_json) {
+        try {
+            const parsed = JSON.parse(data.local_data.producers_json);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                producer = parsed[0];
+            }
+        } catch (e) {
+            console.error("❌ Erreur parsing producers_json:", e);
+        }
     }
 
-    if (data.error) {
-        return <div className="text-red-600 font-semibold">{data.error}</div>;
+    if (Array.isArray(data?.remote_data?.commodities)) {
+        commodity = data.remote_data.commodities[0] || {};
     }
+
+
 
     return (
         <div className="space-y-2 text-sm text-gray-800">
-            {/* ✅ Submit */}
+            {/* ✅ DDS Identifier */}
             {data.ddsIdentifier && (
                 <div>
                     <strong>DDS Identifier:</strong> {data.ddsIdentifier}
                 </div>
             )}
 
-            {/* ✅ Amend */}
+            {/* ✅ Amendment */}
             {data.amendStatus && (
                 <div className="text-green-700 font-medium">
                     ✅ Amendment successfully completed. <br />
@@ -47,59 +69,47 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPrev
                 </div>
             )}
 
-            {/* ✅ Get by DDS ID */}
-            {data.identifier && (
-                <div>
-                    <p><strong>Identifier:</strong> {data.identifier}</p>
-                    <p><strong>Internal Reference:</strong> {data.internalReferenceNumber}</p>
-                    <p><strong>Reference Number:</strong> {data.referenceNumber}</p>
-                    <p><strong>Verification Code:</strong> {data.verificationNumber}</p>
-                    <p><strong>Status:</strong> {data.status}</p>
-                    <p><strong>Date:</strong> {new Date(data.date).toLocaleString()}</p>
-                    <p><strong>Updated By:</strong> {data.updatedBy}</p>
-                </div>
-            )}
-
-            {/* ✅ Submission Date (submit) */}
-            {data.submissionDate && (
-                <div>
-                    <strong>Submission Date:</strong>{" "}
-                    {new Date(data.submissionDate).toLocaleString()}
-                </div>
-            )}
-
-            {/* ✅ Producers */}
-            {Array.isArray(data?.statement?.producers) && (
-                <div>
-                    <strong>Producers:</strong>
-                    <ul className="list-disc pl-5">
-                        {data.statement.producers.map((producer, index) => (
-                            <li key={index}>
-                                {producer.name} ({producer.country})
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-
-            {/* ✅ Verify info */}
-            {data.referenceNumber && data.activityType && (
+            {/* ✅ Statement info */}
+            {data.referenceNumber && (
                 <div>
                     <p><strong>Reference Number:</strong> {data.referenceNumber}</p>
                     <p><strong>Activity Type:</strong> {data.activityType}</p>
                     <p><strong>Status:</strong> {data.status}</p>
                     <p><strong>Status Date:</strong> {new Date(data.statusDate).toLocaleString()}</p>
-                    <p><strong>Operator:</strong> {data.operatorName} ({data.operatorCountry})</p>
-                    <p><strong>Description of Goods:</strong> {data.descriptionOfGoods}</p>
-                    <p><strong>Net Weight:</strong> {data.netWeight}</p>
-                    <p><strong>Supplementary Unit:</strong> {data.supplementaryUnit}</p>
-                    <p><strong>Qualifier:</strong> {data.supplementaryUnitQualifier}</p>
-                    <p><strong>HS Heading:</strong> {data.hsHeading}</p>
-                    <p><strong>Species:</strong> {data.scientificName} ({data.commonName})</p>
+                    <p><strong>Operator:</strong> {data.operator?.name} ({data.operator?.country})</p>
                 </div>
             )}
 
-            {/* ✅ Internal Ref: Liste des déclarations */}
+            {/* ✅ Commodities */}
+            {Array.isArray(data?.remote_data?.commodities) && data.remote_data.commodities.length > 0 && (
+                <div className="border-t pt-2">
+                    <h4 className="font-semibold">Commodity</h4>
+                    <p><strong>Description of Goods:</strong> {commodity.descriptionOfGoods}</p>
+                    <p><strong>HS Heading:</strong> {commodity.hsHeading}</p>
+                    <p><strong>Species:</strong> {commodity.speciesInfo?.scientificName} ({commodity.speciesInfo?.commonName})</p>
+                    <p><strong>Net Weight:</strong> {commodity.goodsMeasure?.netWeight}</p>
+                    <p><strong>Volume:</strong> {commodity.goodsMeasure?.volume}</p>
+                    <p><strong>Supplementary Unit:</strong> {commodity.goodsMeasure?.supplementaryUnit}</p>
+                    <p><strong>Qualifier:</strong> {commodity.goodsMeasure?.supplementaryUnitQualifier}</p>
+
+                    {Array.isArray(commodity.producers) && commodity.producers.length > 0 && (
+                        <div>
+                            <strong>Producers:</strong>
+                            <ul className="list-disc pl-5">
+                                {commodity.producers.map((p, i) => (
+                                    <li key={i}>
+                                        {p.country} – GeoJSON: {p.geometryGeojson?.slice(0, 30)}...
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            )}
+
+      )}
+
+            {/* ✅ Internal Ref statements list */}
             {Array.isArray(data.statements) && (
                 <div>
                     <h4 className="font-semibold">Statements related to the Internal Reference</h4>
@@ -119,28 +129,30 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPrev
                 </div>
             )}
 
-            {/* ✅ DDS Statement intégré */}
-            {showPreview && referenceNumber && verificationCode && (
-
+            {/* ✅ PDF preview */}
+            {showPreview && referenceNumber && verificationCode && data?.remote_data && (
                 <div className="mt-6 border rounded-lg p-4 bg-white shadow">
                     <h4 className="text-lg font-semibold mb-2">Due Diligence Statement (preview)</h4>
                     <div ref={ddsRef}>
                         <DueDiligenceStatement
-                            activity_type={data.activityType}
-                            border_cross_country={data.borderCrossCountry}
-                            hs_heading={data.hsHeading}
-                            goods={data.descriptionOfGoods}
-                            Volume={data.volume}
-                            net_weight={data.netWeight}
-                            scientifi_name={data.scientificName}
-                            common_name={data.commonName}
-                            s_unit={data.supplementaryUnit}
-                            q_unit={data.supplementaryUnitQualifier}
+                            activity_type={data.remote_data.activityType || ''}
+                            border_cross_country={data.local_data?.border_cross_country || ''}
+                            hs_heading={commodity.hsHeading || ''}
+                            goods={commodity.descriptionOfGoods || ''}
+                            Volume={commodity.goodsMeasure?.volume || ''}
+                            net_weight={commodity.goodsMeasure?.netWeight || ''}
+                            scientifi_name={commodity.speciesInfo?.scientificName || ''}
+                            common_name={commodity.speciesInfo?.commonName || ''}
+                            s_unit={commodity.goodsMeasure?.supplementaryUnit || ''}
+                            q_unit={commodity.goodsMeasure?.supplementaryUnitQualifier || ''}
                             verification_code={verificationCode}
-                            producer_name={data.producers?.[0]?.name || ''}
-                            producer_country={data.producers?.[0]?.country || ''}
-                            place={data.operatorPlace || data.operatorCountry || ''}
-                            date={new Date(data.statusDate || data.date).toLocaleDateString()}
+                            producer_name={producer?.name || ''}
+                            producer_country={producer?.country || ''}
+                            place={data.remote_data.operator?.country || ''}
+                            date={new Date(data.remote_data.statusDate || Date.now()).toLocaleDateString()}
+                            referenceNumber={data.remote_data.referenceNumber || ''}
+                            country_of_activity={data.remote_data.countryOfActivity || ''}
+                            operator_country={data.remote_data.operator?.country || ''}
                         />
                     </div>
                     <button
@@ -151,6 +163,7 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPrev
                     </button>
                 </div>
             )}
+
 
             {/* ✅ Debug JSON */}
             <details className="mt-4">
