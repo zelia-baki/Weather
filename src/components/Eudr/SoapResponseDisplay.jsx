@@ -107,8 +107,6 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPrev
                 </div>
             )}
 
-      )}
-
             {/* ✅ Internal Ref statements list */}
             {Array.isArray(data.statements) && (
                 <div>
