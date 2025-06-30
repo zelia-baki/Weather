@@ -80,3 +80,11 @@
         page-break-before: always;
         padding: 0;
     }
+
+.html2pdf__page-break {
+  page-break-before: always;
+}
+
+html {
+  scroll-behavior: smooth;
+}

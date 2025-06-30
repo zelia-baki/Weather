@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { motion } from 'framer-motion';
+import { Link as ScrollLink } from 'react-scroll';
 import parrot from '../img/parrot.jpg';
 import "../../animations.css"; // Assuming your animations.css is in the same folder
 import {
@@ -62,15 +63,34 @@ const LandingPage = () => {
 
         {/* Navigation Desktop */}
         <nav className="hidden md:flex space-x-8 text-lg font-medium animate-fade-in">
-          {["Features", "About", "Contact"].map((item) => (
-            <a
-              key={item}
-              href='/contactus'
-              className="relative text-white after:absolute after:w-0 after:h-[2px] after:bg-teal-300 after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 hover:after:w-full hover:after:left-0 transition-all duration-300"
-            >
-              {item}
-            </a>
-          ))}
+  <ScrollLink
+    to="features"
+    smooth={true}
+    duration={500}
+    offset={-80}
+    className="cursor-pointer relative text-white after:absolute after:w-0 after:h-[2px] after:bg-teal-300 after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 hover:after:w-full hover:after:left-0 transition-all duration-300"
+  >
+    Features
+  </ScrollLink>
+
+  <a
+    key='about'
+    href='/sectionfutur'
+    className="relative text-white after:absolute after:w-0 after:h-[2px] after:bg-teal-300 after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 hover:after:w-full hover:after:left-0 transition-all duration-300"
+  >
+    About
+  </a>
+
+   <ScrollLink
+    to="contact"
+    smooth={true}
+    duration={500}
+    offset={-80}
+    className="cursor-pointer relative text-white after:absolute after:w-0 after:h-[2px] after:bg-teal-300 after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 hover:after:w-full hover:after:left-0 transition-all duration-300"
+  >
+    Contact
+  </ScrollLink>
+
           <a
             key='EUDR'
             href='/EUDRSubmissionForGuest'
@@ -78,6 +98,14 @@ const LandingPage = () => {
           >
             Resources
           </a>
+          <a
+            key='#'
+            href='#'
+            className="relative text-white after:absolute after:w-0 after:h-[2px] after:bg-teal-300 after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 hover:after:w-full hover:after:left-0 transition-all duration-300"
+          >
+            Blog
+          </a>
+
 
         </nav>
 
