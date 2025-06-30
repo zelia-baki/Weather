@@ -458,7 +458,7 @@ const EUDRManager = () => {
           >
             Verify
           </button>
-          <button
+          {/* <button
             className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 col-span-2"
             onClick={() => {
               handleGetByRefAndVerification();
@@ -468,7 +468,7 @@ const EUDRManager = () => {
 
           >
             Verify 2
-          </button>
+          </button> */}
 
 
         </div>

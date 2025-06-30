@@ -179,7 +179,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
             <img
               src={parrot}
               alt="Parrot"
-              className="w-24 h-24 rounded-full object-cover"
+              style={{ width: '100px', height: '120px', objectFit: 'contain' }}
             />
           </div>
         </div>
