@@ -65,6 +65,7 @@ import PaymentRequired from './components/main/PaymentRequired';
 import FeatureManager from './components/Features/FeatureManager.jsx';
 import EUDRSubmitFormForGuest from './components/Guest/EUDRSubmitFormForGuest.jsx'
 import SectionFutur from './components/Layout/SectionFutur.jsx'
+
 // import Test from './components/gfw/FarmReport.jsx';
 
 
@@ -127,6 +128,7 @@ function App() {
     { path: "/userDash", component: <UserDash />, adminOnly: false },
     { path: "/EUDRSubmission", component: <EUDRSubmitForm />, adminOnly: false },
     { path: "/featuresManager", component: <FeatureManager />, adminOnly: true },
+    { path: "/qrconservation", component: <Conservation />, adminOnly: false },
 
 
 
