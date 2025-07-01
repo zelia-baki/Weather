@@ -223,7 +223,7 @@ const EUDRSubmitFormForGuest = () => {
 
       {step === 2 && (
         <form onSubmit={handleUserInfoSubmit} className="bg-white p-6 rounded shadow fade-in transition-all duration-500">
-          <h2 className="text-xl font-bold mb-4">Enter Your Contact Info</h2>
+          <h2 className="text-xl font-bold mb-4">Enter Your Contact Info ,Phone number, start with 256</h2>
           <input
             type="text"
             value={userInfo.phone}

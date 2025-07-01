@@ -48,6 +48,53 @@ const PointForm = () => {
   const [error, setError] = useState(null);
   const storeNames = ['Store A', 'Store B', 'Store C'];
   const seasons = ['Season 1', 'Season 2', 'Season 3', 'Season 4'];
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [filteredCrops, setFilteredCrops] = useState([]);
+  const [stores, setStores] = useState([]); // <-- si pas déjà présent
+  const [selectedStoreId, setSelectedStoreId] = useState('');
+  const [selectedStoreName, setSelectedStoreName] = useState('');
+
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const response = await axiosInstance.get('/api/store/');
+        setStores(response.data.stores || []);
+      } catch (error) {
+        console.error('Error fetching stores:', error);
+      }
+    };
+
+    fetchStores();
+  }, []);
+
+  const handleStoreIdChange = (e) => {
+    const storeId = e.target.value;
+    const selected = stores.find(store => store.id.toString() === storeId);
+
+    setSelectedStoreId(storeId);
+    setSelectedStoreName(selected?.name || '');
+    setFormData(prev => ({
+      ...prev,
+      store_id: storeId,
+      store_name: selected?.name || ''
+    }));
+  };
+
+  const handleStoreNameChange = (e) => {
+    const storeName = e.target.value;
+    const selected = stores.find(store => store.name === storeName);
+
+    setSelectedStoreName(storeName);
+    setSelectedStoreId(selected?.id.toString() || '');
+    setFormData(prev => ({
+      ...prev,
+      store_name: storeName,
+      store_id: selected?.id.toString() || ''
+    }));
+  };
+
+
 
 
 
@@ -253,24 +300,29 @@ const PointForm = () => {
     }));
 
     if (name === 'crop_category') {
-      const selectedCatId = e.target.value;
-      setCat(selectedCatId); // Mets à jour cat_id
-
-
-      console.log(name, selectedCatId);
-      handleCatChange(selectedCatId);
-
+      const selectedCatId = value;
+      setSelectedCategoryId(selectedCatId);
+      const filtered = crops.filter(crop => crop.category_id.toString() === selectedCatId);
+      setFilteredCrops(filtered);
+      setFormData(prev => ({
+        ...prev,
+        crop_category: selectedCatId,
+        crop: '', // reset crop
+        crop_grade: '' // reset grade
+      }));
     }
+
     if (name === 'crop') {
-      const selectedCropId = e.target.value;
-
-      setCrop(selectedCropId); // Mets à jour crop_id
-
-
-      console.log(name, selectedCropId);
-      handleCropChange(selectedCropId);
-
+      const selectedCropId = value;
+      setSelectedCropId(selectedCropId);
+      setFormData(prev => ({
+        ...prev,
+        crop: selectedCropId,
+        crop_grade: ''
+      }));
+      fetchCropGrades(selectedCropId);
     }
+
 
 
   };
@@ -374,7 +426,7 @@ const PointForm = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg">
-      <h1 className="text-2xl font-bold mb-6 text-center">Digital Export Stamps</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">Digital Export Stamps export2</h1>
       <div>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6">
           <div className="grid grid-cols-2 gap-6">
@@ -456,21 +508,18 @@ const PointForm = () => {
             <div>
               <h2 className="block text-sm font-medium text-gray-700">Select Crop to View Grades</h2>
               <select
+                id="crop"
+                name="crop"
+                value={formData.crop || ''}
+                onChange={handleChange}
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                value={selectedCropId}
-                onChange={(e) => {
-                  setSelectedCropId(e.target.value);
-                  fetchCropGrades(e.target.value);
-                }}
               >
-                <option value="">Select a crop</option>
-                {/* Remplacez 'crops' par votre variable de tableau de cultures */}
-                {crops.map((crop) => (
-                  <option key={crop.id} value={crop.id}>
-                    {crop.name}
-                  </option>
+                <option value="">Select Crop</option>
+                {filteredCrops.map(crop => (
+                  <option key={crop.id} value={crop.id}>{crop.name}</option>
                 ))}
               </select>
+
 
               {error && <p className="text-red-500 mt-2">{error}</p>}
 
@@ -478,19 +527,22 @@ const PointForm = () => {
                 <div className="mt-4">
                   <h3 className="block text-sm font-medium text-gray-700">Select Grade:</h3>
                   <select
-                    id="grade"
-                    name="grade"
+                    id="crop_grade"
+                    name="crop_grade"
+                    value={formData.crop_grade || ''}
+                    onChange={(e) =>
+                      setFormData(prev => ({ ...prev, crop_grade: e.target.value }))
+                    }
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    value={selectedGradeValue}
-                    onChange={(e) => setSelectedGradeValue(e.target.value)} // Met à jour l'état du grade sélectionné
                   >
-                    <option value="">Select a grade value</option>
+                    <option value="">Select Grade</option>
                     {cropGrades.map((grade) => (
                       <option key={grade.id} value={grade.grade_value}>
                         {grade.grade_value}
                       </option>
                     ))}
                   </select>
+
                 </div>
               )}
             </div>
@@ -585,23 +637,43 @@ const PointForm = () => {
 
 
           {/* ---------------------------------------------------------------------------------------------------------------------------- */}
+
+
           <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="store_id" className="block text-sm font-medium text-gray-700">Store ID:</label>
+              <select
+                id="store_id"
+                name="store_id"
+                value={formData.store_id || ''}
+                onChange={handleStoreIdChange}
+                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                required
+              >
+                <option value="">Select Store ID</option>
+                {stores.map(store => (
+                  <option key={store.id} value={store.id}>{store.id}</option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label htmlFor="store_name" className="block text-sm font-medium text-gray-700">Store Name:</label>
               <select
                 id="store_name"
                 name="store_name"
                 value={formData.store_name || ''}
-                onChange={handleChange}
-                required
+                onChange={handleStoreNameChange}
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                required
               >
-                <option value="">Select Store</option>
-                {storeNames.map(store => (
-                  <option key={store} value={store}>{store}</option>
+                <option value="">Select Store Name</option>
+                {stores.map(store => (
+                  <option key={store.id} value={store.name}>{store.name}</option>
                 ))}
               </select>
             </div>
+
 
             <div>
               <label htmlFor="season" className="block text-sm font-medium text-gray-700">Season:</label>

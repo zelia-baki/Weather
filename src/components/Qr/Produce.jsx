@@ -26,6 +26,9 @@ const GenerateQrCodeAndReceipt = () => {
   const [qrCodes, setQrCodes] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [countries, setCountries] = useState([]);
+  const [produceCategories, setProduceCategories] = useState([]);
+  const [grades, setGrades] = useState([]);
+
   const storeNames = ['Store A', 'Store B', 'Store C']; // Example options for Store Name
 
   const qrCodeContainerRef = useRef(null); // Référence pour le conteneur des QR codes
@@ -64,7 +67,64 @@ const GenerateQrCodeAndReceipt = () => {
     fetchDistricts();
     fetchStores();
     fetchFarms();
+    fetchProduceCategories();
   }, []);
+
+  const fetchGradesByCategory = async (categoryName) => {
+    try {
+      const selectedCategory = produceCategories.find(cat => cat.name === categoryName);
+      if (!selectedCategory) return;
+
+      const response = await axiosInstance.get(`/api/grade/getbycrop/${selectedCategory.id}`);
+      if (response.data.status === 'success') {
+        setGrades(response.data.grades || []);
+      } else {
+        setGrades([]);
+      }
+    } catch (error) {
+      console.error('Error fetching grades:', error);
+      setGrades([]);
+    }
+  };
+  useEffect(() => {
+    if (formData.agroInputCategory) {
+      fetchGradesByCategory(formData.agroInputCategory);
+    } else {
+      setGrades([]);
+    }
+  }, [formData.agroInputCategory]);
+
+
+  const handleStoreIdChange = (e) => {
+    const storeId = e.target.value;
+    const selectedStore = stores.find(store => store.id.toString() === storeId);
+
+    setFormData(prev => ({
+      ...prev,
+      store_id: storeId,
+      store_name: selectedStore ? selectedStore.name : ''
+    }));
+  };
+
+  const handleStoreNameChange = (e) => {
+    const storeName = e.target.value;
+    const selectedStore = stores.find(store => store.name === storeName);
+
+    setFormData(prev => ({
+      ...prev,
+      store_name: storeName,
+      store_id: selectedStore ? selectedStore.id.toString() : ''
+    }));
+  };
+
+  const fetchProduceCategories = async () => {
+    try {
+      const response = await axiosInstance.get('/api/producecategory/');
+      setProduceCategories(response.data.categories || []);
+    } catch (error) {
+      console.error('Error fetching produce categories:', error);
+    }
+  };
 
   const fetchStores = async () => {
     try {
@@ -264,11 +324,13 @@ const GenerateQrCodeAndReceipt = () => {
                   required
                 >
                   <option value="">Select Produce Category</option>
-                  <option value="coffee">Coffee</option>
-                  <option value="cocoa">Cocoa</option>
-                  <option value="maize">Maize</option>
-                  <option value="soybean">Soybean</option>
+                  {produceCategories.map(category => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
+
 
                 <select
                   name="agroInputType"
@@ -278,11 +340,13 @@ const GenerateQrCodeAndReceipt = () => {
                   required
                 >
                   <option value="">Select Produce Grade</option>
-                  <option value="grade1">Grade 1</option>
-                  <option value="grade2">Grade 2</option>
-                  <option value="grade3">Grade 3</option>
-                  <option value="grade4">Grade 4</option>
+                  {grades.map(grade => (
+                    <option key={grade.id} value={grade.grade_value}>
+                      {grade.grade_value} {grade.description ? `- ${grade.description}` : ''}
+                    </option>
+                  ))}
                 </select>
+
               </div>
 
               <div className="flex flex-col mb-6">
@@ -382,15 +446,16 @@ const GenerateQrCodeAndReceipt = () => {
                   name="store_id"
                   id="store_id"
                   value={formData.store_id}
-                  onChange={handleInputChange}
+                  onChange={handleStoreIdChange}
                   className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                   required
                 >
-                  <option value="">Select Store</option>
+                  <option value="">Select Store ID</option>
                   {stores.map((store) => (
                     <option key={store.id} value={store.id}>{store.id}</option>
                   ))}
                 </select>
+
               </div>
 
               <div className="mb-6">
@@ -401,15 +466,16 @@ const GenerateQrCodeAndReceipt = () => {
                   name="store_name"
                   id="store_name"
                   value={formData.store_name}
-                  onChange={handleInputChange}
+                  onChange={handleStoreNameChange}
                   className="border-2 p-4 w-full rounded-lg focus:outline-none focus:ring-4 focus:ring-teal-400"
                   required
                 >
-                  <option value="">Select Store</option>
+                  <option value="">Select Store Name</option>
                   {stores.map((store) => (
-                    <option key={store.name} value={store.name}>{store.name}</option>
+                    <option key={store.id} value={store.name}>{store.name}</option>
                   ))}
                 </select>
+
               </div>
 
               <div className="mb-6">
