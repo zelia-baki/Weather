@@ -92,8 +92,12 @@ function App() {
     { path: "/foresttree", component: <ForestTree />, adminOnly: false },
     { path: "/qr", component: <QR />, adminOnly: false },
     { path: "/qrproduce", component: <Produce />, adminOnly: false },
-    { path: "/qrexport", component: <Export />, adminOnly: false, feature: "qrexport" },
-    { path: "/reportcarbon", component: <CarbonReport />, adminOnly: false, feature: "reportcarbon" },
+    // { path: "/qrexport", component: <Export />, adminOnly: false, feature: "qrexport" },
+    { path: "/qrexport", component: <Export />, adminOnly: false},
+
+    // { path: "/reportcarbon", component: <CarbonReport />, adminOnly: false, feature: "reportcarbon" },
+    { path: "/reportcarbon", component: <CarbonReport />, adminOnly: false },
+
     { path: "/weathermap", component: <WeathearMap />, adminOnly: false },
     { path: "/weatherdas", component: <WeatherDashboard />, adminOnly: false },
 
@@ -103,7 +107,9 @@ function App() {
     // { path: "/qrexport2", component: <Export /> , adminOnly: false},
 
     { path: "/qrfertilizer", component: <Fertilizer />, adminOnly: false },
-    { path: "/reportfarmer", component: <FarmReport />, adminOnly: false , feature: "reportfarmer"},
+    { path: "/reportfarmer", component: <FarmReport />, adminOnly: false },
+    // { path: "/reportfarmer", component: <FarmReport />, adminOnly: false, feature: "reportfarmer" },
+
     { path: "/reportcarbon", component: <CarbonReport />, adminOnly: false },
     { path: "/reportcarbonforest", component: <CarbonReportForest />, adminOnly: false },
     { path: "/reportforest", component: <ForestReport />, adminOnly: false },
@@ -148,8 +154,8 @@ function App() {
         {/* <Route path="/test" element={<Test />} /> */}
         <Route path="/barnav" element={<BarNav />} />
         <Route path="/payment-required" element={<PaymentRequired />} />
-        <Route path="/EUDRSubmissionForGuest" element={ <EUDRSubmitFormForGuest />}/>
-        <Route path="/sectionfutur" element={ <SectionFutur />}/>
+        <Route path="/EUDRSubmissionForGuest" element={<EUDRSubmitFormForGuest />} />
+        <Route path="/sectionfutur" element={<SectionFutur />} />
 
 
         {/* Protected Routes */}
