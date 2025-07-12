@@ -113,7 +113,7 @@ const DegreeDaysLineChart = () => {
       .then(({ data }) => {
         const geo = data.data.geolocation;
         if (geo && geo.includes(",")) {
-          const [lon, lat] = geo.split(",");
+          const [lat, lon] = geo.split(",");
           const latFloat = parseFloat(lat);
           const lonFloat = parseFloat(lon);
           setLatitude(latFloat);

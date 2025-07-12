@@ -452,13 +452,13 @@ const EUDRManager = () => {
         <div className="grid grid-cols-2 gap-4">
           <input className="border p-2 rounded" placeholder="Reference" value={referenceCheck} onChange={(e) => setReferenceCheck(e.target.value)} />
           <input className="border p-2 rounded" placeholder="Verification Code" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} />
-          {/* <button
+          <button
             className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 col-span-2"
             onClick={() => setShowPaymentModal(true)}
           >
             Verify
-          </button> */}
-          <button
+          </button>
+          {/* <button
             className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 col-span-2"
             onClick={() => {
               handleGetByRefAndVerification();
@@ -468,7 +468,7 @@ const EUDRManager = () => {
 
           >
             Verify 2
-          </button>
+          </button> */}
 
 
         </div>

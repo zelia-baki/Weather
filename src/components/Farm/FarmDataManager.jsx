@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
+import { useLocation } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 const FarmDataManager = () => {
+  const location = useLocation();
+  const farmId = location.state?.farmId || "WAK0001";
   const [farmData, setFarmData] = useState([]);
   const [farmsList, setFarmsList] = useState([]);
-  const [cropsList, setCropsList] = useState([]); // Add state for crops list
+  const [cropsList, setCropsList] = useState([]);
   const [countriesList, setCountriesList] = useState([]);
   const [formData, setFormData] = useState({
     farm_id: '',
@@ -27,11 +31,14 @@ const FarmDataManager = () => {
   const [editId, setEditId] = useState(null);
 
   useEffect(() => {
-    fetchFarmData();
+    if (farmId) {
+      setFormData(prev => ({ ...prev, farm_id: farmId }));
+      fetchFarmData(farmId);
+    }
     fetchFarmsList();
-    fetchCropsList(); // Fetch crops list on component load
-    fetchCountryList(); // Fetch country list
-  }, []);
+    fetchCropsList();
+    fetchCountryList();
+  }, [farmId]);
 
   const fetchCountryList = async () => {
     try {
@@ -42,9 +49,9 @@ const FarmDataManager = () => {
     }
   };
 
-  const fetchFarmData = async () => {
+  const fetchFarmData = async (farmIdParam) => {
     try {
-      const response = await axiosInstance.get('/api/farmdata/');
+      const response = await axiosInstance.get(`/api/farmdata/?farm_id=${farmIdParam}`);
       setFarmData(response.data.farmdata_list);
     } catch (error) {
       console.error("Error fetching farm data:", error);
@@ -63,7 +70,7 @@ const FarmDataManager = () => {
   const fetchCropsList = async () => {
     try {
       const response = await axiosInstance.get('/api/crop/');
-      setCropsList(response.data.crops); // Set crops list
+      setCropsList(response.data.crops);
     } catch (error) {
       console.error("Error fetching crops list:", error);
     }
@@ -79,10 +86,11 @@ const FarmDataManager = () => {
   };
 
   const handleCropSelect = (e) => {
-    setFormData({ ...formData, crop_id: e.target.value }); // Handle crop selection
+    setFormData({ ...formData, crop_id: e.target.value });
   };
+
   const handleCountrySelect = (e) => {
-    setFormData({ ...formData, destination_country: e.target.value }); // Handle country selection
+    setFormData({ ...formData, destination_country: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -90,12 +98,14 @@ const FarmDataManager = () => {
     try {
       if (editId) {
         await axiosInstance.put(`/api/farmdata/${editId}/edit`, formData);
+        Swal.fire('Success', 'Farm Data updated successfully!', 'success');
       } else {
         await axiosInstance.post('/api/farmdata/create', formData);
+        Swal.fire('Success', 'Farm Data created successfully!', 'success');
       }
-      fetchFarmData();
+      fetchFarmData(farmId);
       setFormData({
-        farm_id: '',
+        farm_id: farmId,
         crop_id: '',
         land_type: '',
         tilled_land_size: '',
@@ -115,14 +125,16 @@ const FarmDataManager = () => {
       setEditId(null);
     } catch (error) {
       console.error("Error submitting farm data:", error);
+      Swal.fire('Error', 'Failed to submit farm data.', 'error');
     }
   };
+
 
   const handleEdit = (data) => {
     setFormData(data);
     setEditId(data.id);
   };
-  
+
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
@@ -133,41 +145,42 @@ const FarmDataManager = () => {
       cancelButtonColor: '#d33',
       confirmButtonText: 'Yes, delete it!',
     });
-    if (result.isConfirmed) {
 
-    try {
-      await axiosInstance.post(`/api/farmdata/${id}/delete`);
-        Swal.fire('Deleted!', 'Farm has been deleted.', 'success'); 
-      fetchFarmData(currentPage); // Rafraîchit les données après suppression
-    } catch (error) {
-      console.error('Error deleting farm:', error);
-      setError('An error occurred while deleting the farm data.');
+    if (result.isConfirmed) {
+      try {
+        await axiosInstance.delete(`/api/farmdata/${id}/delete`);
+        Swal.fire('Deleted!', 'Farm data has been deleted.', 'success');
+        fetchFarmData(farmId);
+      } catch (error) {
+        console.error('Error deleting farm:', error);
+        Swal.fire('Error', 'Failed to delete farm data.', 'error');
+      }
     }
-  }
   };
-  
+
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-4">Farm Data Manager</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="farm_id" className="block mb-2 text-sm font-medium">Farm ID:</label>
-          <select
-            name="farm_id"
-            value={formData.farm_id}
-            onChange={handleFarmSelect}
-            required
-            className="w-full p-2 border rounded-md shadow-sm"
-          >
-            <option value="">Select a Farm</option>
-            {farmsList.map((farm) => (
-              <option key={farm.id} value={farm.id}>{farm.name}</option>
-            ))}
-          </select>
-        </div>
+        {!farmId && (
+          <div>
+            <label htmlFor="farm_id" className="block mb-2 text-sm font-medium">Farm ID:</label>
+            <select
+              name="farm_id"
+              value={formData.farm_id}
+              onChange={handleFarmSelect}
+              required
+              className="w-full p-2 border rounded-md shadow-sm"
+            >
+              <option value="">Select a Farm</option>
+              {farmsList.map((farm) => (
+                <option key={farm.id} value={farm.id}>{farm.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
-        {/* Crop Dropdown */}
         <div>
           <label htmlFor="crop_id" className="block mb-2 text-sm font-medium">Crop ID:</label>
           <select
@@ -184,7 +197,6 @@ const FarmDataManager = () => {
           </select>
         </div>
 
-        {/* Other input fields with styling */}
         {['land_type', 'season', 'quality', 'quantity', 'channel_partner', 'customer_name'].map(field => (
           <div key={field}>
             <input
@@ -193,11 +205,11 @@ const FarmDataManager = () => {
               value={formData[field]}
               onChange={handleChange}
               placeholder={field.replace('_', ' ').replace(/\b\w/g, char => char.toUpperCase())}
-              required
               className="w-full p-2 border rounded-md shadow-sm"
             />
           </div>
         ))}
+
         <div>
           <label htmlFor="destination_country">Destination Country:</label>
           <select
@@ -222,7 +234,6 @@ const FarmDataManager = () => {
             value={formData.tilled_land_size}
             placeholder="Tilled Land Size"
             onChange={handleChange}
-            required
             className="w-full p-2 border rounded-md shadow-sm"
           />
           <input
@@ -231,28 +242,23 @@ const FarmDataManager = () => {
             value={formData.number_of_tree}
             placeholder="Number of Trees"
             onChange={handleChange}
-            required
             className="w-full p-2 border rounded-md shadow-sm"
           />
         </div>
 
         <div className="flex space-x-4">
-        <label htmlFor="planting_date">planting_date:</label>
           <input
             type="date"
             name="planting_date"
             value={formData.planting_date}
             onChange={handleChange}
-            required
             className="w-full p-2 border rounded-md shadow-sm"
           />
-          <label htmlFor="harvest_date">harvest_date:</label>
           <input
             type="date"
             name="harvest_date"
             value={formData.harvest_date}
             onChange={handleChange}
-            required
             className="w-full p-2 border rounded-md shadow-sm"
           />
         </div>
@@ -264,7 +270,6 @@ const FarmDataManager = () => {
             value={formData.expected_yield}
             onChange={handleChange}
             placeholder="Expected Yield"
-            required
             className="w-full p-2 border rounded-md shadow-sm"
           />
           <input
@@ -273,18 +278,8 @@ const FarmDataManager = () => {
             value={formData.actual_yield}
             onChange={handleChange}
             placeholder="Actual Yield"
-            required
             className="w-full p-2 border rounded-md shadow-sm"
           />
-          {/* <input
-            type="text"
-            name="hs_code"
-            value={formData.hs_code}
-            onChange={handleChange}
-            placeholder="HS code"
-            required
-            className="w-full p-2 border rounded-md shadow-sm"
-          /> */}
         </div>
 
         <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
@@ -317,13 +312,12 @@ const FarmDataManager = () => {
                 <td className="px-4 py-2">{data.crop_id}</td>
                 <td className="px-4 py-2">{data.land_type}</td>
                 <td className="px-4 py-2">{data.tilled_land_size}</td>
-                <td className="px-4 py-2">{new Date(data.planting_date).toLocaleDateString()}</td>
-                <td className="px-4 py-2">{new Date(data.harvest_date).toLocaleDateString()}</td>
+                <td className="px-4 py-2">{data.planting_date ? new Date(data.planting_date).toLocaleDateString() : ''}</td>
+                <td className="px-4 py-2">{data.harvest_date ? new Date(data.harvest_date).toLocaleDateString() : ''}</td>
                 <td className="px-4 py-2">{data.quality}</td>
                 <td className="px-4 py-2">{data.quantity}</td>
                 <td className="px-4 py-2">{data.expected_yield}</td>
                 <td className="px-4 py-2">{data.actual_yield}</td>
-                {/* <td className="px-4 py-2">{data.hs_code}</td> */}
                 <td className="px-4 py-2">
                   <button onClick={() => handleEdit(data)} className="text-blue-500 hover:underline mr-2">Edit</button>
                   <button onClick={() => handleDelete(data.id)} className="text-red-500 hover:underline">Delete</button>
