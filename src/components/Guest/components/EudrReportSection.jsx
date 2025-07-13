@@ -9,6 +9,8 @@ import * as turf from '@turf/turf';
 const EudrReportSection = ({ results, reportRef, farmInfo }) => {
   console.log("📍 EudrReportSection monté");
   console.log("📦 Résultats reçus :", results);
+  console.log("📦 FarmInfo reçus :", farmInfo);
+
 
   const [coverExtentDecileData, setCoverExtentDecileData] = useState({
     nonZeroValues: [],
@@ -200,7 +202,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       {farmInfo && (
         <p className="p-4">
           This report provides an overview of Farm ID <strong>{farmInfo.farm_id}</strong>, owned by <strong>{farmInfo.name}</strong>,
-          located in <strong>{farmInfo.subcounty}</strong>, [District]. The farm is a member of the {farmInfo.subcounty} and plays a significant role in the local agricultural landscape.
+          located in <strong>{farmInfo.subcounty}</strong>, {farmInfo.district_name}. The farm is a member of the {farmInfo.subcounty} and plays a significant role in the local agricultural landscape.
           With geolocation coordinates <strong>{farmInfo.geolocation}</strong>,
           {farmInfo.crops && farmInfo.crops.length > 0 ? (
             <>
