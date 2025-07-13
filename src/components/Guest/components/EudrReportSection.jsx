@@ -1,17 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { renderEudrTable, generateMapboxUrl } from '../utils/reportUtils';
 import parrot from '../../img/parrotlogo.svg';
-
-// ✅ EN HAUT DU FICHIER
 import * as turf from '@turf/turf';
 
-
 const EudrReportSection = ({ results, reportRef, farmInfo }) => {
-  console.log("📍 EudrReportSection monté");
-  console.log("📦 Résultats reçus :", results);
-  console.log("📦 FarmInfo reçus :", farmInfo);
-
-
   const [coverExtentDecileData, setCoverExtentDecileData] = useState({
     nonZeroValues: [],
     nonZeroCount: 0,
@@ -33,16 +25,14 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
     mostCommonValue: '',
     frequencyCounts: ''
   });
-
+  const [isJrcGlobalForestCover, setIsJrcGlobalForestCover] = useState(null);
   const [geoData, setGeoData] = useState({});
+
   const coordinates = results["jrc global forest cover"]?.[0]?.coordinates?.[0];
-
-
 
   useEffect(() => {
     if (!results || typeof results !== 'object' || Object.keys(results).length === 0) return;
 
-    console.log("🚩 Données reçues dans EudrReportSection :", results);
     setGeoData(results);
 
     // ===== 1. TREE COVER EXTENT =====
@@ -117,7 +107,6 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
     if (Array.isArray(results?.["soil carbon"])) {
       const protectedItem = results["soil carbon"]
         .find(item => item.pixel === "wdpa_protected_areas__iucn_cat");
-
       protectedAreas = protectedItem?.data_fields || [];
     }
 
@@ -162,11 +151,46 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
 
     // ===== 6. AREA =====
     const coords = results["jrc global forest cover"]?.[0]?.coordinates?.[0];
-    if (coords) {
-      const polygon = turf.polygon([coords]);
-      const areaSqM = turf.area(polygon);
-      setAreaInSquareMeters(areaSqM);
-      setAreaInHectares(areaSqM / 10000);
+    if (coords && Array.isArray(coords) && coords.length >= 3) {
+      const first = coords[0];
+      const last = coords[coords.length - 1];
+      const closedCoords = (first[0] !== last[0] || first[1] !== last[1])
+        ? [...coords, first]
+        : coords;
+
+      try {
+        const polygon = turf.polygon([closedCoords]);
+        const areaSqM = turf.area(polygon);
+        setAreaInSquareMeters(areaSqM);
+        setAreaInHectares(areaSqM / 10000);
+      } catch (e) {
+        console.error("❌ Turf error on polygon:", e);
+      }
+    }
+
+    // ===== 7. JRC GLOBAL FOREST COVER STATUS =====
+    const jrcData = results["jrc global forest cover"]
+      ?.find(item => item.pixel === "is__jrc_global_forest_cover")?.data_fields || [];
+
+    if (Array.isArray(jrcData) && jrcData.length > 0) {
+      let counts = { 0: 0, 1: 0, other: 0 };
+
+      jrcData.forEach(field => {
+        const value = field?.is__jrc_global_forest_cover;
+        if (value === 0) counts[0]++;
+        else if (value === 1) counts[1]++;
+        else counts.other++;
+      });
+
+      if (counts[1] > counts[0] && counts[1] > counts.other) {
+        setIsJrcGlobalForestCover("Compliant: Majority of forest pixels are 1");
+      } else if (counts[0] > counts[1] && counts[0] > counts.other) {
+        setIsJrcGlobalForestCover("Not Compliant: Majority are 0");
+      } else {
+        setIsJrcGlobalForestCover("Mixed or Unknown classification");
+      }
+    } else {
+      setIsJrcGlobalForestCover("Data not available");
     }
 
   }, [results]);
@@ -289,7 +313,8 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
               areaInHectares,
               resultStatus,
               coverExtentDecileData,
-              tscDriverDriver
+              tscDriverDriver,
+              isJrcGlobalForestCover
             })}
           </div>
           {/* MAP */}

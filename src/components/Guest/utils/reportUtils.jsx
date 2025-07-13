@@ -28,7 +28,8 @@ export const renderEudrTable = (data) => {
     areaInHectares,
     resultStatus = {},
     coverExtentDecileData = {},
-    tscDriverDriver = {}
+    tscDriverDriver = {},
+    isJrcGlobalForestCover,
   } = data;
 
   const coverLossArea = geoData['tree cover loss']?.[0]?.data_fields?.area__ha || 0;
@@ -87,6 +88,12 @@ export const renderEudrTable = (data) => {
           <td className="border border-gray-400 px-4 py-2">EUDR Compliance</td>
           <td className="border border-gray-400 px-4 py-2">
             {geoData['tree cover loss']?.[0]?.data_fields?.area__ha === 0 ? '100% Compliance' : 'Not Compliant'}
+          </td>
+        </tr>
+        <tr>
+          <td className="border border-gray-400 px-4 py-2">Global Forest Cover in 2020</td>
+          <td className="border border-gray-400 px-4 py-2">
+            {isJrcGlobalForestCover}
           </td>
         </tr>
 
