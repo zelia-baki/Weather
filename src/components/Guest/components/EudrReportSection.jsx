@@ -198,29 +198,59 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
   return (
     <div ref={reportRef} className="carbon-report-a4">
       {/* HEADER */}
-      <div className="report-header-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {/* Parrot section */}
-        <div style={{ width: '120px', height: '120px', position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <div className="bg-white rounded-full ">
+      <div style={{ display: 'table', width: '100%', marginBottom: '5px' }}>
+        <div style={{ display: 'table-row' }}>
+
+          {/* Colonne gauche : Parrot */}
+          <div style={{ display: 'table-cell', width: '10%', verticalAlign: 'middle' }}>
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '9px',
+                width: '100px',
+                height: '100px',
+                display: 'inline-block',
+              }}
+            >
+              <img
+                src="http://localhost:5173/parrotlogo.png"
+                alt="Parrot"
+                style={{ width: '100px', height: '100px', objectFit: 'contain' }}
+              />
+            </div>
+          </div>
+
+          {/* Colonne centre : Titre */}
+          <div
+            style={{
+              display: 'table-cell',
+              width: '75%',
+              verticalAlign: 'middle',
+              textAlign: 'center',
+            }}
+          >
+            <h2 style={{ margin: 0 }}>EUDR COMPLIANCE REPORT</h2>
+            <p style={{ fontSize: '14px', margin: 0 }}>
+              Report generated based on the Regulation (EU) 2023/1115 on deforestation-free products.
+            </p>
+          </div>
+
+          {/* Colonne droite : Logo */}
+          <div
+            style={{
+              display: 'table-cell',
+              width: '15%',
+              verticalAlign: 'middle',
+              textAlign: 'right',
+            }}
+          >
             <img
-              src={parrot}
-              alt="Parrot"
-              style={{ width: '100px', height: '120px', objectFit: 'contain' }}
+              src="https://www.nkusu.com/logo.jpg"
+              alt="Logo"
+              style={{ width: '100px', height: '100px', objectFit: 'contain' }}
             />
           </div>
         </div>
-
-        {/* Header titles */}
-        <div className="report-header" style={{ textAlign: 'center' }}>
-          {/* <h1>NKUSU / AGRIYIELDS REPORT</h1> */}
-          <h2>EUDR COMPLIANCE REPORT</h2>
-          <p className="subtitle">
-            Report generated based on the Regulation (EU) 2023/1115 on deforestation-free products.
-          </p>
-        </div>
-
-        {/* Logo */}
-        <img src="/logo.jpg" alt="Logo" className="report-logo" style={{ width: '120px', height: '120px', objectFit: 'contain' }} />
       </div>
 
       {farmInfo && (
@@ -318,6 +348,8 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
             })}
           </div>
           {/* MAP */}
+          <div className="html2pdf__page-break"></div>
+
           {coordinates && (
             <div className="report-section">
               <h2 className="text-2xl font-bold mb-4">Risk Assessment Breakdown</h2>

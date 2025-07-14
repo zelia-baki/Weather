@@ -5,7 +5,7 @@ import { useLocation, Link } from "react-router-dom";
 import html2canvas from "html2canvas";
 import Loading from '../main/Loading.jsx';
 import EudrReportSection from "../Guest/components/EudrReportSection.jsx";
-import { generatePdfBlob } from "../Guest/utils/pdfUtils.js";
+import { downloadPDF } from "../Guest/utils/pdfUtils.js";
 
 const FullReport = () => {
   const [farmInfo, setFarmInfo] = useState(null);
@@ -43,54 +43,54 @@ const FullReport = () => {
     fetchFarmReport();
   }, [farmId]);
 
-  const generatePdf = async () => {
-    const element = reportRef.current;
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pages = element.querySelectorAll(".page");
-    const email = "nkusu@agriyields.com";
+  // const generatePdf = async () => {
+  //   const element = reportRef.current;
+  //   const pdf = new jsPDF("p", "mm", "a4");
+  //   const pages = element.querySelectorAll(".page");
+  //   const email = "nkusu@agriyields.com";
 
-    for (let i = 0; i < pages.length; i++) {
-      await new Promise((resolve) => {
-        const images = pages[i].getElementsByTagName("img");
-        let loadedCount = 0;
+  //   for (let i = 0; i < pages.length; i++) {
+  //     await new Promise((resolve) => {
+  //       const images = pages[i].getElementsByTagName("img");
+  //       let loadedCount = 0;
 
-        if (images.length === 0) {
-          resolve();
-        } else {
-          Array.from(images).forEach((img) => {
-            img.onload = () => {
-              loadedCount++;
-              if (loadedCount === images.length) {
-                resolve();
-              }
-            };
-            img.src = img.src;
-          });
-        }
-      });
+  //       if (images.length === 0) {
+  //         resolve();
+  //       } else {
+  //         Array.from(images).forEach((img) => {
+  //           img.onload = () => {
+  //             loadedCount++;
+  //             if (loadedCount === images.length) {
+  //               resolve();
+  //             }
+  //           };
+  //           img.src = img.src;
+  //         });
+  //       }
+  //     });
 
-      const canvas = await html2canvas(pages[i], {
-        scale: 2,
-        useCORS: true,
-      });
+  //     const canvas = await html2canvas(pages[i], {
+  //       scale: 2,
+  //       useCORS: true,
+  //     });
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+  //     const imgData = canvas.toDataURL("image/png");
+  //     const pdfWidth = pdf.internal.pageSize.getWidth();
+  //     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+  //     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-      const margin = 10;
-      const emailX = pdfWidth - pdf.getTextWidth(email) - margin;
-      const emailY = pdf.internal.pageSize.getHeight() - margin;
-      pdf.setFontSize(10);
-      pdf.text(email, emailX, emailY);
+  //     const margin = 10;
+  //     const emailX = pdfWidth - pdf.getTextWidth(email) - margin;
+  //     const emailY = pdf.internal.pageSize.getHeight() - margin;
+  //     pdf.setFontSize(10);
+  //     pdf.text(email, emailX, emailY);
 
-      if (i < pages.length - 1) pdf.addPage();
-    }
+  //     if (i < pages.length - 1) pdf.addPage();
+  //   }
 
-    pdf.save("EUDR_Report.pdf");
-  };
+  //   pdf.save("EUDR_Report.pdf");
+  // };
 
   if (loading) return <Loading />;
   if (error === 'No polygon found. Please create a polygon for this forest.') {
@@ -118,17 +118,11 @@ const FullReport = () => {
         <EudrReportSection results={geoData} reportRef={reportRef} farmInfo={farmInfo} />
       </div>
 
-                   <button onClick={async () => {
-                     const blob = await generatePdfBlob(reportRef, 'report');
-                     if (blob) {
-                       const url = URL.createObjectURL(blob);
-                       const link = document.createElement('a');
-                       link.href = url;
-                       link.download = 'EUDR_Report.pdf';
-                       link.click();
-                     }
-                   }} className="bg-blue-500 text-white px-6 py-3 rounded-md mt-6 hover:bg-blue-700 transition duration-300">Download the EUDR PDF</button>
-     
+      <button onClick={() => downloadPDF(reportRef)} className="btn btn-primary">
+        Télécharger le PDF
+      </button>
+
+
     </div>
   );
 };
