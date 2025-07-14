@@ -183,9 +183,9 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       });
 
       if (counts[1] > counts[0] && counts[1] > counts.other) {
-        setIsJrcGlobalForestCover("Compliant: Majority of forest pixels are 1");
+        setIsJrcGlobalForestCover(" Presence of Forest cover detected: Majority of forest pixels are 1");
       } else if (counts[0] > counts[1] && counts[0] > counts.other) {
-        setIsJrcGlobalForestCover("Not Compliant: Majority are 0");
+        setIsJrcGlobalForestCover("no forest cover detected: Majority are 0");
       } else {
         setIsJrcGlobalForestCover("Mixed or Unknown classification");
       }
