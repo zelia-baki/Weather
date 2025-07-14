@@ -213,7 +213,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
               }}
             >
               <img
-                src="http://localhost:5173/parrotlogo.png"
+                src="https://www.nkusu.com/parrotlogo.png"
                 alt="Parrot"
                 style={{ width: '100px', height: '100px', objectFit: 'contain' }}
               />
