@@ -119,7 +119,7 @@ const FullReport = () => {
       </div>
 
       <button onClick={() => downloadPDF(reportRef)} className="btn btn-primary">
-        Télécharger le PDF
+        Download PDF 
       </button>
 
 

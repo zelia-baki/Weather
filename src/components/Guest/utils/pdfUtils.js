@@ -60,16 +60,20 @@ export const downloadPDF = async (ref) => {
   const htmlContent = element.outerHTML;
 
   // Injecter le HTML dans une page complète avec styles
-  const htmlWithStyles = `
+const htmlWithStyles = `
   <html>
     <head>
       <meta charset="utf-8" />
       <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
       <style>
-        body {
-          font-family: 'Arial', sans-serif;
-          padding: 20px;
+        @page {
+          margin: 15mm; /* 🔧 diminue ici (par défaut WeasyPrint met 20mm) */
         }
+
+        body {
+          font-family: Arial, sans-serif;
+        }
+
         .html2pdf__page-break {
           page-break-after: always;
         }
