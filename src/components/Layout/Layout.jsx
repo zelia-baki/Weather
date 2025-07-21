@@ -269,6 +269,11 @@ const Layout = ({ children }) => {
                                             Anomaly Alert
                                         </a>
                                     </li>
+                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                        <a href="/alertmessage" className="block w-full h-full">
+                                            Alert Messaging
+                                        </a>
+                                    </li>
                                 </ul>
                             </div>
                         )}
