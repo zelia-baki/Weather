@@ -320,37 +320,35 @@ const AlertMessaging = () => {
           .trim();
       };
 
-      // Build summarized messages: one for weather, one for pest
+// Combine all alerts into two messages: one for weather, one for pests
       let weatherSummary = '';
       let pestSummary = '';
 
       // Build weather summary
       if (alert.weather_alerts && alert.weather_alerts.length > 0) {
-        const allWeatherAlerts = alert.weather_alerts.map(wa => wa.alerts).flat();
+        // Combine all unique weather alert types
+        const allWeatherAlerts = alert.weather_alerts.flatMap(wa => wa.alerts);
         const uniqueWeatherAlerts = Array.from(new Set(allWeatherAlerts));
         weatherSummary = cleanText(
-          `WEATHER ALERT for ${alert.farm.name}: ` +
-          `${uniqueWeatherAlerts.join(', ')}.`
+          `WEATHER ALERT for ${alert.farm.name}: ${uniqueWeatherAlerts.join(', ')}.`
         );
       }
 
       // Build pest summary
       if (alert.pest_alerts && alert.pest_alerts.length > 0) {
-        const allPestAlerts = alert.pest_alerts.map(pa => pa.alerts).flat();
+        // Combine all unique pest alert types
+        const allPestAlerts = alert.pest_alerts.flatMap(pa => pa.alerts);
         const uniquePestAlerts = Array.from(new Set(allPestAlerts));
         pestSummary = cleanText(
-          `PEST ALERT for ${alert.farm.name}: ` +
-          `${uniquePestAlerts.join(', ')}.`
+          `PEST ALERT for ${alert.farm.name}: ${uniquePestAlerts.join(', ')}.`
         );
       }
 
-      // Combine into two messages
+      // Ensure both messages are sent
       let messagesToSend = [];
-
       if (weatherSummary) {
         messagesToSend.push(weatherSummary);
       }
-
       if (pestSummary) {
         messagesToSend.push(pestSummary);
       }
