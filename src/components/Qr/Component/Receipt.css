@@ -1,0 +1,99 @@
+/* ================================
+   Receipt.css - Style du reçu
+================================ */
+
+.receipt {
+  background: #FAFAF9;
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 420px;
+  margin: auto;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.receipt:hover {
+  transform: scale(1.02);
+}
+
+/* Logo */
+.receipt .logo {
+  width: 80px;
+  height: auto;
+  margin: 0 auto 12px;
+  display: block;
+}
+
+/* Titre principal */
+.receipt .title {
+  font-size: 1.6rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #0d9488; /* teal */
+  text-transform: uppercase;
+}
+
+/* Description */
+.receipt .desc {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 18px;
+  line-height: 1.4;
+}
+
+/* QR code */
+.receipt .qr-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.receipt .qr img {
+  width: 220px;
+  height: 220px;
+  border: 6px solid #0d9488;
+  border-radius: 16px;
+  background: #fff;
+  padding: 6px;
+}
+
+/* Rows */
+.receipt .rows {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.receipt .row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed #ddd;
+}
+
+.receipt .row:last-child {
+  border-bottom: none;
+}
+
+.receipt .label {
+  font-weight: 600;
+  color: #444;
+}
+
+.receipt .value {
+  color: #111;
+  font-weight: 500;
+}
+
+/* Effet bas ticket (perforé) */
+.receipt::after {
+  content: "";
+  display: block;
+  margin: 16px auto 0;
+  width: 80%;
+  height: 10px;
+  border-top: 2px dashed #ccc;
+}

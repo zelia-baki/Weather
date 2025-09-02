@@ -24,10 +24,10 @@ import DistrictEdit from './components/District/DistrictEdit.jsx';
 import ForestPoint from './components/Forest/Point/ForestPoint.jsx';
 import ForestTree from './components/Forest/Tree/ForestTree.jsx';
 import QR from './components/Qr/qr.jsx';
-import Produce from './components/Qr/Produce.jsx';
-import Conservation from './components/Qr/Conservation.jsx';
+import Produce from './components/Qr/Produce/GenerateQrCodeAndReceipt.jsx';
+import Conservation from './components/Qr/Page/Conservation.jsx';
 import Export from './components/Qr/Export2.jsx';
-import Fertilizer from './components/Qr/Fertilizer.jsx';
+import Fertilizer from './components/Qr/Page/Fertilizer.jsx';
 import FarmReport from './components/gfw/FarmReport.jsx';
 import ForestReport from './components/gfw/Reportgen2Forest.jsx';
 import CreateUsers from './components/Users/CreateUsers.jsx';
@@ -100,11 +100,7 @@ function App() {
 
     { path: "/weathermap", component: <WeathearMap />, adminOnly: false },
     { path: "/weatherdas", component: <WeatherDashboard />, adminOnly: false },
-
-
-
-
-    // { path: "/qrexport2", component: <Export /> , adminOnly: false},
+   // { path: "/qrexport2", component: <Export /> , adminOnly: false},
 
     { path: "/qrfertilizer", component: <Fertilizer />, adminOnly: false },
     { path: "/reportfarmer", component: <FarmReport />, adminOnly: false },

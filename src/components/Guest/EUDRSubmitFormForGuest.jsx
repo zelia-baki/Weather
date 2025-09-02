@@ -1,343 +1,130 @@
-import React, { useState, useRef, useEffect } from 'react';
-import axiosInstance from '../../axiosInstance';
-import UploadCard from './components/UploadCard';
-import CarbonReportSection from './components/CarbonReportSection';
-import EudrReportSection from './components/EudrReportSection';
-import { SendPaymentModal } from '../Payment/SendPaymentModal';
-import { generatePdfBlob } from './utils/pdfUtils';
-
-const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import React, { useState, useRef } from "react";
+import { useUserInfo } from "./hooks/useUserInfo";
+import { useFileUpload } from "./hooks/useFileUpload";
+import { useReports } from "./hooks/useReports";
+import StepLocation from "./steps/StepLocation";
+import StepReportType from "./steps/StepReportType";
+import StepUserInfo from "./steps/StepUserInfo";
+import StepPayment from "./steps/StepPayment";
+import StepReports from "./steps/StepReports";
+import { SendPaymentModal } from "../Payment/SendPaymentModal";
 
 const EUDRSubmitFormForGuest = () => {
   const [step, setStep] = useState(1);
-  const [files, setFiles] = useState({ eudr: null, carbon: null });
-  const [userInfo, setUserInfo] = useState({ phone: '', email: '' });
-  const [errors, setErrors] = useState({});
-  const [reports, setReports] = useState({ eudr: null, carbon: null });
-  const [showPaymentModal, setShowPaymentModal] = useState({ eudr: false, carbon: false });
   const [selectedFeature, setSelectedFeature] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [geojson, setGeojson] = useState(null);
+
   const reportRefs = { eudr: useRef(), carbon: useRef() };
-  const [loadingCard, setLoadingCard] = useState({ eudr: false, carbon: false });
-  const [rdata, setrdata] = useState({});
 
-  const handleUploadClick = async (inputName) => {
-    setLoadingCard(prev => ({ ...prev, [inputName]: true }));
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Minimum 2s loading
-    setStep(2);
-    setLoadingCard(prev => ({ ...prev, [inputName]: false }));
+  const { files, handleFileChange } = useFileUpload();
+
+  const {
+    userInfo,
+    setUserInfo,
+    handleUserInfoSubmit,
+    loading: userLoading
+  } = useUserInfo(setStep);
+
+  const {
+    reports,
+    loading,
+    showPaymentModal,
+    handleReportReady,
+    setShowPaymentModal,
+  } = useReports({ files, userInfo, setStep, reportRefs });
+
+  // 🔙 Revenir au step précédent
+  const handleBack = () => {
+    if (step > 1) setStep(step - 1);
   };
-  const handleFileChange = (inputName, e) => {
-    const file = e.target.files[0];
-    setFiles(prev => ({ ...prev, [inputName]: file }));
-  };
-
-  const handleUserInfoSubmit = async (e) => {
-    e.preventDefault();
-    if (userInfo.phone && userInfo.email) {
-      setLoading(true);
-      await wait(2000);
-      localStorage.setItem('guest_phone', userInfo.phone);
-      localStorage.setItem('guest_email', userInfo.email);
-      setStep(3);
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    console.log("📦 Nouvelle valeur de reports :", reports);
-  }, [reports]);
-
-  const sendPdfByEmail = async (inputName, email) => {
-    console.log(`📤 Début d'envoi d'email avec ${inputName.toUpperCase()} vers ${email}`);
-
-    try {
-      const ref = reportRefs[inputName];
-      const pdfBlob = await generatePdfBlob(ref, inputName);
-      console.log('📄 PDF généré', pdfBlob);
-
-      const reader = new FileReader();
-      reader.readAsArrayBuffer(pdfBlob);
-
-      reader.onloadend = async () => {
-        console.log('🧠 Conversion base64 en cours...');
-        const arrayBuffer = reader.result;
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const binary = uint8Array.reduce((data, byte) => data + String.fromCharCode(byte), '');
-        const base64data = btoa(binary);
-
-        try {
-          console.log("📡 Envoi vers /api/notifications/email");
-          await axiosInstance.post('/api/notifications/email', {
-            to_email: email,
-            report_type: inputName.toUpperCase(),
-            pdf_base64: base64data
-          });
-          console.log('✅ Email envoyé via backend');
-        } catch (error) {
-          console.error('❌ Erreur lors de l’envoi vers le backend :', error);
-        }
-      };
-
-      reader.onerror = (err) => {
-        console.error('❌ Erreur FileReader :', err);
-      };
-
-    } catch (err) {
-      console.error('❌ Erreur dans sendPdfByEmail :', err);
-    }
-  };
-
-
-  const handleReportReady = async (featureName) => {
-    const key = featureName === 'reporteudrguest' ? 'eudr' : 'carbon';
-    const file = files[key];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-    setLoading(true);
-    await wait(2000);
-
-    try {
-      const res = await axiosInstance.post(
-        `/api/gfw/Geojson/${featureName === 'reportcarbonguest' ? 'CarbonReportFromFile' : 'ReportFromFile'}`,
-        formData,
-        {
-          headers: {
-            'X-Guest-ID': localStorage.getItem('guest_id'),
-            'X-Guest-Phone': userInfo.phone
-          }
-        }
-      );
-
-      const rdata = res.data.report;
-      const hasValidData = rdata && Object.keys(rdata).length > 0;
-
-      if (!hasValidData) {
-        console.warn("⚠️ Rapport vide ou invalide :", rdata);
-        setErrors(prev => ({ ...prev, [featureName]: 'No report data available.' }));
-        return;
-      }
-
-      console.log("✅ rdata complet :", rdata);
-
-      setReports(prev => {
-        const newReports = { ...prev, [key]: rdata };
-        console.log("✅ Nouveau rapport injecté :", newReports);
-
-        setTimeout(() => {
-          console.log("🚀 Passage à l'étape 4 pour affichage du rapport");
-          setStep(4);
-        }, 100);
-
-        return newReports;
-      });
-
-      let message = '';
-
-      if (key === 'carbon') {
-        const carbonValue = rdata?.["forest carbon net flux"]?.[0]?.data_fields?.gfw_forest_carbon_net_flux__Mg_CO2e;
-
-        let value = "X";
-        let interpretation = "Carbon data not available";
-
-        if (typeof carbonValue === 'number') {
-          value = (Math.abs(carbonValue) / 22).toFixed(2);
-
-          if (carbonValue > 0) {
-            interpretation = `Your plot of land is a net carbon emitter estimated to about ${value} MT CO2e per year.`;
-          } else if (carbonValue < 0) {
-            interpretation = `Your plot of land is a net carbon sink estimated to about ${value} MT CO2e per year.`;
-          } else {
-            interpretation = `Your plot of land has a neutral carbon balance (0 MT CO₂e) per year.`;
-          }
-        }
-
-        message = `${interpretation} For more details, contact us on WhatsApp +256783130358 or lwetutb@agriyields.com, nkusu@agriyields.com.`;
-
-      } else if (key === 'eudr') {
-        const areaHa = rdata["tree cover loss"]?.[0]?.data_fields?.area__ha;
-
-        console.log("🍒🍒🍒🍒🍒🍒", areaHa);
-
-        message = `The result shows that your plot of land is ${typeof areaHa === 'number' && areaHa !== 0
-            ? 'Not Compliant'
-            : areaHa === 0
-              ? '100% Compliant'
-              : 'Data Not Available'
-          }. For more details, contact us on WhatsApp +256783130358 or lwetutb@agriyields.com nkusu@agriyields.com`;
-      }
-
-      // ✅ Envoi du SMS
-      if (!userInfo.phone) {
-        console.warn("⚠️ Aucun numéro de téléphone fourni. SMS non envoyé.");
-      } else if (hasValidData) {
-        try {
-          console.log("📨 Envoi du SMS à :", userInfo.phone);
-          console.log("📨 voici le sms envoyer :", message);
-
-          const smsResponse = await axiosInstance.post('/api/notifications/sms', {
-            phone: userInfo.phone,
-            message: `${message} (${userInfo.email})`
-          });
-          console.log("📬 Réponse API SMS :", smsResponse.data);
-        } catch (smsErr) {
-          console.error("❌ Erreur lors de l’envoi du SMS :", smsErr.response?.data || smsErr.message);
-        }
-      }
-
-    } catch (err) {
-      console.error("❌ Erreur lors de la génération du rapport :", err);
-      setErrors(prev => ({ ...prev, [featureName]: 'Error generating report.' }));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      {loading && <div className="text-center text-blue-600 font-semibold fade-in">⏳ Processing...</div>}
+    <div className="p-6 max-w-3xl mx-auto space-y-6">
+      {(loading || userLoading) && (
+        <div className="text-center text-blue-600">⏳ Processing...</div>
+      )}
 
       {step === 1 && (
-        <div className="fade-in space-y-4">
-          <UploadCard
-            inputName="eudr"
-            title="Upload farm location details to find out your plot level deforestation risk and EUDR compliance"
-            onFileChange={handleFileChange}
-            onUpload={handleUploadClick}
-            loading={loadingCard.eudr}
-          />
-          <UploadCard
-            inputName="carbon"
-            title="The primary goal of the UNFCCC & Paris Agreement is to keep global average temperature rise well below 2degC, as close as possible to 1.5degC above pre-Industrial levels by reducing greenhouse gas emissions.  This call starts with you .. Find out whether your plot of land is a net carbon sink or emitter and take remedial actions..."
-            onFileChange={handleFileChange}
-            onUpload={handleUploadClick}
-            loading={loadingCard.carbon}
-          />
-        </div>
+        <StepLocation
+          files={files}
+          onFileChange={handleFileChange}
+          geojson={geojson}
+          setGeojson={setGeojson}
+          onNext={() => setStep(2)}
+        />
       )}
-
 
       {step === 2 && (
-        <form onSubmit={handleUserInfoSubmit} className="bg-white p-6 rounded shadow fade-in transition-all duration-500">
-          <h2 className="text-xl font-bold mb-4">Enter Your Contact Info ,Phone number, start with 256</h2>
-          <input
-            type="text"
-            value={userInfo.phone}
-            onChange={(e) => setUserInfo({ ...userInfo, phone: e.target.value })}
-            placeholder="Phone number"
-            className="block w-full mb-3 p-2 border rounded"
-            required
-          />
-          <input
-            type="email"
-            value={userInfo.email}
-            onChange={(e) => setUserInfo({ ...userInfo, email: e.target.value })}
-            placeholder="Email"
-            className="block w-full mb-4 p-2 border rounded"
-            required
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded transition duration-300 ${loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-700'
-              }`}
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                <span>Processing...</span>
-              </>
-            ) : (
-              'Continue to Payment'
-            )}
-          </button>
-        </form>
+        <StepReportType
+          onSelect={(feature) => {
+            setSelectedFeature(feature);
+            setStep(3);
+          }}
+        />
       )}
 
-
       {step === 3 && (
-        <div className="text-center fade-in">
-          <h2 className="text-xl font-semibold mb-4">Click to pay and unlock your reports</h2>
-          {files.eudr && <button disabled={loading} onClick={() => {
-            setSelectedFeature('reporteudrguest');
-            setShowPaymentModal({ eudr: true, carbon: false });
-          }} className={`bg-blue-600 text-white px-4 py-2 rounded m-2 ${loading ? 'button-loading' : 'hover:bg-blue-700'}`}>Pay for EUDR</button>}
-          {files.carbon && <button disabled={loading} onClick={() => { setSelectedFeature('reportcarbonguest'); setShowPaymentModal({ carbon: true, eudr: false }); }} className={`bg-blue-600 text-white px-4 py-2 rounded m-2 ${loading ? 'button-loading' : 'hover:bg-blue-700'}`}>Pay for Carbon</button>}
-        </div>
+        <StepUserInfo
+          userInfo={userInfo}
+          setUserInfo={setUserInfo}
+          onSubmit={handleUserInfoSubmit}
+          loading={userLoading}
+        />
       )}
 
       {step === 4 && (
-        <div className="flex flex-col items-center fade-in">
-          {reports.eudr && (
-            <>
-              <EudrReportSection results={reports.eudr} reportRef={reportRefs.eudr} />
-              <button onClick={async () => {
-                const blob = await generatePdfBlob(reportRefs.eudr, 'eudr');
-                if (blob) {
-                  const url = URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = 'EUDR_Report.pdf';
-                  link.click();
-                }
-              }} className="bg-blue-500 text-white px-6 py-3 rounded-md mt-6 hover:bg-blue-700 transition duration-300">Download the EUDR PDF</button>
-            </>
-          )}
+        <StepPayment
+          selectedFeature={selectedFeature}
+          phone={userInfo.phone}
+          setShowPaymentModal={setShowPaymentModal}
+          loading={loading}
+        />
+      )}
 
-          {reports.carbon && (
-            <>
-              <CarbonReportSection results={reports.carbon} reportRef={reportRefs.carbon} />
-              <button onClick={async () => {
-                const blob = await generatePdfBlob(reportRefs.carbon, 'carbon');
-                if (blob) {
-                  const url = URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = 'Carbon_Report.pdf';
-                  link.click();
-                }
-              }} className="bg-blue-500 text-white px-6 py-3 rounded-md mt-6 hover:bg-blue-700 transition duration-300">Download the Carbon PDF</button>
-            </>
-          )}
+      {step === 5 && (
+        <StepReports reports={reports} reportRefs={reportRefs} />
+      )}
+
+      {/* 🔙 Bouton Back affiché si step > 1 */}
+      {step > 1 && (
+        <div className="flex justify-start">
+          <button
+            onClick={handleBack}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            ← Back
+          </button>
         </div>
       )}
 
+      {/* Modals */}
       {showPaymentModal.eudr && (
         <SendPaymentModal
           isOpen={showPaymentModal.eudr}
-          onClose={() => setShowPaymentModal({ ...showPaymentModal, eudr: false })}
+          onClose={() =>
+            setShowPaymentModal((prev) => ({ ...prev, eudr: false }))
+          }
           featureName="reporteudrguest"
           phone={userInfo.phone}
-          onPaymentSuccess={() => handleReportReady('reporteudrguest')}
+          onPaymentSuccess={() => {
+            handleReportReady("reporteudrguest");
+            setShowPaymentModal((prev) => ({ ...prev, eudr: false }));
+          }}
         />
       )}
 
       {showPaymentModal.carbon && (
         <SendPaymentModal
           isOpen={showPaymentModal.carbon}
-          onClose={() => setShowPaymentModal({ ...showPaymentModal, carbon: false })}
+          onClose={() =>
+            setShowPaymentModal((prev) => ({ ...prev, carbon: false }))
+          }
           featureName="reportcarbonguest"
           phone={userInfo.phone}
-          onPaymentSuccess={() => handleReportReady('reportcarbonguest')}
+          onPaymentSuccess={() => {
+            handleReportReady("reportcarbonguest");
+            setShowPaymentModal((prev) => ({ ...prev, carbon: false }));
+          }}
         />
       )}
     </div>
