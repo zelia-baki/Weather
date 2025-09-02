@@ -49,6 +49,10 @@ import ContactUs from './components/main/ContactUs.jsx';
 import SignUp from './components/main/SignUp.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 import WeathearMap from './components/mapbox/WeatherMap.jsx';
+import WeathearMapFarm from './components/mapbox/WeatherMapFarm.jsx';
+import WeatherHistory from './components/Graph/WeatherHistory.jsx';
+
+
 import WeatherDashboard from './components/mapbox/WeatherDasboard.jsx';
 import BarNav from './components/main/BarNav.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
@@ -65,6 +69,7 @@ import PaymentRequired from './components/main/PaymentRequired';
 import FeatureManager from './components/Features/FeatureManager.jsx';
 import EUDRSubmitFormForGuest from './components/Guest/EUDRSubmitFormForGuest.jsx'
 import SectionFutur from './components/Layout/SectionFutur.jsx'
+import AlertMessaging from './components/Dashboard/AlertMessaging.jsx';
 
 // import Test from './components/gfw/FarmReport.jsx';
 
@@ -99,6 +104,10 @@ function App() {
     { path: "/reportcarbon", component: <CarbonReport />, adminOnly: false },
 
     { path: "/weathermap", component: <WeathearMap />, adminOnly: false },
+    { path: "/weathermapfarm", component: <WeathearMapFarm />, adminOnly: false },
+    { path: "/weatherhistory", component: <WeatherHistory />, adminOnly: false },
+
+
     { path: "/weatherdas", component: <WeatherDashboard />, adminOnly: false },
    // { path: "/qrexport2", component: <Export /> , adminOnly: false},
 
@@ -131,6 +140,8 @@ function App() {
     { path: "/EUDRSubmission", component: <EUDRSubmitForm />, adminOnly: false },
     { path: "/featuresManager", component: <FeatureManager />, adminOnly: true },
     { path: "/qrconservation", component: <Conservation />, adminOnly: false },
+    { path: "/alertmessage", component: <AlertMessaging />, adminOnly: false },
+
 
 
 
