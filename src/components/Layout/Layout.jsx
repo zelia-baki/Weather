@@ -238,11 +238,22 @@ const Layout = ({ children }) => {
                                             Map Weather
                                         </a>
                                     </li>
+                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                        <a href="/weathermapfarm" className="block w-full h-full">
+                                            Map Weather Farm
+                                        </a>
+                                    </li>
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/graph" className="block w-full h-full">
                                             Weather Data
                                         </a>
                                     </li>
+                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                        <a href="/weatherhistory" className="block w-full h-full">
+                                            Weather History
+                                        </a>
+                                    </li>
+                                    
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/graphcgd" className="block w-full h-full">
                                             Graph HDD and CDD

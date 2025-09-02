@@ -29,6 +29,10 @@ const MapboxExample = () => {
   const [selectedCrop, setSelectedCrop] = useState("");
   const [kcVal, setKcVal] = useState(null);
   const [error, setError] = useState("");
+  const [latitude, setLatitude] = useState(0);
+  const [longitude, setLongitude] = useState(0);
+  const [farms, setFarms] = useState([]);
+  const [selectedFarmId, setSelectedFarmId] = useState("");
   // New state: User-specified land surface area (in m²)
   const [landSurface, setLandSurface] = useState('');
 
@@ -53,6 +57,41 @@ const MapboxExample = () => {
     }
   };
 
+      // Récupération dynamique des fermes
+  useEffect(() => {
+    const fetchFarms = async () => {
+      try {
+        const { data } = await axiosInstance.get("/api/farm/all");
+        setFarms(data.farms || []);
+      } catch (error) {
+        console.error("Error fetching farms:", error);
+      }
+    };
+    fetchFarms();
+  }, []);
+
+    // Gestion de la sélection d'une ferme
+  const handleFarmChange = async (e) => {
+    const farmId = e.target.value;
+    setSelectedFarmId(farmId);
+    if (farmId) {
+      try {
+        const response = await axiosInstance.get(`/api/farm/${farmId}`);
+        if (response.data.status === "success") {
+          const geolocation = response.data.data.geolocation;
+          if (geolocation && geolocation.includes(",")) {
+            const [lat, lon] = geolocation.split(",");
+            setLatitude(parseFloat(lat));
+            setLongitude(parseFloat(lon));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching farm properties:", error);
+      }
+    }
+  };
+
+  
   const fetchCropsList = async () => {
     try {
       const response = await axiosInstance.get('/api/crop/');

@@ -49,6 +49,10 @@ import ContactUs from './components/main/ContactUs.jsx';
 import SignUp from './components/main/SignUp.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 import WeathearMap from './components/mapbox/WeatherMap.jsx';
+import WeathearMapFarm from './components/mapbox/WeatherMapFarm.jsx';
+import WeatherHistory from './components/Graph/WeatherHistory.jsx';
+
+
 import WeatherDashboard from './components/mapbox/WeatherDasboard.jsx';
 import BarNav from './components/main/BarNav.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
@@ -100,6 +104,10 @@ function App() {
     { path: "/reportcarbon", component: <CarbonReport />, adminOnly: false },
 
     { path: "/weathermap", component: <WeathearMap />, adminOnly: false },
+    { path: "/weathermapfarm", component: <WeathearMapFarm />, adminOnly: false },
+    { path: "/weatherhistory", component: <WeatherHistory />, adminOnly: false },
+
+
     { path: "/weatherdas", component: <WeatherDashboard />, adminOnly: false },
 
 

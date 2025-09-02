@@ -29,7 +29,9 @@ const AlertMessaging = () => {
     "Corn Earworm": "Corn earworm risk due to environmental conditions. Conduct spot inspections for tunneling in kernels and take corrective measures.",
     "Black Cutworm": "Black cutworm risk due to environmental conditions. Check for feeding holes in leaves, cut stems, wilted plants and take corrective measures.",
     "Peach Twig Borer": "Peach twig borer risk due to environmental conditions. Conduct spot inspections for wilting of young shoots.",
-    "Coffee Berry Borer": "Coffee berry borer development due to environmental conditions. Check for fruit drop of young green cherries and inspect cherries on branches."
+    "Coffee Berry Borer": "Coffee berry borer development due to environmental conditions. Check for fruit drop of young green cherries and inspect cherries on branches.",
+    "Coffee Leaf Miner": "Coffee leaf miner development favored by environmental conditions. Monitor for serpentine leaf mines on young coffee leaves and check for premature leaf drop."
+
   };
 
   // Récupérer les fermes depuis l'API
@@ -129,7 +131,8 @@ const AlertMessaging = () => {
       "Corn Earworm": 220,
       "Black Cutworm": 280,
       "Peach Twig Borer": 350,
-      "Coffee Berry Borer": 120
+      "Coffee Berry Borer": 120,
+      "Coffee Leaf Miner": 150 
     };
 
     let gdd_cumulative = 0;
