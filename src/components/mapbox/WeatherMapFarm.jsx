@@ -319,7 +319,7 @@ const MapboxExample = () => {
             {/* Crop Selector */}
             <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
                 <div>
-                <select value={selectedFarmId} onChange={handleFarmChange} className="p-2 border rounded">
+                <select value={selectedFarmId} onChange={handleFarmChange} className="w-full p-3 border rounded-lg">
                   <option value="">Select a farm</option>
                   {farms.map((farm) => (
                     <option key={farm.id} value={farm.id}>{farm.name} - {farm.subcounty}</option>

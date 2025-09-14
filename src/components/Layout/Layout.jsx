@@ -233,40 +233,40 @@ const Layout = ({ children }) => {
                         {dropdownsVisible.weatherDropdown && (
                             <div className="dropdown absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg">
                                 <ul className="text-gray-700 font-light text-base font-sans" style={{ fontFamily: 'Arial, sans-serif' }}>
-                                    <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                    {/* <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/weathermap" className="block w-full h-full">
                                             Map Weather
                                         </a>
-                                    </li>
+                                    </li> */}
                                      <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/weathermapfarm" className="block w-full h-full">
-                                            Map Weather Farm
+                                            Map Weather
                                         </a>
                                     </li>
-                                    <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                    {/* <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/graph" className="block w-full h-full">
                                             Weather Data
                                         </a>
-                                    </li>
+                                    </li> */}
                                      <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/weatherhistory" className="block w-full h-full">
                                             Weather History
                                         </a>
                                     </li>
                                     
-                                    <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                    {/* <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/graphcgd" className="block w-full h-full">
                                             Graph HDD and CDD
                                         </a>
-                                    </li>
+                                    </li> */}
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/onemonth" className="block w-full h-full">
-                                            HDD & CDD (1 Months)                                        </a>
+                                            HDD & CDD                                      </a>
                                     </li>
-                                    <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                    {/* <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/threemonth" className="block w-full h-full">
                                             HDD & CDD (3 Months)                                        </a>
-                                    </li>
+                                    </li> */}
                                     <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                         <a href="/graphpest" className="block w-full h-full">
                                             GDD for Pest                                        </a>
