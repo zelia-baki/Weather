@@ -199,7 +199,7 @@ const PointForm = () => {
           // Auto-complétion des champs comme dans l'export original
           setFormData((prev) => ({
             ...prev,
-            [`farm_${index}_phone`]: farmProperties.phone_number || "",
+            [`farm_${index}_phone`]: farmProperties.phonenumber1 || farmProperties.phonenumber2 || "",
             [`farm_${index}_district`]: farmProperties.subcounty || farmProperties.district_id || "",
             // Ajouter d'autres champs si nécessaire
             ...farmProperties
