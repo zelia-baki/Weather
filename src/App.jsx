@@ -1,15 +1,15 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Card from './components/Card/Card';
-import Graph from './components/Graph/Graph';
-import MapboxExample from './components/mapbox/Mapbox';
+import Card from './components/Card/Card.jsx';
+import Graph from './components/Graph/Graph.jsx';
+import MapboxExample from './components/mapbox/Mapbox.jsx';
 import MapView from './components/mapbox/MapView.jsx';
 import MapViewAll from './components/mapbox/MapViewAll.jsx';
-import Landing from './components/main/Landing';
+import Landing from './components/main/Landing.jsx';
 import Landipage from './components/main/Landipage.jsx';
-import Login from './components/main/Login';
-import Home from './components/main/Home';
-import Tabcrop from './components/crop/tabcrop';
+import Login from './components/main/Login.jsx';
+import Home from './components/main/Home.jsx';
+import Tabcrop from './components/crop/tabcrop.jsx';
 import Layout from './components/Layout/Layout.jsx';
 import ForestPage from './components/Forest/Fore/ForestPage.jsx';
 import Create from './components/Farm/Create.jsx';
@@ -24,16 +24,16 @@ import DistrictEdit from './components/District/DistrictEdit.jsx';
 import ForestPoint from './components/Forest/Point/ForestPoint.jsx';
 import ForestTree from './components/Forest/Tree/ForestTree.jsx';
 import QR from './components/Qr/qr.jsx';
-import Produce from './components/Qr/Produce/GenerateQrCodeAndReceipt.jsx';
+import Produce from './components/Qr/Page/ProduceQrPage.jsx';
 import Conservation from './components/Qr/Page/Conservation.jsx';
-import Export from './components/Qr/Export2.jsx';
+import Export from './components/Qr/Page/ExportDigitalStamps.jsx';
 import Fertilizer from './components/Qr/Page/Fertilizer.jsx';
 import FarmReport from './components/gfw/FarmReport.jsx';
 import ForestReport from './components/gfw/Reportgen2Forest.jsx';
 import CreateUsers from './components/Users/CreateUsers.jsx';
 import GraphCGD from './components/Graph/GraphCGD.jsx';
 // import GraphCGD1 from './components/Graph/GraphCGD1.jsx';
-import ProtectedRoute from './ProtectedRoute'; // Import ProtectedRoute
+import ProtectedRoute from './ProtectedRoute.jsx'; // Import ProtectedRoute
 import FarmerGroupManager from './components/Farmergroup/FarmerGroup.jsx';
 import FarmManager from './components/Farm/FarmManager.jsx';
 // import FarmManager1 from './components/Farm/FarmManager1.jsx';
@@ -64,8 +64,8 @@ import Threemonth from './components/Graph/Cgdthree.jsx';
 import GraphPest from './components/Graph/GraphPest.jsx';
 import UserDash from './components/Dashboard/UserDashBoard.jsx';
 import EUDRSubmitForm from './components/Eudr/EUDRSubmitForm.jsx';
-import FeatureRoute from './FeatureRoute';
-import PaymentRequired from './components/main/PaymentRequired';
+import FeatureRoute from './FeatureRoute.jsx';
+import PaymentRequired from './components/main/PaymentRequired.jsx';
 import FeatureManager from './components/Features/FeatureManager.jsx';
 import EUDRSubmitFormForGuest from './components/Guest/EUDRSubmitFormForGuest.jsx'
 import SectionFutur from './components/Layout/SectionFutur.jsx'

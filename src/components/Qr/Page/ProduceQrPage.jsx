@@ -1,181 +1,282 @@
-// src/pages/ProduceQrPage.jsx
-import React, { useState } from "react";
-import QrFormWithReceipt from "../Components/QrFormWithReceipt";
-import useFetchData from "../Produce/hooks/useFetchData";
+import React, { useState, useEffect } from "react";
 import axiosInstance from "../../../axiosInstance";
 
-const ProduceQrPage = () => {
+// Composants
+import StepIndicator from "../Component/StepIndicator";
+import FormNavigation from "../Component/FormNavigation";
+import FormStep from "../Component/FormStep";
+import ReceiptPreview from "../Component/ReceiptPreview";
+
+// Configuration
+import { createFormSteps, stepNames } from "../Component/formStepsConfig";
+
+// Hook utilitaire
+import useFetchData from "../../Qr/Produce/useFetchData";
+import { receiptStyles } from "../receipt-styles";
+
+const GenerateQrCodeAndReceipt = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formData, setFormData] = useState({});
+  const [farmBlocks, setFarmBlocks] = useState([{ id: "", props: {} }]);
+  const [grades, setGrades] = useState([]);
+  const [qrData, setQrData] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // Fetch des données
   const farms = useFetchData("/api/farm/", "farms");
   const districts = useFetchData("/api/district/", "districts");
   const countries = useFetchData("/api/pays/", "pays");
   const stores = useFetchData("/api/store/", "stores");
   const produceCategories = useFetchData("/api/producecategory/", "categories");
-  const [grades, setGrades] = useState([]);
 
-  const handleFarmIdChange = async (e, setFormData) => {
-    const farm_id = e.target.value;
-    setFormData((prev) => ({ ...prev, farm_id }));
+  // Configuration des étapes
+  const formSteps = createFormSteps(farmBlocks, countries, produceCategories, grades, stores);
 
-    if (farm_id) {
-      const { data } = await axiosInstance.get(`/api/farm/${farm_id}/allprop`);
-      if (data.status === "success") {
-        const props = data.data[0];
-        setFormData((prev) => ({
-          ...prev,
-          phone_number: props.phone_number || "",
-          district_id: props.district_id || "",
-        }));
-      }
-    }
+  // -------- Gestion des changements de formulaire --------
+  const handleChange = (e) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleCategoryChange = async (e, setFormData) => {
+  const handleCategoryChange = async (e) => {
     const produceCategory = e.target.value;
     setFormData((prev) => ({ ...prev, produceCategory }));
 
     const cat = produceCategories.find((c) => c.name === produceCategory);
     if (!cat) return;
 
-    const res = await axiosInstance.get(`/api/grade/getbycrop/${cat.id}`);
-    setGrades(res.data.status === "success" ? res.data.grades : []);
+    try {
+      const res = await axiosInstance.get(`/api/grade/getbycrop/${cat.id}`);
+      setGrades(res.data.status === "success" ? res.data.grades : []);
+    } catch (err) {
+      console.error("Error fetching grades:", err);
+      setGrades([]);
+    }
   };
 
-  const fields = [
-    {
-      label: "Farm",
-      name: "farm_id",
-      type: "select",
-      required: true,
-      onChange: handleFarmIdChange,
-      options: farms.map((f) => ({
-        value: f.id,
-        label: `${f.name} - ${f.subcounty}`,
-      })),
-    },
-    { label: "Phone Number", name: "phone_number", required: true },
-    { label: "Batch Number", name: "batch_number", required: true },
-    {
-      label: "District",
-      name: "district_id",
-      type: "select",
-      required: true,
-      options: districts.map((d) => ({ value: d.id, label: d.name })),
-    },
-    {
-      label: "Country",
-      name: "country_of_origin",
-      type: "select",
-      required: true,
-      options: countries.map((c) => ({
-        value: c.nom_en_gb,
-        label: c.nom_en_gb,
-      })),
-    },
-    {
-      label: "Produce Category",
-      name: "produceCategory",
-      type: "select",
-      required: true,
-      onChange: handleCategoryChange,
-      options: produceCategories.map((c) => ({ value: c.name, label: c.name })),
-    },
-    {
-      label: "Produce Grade",
-      name: "Crop_grade",
-      type: "select",
-      required: true,
-      options: grades.map((g) => ({
-        value: g.grade_value,
-        label: `${g.grade_value} - ${g.description || ""}`,
-      })),
-    },
-    {
-      label: "Season",
-      name: "season",
-      type: "select",
-      required: true,
-      options: ["Season1", "Season2", "Season3", "Season4"].map((s) => ({
-        value: s,
-        label: s,
-      })),
-    },
-    {
-      label: "Produce Weight (kg)",
-      name: "produce_weight",
-      type: "number",
-      required: true,
-    },
-    {
-      label: "Price Per Kg (UGX)",
-      name: "price_per_kg",
-      type: "number",
-      required: true,
-    },
-    {
-      label: "Total Value (UGX)",
-      name: "total_value",
-      type: "number",
-      required: true,
-    },
-    {
-      label: "Payment Type",
-      name: "payment_type",
-      type: "select",
-      required: true,
-      options: [
-        { value: "cash", label: "Cash" },
-        { value: "bank_transfer", label: "Bank Transfer" },
-      ],
-    },
-    {
-      label: "Store ID",
-      name: "store_id",
-      type: "select",
-      required: true,
-      options: stores.map((s) => ({ value: s.id, label: s.id })),
-    },
-    {
-      label: "Store Name",
-      name: "store_name",
-      type: "select",
-      required: true,
-      options: stores.map((s) => ({ value: s.name, label: s.name })),
-    },
-    {
-      label: "Transaction Date",
-      name: "transaction_date",
-      type: "date",
-      required: true,
-    },
-  ];
+  const handleStoreChange = (e, type) => {
+    const value = e.target.value;
+    let store = null;
 
-  // ✅ Formatage lisible pour le QR (plus de JSON brut)
-  const generateQrData = (data) =>
-    [
-      `Farm ID: ${data.farm_id}`,
-      `Phone Number: ${data.phone_number}`,
-      `Batch Number: ${data.batch_number}`,
-      `District: ${data.district_id}`,
-      `Country of Origin: ${data.country_of_origin}`,
-      `Produce Category: ${data.produceCategory}`,
-      `Produce Grade: ${data.Crop_grade}`,
-      `Season: ${data.season}`,
-      `Produce Weight (kg): ${data.produce_weight}`,
-      `Price per Kg (UGX): ${data.price_per_kg}`,
-      `Total Value (UGX): ${data.total_value}`,
-      `Payment Type: ${data.payment_type}`,
-      `Store ID: ${data.store_id}`,
-      `Store Name: ${data.store_name}`,
-      `Transaction Date: ${data.transaction_date}`,
-    ].join("\n");
+    if (type === "id") {
+      store = stores.find((s) => s.id.toString() === value);
+    } else if (type === "name") {
+      store = stores.find((s) => s.name === value);
+    }
+
+    if (store) {
+      setFormData((prev) => ({
+        ...prev,
+        store_id: store.id,
+        store_name: store.name,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [type === "id" ? "store_id" : "store_name"]: value,
+      }));
+    }
+  };
+
+  // -------- Gestion des blocs ferme avec auto-complétion --------
+  const handleFarmChange = async (e, index) => {
+    const farm_id = e.target.value;
+
+    setFormData((prev) => ({
+      ...prev,
+      [`farm_${index}_id`]: farm_id,
+    }));
+
+    setFarmBlocks((prev) =>
+      prev.map((f, i) => (i === index ? { ...f, id: farm_id } : f))
+    );
+
+    if (farm_id) {
+      try {
+        const response = await axiosInstance.get(`/api/farm/${farm_id}`);
+
+        if (response.data.status === 'success') {
+          const farmProperties = response.data.data;
+
+          setFormData((prev) => ({
+            ...prev,
+            // Corrigez les noms des champs ici
+            [`farm_${index}_phone`]: farmProperties.phonenumber1 || farmProperties.phonenumber2 || "",
+            [`farm_${index}_district`]: farmProperties.district_id || "",
+          }));
+
+          console.log("Updated formData with:", {
+            phone: farmProperties.phonenumber1,
+            district: farmProperties.district_id
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching farm properties:", err);
+      }
+    }
+  };
+
+  const addFarmBlock = () => {
+    setFarmBlocks((prev) => [...prev, { id: "", props: {} }]);
+  };
+
+  const removeFarmBlock = (index) => {
+    if (farmBlocks.length > 1) {
+      setFarmBlocks((prev) => prev.filter((_, i) => i !== index));
+      setFormData((prev) => {
+        const newData = { ...prev };
+        delete newData[`farm_${index}_id`];
+        delete newData[`farm_${index}_phone`];
+        delete newData[`farm_${index}_district`];
+        return newData;
+      });
+    }
+  };
+
+  // -------- Navigation --------
+  const nextStep = () => {
+    if (currentStep < formSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  // -------- Validation --------
+  const isStepValid = () => {
+    const currentStepFields = formSteps[currentStep]?.fields || [];
+
+    for (let field of currentStepFields) {
+      if (field.type === "group") {
+        for (let subField of field.fields) {
+          if (subField.required && !formData[subField.name]) {
+            return false;
+          }
+        }
+      } else {
+        if (field.required && !formData[field.name]) {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  // -------- Soumission --------
+  const handleSubmit = () => {
+    const qrJson = JSON.stringify(formData, null, 2);
+    setQrData(qrJson);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (isDownloading) return;
+
+    setIsDownloading(true);
+
+    try {
+      const baseQrData = JSON.parse(qrData);
+      const batchNumber = parseInt(baseQrData.batch_number, 10);
+
+      if (isNaN(batchNumber)) {
+        console.error("Invalid batch number. Must be a number.");
+        setIsDownloading(false);
+        return;
+      }
+
+      const qrDataList = [];
+      for (let i = 0; i < batchNumber; i++) {
+        const newQrData = { ...baseQrData, batch_number: (i + 1).toString() };
+        qrDataList.push(newQrData);
+      }
+
+      const response = await axiosInstance.post(
+        "/api/qrcode/generate_pdf",
+        {
+          qr_data_list: qrDataList,
+          description: "Digital receipt for produce transaction.",
+        },
+        {
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `receipts_${baseQrData.batch_number}_batches.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error("Erreur lors du téléchargement du PDF:", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
-    <QrFormWithReceipt
-      title="Generate Digital Codes and E-Receipt for Farmer"
-      fields={fields}
-      generateQrData={generateQrData}
-    />
+    <div className="bg-gradient-to-br from-teal-50 via-white to-blue-50 min-h-screen py-8">
+      <div className="container mx-auto px-4">
+        <h1 className="text-4xl font-bold mb-8 text-center text-teal-700">
+          Digital receipt for produce transaction
+        </h1>
+
+        <StepIndicator
+          currentStep={currentStep}
+          totalSteps={formSteps.length}
+          stepNames={stepNames}
+        />
+
+        <div className="flex gap-8 max-w-7xl mx-auto">
+          {/* Formulaire */}
+          <div className="w-1/2">
+            <div className="bg-white p-8 rounded-xl shadow-lg">
+              <h2 className="text-2xl font-semibent mb-6 text-teal-700">
+                {formSteps[currentStep]?.title}
+              </h2>
+
+              <FormStep
+                step={formSteps[currentStep]}
+                formData={formData}
+                onChange={handleChange}
+                onCategoryChange={handleCategoryChange}
+                onStoreChange={handleStoreChange}
+                farmBlocks={farmBlocks}
+                onAddFarm={addFarmBlock}
+                onRemoveFarm={removeFarmBlock}
+                onFarmChange={handleFarmChange} // Ajout de la prop pour auto-complétion
+                farms={farms}
+                districts={districts}
+              />
+
+              <FormNavigation
+                currentStep={currentStep}
+                totalSteps={formSteps.length}
+                onPrevStep={prevStep}
+                onNextStep={nextStep}
+                onSubmit={handleSubmit}
+                isStepValid={isStepValid()}
+              />
+            </div>
+          </div>
+
+          {/* Reçu et QR */}
+          <div className="w-1/2">
+            <div className="sticky top-8">
+              <ReceiptPreview
+                qrData={qrData}
+                onDownloadPDF={handleDownloadPDF}
+                isDownloading={isDownloading}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default ProduceQrPage;
+export default GenerateQrCodeAndReceipt;

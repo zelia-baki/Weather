@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import InputField from "./InputField";
 import SelectField from "./SelectField";
-import QRCodeRenderer from "./QRCodeRenderer";
 import Receipt from "./Qr_receipt";
 import axiosInstance from "../../../axiosInstance";
 import { receiptStyles } from "../receipt-styles";
