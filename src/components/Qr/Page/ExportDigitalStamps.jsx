@@ -200,7 +200,8 @@ const PointForm = () => {
           setFormData((prev) => ({
             ...prev,
             [`farm_${index}_phone`]: farmProperties.phonenumber1 || farmProperties.phonenumber2 || "",
-            [`farm_${index}_district`]: farmProperties.subcounty || farmProperties.district_id || "",
+            [`farm_${index}_district`]: farmProperties.district_id || "",
+
             // Ajouter d'autres champs si nécessaire
             ...farmProperties
           }));
