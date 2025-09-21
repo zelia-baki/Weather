@@ -23,140 +23,179 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
   const [areaInHectares, setAreaInHectares] = useState(null);
   const [tscDriverDriver, setTscDriverDriver] = useState({
     mostCommonValue: '',
-    frequencyCounts: ''
+    frequencyCounts: {}
   });
   const [isJrcGlobalForestCover, setIsJrcGlobalForestCover] = useState(null);
   const [geoData, setGeoData] = useState({});
+  const [treeCoverLossArea, setTreeCoverLossArea] = useState(0);
+  const [wriTropicalTreeCoverAvg, setWriTropicalTreeCoverAvg] = useState(0);
+  const [raddAlertsArea, setRaddAlertsArea] = useState(0);
 
-  const coordinates = results["jrc global forest cover"]?.[0]?.coordinates?.[0];
+  // Extraction des coordonnées depuis le premier dataset disponible
+  const coordinates = results["jrc global forest cover"]?.[0]?.coordinates?.[0] ||
+                     results["tree cover loss"]?.[0]?.coordinates?.[0] ||
+                     results["soil carbon"]?.[0]?.coordinates?.[0];
 
   useEffect(() => {
     if (!results || typeof results !== 'object' || Object.keys(results).length === 0) return;
 
     setGeoData(results);
 
-    // ===== 1. TREE COVER EXTENT =====
-    const coverDataArray = results["jrc global forest cover"];
-    let dataFieldsCoverExtent = [];
+    // ===== 1. TREE COVER EXTENT (Nouvelles données groupées) =====
+    const tropicalTreeCoverExtentArray = results["wri tropical tree cover extent"];
+    if (Array.isArray(tropicalTreeCoverExtentArray)) {
+      // Trouver l'item avec les données groupées
+      const groupedItem = tropicalTreeCoverExtentArray.find(item => 
+        item.pixel?.includes("grouped by") && Array.isArray(item.data_fields)
+      );
 
-    if (Array.isArray(coverDataArray)) {
-      const coverItem = coverDataArray.find(item => item.pixel === "wri_tropical_tree_cover_extent__decile");
-      dataFieldsCoverExtent = coverItem?.data_fields || [];
+      if (groupedItem && Array.isArray(groupedItem.data_fields)) {
+        const groupedData = groupedItem.data_fields;
+        
+        let nonZeroCount = 0;
+        let totalCount = 0;
+        const nonZeroValues = [];
+        const valueCountArray = [];
+
+        groupedData.forEach((field) => {
+          const decile = field?.wri_tropical_tree_cover_extent__decile;
+          const count = field?.count || 0;
+          
+          totalCount += count;
+          
+          if (decile && decile !== 0) {
+            nonZeroCount += count;
+            // Ajouter les valeurs selon leur count
+            for (let i = 0; i < count; i++) {
+              nonZeroValues.push(decile);
+            }
+          }
+          
+          valueCountArray.push({
+            value: Number(decile),
+            count: count
+          });
+        });
+
+        const percentageCoverExtent = totalCount > 0 ? (nonZeroCount / totalCount) * 100 : 0;
+
+        setCoverExtentDecileData({
+          nonZeroValues,
+          nonZeroCount,
+          percentageCoverExtent,
+          valueCountArray
+        });
+      }
     }
 
-    const nonZeroValues = [];
-    let nonZeroCount = 0;
-    const valueCounts = {};
+    // ===== 2. TREE COVER LOSS DRIVERS (Données déjà groupées) =====
+    const driverArray = results["tsc tree cover loss drivers"];
+    if (Array.isArray(driverArray) && driverArray.length > 0) {
+      const driverItem = driverArray[0];
+      const driverData = driverItem?.data_fields;
 
-    dataFieldsCoverExtent.forEach((field) => {
-      const decile = field?.wri_tropical_tree_cover_extent__decile;
-      if (decile && decile !== 0) {
-        nonZeroValues.push(decile);
-        nonZeroCount++;
-        valueCounts[decile] = (valueCounts[decile] || 0) + 1;
-      }
-    });
+      let frequencyCounts = {};
+      let mostCommonValue = null;
+      let maxCount = 0;
 
-    const totalCount = dataFieldsCoverExtent.length;
-    const percentageCoverExtent = totalCount > 0 ? (nonZeroCount / totalCount) * 100 : 0;
-    const valueCountArray = Object.entries(valueCounts).map(([key, count]) => ({
-      value: Number(key),
-      count
-    }));
-
-    setCoverExtentDecileData({
-      nonZeroValues,
-      nonZeroCount,
-      percentageCoverExtent,
-      valueCountArray
-    });
-
-    // ===== 2. TREE COVER LOSS DRIVERS =====
-    const driverItem = results["tsc tree cover loss drivers"]
-      ?.find(item => item.pixel === "tsc_tree_cover_loss_drivers__driver");
-
-    const driverData = driverItem?.data_fields;
-    let frequencyCounts = {};
-    let mostCommonValue = null;
-
-    if (Array.isArray(driverData)) {
-      driverData.forEach((field) => {
-        const value = field?.tsc_tree_cover_loss_drivers__driver;
-        if (value) {
-          frequencyCounts[value] = (frequencyCounts[value] || 0) + 1;
+      if (Array.isArray(driverData)) {
+        driverData.forEach((field) => {
+          const driver = field?.tsc_tree_cover_loss_drivers__driver;
+          const count = field?.count || 1; // Si count n'existe pas, assume 1
+          
+          if (driver) {
+            frequencyCounts[driver] = (frequencyCounts[driver] || 0) + count;
+            
+            if (frequencyCounts[driver] > maxCount) {
+              maxCount = frequencyCounts[driver];
+              mostCommonValue = driver;
+            }
+          }
+        });
+      } else if (typeof driverData === "object") {
+        const driver = driverData?.tsc_tree_cover_loss_drivers__driver;
+        if (driver) {
+          frequencyCounts[driver] = 1;
+          mostCommonValue = driver;
         }
-      });
-    } else if (typeof driverData === "object") {
-      const value = driverData?.tsc_tree_cover_loss_drivers__driver;
-      if (value) frequencyCounts[value] = 1;
-    }
-
-    for (const [value, count] of Object.entries(frequencyCounts)) {
-      if (!mostCommonValue || count > frequencyCounts[mostCommonValue]) {
-        mostCommonValue = value;
       }
+
+      setTscDriverDriver({ mostCommonValue, frequencyCounts });
     }
 
-    setTscDriverDriver({ mostCommonValue, frequencyCounts });
-
-    // ===== 3. COVER LOSS =====
-    const coverLoss = results["tree cover loss"]?.[0]?.data_fields?.area__ha || 0;
-
-    // ===== 4. PROTECTED AREA =====
-    let protectedAreas = [];
-    if (Array.isArray(results?.["soil carbon"])) {
-      const protectedItem = results["soil carbon"]
-        .find(item => item.pixel === "wdpa_protected_areas__iucn_cat");
-      protectedAreas = protectedItem?.data_fields || [];
+    // ===== 3. TREE COVER LOSS =====
+    const coverLossArray = results["tree cover loss"];
+    if (Array.isArray(coverLossArray) && coverLossArray.length > 0) {
+      const coverLoss = coverLossArray[0]?.data_fields?.area__ha || 0;
+      setTreeCoverLossArea(coverLoss);
     }
 
-    const protectedCounts = {};
-    protectedAreas.forEach((field) => {
-      const value = field?.wdpa_protected_areas__iucn_cat ?? "Unknown";
-      protectedCounts[value] = (protectedCounts[value] || 0) + 1;
-    });
+    // ===== 4. PROTECTED AREAS (Nouvelles données groupées) =====
+    const protectedArray = results["soil carbon"];
+    if (Array.isArray(protectedArray) && protectedArray.length > 0) {
+      const protectedItem = protectedArray[0];
+      const protectedData = protectedItem?.data_fields;
 
-    const totalProtected = protectedAreas.length;
-    const percentages = {};
+      const protectedCounts = {};
+      let totalProtected = 0;
 
-    if (totalProtected > 0) {
-      Object.entries(protectedCounts).forEach(([key, count]) => {
-        percentages[key] = ((count / totalProtected) * 100).toFixed(2) + "%";
-      });
-    } else {
-      percentages["No Data"] = "0%";
-    }
-
-    const envResults = {
-      protectedStatus: {
-        counts: protectedCounts,
-        percentages
+      if (Array.isArray(protectedData)) {
+        protectedData.forEach((field) => {
+          const category = field?.wdpa_protected_areas__iucn_cat ?? "Unknown";
+          const count = field?.count || 1;
+          
+          protectedCounts[category] = count;
+          totalProtected += count;
+        });
       }
-    };
 
-    // ===== 5. INDIGENOUS LAND =====
-    if (coverLoss === 0) {
-      const landData = results["landmark indigenous and community lands"]?.[0]?.data_fields || [];
-
-      if (!Array.isArray(landData) || landData.length === 0) {
-        envResults.indigenousStatus = "Not known, land is not gazetted";
-      } else if (landData.some(v => v === 1)) {
-        envResults.indigenousStatus = "Presence of indigenous and community lands";
+      const percentages = {};
+      if (totalProtected > 0) {
+        Object.entries(protectedCounts).forEach(([key, count]) => {
+          percentages[key] = ((count / totalProtected) * 100).toFixed(2) + "%";
+        });
       } else {
-        envResults.indigenousStatus = "No presence of indigenous and community lands";
+        percentages["No Data"] = "0%";
       }
+
+      setResultStatus(prev => ({
+        ...prev,
+        protectedStatus: {
+          counts: protectedCounts,
+          percentages
+        }
+      }));
     }
 
-    setResultStatus(envResults);
+    // ===== 5. INDIGENOUS LANDS =====
+    const indigenousArray = results["landmark indigenous and community lands"];
+    if (Array.isArray(indigenousArray) && indigenousArray.length > 0) {
+      const landData = indigenousArray[0]?.data_fields || [];
 
-    // ===== 6. AREA =====
-    const coords = results["jrc global forest cover"]?.[0]?.coordinates?.[0];
-    if (coords && Array.isArray(coords) && coords.length >= 3) {
-      const first = coords[0];
-      const last = coords[coords.length - 1];
+      let indigenousStatus;
+      if (!Array.isArray(landData) || landData.length === 0) {
+        indigenousStatus = "Not known, land is not gazetted";
+      } else {
+        // Adapter selon la nouvelle structure des données
+        const hasIndigenousLand = landData.some(item => item?.name || item?.value === 1);
+        indigenousStatus = hasIndigenousLand 
+          ? "Presence of indigenous and community lands"
+          : "No presence of indigenous and community lands";
+      }
+
+      setResultStatus(prev => ({
+        ...prev,
+        indigenousStatus
+      }));
+    }
+
+    // ===== 6. AREA CALCULATION =====
+    if (coordinates && Array.isArray(coordinates) && coordinates.length >= 3) {
+      const first = coordinates[0];
+      const last = coordinates[coordinates.length - 1];
       const closedCoords = (first[0] !== last[0] || first[1] !== last[1])
-        ? [...coords, first]
-        : coords;
+        ? [...coordinates, first]
+        : coordinates;
 
       try {
         const polygon = turf.polygon([closedCoords]);
@@ -164,39 +203,43 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
         setAreaInSquareMeters(areaSqM);
         setAreaInHectares(areaSqM / 10000);
       } catch (e) {
-        console.error("❌ Turf error on polygon:", e);
+        console.error("Turf error on polygon:", e);
       }
     }
 
-    // ===== 7. JRC GLOBAL FOREST COVER STATUS =====
-    const jrcData = results["jrc global forest cover"]
-      ?.find(item => item.pixel === "is__jrc_global_forest_cover")?.data_fields || [];
-
-    if (Array.isArray(jrcData) && jrcData.length > 0) {
-      let counts = { 0: 0, 1: 0, other: 0 };
-
-      jrcData.forEach(field => {
-        const value = field?.is__jrc_global_forest_cover;
-        if (value === 0) counts[0]++;
-        else if (value === 1) counts[1]++;
-        else counts.other++;
-      });
-
-      if (counts[1] > counts[0] && counts[1] > counts.other) {
-        setIsJrcGlobalForestCover(" Presence of Forest cover detected: Majority of forest pixels are 1");
-      } else if (counts[0] > counts[1] && counts[0] > counts.other) {
-        setIsJrcGlobalForestCover("no forest cover detected: Majority are 0");
+    // ===== 7. JRC GLOBAL FOREST COVER =====
+    const jrcArray = results["jrc global forest cover"];
+    if (Array.isArray(jrcArray) && jrcArray.length > 0) {
+      const jrcData = jrcArray[0]?.data_fields;
+      
+      // La nouvelle structure contient area__ha directement
+      const forestAreaHa = jrcData?.area__ha || 0;
+      
+      if (forestAreaHa > 0) {
+        setIsJrcGlobalForestCover(`Forest cover detected: ${forestAreaHa.toFixed(2)} hectares`);
       } else {
-        setIsJrcGlobalForestCover("Mixed or Unknown classification");
+        setIsJrcGlobalForestCover("No forest cover detected");
       }
-    } else {
-      setIsJrcGlobalForestCover("Data not available");
+    }
+
+    // ===== 8. WRI TROPICAL TREE COVER AVERAGE =====
+    const wriTropicalArray = results["wri tropical tree cover"];
+    if (Array.isArray(wriTropicalArray) && wriTropicalArray.length > 0) {
+      const avgCover = wriTropicalArray[0]?.data_fields?.avg_cover || 0;
+      setWriTropicalTreeCoverAvg(avgCover);
+    }
+
+    // ===== 9. RADD ALERTS =====
+    const raddArray = results["wur radd alerts"];
+    if (Array.isArray(raddArray) && raddArray.length > 0) {
+      const raddArea = raddArray[0]?.data_fields?.area__ha || 0;
+      setRaddAlertsArea(raddArea);
     }
 
   }, [results]);
 
-return (
-  <div ref={reportRef} className="carbon-report-a4 w-full h-full m-0 p-0 bg-white text-gray-900 font-sans leading-relaxed space-y-8">
+  return (
+      <div ref={reportRef} className="carbon-report-a4 w-full h-full m-0 p-0 bg-white text-gray-900 font-sans leading-relaxed space-y-8">
 
     {/* HEADER */}
     <div className="flex items-center justify-between border-b-4 border-green-700 pb-6 px-8 pt-8">
@@ -301,50 +344,54 @@ return (
           <p>Determines whether the land overlaps with recognized indigenous or community land.</p>
         </div>
 
-        <div className="html2pdf__page-break"></div>
+          <div className="html2pdf__page-break"></div>
 
-        <div className="report-section border-l-4 border-green-700 pl-5 space-y-2">
-          <h4 className="text-xl font-semibold text-green-700">Summary Compliance Table</h4>
-          {renderEudrTable({
-            geoData,
-            areaInSquareMeters,
-            areaInHectares,
-            resultStatus,
-            coverExtentDecileData,
-            tscDriverDriver,
-            isJrcGlobalForestCover
-          })}
-        </div>
-
-        <div className="html2pdf__page-break"></div>
-
-        {coordinates && (
-          <div className="report-section border-l-4 border-green-700 pl-5 space-y-4">
-            <h2 className="text-2xl font-bold text-green-800">Risk Assessment Breakdown</h2>
-            <p>
-              Analysis of deforestation drivers shows significant influences from {tscDriverDriver?.mostCommonValue ? (
-                <p>{tscDriverDriver?.mostCommonValue}</p>
-              ) : (
-                <p>Unknown Value</p>
-              )}
-            </p>
-            <img
-              src={generateMapboxUrl(coordinates)}
-              alt="Map"
-              className="report-map w-full rounded-lg shadow-md"
-            />
+          <div className="report-section border-l-4 border-green-700 pl-5 space-y-2">
+            <h4 className="text-xl font-semibold text-green-700">Summary Compliance Table</h4>
+            {renderEudrTable({
+              geoData,
+              areaInSquareMeters,
+              areaInHectares,
+              resultStatus,
+              coverExtentDecileData,
+              tscDriverDriver,
+              isJrcGlobalForestCover,
+              treeCoverLossArea,
+              wriTropicalTreeCoverAvg,
+              raddAlertsArea
+            })}
           </div>
-        )}
+
+          <div className="html2pdf__page-break"></div>
+
+          {coordinates && (
+            <div className="report-section border-l-4 border-green-700 pl-5 space-y-4">
+              <h2 className="text-2xl font-bold text-green-800">Risk Assessment Breakdown</h2>
+              <p>
+                Analysis shows:
+              </p>
+              <ul className="list-disc list-inside ml-4 space-y-1">
+                <li>Area: {areaInHectares?.toFixed(2)} hectares</li>
+                <li>Tree cover loss: {treeCoverLossArea} hectares</li>
+                <li>Average tree cover: {wriTropicalTreeCoverAvg.toFixed(1)}%</li>
+                <li>Primary deforestation driver: {tscDriverDriver?.mostCommonValue || "Unknown"}</li>
+                <li>RADD alerts: {raddAlertsArea} hectares</li>
+              </ul>
+              <img
+                src={generateMapboxUrl(coordinates)}
+                alt="Map"
+                className="report-map w-full rounded-lg shadow-md"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="report-footer border-t-2 border-gray-300 px-8 pt-6 text-xs text-gray-500 text-center mt-10">
+        © 2025 Agriyields. Contact: nkusu@agriyields.com
       </div>
     </div>
-
-    <div className="report-footer border-t-2 border-gray-300 px-8 pt-6 text-xs text-gray-500 text-center mt-10">
-      © 2025 Agriyields. Contact: nkusu@agriyields.com
-    </div>
-  </div>
-);
-
-
+  );
 };
 
 export default EudrReportSection;

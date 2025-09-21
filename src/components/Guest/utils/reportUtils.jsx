@@ -65,7 +65,7 @@ export const renderEudrTable = (data) => {
         <tr>
           <td className="border border-gray-400 px-4 py-2">RADD Alert</td>
           <td className="border border-gray-400 px-4 py-2">
-            {geoData['radd alerts']?.[0]?.data_fields?.area__ha === 0 ? (
+            {geoData['wur radd alerts']?.[0]?.data_fields?.area__ha === 0 ? (
               <p>0 ha (no RADD alert)</p>
             ) : (
               <p>{geoData['radd alerts']?.[0]?.data_fields?.area__ha} ha (Alert)</p>
@@ -159,11 +159,15 @@ export const renderEudrTable = (data) => {
         <tr>
           <td className="border border-gray-400 px-4 py-2">Cover Extent Area</td>
           <td className="border border-gray-400 px-4 py-2">
-            {geoData['wri tropical tree cover extent']?.[0]?.data_fields?.area__ha === 0 ? (
-              <p>0 ha (LOW)</p>
+            {geoData['wri tropical tree cover']?.[0]?.data_fields?.area__ha === 0 ? (
+              <p>0 % (LOW)</p>
             ) : (
-              <p>{geoData['wri tropical tree cover extent']?.[0]?.data_fields?.area__ha} ha (HIGH)</p>
+              <>
+                <p>{geoData['wri tropical tree cover']?.[0]?.data_fields?.avg_cover} % (HIGH)</p>
+                <p>{geoData['wri tropical tree cover']?.[0]?.data_fields?.area__ha} ha</p>
+              </>
             )}
+
           </td>
         </tr>
       </tbody>
