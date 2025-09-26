@@ -21,6 +21,7 @@ export const renderCarbonTable = (dataFields) => (
     </tbody>
   </table>
 );
+
 export const renderEudrTable = (data) => {
   const {
     geoData = {},
@@ -30,12 +31,27 @@ export const renderEudrTable = (data) => {
     coverExtentDecileData = {},
     tscDriverDriver = {},
     isJrcGlobalForestCover,
+    complianceStatus = {}
   } = data;
 
   const coverLossArea = geoData['tree cover loss']?.[0]?.data_fields?.area__ha || 0;
   const percentage = (coverLossArea && areaInHectares)
     ? (coverLossArea / areaInHectares) * 100
     : 0;
+
+  // Helper function to get compliance status styling
+  const getComplianceStyle = (status) => {
+    switch (status) {
+      case '100% Compliant':
+        return 'text-green-700 bg-green-100 font-semibold';
+      case 'Likely Compliant':
+        return 'text-yellow-700 bg-yellow-100 font-semibold';
+      case 'Not Compliant':
+        return 'text-red-700 bg-red-100 font-semibold';
+      default:
+        return 'text-gray-700 bg-gray-100 font-semibold';
+    }
+  };
 
   return (
     <table className="table-auto w-full mt-4 border-collapse border border-gray-400">
@@ -46,6 +62,21 @@ export const renderEudrTable = (data) => {
         </tr>
       </thead>
       <tbody>
+        {/* COMPLIANCE STATUS ROW - Added at the top for prominence
+        <tr className="bg-gray-50">
+          <td className="border border-gray-400 px-4 py-2 font-semibold">EUDR Compliance Status</td>
+          <td className={`border border-gray-400 px-4 py-2 ${getComplianceStyle(complianceStatus.status)}`}>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-1 rounded-full text-xs">
+                {complianceStatus.status || 'Assessment Pending'}
+              </span>
+            </div>
+            {complianceStatus.description && (
+              <p className="text-xs mt-1 text-gray-600">{complianceStatus.description}</p>
+            )}
+          </td>
+        </tr> */}
+
         <tr>
           <td className="border border-gray-400 px-4 py-2">Project Area</td>
           <td className="border border-gray-400 px-4 py-2">
@@ -57,9 +88,10 @@ export const renderEudrTable = (data) => {
             ) : 'Not available'}
           </td>
         </tr>
+
         <tr>
           <td className="border border-gray-400 px-4 py-2">Country Deforestation Risk Level</td>
-          <td className="border border-gray-400 px-4 py-2">STANDARD ,<strong>Percentage:</strong> {percentage.toFixed(2)}%</td>
+          <td className="border border-gray-400 px-4 py-2">STANDARD, <strong>Percentage:</strong> {percentage.toFixed(2)}%</td>
         </tr>
 
         <tr>
@@ -77,23 +109,40 @@ export const renderEudrTable = (data) => {
           <td className="border border-gray-400 px-4 py-2">Tree Cover Loss</td>
           <td className="border border-gray-400 px-4 py-2">
             {geoData['tree cover loss']?.[0]?.data_fields?.area__ha === 0 ? (
-              <p>0 ha (no tree loss since 2020)</p>
+              <p className="text-green-600 font-semibold">0 ha (no tree loss since 2020)</p>
             ) : (
-              <p>{geoData['tree cover loss']?.[0]?.data_fields?.area__ha} ha of tree cover loss</p>
+              <p className="text-red-600 font-semibold">{geoData['tree cover loss']?.[0]?.data_fields?.area__ha} ha of tree cover loss</p>
             )}
           </td>
         </tr>
 
         <tr>
-          <td className="border border-gray-400 px-4 py-2">EUDR Compliance</td>
+          <td className="border border-gray-400 px-4 py-2">Forest Cover (2020)</td>
           <td className="border border-gray-400 px-4 py-2">
-            {geoData['tree cover loss']?.[0]?.data_fields?.area__ha === 0 ? '100% Compliance' : 'Not Compliant'}
+            <span className={
+              isJrcGlobalForestCover && isJrcGlobalForestCover.includes('Forest cover detected') 
+                ? 'text-orange-600 font-semibold' 
+                : 'text-green-600 font-semibold'
+            }>
+              {isJrcGlobalForestCover}
+            </span>
           </td>
         </tr>
+
         <tr>
-          <td className="border border-gray-400 px-4 py-2">Global Forest Cover in 2020</td>
-          <td className="border border-gray-400 px-4 py-2">
-            {isJrcGlobalForestCover}
+          <td className="border border-gray-400 px-4 py-2">EUDR Compliance Assessment</td>
+          <td className={`border border-gray-400 px-4 py-2 ${getComplianceStyle(complianceStatus.status)}`}>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-sm">
+                  {complianceStatus.status || 'Assessment Pending'}
+                </span>
+              </div>
+              <div className="text-xs space-y-1">
+                <p><strong>Tree Cover Loss:</strong> {geoData['tree cover loss']?.[0]?.data_fields?.area__ha || 0} ha</p>
+                <p><strong>Forest Cover:</strong> {isJrcGlobalForestCover && isJrcGlobalForestCover.includes('Forest cover detected') ? 'Detected' : 'Not detected'}</p>
+              </div>
+            </div>
           </td>
         </tr>
 

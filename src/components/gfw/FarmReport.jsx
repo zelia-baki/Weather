@@ -25,6 +25,7 @@ const FullReport = () => {
         } else {
           setFarmInfo(response.data.farm_info);
           setGeoData(response.data.report || []);
+          console.log(geoData);
         }
       } catch (err) {
         setError('Failed to fetch farm report.');
