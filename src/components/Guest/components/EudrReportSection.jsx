@@ -46,6 +46,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
   // Function to determine compliance status
   const determineComplianceStatus = (treeCoverLoss, hasForestCover) => {
     const hasTreeCoverLoss = treeCoverLoss > 0;
+    console.log(treeCoverLoss,hasForestCover);
     
     if (!hasTreeCoverLoss && !hasForestCover) {
       // Condition 1: 100% Compliance
@@ -54,7 +55,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
         statusColor: 'text-green-600 bg-green-100',
         description: 'No tree cover loss detected and no forest cover detected. Fully compliant with EUDR regulations.'
       };
-    } else if (!hasTreeCoverLoss && hasForestCover) {
+    } else if ((!hasTreeCoverLoss && hasForestCover) || (hasTreeCoverLoss && !hasForestCover)) {
       // Condition 2: Likely Compliant
       return {
         status: 'Likely Compliant',
@@ -258,6 +259,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       
       // La nouvelle structure contient area__ha directement
       const forestAreaHa = jrcData?.area__ha || 0;
+      console.log("Forest area ha",forestAreaHa);
       
       if (forestAreaHa > 0) {
         hasForestCover = true;
