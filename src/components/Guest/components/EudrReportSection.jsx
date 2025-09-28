@@ -298,7 +298,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       {/* Colonne gauche : Parrot */}
       <div className="w-24 h-24 bg-white rounded-lg flex items-center justify-center shadow-sm">
         <img
-          src="https://www.nkusu.com/parrotlogo.png"
+          src="https://www.nkusu.com/parrotlogo.svg"
           alt="Parrot"
           className="object-contain w-full h-full rounded-md"
         />
