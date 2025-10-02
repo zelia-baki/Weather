@@ -9,9 +9,10 @@ export function SendPaymentModal({
   onClose,
   featureName,
   phone: passedPhone,
+  agent_id: passedAgent,
   onPaymentSuccess,
 }) {
-  const [txnId, setTxnId] = useState("123" + Date.now());
+  const [txnId, setTxnId] = useState((passedAgent || "1234") + Date.now());
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [polling, setPolling] = useState(false);

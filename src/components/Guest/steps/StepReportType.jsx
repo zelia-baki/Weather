@@ -1,7 +1,7 @@
 import React from "react";
-import { FileText, Leaf } from "lucide-react"; // ✅ Icônes jolies et légères
+import { FileText, Leaf } from "lucide-react";
 
-const StepReportType = ({ onSelect }) => {
+const StepReportType = ({ onSelect, highlightReportType = "" }) => {
   const options = [
     {
       id: "reporteudrguest",
@@ -15,7 +15,7 @@ const StepReportType = ({ onSelect }) => {
       id: "reportcarbonguest",
       title: "Carbon Report",
       description:
-        "Analyze your farm’s carbon footprint and environmental impact.",
+        "Analyze your farm's carbon footprint and environmental impact.",
       color: "green",
       icon: <Leaf className="w-8 h-8 text-green-600" />,
     },
@@ -30,7 +30,8 @@ const StepReportType = ({ onSelect }) => {
         Select the type of report you would like to generate.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+      {/* ✅ Appliquer le highlight uniquement sur la grille de boutons */}
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 ${highlightReportType}`}>
         {options.map((opt) => (
           <button
             key={opt.id}
@@ -39,9 +40,7 @@ const StepReportType = ({ onSelect }) => {
           >
             <div className="flex items-center gap-3 mb-3 justify-center">
               {opt.icon}
-              <h3
-                className={`font-semibold text-${opt.color}-700 text-lg`}
-              >
+              <h3 className={`font-semibold text-${opt.color}-700 text-lg`}>
                 {opt.title}
               </h3>
             </div>
