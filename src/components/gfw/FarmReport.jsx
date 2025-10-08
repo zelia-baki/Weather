@@ -1,3 +1,4 @@
+// FarmReport.jsx
 import React, { useRef, useState, useEffect } from "react";
 import axiosInstance from '../../axiosInstance.jsx';
 import { useLocation, Link } from "react-router-dom";
@@ -41,6 +42,9 @@ const FullReport = () => {
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
+      // ✅ Délai ajusté à 6000ms (6 secondes) pour s'assurer que StaticForestMap a terminé le rendu pour le PDF
+      await new Promise(resolve => setTimeout(resolve, 6000)); 
+      
       await downloadPDF(reportRef); // ta fonction utilitaire
     } catch (err) {
       console.error("PDF generation failed:", err);

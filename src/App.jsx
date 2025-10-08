@@ -51,8 +51,6 @@ import CategoryManager from './components/Category/CategoryManager.jsx';
 import WeathearMap from './components/mapbox/WeatherMap.jsx';
 import WeathearMapFarm from './components/mapbox/WeatherMapFarm.jsx';
 import WeatherHistory from './components/Graph/WeatherHistory.jsx';
-
-
 import WeatherDashboard from './components/mapbox/WeatherDasboard.jsx';
 import BarNav from './components/main/BarNav.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
@@ -70,6 +68,8 @@ import FeatureManager from './components/Features/FeatureManager.jsx';
 import EUDRSubmitFormForGuest from './components/Guest/EUDRSubmitFormForGuest.jsx'
 import SectionFutur from './components/Layout/SectionFutur.jsx'
 import AlertMessaging from './components/Dashboard/AlertMessaging.jsx';
+import TestMap from './components/mapbox/Test.jsx';
+
 
 // import Test from './components/gfw/FarmReport.jsx';
 
@@ -163,6 +163,7 @@ function App() {
         <Route path="/payment-required" element={<PaymentRequired />} />
         <Route path="/EUDRSubmissionForGuest" element={<EUDRSubmitFormForGuest />} />
         <Route path="/sectionfutur" element={<SectionFutur />} />
+         <Route path="/test" element={<TestMap />} />
 
 
         {/* Protected Routes */}
