@@ -452,7 +452,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
               />
 
               {/* Carte interactive ForestMap */}
-              <div className="my-6">
+              {/* <div className="my-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Interactive Forest Cover Map</h3>
                 <ForestMap
                   treeCoverData={TREE_COVER_DATA}
@@ -460,7 +460,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
                   title="Tree Cover Analysis"
                   subtitle={`${TREE_COVER_DATA.length} data points`}
                 />
-              </div>
+              </div> */}
             </div>
           )}
         </div>
