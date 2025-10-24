@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Certificat</title>
+  <style>
+    @page { size: A4; margin: 0; }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f0f0f0;
+    }
+
+    /* Center the sheet on the page */
+    .page-wrap {
+      width: 210mm;             /* A4 width */
+      min-height: 297mm;        /* A4 height */
+      margin: 20mm auto;
+      padding: 18mm;
+      background: #fff;
+      box-shadow: 0 0 0 6px rgba(0,0,0,0.12), 0 10px 30px rgba(0,0,0,0.08);
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    /* Inner wooden-like frame (visual) */
+    .frame {
+      border: 12px solid #3b2418; /* dark wooden outer */
+      padding: 8px;
+      height: 100%;
+      box-sizing: border-box;
+    }
+    .inner {
+      border: 6px solid #d0c7b8; /* lighter inner border */
+      height: 100%;
+      padding: 28px 36px;
+      box-sizing: border-box;
+      background: linear-gradient(#ffffff, #fcfbf9);
+    }
+
+    /* Header */
+    .header {
+      display:flex;
+      align-items:center;
+      gap:18px;
+      margin-bottom: 18px;
+    }
+    .logo {
+      width:110px;
+      height:110px;
+      object-fit:contain;
+      flex: 0 0 110px;
+    }
+    .org {
+      flex:1;
+    }
+    .org .org-name {
+      font-weight:700;
+      font-size:18px;
+      letter-spacing:0.6px;
+    }
+
+    .title {
+      text-align:center;
+      margin: 8px 0 18px 0;
+    }
+    .title h1 {
+      font-size:56px;
+      margin:0;
+      color:#6b6b6b;
+      letter-spacing:4px;
+    }
+
+    /* Main content */
+    .content {
+      padding: 8px 12px;
+    }
+    .cert-intro {
+      text-align:center;
+      color:#333;
+      margin-bottom:12px;
+    }
+    .recipient {
+      text-align:center;
+      font-size:20px;
+      font-weight:700;
+      margin:8px 0 12px 0;
+      letter-spacing:0.6px;
+    }
+    .body-text {
+      color:#333;
+      line-height:1.45;
+      font-size:14px;
+      max-width:920px;
+      margin: 0 auto 16px auto;
+      text-align:justify;
+    }
+
+    /* Highlight box (scope) */
+    .scope-box {
+      background:#f3efc8; /* pale yellow */
+      border:1px solid #e4dda6;
+      padding:14px;
+      margin:14px auto;
+      max-width:920px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.02) inset;
+    }
+    .scope-title {
+      font-weight:700;
+      margin-bottom:8px;
+    }
+    .scope-list {
+      margin:0;
+      padding-left:18px;
+    }
+
+    /* Footer area with QR and signature */
+    .footer {
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      margin-top:28px;
+      gap:12px;
+    }
+    .qr {
+      width:120px;
+      height:120px;
+      object-fit:cover;
+      border:1px solid #ddd;
+      background:#fff;
+    }
+    .signature-block {
+      text-align:right;
+      flex:1;
+    }
+    .signature {
+      display:inline-block;
+      width:260px;
+      height:80px;
+      background: url('signature-placeholder.png') no-repeat center/contain;
+      margin-bottom:6px;
+    }
+    .signed-by {
+      font-weight:700;
+    }
+
+    /* Small metadata row */
+    .meta-row {
+      display:flex;
+      justify-content:space-between;
+      margin-top:10px;
+      font-size:12px;
+      color:#444;
+      max-width:920px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+
+    /* Print friendly */
+    @media print {
+      body { background:white; }
+      .page-wrap { box-shadow:none; margin:0; }
+      .frame { border-color:#000; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="frame">
+      <div class="inner">
+        <header class="header">
+          <!-- Remplace logo.png par le fichier de ton logo -->
+          <img src="https://www.nkusu.com/logo.jpg" alt="Logo" class="logo" />
+          <div class="org">
+            <div style="font-size:14px;color:#7a7a7a">EUDR COMPLIANCE REPORT</div>
+            <div class="org-name">NKUSU</div>
+            <div style="font-size:12px;color:#999;margin-top:4px">Report generated based on the Regulation (EU) 2023/1115 on deforestation-free products.</div>
+          </div>
+        </header>
+
+        <div class="title">
+          <h1>CERTIFICATE</h1>
+        </div>
+
+        <div class="content">
+          <p class="cert-intro">This is to certify that</p>
+
+          <!-- Nom de la société (modifie ici) -->
+          <div class="recipient">DEALAN ASSOCIATES LIMITED</div>
+
+          <div class="body-text">
+            <strong>has been assessed in accordance with the requirements of</strong><br>
+            <em>"The National Information Technology Authority, Uganda (Certification of Providers of Information Technology Products and Services) Regulations, 2016"</em>.<br><br>
+
+            The company's business operations comply with the requirements of Certainty Certificate Level 1. The scope of this certificate is limited to the following areas assessed under Certainty Certificate Level 1.
+          </div>
+
+          <!-- Bloc scope / similaire au panel jaune -->
+          <div class="scope-box">
+            <div class="scope-title">Scope / Assessed areas</div>
+            <ul class="scope-list">
+              <li>Construction (4321)</li>
+              <li>Retail (4741)</li>
+              <li>Telecommunications (6110, 6120)</li>
+              <li>Computer programming, consultancy and related activities (6201)</li>
+            </ul>
+          </div>
+
+          <!-- Texte additionnel et cover extent summary (si tu veux insérer texte long, encode en base64 côté serveur) -->
+          <div class="body-text" style="margin-top:6px;">
+            <strong>Note:</strong> For details related to the above areas assessed, please refer to the information provided overleaf.
+          </div>
+
+          <!-- Footer area -->
+          <div class="footer">
+            <div>
+              <!-- QR image -->
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=ExempleQR" alt="QR code" class="qr" />
+            </div>
+
+            <div class="signature-block">
+              <div class="signature" aria-hidden="true"></div>
+              <div class="signed-by">CEO Glite Technology LTD </div>
+              <div style="font-size:12px;color:#666">Brian Lwetutte</div>
+            </div>
+          </div>
+
+          <!-- Dates and certificate number -->
+          <div class="meta-row" style="margin-top:18px;">
+            <div>
+              <div><strong>Certification Date:</strong> January 11, 2022</div>
+              <div><strong>Certificate No:</strong> 101-ACERT-2022-001</div>
+            </div>
+            <div style="text-align:right;">
+              <div><strong>Certification Valid Till:</strong> January 11, 2023</div>
+              <div style="font-weight:700;color:#c0392b">1281</div>
+            </div>
+          </div>
+
+        </div> <!-- .content -->
+      </div> <!-- .inner -->
+    </div> <!-- .frame -->
+  </div> <!-- .page-wrap -->
+</body>
+</html>
