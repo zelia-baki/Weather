@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { renderEudrTable, generateMapboxUrl } from '../utils/reportUtils';
-import parrot from '../../img/parrotlogo.svg';
 import * as turf from '@turf/turf';
-import ForestMap from '../../mapbox/ForestMap.jsx';
 import StaticForestMap from '../../mapbox/StaticForestMap.jsx';
+import axiosInstance from '../../../axiosInstance.jsx';
 
 const EudrReportSection = ({ results, reportRef, farmInfo }) => {
   console.log(results["wri tropical tree cover extent"]?.[2]?.["data_fields"]);
@@ -34,27 +33,21 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
   const [treeCoverLossArea, setTreeCoverLossArea] = useState(0);
   const [wriTropicalTreeCoverAvg, setWriTropicalTreeCoverAvg] = useState(0);
   const [raddAlertsArea, setRaddAlertsArea] = useState(0);
-
-  // New state for compliance status
   const [complianceStatus, setComplianceStatus] = useState({
     status: '',
     statusColor: '',
     description: ''
   });
 
-  // ===== MAPPING DES DONNÉES POUR LES COMPOSANTS DE CARTE =====
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Récupérer les données brutes
   const rawTreeCoverData = results["wri tropical tree cover extent"]?.[2]?.["data_fields"];
 
-  // Mapper les données au format attendu par ForestMap
   const TREE_COVER_DATA = React.useMemo(() => {
     if (!rawTreeCoverData || !Array.isArray(rawTreeCoverData)) {
       return [];
     }
-
-    // Les données ont déjà latitude, longitude et wri_tropical_tree_cover_extent__decile
-    // On ajoute juste le champ manquant tsc_tree_cover_loss_drivers__driver
     return rawTreeCoverData.map(point => ({
       latitude: point.latitude,
       longitude: point.longitude,
@@ -63,15 +56,12 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
     }));
   }, [rawTreeCoverData]);
 
-  // Token Mapbox
   const TOKEN = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
 
-  // Extraction des coordonnées depuis le premier dataset disponible
   const coordinates = results["jrc global forest cover"]?.[0]?.coordinates?.[0] ||
     results["tree cover loss"]?.[0]?.coordinates?.[0] ||
     results["soil carbon"]?.[0]?.coordinates?.[0];
 
-  // Function to determine compliance status
   const determineComplianceStatus = (treeCoverLoss, hasForestCover) => {
     const hasTreeCoverLoss = treeCoverLoss > 0;
     console.log(treeCoverLoss, hasForestCover);
@@ -103,12 +93,72 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
     }
   };
 
+  const saveReportToDatabase = async (reportData) => {
+    console.log('🔍 saveReportToDatabase called');
+    console.log('🔍 farmInfo:', farmInfo);
+    console.log('🔍 farmInfo.id:', farmInfo?.farm_id);
+    
+    if (!farmInfo?.farm_id) {
+      console.error('❌ Farm ID is missing, cannot save report');
+      console.error('farmInfo object:', farmInfo);
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      console.log('📊 Saving report to database...');
+      console.log('📊 Report data received:', reportData);
+
+      const payload = {
+        farm_id: farmInfo.farm_id,
+        project_area: `${reportData.areaInHectares?.toFixed(2) || 0} ha`,
+        country_deforestation_risk_level: reportData.deforestationRiskLevel || 'STANDARD',
+        radd_alert: `${reportData.raddAlertsArea?.toFixed(2) || 0} ha`,
+        tree_cover_loss: `${reportData.treeCoverLossArea?.toFixed(2) || 0} ha`,
+        forest_cover_2020: reportData.isJrcGlobalForestCover || 'No data',
+        eudr_compliance_assessment: reportData.complianceStatus?.status || 'Assessment Pending',
+        protected_area_status: JSON.stringify(reportData.protectedStatus || {}),
+        tree_cover_drivers: reportData.tscDriverDriver?.mostCommonValue || 'Unknown',
+        cover_extent_area: `${reportData.wriTropicalTreeCoverAvg?.toFixed(2) || 0}%`,
+        cover_extent_summary: reportData.coverExtentDecileData || {}
+      };
+
+      console.log('📦 Payload prepared:', payload);
+      console.log('🚀 Sending POST request to /api/farmreport/create');
+
+      const response = await axiosInstance.post('/api/farmreport/create', payload);
+
+      console.log('✅ Report saved successfully!');
+      console.log('✅ Server response:', response.data);
+      setSaveSuccess(true);
+      
+      setTimeout(() => setSaveSuccess(false), 5000);
+
+    } catch (err) {
+      console.error('❌ Error saving report:', err);
+      console.error('❌ Error response:', err.response?.data);
+      console.error('❌ Error message:', err.message);
+      console.error('❌ Full error object:', err);
+      alert('Failed to save report: ' + (err.response?.data?.msg || err.message));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (!results || typeof results !== 'object' || Object.keys(results).length === 0) return;
 
     setGeoData(results);
 
-    // ===== 1. TREE COVER EXTENT (Nouvelles données groupées) =====
+    let calculatedCoverExtentData = {
+      nonZeroValues: [],
+      nonZeroCount: 0,
+      percentageCoverExtent: 0,
+      valueCountArray: []
+    };
+
     const tropicalTreeCoverExtentArray = results["wri tropical tree cover extent"];
     if (Array.isArray(tropicalTreeCoverExtentArray)) {
       const groupedItem = tropicalTreeCoverExtentArray.find(item =>
@@ -144,16 +194,22 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
 
         const percentageCoverExtent = totalCount > 0 ? (nonZeroCount / totalCount) * 100 : 0;
 
-        setCoverExtentDecileData({
+        calculatedCoverExtentData = {
           nonZeroValues,
           nonZeroCount,
           percentageCoverExtent,
           valueCountArray
-        });
+        };
+
+        setCoverExtentDecileData(calculatedCoverExtentData);
       }
     }
 
-    // ===== 2. TREE COVER LOSS DRIVERS (Données déjà groupées) =====
+    let calculatedDriverData = {
+      mostCommonValue: '',
+      frequencyCounts: {}
+    };
+
     const driverArray = results["tsc tree cover loss drivers"];
     if (Array.isArray(driverArray) && driverArray.length > 0) {
       const driverItem = driverArray[0];
@@ -185,10 +241,10 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
         }
       }
 
-      setTscDriverDriver({ mostCommonValue, frequencyCounts });
+      calculatedDriverData = { mostCommonValue, frequencyCounts };
+      setTscDriverDriver(calculatedDriverData);
     }
 
-    // ===== 3. TREE COVER LOSS =====
     let calculatedTreeCoverLoss = 0;
     const coverLossArray = results["tree cover loss"];
     if (Array.isArray(coverLossArray) && coverLossArray.length > 0) {
@@ -196,7 +252,11 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       setTreeCoverLossArea(calculatedTreeCoverLoss);
     }
 
-    // ===== 4. PROTECTED AREAS (Nouvelles données groupées) =====
+    let calculatedProtectedStatus = {
+      counts: {},
+      percentages: {}
+    };
+
     const protectedArray = results["soil carbon"];
     if (Array.isArray(protectedArray) && protectedArray.length > 0) {
       const protectedItem = protectedArray[0];
@@ -224,37 +284,40 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
         percentages["No Data"] = "0%";
       }
 
+      calculatedProtectedStatus = {
+        counts: protectedCounts,
+        percentages
+      };
+
       setResultStatus(prev => ({
         ...prev,
-        protectedStatus: {
-          counts: protectedCounts,
-          percentages
-        }
+        protectedStatus: calculatedProtectedStatus
       }));
     }
 
-    // ===== 5. INDIGENOUS LANDS =====
+    let calculatedIndigenousStatus = '';
     const indigenousArray = results["landmark indigenous and community lands"];
     if (Array.isArray(indigenousArray) && indigenousArray.length > 0) {
       const landData = indigenousArray[0]?.data_fields || [];
 
-      let indigenousStatus;
       if (!Array.isArray(landData) || landData.length === 0) {
-        indigenousStatus = "Not known, land is not gazetted";
+        calculatedIndigenousStatus = "Not known, land is not gazetted";
       } else {
         const hasIndigenousLand = landData.some(item => item?.name || item?.value === 1);
-        indigenousStatus = hasIndigenousLand
+        calculatedIndigenousStatus = hasIndigenousLand
           ? "Presence of indigenous and community lands"
           : "No presence of indigenous and community lands";
       }
 
       setResultStatus(prev => ({
         ...prev,
-        indigenousStatus
+        indigenousStatus: calculatedIndigenousStatus
       }));
     }
 
-    // ===== 6. AREA CALCULATION =====
+    let calculatedAreaSqM = 0;
+    let calculatedAreaHa = 0;
+    
     if (coordinates && Array.isArray(coordinates) && coordinates.length >= 3) {
       const first = coordinates[0];
       const last = coordinates[coordinates.length - 1];
@@ -264,16 +327,17 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
 
       try {
         const polygon = turf.polygon([closedCoords]);
-        const areaSqM = turf.area(polygon);
-        setAreaInSquareMeters(areaSqM);
-        setAreaInHectares(areaSqM / 10000);
+        calculatedAreaSqM = turf.area(polygon);
+        calculatedAreaHa = calculatedAreaSqM / 10000;
+        setAreaInSquareMeters(calculatedAreaSqM);
+        setAreaInHectares(calculatedAreaHa);
       } catch (e) {
         console.error("Turf error on polygon:", e);
       }
     }
 
-    // ===== 7. JRC GLOBAL FOREST COVER =====
     let hasForestCover = false;
+    let forestCoverText = "No forest cover detected";
     const jrcArray = results["jrc global forest cover"];
     if (Array.isArray(jrcArray) && jrcArray.length > 0) {
       const jrcData = jrcArray[0]?.data_fields;
@@ -282,37 +346,86 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
 
       if (forestAreaHa > 0) {
         hasForestCover = true;
-        setIsJrcGlobalForestCover(`Forest cover detected: ${forestAreaHa.toFixed(2)} hectares`);
+        forestCoverText = `Forest cover detected: ${forestAreaHa.toFixed(2)} hectares`;
+        setIsJrcGlobalForestCover(forestCoverText);
       } else {
         hasForestCover = false;
-        setIsJrcGlobalForestCover("No forest cover detected");
+        setIsJrcGlobalForestCover(forestCoverText);
       }
     }
 
-    // ===== 8. WRI TROPICAL TREE COVER AVERAGE =====
+    let avgCover = 0;
     const wriTropicalArray = results["wri tropical tree cover"];
     if (Array.isArray(wriTropicalArray) && wriTropicalArray.length > 0) {
-      const avgCover = wriTropicalArray[0]?.data_fields?.avg_cover || 0;
+      avgCover = wriTropicalArray[0]?.data_fields?.avg_cover || 0;
       setWriTropicalTreeCoverAvg(avgCover);
     }
 
-    // ===== 9. RADD ALERTS =====
+    let raddArea = 0;
     const raddArray = results["wur radd alerts"];
     if (Array.isArray(raddArray) && raddArray.length > 0) {
-      const raddArea = raddArray[0]?.data_fields?.area__ha || 0;
+      raddArea = raddArray[0]?.data_fields?.area__ha || 0;
       setRaddAlertsArea(raddArea);
     }
 
-    // ===== 10. DETERMINE COMPLIANCE STATUS =====
     const compliance = determineComplianceStatus(calculatedTreeCoverLoss, hasForestCover);
     setComplianceStatus(compliance);
 
-  }, [results]);
+    const reportDataToSave = {
+      areaInSquareMeters: calculatedAreaSqM,
+      areaInHectares: calculatedAreaHa,
+      deforestationRiskLevel: 'STANDARD',
+      raddAlertsArea: raddArea,
+      treeCoverLossArea: calculatedTreeCoverLoss,
+      isJrcGlobalForestCover: forestCoverText,
+      complianceStatus: compliance,
+      protectedStatus: calculatedProtectedStatus,
+      coverExtentDecileData: calculatedCoverExtentData,
+      tscDriverDriver: calculatedDriverData,
+      wriTropicalTreeCoverAvg: avgCover,
+      indigenousStatus: calculatedIndigenousStatus
+    };
+
+    console.log('🔍 Check conditions for saving:');
+    console.log('  - farmInfo?.id:', farmInfo?.farm_id);
+    console.log('  - calculatedAreaHa:', calculatedAreaHa);
+    console.log('  - calculatedAreaHa > 0:', calculatedAreaHa > 0);
+    console.log('  - Will save?:', farmInfo?.id && calculatedAreaHa > 0);
+
+    if (farmInfo?.farm_id && calculatedAreaHa > 0) {
+      console.log('✅ Conditions met! Calling saveReportToDatabase...');
+      console.log('📊 Data to save:', reportDataToSave);
+      saveReportToDatabase(reportDataToSave);
+    } else {
+      console.warn('⚠️ Conditions NOT met for saving:');
+      if (!farmInfo?.farm_id) console.warn('  - Missing farmInfo.farm_id');
+      if (!(calculatedAreaHa > 0)) console.warn('  - calculatedAreaHa is not > 0 (value:', calculatedAreaHa, ')');
+    }
+
+  }, [results, farmInfo]);
 
   return (
     <div ref={reportRef} className="carbon-report-a4 w-full h-full m-0 p-0 bg-white text-gray-900 font-sans leading-relaxed space-y-8">
 
-      {/* HEADER */}
+      {isSaving && (
+        <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
+          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+          Saving report...
+        </div>
+      )}
+
+      {saveSuccess && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Report saved successfully!
+        </div>
+      )}
+
       <div className="flex items-center justify-between border-b-4 border-green-700 pb-6 px-8 pt-8">
         <div className="w-24 h-24 bg-white rounded-lg flex items-center justify-center shadow-sm">
           <img
@@ -444,38 +557,25 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
                 <li><strong>Compliance Status: {complianceStatus.status}</strong></li>
               </ul>
 
-              {/* Image statique Mapbox */}
               <img
                 src={generateMapboxUrl(coordinates)}
                 alt="Map"
                 className="report-map w-full rounded-lg shadow-md"
               />
-
-              {/* Carte interactive ForestMap */}
-              {/* <div className="my-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Interactive Forest Cover Map</h3>
-                <ForestMap
-                  treeCoverData={TREE_COVER_DATA}
-                  mapboxToken={TOKEN}
-                  title="Tree Cover Analysis"
-                  subtitle={`${TREE_COVER_DATA.length} data points`}
-                />
-              </div> */}
             </div>
           )}
         </div>
 
-                <div className="html2pdf__page-break"></div> {/* Déplacé ici */}
-               {/* Image statique 400x400 */}
-              <div className="my-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Static Map Export</h3>
-                <StaticForestMap
-                  treeCoverData={TREE_COVER_DATA}
-                  mapboxToken={TOKEN}
-                  title="Tree Cover Analysis"
-                  subtitle={`${TREE_COVER_DATA.length} data points`}
-                />
-              </div>
+        <div className="html2pdf__page-break"></div>
+        <div className="my-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">Static Map Export</h3>
+          <StaticForestMap
+            treeCoverData={TREE_COVER_DATA}
+            mapboxToken={TOKEN}
+            title="Tree Cover Analysis"
+            subtitle={`${TREE_COVER_DATA.length} data points`}
+          />
+        </div>
       </div>
 
       <div className="report-footer border-t-2 border-gray-300 px-8 pt-6 text-xs text-gray-500 text-center mt-10">
