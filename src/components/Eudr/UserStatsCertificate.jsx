@@ -275,17 +275,19 @@ const UserStatsCertificate = () => {
             >
                 <div className="border-[12px] border-[#3b2418] p-2 h-full">
                     <div className="border-[6px] border-[#d0c7b8] h-full p-7 bg-gradient-to-b from-white to-[#fcfbf9]">
-                        <header className="flex items-center gap-5 mb-5">
-                            <div className="flex items-center gap-3">
+                        <header className="flex items-center justify-between gap-5 mb-5">
+                            <div className="flex-shrink-0">
                                 <img src="/logo.jpg" alt="Logo" className="w-24 h-24 object-contain" />
-                                <img src="/parrotlogo.svg" alt="Parrot Logo" className="w-24 h-24 object-contain" />
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 text-center">
                                 <div className="text-sm text-gray-500">EUDR COMPLIANCE REPORT</div>
-                                <div className="text-xl font-bold tracking-wider">NKUSU</div>
+                                {/* <div className="text-xl font-bold tracking-wider">NKUSU</div> */}
                                 <div className="text-xs text-gray-400 mt-1">
                                     Based on EU Regulation (2023/1115) on deforestation-free products.
                                 </div>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <img src="/parrotlogo.svg" alt="Parrot Logo" className="w-24 h-24 object-contain" />
                             </div>
                         </header>
 
