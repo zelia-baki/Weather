@@ -40,6 +40,7 @@ const UserStatsCertificate = () => {
                     const statsData = Array.isArray(response.data.data) 
                         ? response.data.data[0] 
                         : response.data.data;
+                        console.log("Stat data ",statsData);
                     setStats(statsData);
                 } else {
                     setError(response.data.message || "Failed to load statistics");
@@ -355,10 +356,10 @@ const UserStatsCertificate = () => {
 
                         <div className="px-4 py-2 text-gray-700 text-sm">
                             <p className="text-center mb-3">This certifies that</p>
-                            <div className="text-center text-2xl font-bold my-2">{stats.username.toUpperCase()}</div>
+                            <div className="text-center text-2xl font-bold my-2">{stats.company_name.toUpperCase()}</div>
 
                             <p className="max-w-[900px] mx-auto text-justify leading-relaxed mb-4">
-                                has been evaluated according to the European Union Deforestation Regulation (EUDR)
+                                has been evaluated according to the European Union Deforestation Regulation (Based on EU Regulation (2023/1115) on deforestation-free products.)
                                 and shows a compliance rate across <strong>{farmsCount}</strong> farms covering a total area of{" "}
                                 <strong>{totalArea.toFixed(2)} hectares</strong>. This certificate confirms the environmental compliance status indicated below.
                             </p>
@@ -388,7 +389,7 @@ const UserStatsCertificate = () => {
 
                             <div className="flex justify-between items-end mt-6 gap-3">
                                 <div>
-                                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=UserID:${stats.user_id}|Type:${certificateType}|Rate:${percentage}%|Area:${totalArea.toFixed(2)}ha`}
+                                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=UserID:${stats.user_id}|IdStart:${stats.id_start}|Type:${certificateType}|Area:${totalArea.toFixed(2)}ha`}
                                         alt="QR code" className="qr-code w-28 h-28 object-cover border border-gray-300 bg-white" />
                                     <div className="text-xs text-gray-500 mt-1 text-center">
                                         Certificate ID: {stats.user_id}-{new Date().getFullYear()}
@@ -403,7 +404,7 @@ const UserStatsCertificate = () => {
                             <div className="flex justify-between mt-5 text-xs text-gray-600">
                                 <div>
                                     <div><strong>Date Issued:</strong> {currentDate}</div>
-                                    <div><strong>User ID:</strong> {stats.user_id}</div>
+                                    <div><strong>User ID:</strong> {stats.id_start}</div>
                                     {/* <div><strong>Email:</strong> {stats.email}</div> */}
                                     <div><strong>Email:</strong> nkusu@agriyields.com</div>
                                 </div>

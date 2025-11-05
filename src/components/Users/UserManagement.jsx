@@ -9,6 +9,7 @@ const UserManager = () => {
     email: '',
     password: '',
     phonenumber: '',
+    company_name: '',
     user_type: '',
     is_admin: false,
   });
@@ -62,6 +63,7 @@ const UserManager = () => {
         email: '',
         password: '',
         phonenumber: '',
+        company_name: '',
         user_type: '',
         is_admin: false,
       });
@@ -114,8 +116,9 @@ const UserManager = () => {
     setUserForm({
       username: user.username,
       email: user.email,
-      password: '', // Password is not editable here for security
+      password: '',
       phonenumber: user.phonenumber,
+      company_name: user.company_name || '',
       user_type: user.user_type,
       is_admin: user.is_admin,
     });
@@ -130,6 +133,7 @@ const UserManager = () => {
       email: '',
       password: '',
       phonenumber: '',
+      company_name: '',
       user_type: '',
       is_admin: false,
     });
@@ -154,7 +158,7 @@ const UserManager = () => {
       {/* Modal for creating/updating User */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold mb-4">{editing ? 'Edit User' : 'Create User'}</h3>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
@@ -204,6 +208,16 @@ const UserManager = () => {
               <div className="mb-4">
                 <input
                   type="text"
+                  name="company_name"
+                  placeholder="Company Name"
+                  value={userForm.company_name}
+                  onChange={handleInputChange}
+                  className="border border-gray-300 p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+              </div>
+              <div className="mb-4">
+                <input
+                  type="text"
                   name="user_type"
                   placeholder="User Type"
                   value={userForm.user_type}
@@ -223,40 +237,19 @@ const UserManager = () => {
                 Admin
               </label>
               <div className="flex justify-between">
-              
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400 transition duration-300"
-                  >
-                     {editing ? 'cancel edit' : 'cancel create'}
-                  </button>
-
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400 transition duration-300"
+                >
+                  {editing ? 'Cancel Edit' : 'Cancel Create'}
+                </button>
                 <button
                   type="submit"
                   className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
                 >
                   {editing ? 'Update User' : 'Create User'}
                 </button>
-              </div>
-
-              {/* --------------------------------------------- */}
-              <div className="flex justify-between">
-                {/* <button
-                  type="submit"
-                  className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
-                >
-                  {editing ? 'Update User' : 'Create User'}
-                </button> */}
-                {/* {editing && (
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400 transition duration-300"
-                  >
-                    Cancel Edit
-                  </button>
-                )} */}
               </div>
             </form>
           </div>
@@ -271,7 +264,10 @@ const UserManager = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <strong className="text-lg font-semibold text-blue-600">{user.username || 'Unknown'}</strong>
-                  <p>{user.email || 'No email provided'}</p>
+                  <p className="text-sm text-gray-600">{user.email || 'No email provided'}</p>
+                  {user.company_name && (
+                    <p className="text-sm text-gray-500 italic">{user.company_name}</p>
+                  )}
                 </div>
                 <div className="flex space-x-2">
                   <button
@@ -291,7 +287,8 @@ const UserManager = () => {
             </li>
           ) : null
         ))}
-      </ul>    </div>
+      </ul>
+    </div>
   );
 };
 
