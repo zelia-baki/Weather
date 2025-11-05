@@ -37,11 +37,12 @@ const UserStatsCertificate = () => {
                 const url = userId ? `/api/farm/stats/by-user/${userId}` : "/api/farm/stats/by-user";
                 const response = await axiosInstance.get(url);
                 if (response.data.status === "success") {
-                    const statsData = Array.isArray(response.data.data) 
-                        ? response.data.data[0] 
+                    const statsData = Array.isArray(response.data.data)
+                        ? response.data.data[0]
                         : response.data.data;
-                        console.log("Stat data ",statsData);
+                    console.log("Stat data ", statsData);
                     setStats(statsData);
+                    console.log("HELLLLLO", statsData);
                 } else {
                     setError(response.data.message || "Failed to load statistics");
                 }
@@ -72,13 +73,13 @@ const UserStatsCertificate = () => {
     const getTotalAreaForCertificate = () => {
         if (!areaStats.length) return 0;
         const getArea = (status) => areaStats.find((a) => a.compliance_status === status)?.total_area || 0;
-        
+
         const areaMap = {
             compliant: getArea("100% Compliant"),
             likely_compliant: getArea("Likely Compliant"),
             not_compliant: getArea("Not Compliant")
         };
-        
+
         return areaMap[certificateType] || areaStats.reduce((acc, a) => acc + (a.total_area || 0), 0);
     };
 
@@ -135,15 +136,15 @@ const UserStatsCertificate = () => {
             // Convert images to data URL directly in original element
             const images = element.querySelectorAll("img");
             const originalSrcs = [];
-            
+
             await Promise.all(Array.from(images).map(async (img, index) => {
                 try {
                     originalSrcs[index] = img.src; // Save original src
-                    
+
                     if (img.src.startsWith("http")) {
                         const dataUrl = await toDataURL(img.src);
                         img.src = dataUrl;
-                        
+
                         await new Promise(resolve => {
                             if (img.complete) resolve();
                             else {
@@ -171,16 +172,16 @@ const UserStatsCertificate = () => {
                         clonedDoc.querySelectorAll('header img').forEach(img => {
                             if (img.alt === "Parrot Logo") {
                                 Object.assign(img.style, {
-                                    width: '80px', 
-                                    height: '96px', 
-                                    objectFit: 'contain', 
+                                    width: '80px',
+                                    height: '96px',
+                                    objectFit: 'contain',
                                     display: 'block'
                                 });
                             } else {
                                 Object.assign(img.style, {
-                                    width: '96px', 
-                                    height: '96px', 
-                                    objectFit: 'contain', 
+                                    width: '96px',
+                                    height: '96px',
+                                    objectFit: 'contain',
                                     display: 'block'
                                 });
                             }
@@ -274,8 +275,21 @@ const UserStatsCertificate = () => {
 
     const ComplianceItem = ({ label, status, colorClass }) => {
         const area = areaStats.find(a => a.compliance_status === status)?.total_area || 0;
-        const count = stats.compliance_status[status.toLowerCase().replace(/\s+/g, '_').replace('%', '')] || 0;
-        const pct = areaPercentages[status === "100% Compliant" ? "compliant" : status === "Likely Compliant" ? "likely" : "not"];
+
+        const keyMap = {
+            "100% Compliant": "compliant_100",
+            "Likely Compliant": "likely_compliant",
+            "Not Compliant": "not_compliant",
+            "No Report": "no_report"
+        };
+
+        const count = stats.compliance_status[keyMap[status]] || 0;
+        const pct = areaPercentages[
+            status === "100% Compliant" ? "compliant" :
+                status === "Likely Compliant" ? "likely" :
+                    "not"
+        ];
+
         return (
             <li className="flex justify-between">
                 <span>{label}:</span>
@@ -283,6 +297,7 @@ const UserStatsCertificate = () => {
             </li>
         );
     };
+
 
     return (
         <div className="min-h-screen bg-gray-100 py-8 print:bg-white">
