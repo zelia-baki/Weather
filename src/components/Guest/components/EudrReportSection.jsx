@@ -2,10 +2,35 @@ import React, { useEffect, useState } from "react";
 import { renderEudrTable, generateMapboxUrl } from '../utils/reportUtils';
 import * as turf from '@turf/turf';
 import StaticForestMap from '../../mapbox/StaticForestMap.jsx';
-import axiosInstance from '../../../axiosInstance.jsx';
 
-const EudrReportSection = ({ results, reportRef, farmInfo }) => {
+const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, reportType = 'farm' }) => {
   console.log(results["wri tropical tree cover extent"]?.[2]?.["data_fields"]);
+  
+  // ✅ Déterminer les textes en fonction du type de rapport
+  const getReportTexts = () => {
+    switch(reportType) {
+      case 'forest':
+        return {
+          entityType: 'Forest',
+          idLabel: 'Forest ID',
+          description: 'This report provides an overview of Forest ID'
+        };
+      case 'guest':
+        return {
+          entityType: 'Property',
+          idLabel: 'Property ID',
+          description: 'This report provides an overview of Property ID'
+        };
+      default: // 'farm'
+        return {
+          entityType: 'Farm',
+          idLabel: 'Farm ID',
+          description: 'This report provides an overview of Farm ID'
+        };
+    }
+  };
+
+  const reportTexts = getReportTexts();
 
   const [coverExtentDecileData, setCoverExtentDecileData] = useState({
     nonZeroValues: [],
@@ -39,15 +64,32 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
     description: ''
   });
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  // ✅ Gestion des deux formats : Farm (object direct) et Forest (array transformé)
+  const rawTreeCoverData = React.useMemo(() => {
+    const treeCoverExtentArray = results["wri tropical tree cover extent"];
+    
+    if (!treeCoverExtentArray || !Array.isArray(treeCoverExtentArray)) {
+      return null;
+    }
 
-  const rawTreeCoverData = results["wri tropical tree cover extent"]?.[2]?.["data_fields"];
+    // Pour Farm : chercher l'item avec data_fields qui est un array de points
+    const dataItem = treeCoverExtentArray.find(item => 
+      Array.isArray(item?.data_fields) && 
+      item.data_fields.length > 0 &&
+      item.data_fields[0]?.latitude !== undefined
+    );
+
+    return dataItem?.data_fields || null;
+  }, [results]);
 
   const TREE_COVER_DATA = React.useMemo(() => {
     if (!rawTreeCoverData || !Array.isArray(rawTreeCoverData)) {
+      console.warn('⚠️ No tree cover data available for map');
       return [];
     }
+    
+    console.log('✅ Tree cover data points:', rawTreeCoverData.length);
+    
     return rawTreeCoverData.map(point => ({
       latitude: point.latitude,
       longitude: point.longitude,
@@ -93,65 +135,12 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
     }
   };
 
-  const saveReportToDatabase = async (reportData) => {
-    console.log('🔍 saveReportToDatabase called');
-    console.log('🔍 farmInfo:', farmInfo);
-    console.log('🔍 farmInfo.id:', farmInfo?.farm_id);
-    
-    if (!farmInfo?.farm_id) {
-      console.error('❌ Farm ID is missing, cannot save report');
-      console.error('farmInfo object:', farmInfo);
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveSuccess(false);
-
-    try {
-      console.log('📊 Saving report to database...');
-      console.log('📊 Report data received:', reportData);
-
-      const payload = {
-        farm_id: farmInfo.farm_id,
-        project_area: `${reportData.areaInHectares?.toFixed(2) || 0} ha`,
-        country_deforestation_risk_level: reportData.deforestationRiskLevel || 'STANDARD',
-        radd_alert: `${reportData.raddAlertsArea?.toFixed(2) || 0} ha`,
-        tree_cover_loss: `${reportData.treeCoverLossArea?.toFixed(2) || 0} ha`,
-        forest_cover_2020: reportData.isJrcGlobalForestCover || 'No data',
-        eudr_compliance_assessment: reportData.complianceStatus?.status || 'Assessment Pending',
-        protected_area_status: JSON.stringify(reportData.protectedStatus || {}),
-        tree_cover_drivers: reportData.tscDriverDriver?.mostCommonValue || 'Unknown',
-        cover_extent_area: `${reportData.wriTropicalTreeCoverAvg?.toFixed(2) || 0}%`,
-        cover_extent_summary: reportData.coverExtentDecileData || {}
-      };
-
-      console.log('📦 Payload prepared:', payload);
-      console.log('🚀 Sending POST request to /api/farmreport/create');
-
-      const response = await axiosInstance.post('/api/farmreport/create', payload);
-
-      console.log('✅ Report saved successfully!');
-      console.log('✅ Server response:', response.data);
-      setSaveSuccess(true);
-      
-      setTimeout(() => setSaveSuccess(false), 5000);
-
-    } catch (err) {
-      console.error('❌ Error saving report:', err);
-      console.error('❌ Error response:', err.response?.data);
-      console.error('❌ Error message:', err.message);
-      console.error('❌ Full error object:', err);
-      alert('Failed to save report: ' + (err.response?.data?.msg || err.message));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   useEffect(() => {
     if (!results || typeof results !== 'object' || Object.keys(results).length === 0) return;
 
     setGeoData(results);
 
+    // ✅ Calcul des données de couverture forestière
     let calculatedCoverExtentData = {
       nonZeroValues: [],
       nonZeroCount: 0,
@@ -205,6 +194,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       }
     }
 
+    // ✅ Calcul des drivers de déforestation
     let calculatedDriverData = {
       mostCommonValue: '',
       frequencyCounts: {}
@@ -245,6 +235,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       setTscDriverDriver(calculatedDriverData);
     }
 
+    // ✅ Calcul de la perte de couverture forestière
     let calculatedTreeCoverLoss = 0;
     const coverLossArray = results["tree cover loss"];
     if (Array.isArray(coverLossArray) && coverLossArray.length > 0) {
@@ -252,6 +243,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       setTreeCoverLossArea(calculatedTreeCoverLoss);
     }
 
+    // ✅ Calcul du statut des zones protégées
     let calculatedProtectedStatus = {
       counts: {},
       percentages: {}
@@ -295,6 +287,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       }));
     }
 
+    // ✅ Calcul du statut des terres indigènes
     let calculatedIndigenousStatus = '';
     const indigenousArray = results["landmark indigenous and community lands"];
     if (Array.isArray(indigenousArray) && indigenousArray.length > 0) {
@@ -315,6 +308,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       }));
     }
 
+    // ✅ Calcul de la superficie
     let calculatedAreaSqM = 0;
     let calculatedAreaHa = 0;
     
@@ -336,6 +330,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       }
     }
 
+    // ✅ Vérification de la couverture forestière JRC
     let hasForestCover = false;
     let forestCoverText = "No forest cover detected";
     const jrcArray = results["jrc global forest cover"];
@@ -354,6 +349,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       }
     }
 
+    // ✅ Calcul de la couverture moyenne des arbres
     let avgCover = 0;
     const wriTropicalArray = results["wri tropical tree cover"];
     if (Array.isArray(wriTropicalArray) && wriTropicalArray.length > 0) {
@@ -361,6 +357,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       setWriTropicalTreeCoverAvg(avgCover);
     }
 
+    // ✅ Calcul des alertes RADD
     let raddArea = 0;
     const raddArray = results["wur radd alerts"];
     if (Array.isArray(raddArray) && raddArray.length > 0) {
@@ -368,9 +365,11 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       setRaddAlertsArea(raddArea);
     }
 
+    // ✅ Détermination du statut de conformité
     const compliance = determineComplianceStatus(calculatedTreeCoverLoss, hasForestCover);
     setComplianceStatus(compliance);
 
+    // ✅ NOUVELLE LOGIQUE : Appeler le callback parent avec toutes les données calculées
     const reportDataToSave = {
       areaInSquareMeters: calculatedAreaSqM,
       areaInHectares: calculatedAreaHa,
@@ -386,45 +385,27 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
       indigenousStatus: calculatedIndigenousStatus
     };
 
-    console.log('🔍 Check conditions for saving:');
-    console.log('  - farmInfo?.id:', farmInfo?.farm_id);
+    console.log('🔍 Check conditions for calling callback:');
+    console.log('  - farmInfo?.farm_id:', farmInfo?.farm_id);
     console.log('  - calculatedAreaHa:', calculatedAreaHa);
     console.log('  - calculatedAreaHa > 0:', calculatedAreaHa > 0);
-    console.log('  - Will save?:', farmInfo?.id && calculatedAreaHa > 0);
+    console.log('  - onReportCalculated exists?:', !!onReportCalculated);
 
-    if (farmInfo?.farm_id && calculatedAreaHa > 0) {
-      console.log('✅ Conditions met! Calling saveReportToDatabase...');
-      console.log('📊 Data to save:', reportDataToSave);
-      saveReportToDatabase(reportDataToSave);
+    // ✅ Au lieu de sauvegarder directement, on appelle le callback parent
+    if (onReportCalculated && typeof onReportCalculated === 'function' && farmInfo?.farm_id && calculatedAreaHa > 0) {
+      console.log('✅ Calling parent callback with report data...');
+      onReportCalculated(reportDataToSave);
     } else {
-      console.warn('⚠️ Conditions NOT met for saving:');
+      console.warn('⚠️ Conditions NOT met for calling callback:');
+      if (!onReportCalculated) console.warn('  - onReportCalculated is not provided');
       if (!farmInfo?.farm_id) console.warn('  - Missing farmInfo.farm_id');
       if (!(calculatedAreaHa > 0)) console.warn('  - calculatedAreaHa is not > 0 (value:', calculatedAreaHa, ')');
     }
 
-  }, [results, farmInfo]);
+  }, [results, farmInfo, onReportCalculated]);
 
   return (
     <div ref={reportRef} className="carbon-report-a4 w-full h-full m-0 p-0 bg-white text-gray-900 font-sans leading-relaxed space-y-8">
-
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
-          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-          </svg>
-          Saving report...
-        </div>
-      )}
-
-      {saveSuccess && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
-          </svg>
-          Report saved successfully!
-        </div>
-      )}
 
       <div className="flex items-center justify-between border-b-4 border-green-700 pb-6 px-8 pt-8">
         <div className="w-24 h-24 bg-white rounded-lg flex items-center justify-center shadow-sm">
@@ -453,17 +434,30 @@ const EudrReportSection = ({ results, reportRef, farmInfo }) => {
 
       {farmInfo && (
         <p className="px-8 py-2 bg-gray-100 rounded-none border-y border-gray-300 text-sm shadow-inner">
-          This report provides an overview of Farm ID <strong>{farmInfo.farm_id}</strong>, owned by <strong>{farmInfo.name}</strong>,
-          located in <strong>{farmInfo.subcounty}</strong>, {farmInfo.district_name}. The farm is a member of the {farmInfo.subcounty} and plays a significant role in the local agricultural landscape.
-          With geolocation coordinates <strong>{farmInfo.geolocation}</strong>,
+          {reportTexts.description} <strong>{farmInfo.farm_id}</strong>, owned by <strong>{farmInfo.name}</strong>
+          {reportType === 'farm' && farmInfo.subcounty && farmInfo.district_name && (
+            <>
+              , located in <strong>{farmInfo.subcounty}</strong>, {farmInfo.district_name}. The farm is a member of the {farmInfo.subcounty} and plays a significant role in the local agricultural landscape.
+            </>
+          )}
+          {reportType === 'forest' && (
+            <>
+              . This forest area is monitored for compliance with EUDR regulations.
+            </>
+          )}
+          {farmInfo.geolocation && (
+            <>
+              {' '}With geolocation coordinates <strong>{farmInfo.geolocation}</strong>,
+            </>
+          )}
           {farmInfo.crops && farmInfo.crops.length > 0 ? (
             <>
-              the farm specializes in <strong>{farmInfo.crops[0].crop}</strong> and operates within a region characterized by Landtype: <strong>{farmInfo.crops[0].land_type}</strong>.
+              the {reportTexts.entityType.toLowerCase()} specializes in <strong>{farmInfo.crops[0].crop}</strong> and operates within a region characterized by Landtype: <strong>{farmInfo.crops[0].land_type}</strong>.
             </>
           ) : (
             <span> no specific crops mentioned.</span>
           )}
-          This report outlines the farm's activities, challenges, and opportunities to support its continued growth and sustainability.
+          This report outlines the {reportTexts.entityType.toLowerCase()}'s activities, challenges, and opportunities to support its continued growth and sustainability.
         </p>
       )}
 

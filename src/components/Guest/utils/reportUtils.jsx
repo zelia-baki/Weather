@@ -1,4 +1,23 @@
-// utils/reportUtils.js
+// utils/reportUtils.js - Version complète et corrigée
+
+// Mapping des codes de drivers vers leurs descriptions
+const DRIVER_REASONS_MAP = {
+  1: "Commodity driven deforestation",
+  2: "Shifting Agriculture",
+  3: "Forestry",
+  4: "Wildfire",
+  5: "Urbanization"
+};
+
+/**
+ * Obtient la description d'un driver de déforestation
+ * @param {number} driverCode - Code du driver
+ * @returns {string} Description du driver
+ */
+export const getDriverDescription = (driverCode) => {
+  return DRIVER_REASONS_MAP[driverCode] || "Unknown";
+};
+
 export const renderCarbonTable = (dataFields) => (
   <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-lg">
     <thead className="bg-gray-100">
@@ -11,13 +30,6 @@ export const renderCarbonTable = (dataFields) => (
       <tr><td className="px-4 py-2 border-b">Carbon gross emissions</td><td className="px-4 py-2 border-b">{dataFields.gfw_forest_carbon_gross_emissions__Mg_CO2e || 0}</td></tr>
       <tr><td className="px-4 py-2 border-b">Carbon gross absorption</td><td className="px-4 py-2 border-b">{dataFields.gfw_forest_carbon_gross_removals__Mg_CO2e || 0}</td></tr>
       <tr><td className="px-4 py-2 border-b">Carbon net emissions</td><td className="px-4 py-2 border-b">{dataFields.gfw_forest_carbon_net_flux__Mg_CO2e || 0}</td></tr>
-      {/* <tr>
-        <td className="px-4 py-2 border-b">Sequestration potential</td>
-        <td className="px-4 py-2 border-b">
-          {dataFields.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C || 0} (below)<br />
-          {dataFields.gfw_reforestable_extent_aboveground_carbon_potential_sequestration__Mg_C || 0} (above)
-        </td>
-      </tr> */}
     </tbody>
   </table>
 );
@@ -62,21 +74,6 @@ export const renderEudrTable = (data) => {
         </tr>
       </thead>
       <tbody>
-        {/* COMPLIANCE STATUS ROW - Added at the top for prominence
-        <tr className="bg-gray-50">
-          <td className="border border-gray-400 px-4 py-2 font-semibold">EUDR Compliance Status</td>
-          <td className={`border border-gray-400 px-4 py-2 ${getComplianceStyle(complianceStatus.status)}`}>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-1 rounded-full text-xs">
-                {complianceStatus.status || 'Assessment Pending'}
-              </span>
-            </div>
-            {complianceStatus.description && (
-              <p className="text-xs mt-1 text-gray-600">{complianceStatus.description}</p>
-            )}
-          </td>
-        </tr> */}
-
         <tr>
           <td className="border border-gray-400 px-4 py-2">Project Area</td>
           <td className="border border-gray-400 px-4 py-2">
@@ -100,7 +97,7 @@ export const renderEudrTable = (data) => {
             {geoData['wur radd alerts']?.[0]?.data_fields?.area__ha === 0 ? (
               <p>0 ha (no RADD alert)</p>
             ) : (
-              <p>{geoData['radd alerts']?.[0]?.data_fields?.area__ha} ha (Alert)</p>
+              <p>{geoData['wur radd alerts']?.[0]?.data_fields?.area__ha || 0} ha (Alert)</p>
             )}
           </td>
         </tr>
@@ -167,22 +164,15 @@ export const renderEudrTable = (data) => {
           </td>
         </tr>
 
-        {/* <tr>
-          <td className="border border-gray-400 px-4 py-2">Indigenous Land Status</td>
-          <td className="border border-gray-400 px-4 py-2">
-          {resultStatus?.indigenousStatus || 'Unknown'}
-          </td>
-          </tr> */}
-
         <tr>
           <td className="border border-gray-400 px-4 py-2">Cover Extent Summary</td>
           <td className="border border-gray-400 px-4 py-2">
             <ul>
-              <li>Non-Zero Count: {coverExtentDecileData.nonZeroCount}</li>
-              <li>Coverage: {coverExtentDecileData.percentageCoverExtent.toFixed(2)}%</li>
+              <li>Non-Zero Count: {coverExtentDecileData.nonZeroCount || 0}</li>
+              <li>Coverage: {coverExtentDecileData.percentageCoverExtent?.toFixed(2) || 0}%</li>
               <li>
                 <strong>Details:</strong>
-                {coverExtentDecileData.valueCountArray.length > 0 ? (
+                {coverExtentDecileData.valueCountArray?.length > 0 ? (
                   <ul>
                     {coverExtentDecileData.valueCountArray.map((item, i) => (
                       <li key={i}>
@@ -191,7 +181,7 @@ export const renderEudrTable = (data) => {
                     ))}
                   </ul>
                 ) : (
-                  'No data available'
+                  ' No data available'
                 )}
               </li>
             </ul>
@@ -201,7 +191,9 @@ export const renderEudrTable = (data) => {
         <tr>
           <td className="border border-gray-400 px-4 py-2">Tree Cover Drivers</td>
           <td className="border border-gray-400 px-4 py-2">
-            {tscDriverDriver?.mostCommonValue || 'Unknown'}
+            {tscDriverDriver?.mostCommonValue 
+              ? getDriverDescription(tscDriverDriver.mostCommonValue)
+              : 'Unknown'}
           </td>
         </tr>
 
@@ -212,18 +204,16 @@ export const renderEudrTable = (data) => {
               <p>0 % (LOW)</p>
             ) : (
               <>
-                <p>{geoData['wri tropical tree cover']?.[0]?.data_fields?.avg_cover} % (HIGH)</p>
-                <p>{geoData['wri tropical tree cover']?.[0]?.data_fields?.area__ha} ha</p>
+                <p>{geoData['wri tropical tree cover']?.[0]?.data_fields?.avg_cover || 0} % (HIGH)</p>
+                <p>{geoData['wri tropical tree cover']?.[0]?.data_fields?.area__ha || 0} ha</p>
               </>
             )}
-
           </td>
         </tr>
       </tbody>
     </table>
   );
 };
-
 
 export const generateMapboxUrl = (coordinates) => {
   const geojson = {
@@ -232,11 +222,11 @@ export const generateMapboxUrl = (coordinates) => {
       type: "Feature",
       geometry: { type: "Polygon", coordinates: [coordinates] },
       properties: {
-        stroke: "#00FF00",          // Vert vif pour la bordure
-        "stroke-width": 4,          // Bordure épaisse
+        stroke: "#00FF00",
+        "stroke-width": 4,
         "stroke-opacity": 1,
-        fill: "#00FF00",            // Même vert ou plus doux
-        "fill-opacity": 0.2         // Remplissage léger
+        fill: "#00FF00",
+        "fill-opacity": 0.2
       }
     }]
   };
@@ -245,7 +235,6 @@ export const generateMapboxUrl = (coordinates) => {
 
   return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/geojson(${encoded})/auto/1200x1000?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`;
 };
-
 
 export const fetchReportFromFile = async (featureName, file, phone) => {
   const formData = new FormData();
