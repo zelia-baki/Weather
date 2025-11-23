@@ -69,7 +69,9 @@ import EUDRSubmitFormForGuest from './components/Guest/EUDRSubmitFormForGuest.js
 import SectionFutur from './components/Layout/SectionFutur.jsx'
 import AlertMessaging from './components/Dashboard/AlertMessaging.jsx';
 import TestMap from './components/mapbox/Test.jsx';
-import UserCertificate from './components/Eudr/UserStatsCertificate.jsx'
+import UserCertificate from './components/Eudr/UserStatsCertificate.jsx';
+import TreeManagement from './components/Forest/TreeManagement.jsx';
+
 
 
 // import Test from './components/gfw/FarmReport.jsx';
@@ -143,6 +145,8 @@ function App() {
     { path: "/qrconservation", component: <Conservation />, adminOnly: false },
     { path: "/alertmessage", component: <AlertMessaging />, adminOnly: false },
     { path: "/stats-certificate", component: <UserCertificate />, adminOnly: false },
+    { path: "/treemanager", component: <TreeManagement />, adminOnly: false },
+
 
 
 

@@ -1,4 +1,5 @@
-// ForestReport.jsx (Reportgen2Forest.jsx)
+// src/components/gfw/Reportgen2Forest.jsx
+
 import React, { useRef, useState, useEffect } from "react";
 import axiosInstance from '../../axiosInstance.jsx';
 import { useLocation, Link } from "react-router-dom";
@@ -29,8 +30,6 @@ const ForestReport = () => {
         } else {
           console.log('✅ API Response:', response.data);
           setForestInfo(response.data.forest_info);
-          
-          // ✅ Plus besoin de transformation ! Le backend retourne déjà le bon format
           console.log('📊 Report Data (object format):', response.data.report);
           setGeoData(response.data.report);
         }
@@ -44,6 +43,41 @@ const ForestReport = () => {
 
     fetchForestReport();
   }, [forestId]);
+
+  // ✅ Fonction pour sauvegarder le rapport en base de données
+  const saveReportToDatabase = async (reportData) => {
+    if (!forestInfo?.farm_id) {
+      console.warn('⚠️ No forest ID available, skipping database save');
+      return;
+    }
+
+    try {
+      console.log('💾 Saving forest report to database...', reportData);
+
+      const payload = {
+        forest_id: forestInfo.farm_id,
+        project_area: `${reportData.areaInSquareMeters?.toFixed(2) || 0} m² / ${reportData.areaInHectares?.toFixed(2) || 0} ha`,
+        country_deforestation_risk_level: `STANDARD, Percentage: ${reportData.treeCoverLossPercentage?.toFixed(2) || 0}%`,
+        radd_alert: `${reportData.raddAlertsArea?.toFixed(2) || 0} ha`,
+        tree_cover_loss: `${reportData.treeCoverLossArea?.toFixed(2) || 0} ha`,
+        forest_cover_2020: reportData.isJrcGlobalForestCover || 'No data',
+        eudr_compliance_assessment: reportData.complianceStatus?.status || 'Assessment Pending',
+        protected_area_status: JSON.stringify(reportData.protectedStatus?.percentages || {}),
+        cover_extent_summary: JSON.stringify({
+          nonZeroCount: reportData.coverExtentDecileData?.nonZeroCount || 0,
+          percentageCoverExtent: reportData.coverExtentDecileData?.percentageCoverExtent || 0,
+          valueCountArray: reportData.coverExtentDecileData?.valueCountArray || []
+        }),
+        tree_cover_drivers: reportData.tscDriverDriver?.mostCommonValue || 'Unknown',
+        cover_extent_area: `${reportData.wriTropicalTreeCoverAvg || 0}% / ${reportData.wriTropicalTreeCoverArea || 0} ha`
+      };
+
+      const response = await axiosInstance.post('/api/forestreport/create', payload);
+      console.log('✅ Forest report saved successfully:', response.data);
+    } catch (err) {
+      console.error('❌ Error saving forest report to database:', err.response?.data || err.message);
+    }
+  };
 
   const handleDownload = async () => {
     setIsDownloading(true);
@@ -86,6 +120,7 @@ const ForestReport = () => {
           reportRef={reportRef} 
           farmInfo={forestInfo}
           reportType="forest"
+          onReportCalculated={saveReportToDatabase}
         />
       </div>
 

@@ -34,6 +34,8 @@ const chartColors = [
   "rgba(248,113,113,0.7)", // Red
   "rgba(34,197,94,0.7)",   // Green
   "rgba(251,191,36,0.7)",  // Yellow
+  "rgba(59,130,246,0.7)",  // Blue
+  "rgba(236,72,153,0.7)",  // Pink
 ];
 
 export default function Dashboard() {
@@ -41,12 +43,16 @@ export default function Dashboard() {
   const [areaStats, setAreaStats] = useState({ totalArea: 0, polygonCount: 0, areaByOwnerType: {}, loading: true });
   const [farmerStats, setFarmerStats] = useState({ totalFarmers: 0, loading: true });
   const [forestStats, setForestStats] = useState({ totalForests: 0, loading: true });
+  const [treeStats, setTreeStats] = useState({ totalTrees: 0, avgHeight: 0, avgDiameter: 0, treesByForest: [], loading: true });
   const [dynamicUserStats, setDynamicUserStats] = useState({ loading: true, data: {} });
   const [crops, setCrops] = useState([]);
   const [grades, setGrades] = useState([]);
   const [stores, setStores] = useState([]);
+  const [forestReports, setForestReports] = useState({ total: 0, compliant: 0, loading: true });
 
-  // Fonction pour récupérer le nombre de fermiers
+  // ===============================
+  // FETCH FARMER STATS
+  // ===============================
   useEffect(() => {
     const fetchFarmerStats = async () => {
       try {
@@ -86,7 +92,9 @@ export default function Dashboard() {
     fetchFarmerStats();
   }, []);
 
-  // Fonction pour récupérer le nombre de forestiers
+  // ===============================
+  // FETCH FOREST STATS
+  // ===============================
   useEffect(() => {
     const fetchForestStats = async () => {
       try {
@@ -124,6 +132,50 @@ export default function Dashboard() {
     };
 
     fetchForestStats();
+  }, []);
+
+  // ===============================
+  // FETCH TREE STATS (NOUVEAU)
+  // ===============================
+  useEffect(() => {
+    const fetchTreeStats = async () => {
+      try {
+        const response = await axiosInstance.get('/api/tree/stats');
+        setTreeStats({
+          totalTrees: response.data.total_trees || 0,
+          avgHeight: response.data.avg_height || 0,
+          avgDiameter: response.data.avg_diameter || 0,
+          treesByForest: response.data.trees_by_forest || [],
+          loading: false
+        });
+      } catch (error) {
+        console.error('Error fetching tree stats:', error);
+        setTreeStats({ totalTrees: 0, avgHeight: 0, avgDiameter: 0, treesByForest: [], loading: false });
+      }
+    };
+
+    fetchTreeStats();
+  }, []);
+
+  // ===============================
+  // FETCH FOREST REPORTS (NOUVEAU)
+  // ===============================
+  useEffect(() => {
+    const fetchForestReports = async () => {
+      try {
+        const response = await axiosInstance.get('/api/forestreport/stats/compliance');
+        setForestReports({
+          total: response.data.stats.total || 0,
+          compliant: response.data.stats.compliant_100 || 0,
+          loading: false
+        });
+      } catch (error) {
+        console.error('Error fetching forest reports:', error);
+        setForestReports({ total: 0, compliant: 0, loading: false });
+      }
+    };
+
+    fetchForestReports();
   }, []);
 
   // STORES
@@ -193,7 +245,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchAreaStats = async () => {
       try {
-        const ownerTypes = ['farmer', 'government', 'company'];
+        const ownerTypes = ['farmer', 'forest'];  // ✅ Ajout de 'forest'
         const promises = ownerTypes.map(type =>
           axiosInstance.get(`/api/points/getallbyownertype/${type}`)
         );
@@ -249,7 +301,7 @@ export default function Dashboard() {
     fetchAreaStats();
   }, []);
 
-  if (stats.loading || areaStats.loading || farmerStats.loading || forestStats.loading || dynamicUserStats.loading) {
+  if (stats.loading || areaStats.loading || farmerStats.loading || forestStats.loading || dynamicUserStats.loading || treeStats.loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
@@ -278,6 +330,27 @@ export default function Dashboard() {
     ]
   };
 
+  // ✅ NOUVEAU : Chart pour les arbres par forêt
+  const treesPerForestData = {
+    labels: treeStats.treesByForest.map(f => f.forest),
+    datasets: [{
+      label: "Trees per Forest",
+      data: treeStats.treesByForest.map(f => f.count),
+      backgroundColor: chartColors,
+      borderRadius: 10,
+    }]
+  };
+
+  // ✅ NOUVEAU : Doughnut chart pour Forest Compliance
+  const forestComplianceData = {
+    labels: ['Compliant', 'Pending Assessment'],
+    datasets: [{
+      data: [forestReports.compliant, forestReports.total - forestReports.compliant],
+      backgroundColor: ['rgba(34,197,94,0.8)', 'rgba(251,191,36,0.8)'],
+      borderWidth: 2,
+      borderColor: '#fff'
+    }]
+  };
 
   // Données pour le chart Crops avec Grades
   const cropLabels = crops.map(crop => crop.name);
@@ -377,6 +450,14 @@ export default function Dashboard() {
     }
   });
 
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "bottom" }
+    }
+  };
+
   const cropGradeChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -441,53 +522,129 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-2 sm:p-4 lg:p-6">
-      {/* Container principal avec max-width et centrage */}
       <div className="relative">
-              {/* <div className="max-w-7xl mx-auto"> */}
-
         
-        {/* Section des métriques - Responsive grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6">
+        {/* Section des métriques - Responsive grid avec nouvelles métriques forest */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 mb-6">
           <MetricCard
             title="Total Users Assets"
             value={dynamicValues.reduce((a, b) => a + b, 0)}
             color="text-indigo-500"
             icon="👥"
-            onClick={() => window.location.href = '/users'}
+            onClick={() => window.location.href = '/usermanager'}
           />
           <MetricCard
             title="Total Stores"
             value={stores.length}
             color="text-indigo-500"
             icon="🏬"
-            onClick={() => window.location.href = '/stores'}
+            onClick={() => window.location.href = '/storeProductManager'}
           />
           <MetricCard
             title="Total Farmers"
             value={farmerStats.totalFarmers}
             color="text-emerald-500"
             icon="🌱"
-            onClick={() => window.location.href = '/farms'}
+            onClick={() => window.location.href = '/farmmanager'}
+          />
+          <MetricCard
+            title="Total Forests"
+            value={forestStats.totalForests}
+            color="text-green-600"
+            icon="🌲"
+            onClick={() => window.location.href = '/forestpage'}
+          />
+          <MetricCard
+            title="Total Trees"
+            value={treeStats.totalTrees}
+            color="text-green-500"
+            icon="🌳"
+            onClick={() => window.location.href = '/treemanager'}
           />
           <MetricCard
             title="Total Polygons"
             value={areaStats.polygonCount}
             color="text-pink-500"
             icon="📐"
-            onClick={() => window.location.href = '/polygons'}
+            onClick={() => window.location.href = '/mapviewall'}
           />
-          <MetricCard
-            title="Total Area"
-            value={areaStats.totalArea
-              ? areaStats.totalArea >= 10000
-                ? `${(areaStats.totalArea / 10000).toFixed(2)} ha`
-                : `${areaStats.totalArea.toFixed(2)} m²`
-              : '0 m²'
-            }
-            color="text-green-500"
-            icon="🏞️"
-            onClick={() => window.location.href = '/areas'}
-          />
+        </div>
+
+        {/* Nouvelle section: Forest & Tree Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-lg p-6 border border-green-100">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-green-800">🌲 Forest Health</h3>
+              <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                {forestReports.total > 0 ? Math.round((forestReports.compliant / forestReports.total) * 100) : 0}%
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Total Reports</span>
+                <span className="text-lg font-bold text-gray-800">{forestReports.total}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Compliant</span>
+                <span className="text-lg font-bold text-green-600">{forestReports.compliant}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Pending</span>
+                <span className="text-lg font-bold text-yellow-600">{forestReports.total - forestReports.compliant}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg p-6 border border-blue-100">
+            <h3 className="text-lg font-bold text-blue-800 mb-4">🌳 Tree Metrics</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Avg Height</span>
+                <span className="text-lg font-bold text-gray-800">{treeStats.avgHeight.toFixed(1)}m</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Avg Diameter</span>
+                <span className="text-lg font-bold text-gray-800">{treeStats.avgDiameter.toFixed(1)}cm</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Total Trees</span>
+                <span className="text-lg font-bold text-blue-600">{treeStats.totalTrees}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-lg p-6 border border-purple-100">
+            <h3 className="text-lg font-bold text-purple-800 mb-4">📊 Coverage</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Total Area</span>
+                <span className="text-lg font-bold text-gray-800">
+                  {areaStats.totalArea >= 10000
+                    ? `${(areaStats.totalArea / 10000).toFixed(2)} ha`
+                    : `${areaStats.totalArea.toFixed(2)} m²`
+                  }
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Farmer Area</span>
+                <span className="text-lg font-bold text-emerald-600">
+                  {areaStats.areaByOwnerType['farmer']
+                    ? `${(areaStats.areaByOwnerType['farmer'].area / 10000).toFixed(2)} ha`
+                    : '0 ha'
+                  }
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Forest Area</span>
+                <span className="text-lg font-bold text-green-600">
+                  {areaStats.areaByOwnerType['forest']
+                    ? `${(areaStats.areaByOwnerType['forest'].area / 10000).toFixed(2)} ha`
+                    : '0 ha'
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Section des fonctionnalités et graphiques */}
@@ -497,7 +654,7 @@ export default function Dashboard() {
           <div className="md:col-span-1">
             <div
               className="rounded-2xl bg-white shadow-lg hover:shadow-xl p-4 sm:p-6 transition-all duration-300 cursor-pointer transform hover:scale-[1.02] border border-gray-100 overflow-hidden h-full"
-              onClick={() => window.location.href = '/features'}
+              onClick={() => window.location.href = '/featuresManager'}
             >
               <div className="absolute top-0 right-0 w-16 sm:w-24 h-16 sm:h-24 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-full -translate-y-8 translate-x-8 opacity-60"></div>
 
@@ -505,7 +662,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-sm sm:text-lg font-bold text-gray-800 mb-1">Smart Features</h3>
-                    <p className="text-xs text-gray-500">Advanced agricultural tools</p>
+                    <p className="text-xs text-gray-500">Advanced agricultural & forest tools</p>
                     <div className="flex items-center mt-2">
                       <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
                       <span className="text-xs text-green-600 font-medium">Active & Running</span>
@@ -518,10 +675,10 @@ export default function Dashboard() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { icon: "📲", text: "QR Codes", desc: "Track crops" },
-                    { icon: "📊", text: "ETC & ET0", desc: "Smart irrigation" },
+                    { icon: "📲", text: "QR Codes", desc: "Track products" },
+                    { icon: "📊", text: "EUDR Reports", desc: "Compliance" },
                     { icon: "🌦️", text: "Weather", desc: "Live alerts" },
-                    { icon: "🐛", text: "Pest Control", desc: "Early warning" }
+                    { icon: "🌲", text: "Forest Track", desc: "Tree monitoring" }
                   ].map((feature, index) => (
                     <div key={index} className="flex flex-col space-y-1 p-2 sm:p-3 rounded-lg hover:bg-gradient-to-r hover:from-gray-50 hover:to-purple-50 transition-all duration-200 group">
                       <div className="flex items-center space-x-2">
@@ -551,33 +708,68 @@ export default function Dashboard() {
           <div className="md:col-span-1">
             <ChartCard
               title="Users by Type"
-              desc="Shows the dynamic number of users per category"
+              desc="Dynamic user distribution"
               className="h-full"
             >
               <div className="h-64 sm:h-80">
-                <Bar data={barData} options={chartOptions("/users/types")} />
+                <Bar data={barData} options={chartOptions("/usermanager")} />
               </div>
             </ChartCard>
           </div>
 
-          {/* Line chart avec les crops spécifiques - prend toute la largeur sur mobile */}
-          <div className="md:col-span-2 xl:col-span-1">
+          {/* Trees per Forest Chart (NOUVEAU) */}
+          <div className="md:col-span-1">
             <ChartCard
-              title="Crop Analytics Trend"
-              desc={`Showing analytics for ${specificCrops.length} predefined crops`}
+              title="Trees per Forest"
+              desc={`Distribution across ${treeStats.treesByForest.length} forests`}
               className="h-full"
             >
               <div className="h-64 sm:h-80">
-                <Line data={lineData} options={chartOptions("/crops")} />
+                {treeStats.treesByForest.length > 0 ? (
+                  <Bar data={treesPerForestData} options={chartOptions("/treemanager")} />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    No tree data available
+                  </div>
+                )}
               </div>
             </ChartCard>
           </div>
         </div>
 
+        {/* Forest Compliance & Crop Analytics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6">
+          {/* Forest Compliance Doughnut (NOUVEAU) */}
+          <ChartCard
+            title="Forest EUDR Compliance"
+            desc={`${forestReports.total} total reports analyzed`}
+            className="h-full"
+          >
+            <div className="h-64 sm:h-80">
+              {forestReports.total > 0 ? (
+                <Doughnut data={forestComplianceData} options={doughnutOptions} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  No forest reports available
+                </div>
+              )}
+            </div>
+          </ChartCard>
+
+          {/* Line chart avec les crops spécifiques */}
+          <ChartCard
+            title="Crop Analytics Trend"
+            desc={`Analytics for ${specificCrops.length} predefined crops`}
+            className="h-full"
+          >
+            <div className="h-64 sm:h-80">
+              <Line data={lineData} options={chartOptions("/cropmanager")} />
+            </div>
+          </ChartCard>
+        </div>
+
         {/* Map Section - Responsive */}
         <div className="relative">
-                  {/* <div className="w-full"> */}
-
           <div
             className="rounded-2xl shadow-xl p-4 sm:p-6 hover:shadow-2xl transition-all duration-300 backdrop-blur-sm border border-white/20"
             style={{
@@ -585,9 +777,9 @@ export default function Dashboard() {
               backdropFilter: 'blur(10px)',
             }}
           >
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Agricultural Plots Visualization</h3>
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Agricultural & Forest Plots Visualization</h3>
             <p className="text-xs sm:text-sm text-gray-600 mb-4 font-medium">
-              Live visualization of agricultural plots in hexagonal shapes
+              Live visualization of farms and forests in hexagonal shapes
             </p>
             <div className="rounded-xl overflow-hidden border-2 border-gradient-to-r from-pink-300 to-purple-300 w-full h-[50vh] sm:h-[60vh] min-h-[300px] sm:min-h-[400px]">
               <MapboxExample
