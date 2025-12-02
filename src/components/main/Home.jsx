@@ -45,7 +45,7 @@ const HomePage = () => {
       color: 'bg-blue-500',
       buttonText: 'View Weather',
       link: '/weathermap',
-      isBlurred: false,
+      isBlurred: !(userRole === 'admin' || userRole === 'weather'),
     },
     {
       Icon: FaQrcode,
