@@ -69,6 +69,9 @@ import AlertMessaging from './components/Dashboard/AlertMessaging.jsx';
 import TestMap from './components/mapbox/Test.jsx';
 import UserCertificate from './components/Eudr/UserStatsCertificate.jsx';
 import TreeManagement from './components/Forest/TreeManagement.jsx';
+import PaymentSuccess from './components/Payment/PaymentSuccess.jsx';
+import { PaymentCancelled } from './components/Payment/PaymentCancelled.jsx';
+import { PaymentError } from './components/Payment/PaymentError.jsx';
 
 // ============================================
 // NOUVEAU COMPOSANT: UserTypeRoute
@@ -140,33 +143,33 @@ function App() {
     // ============================================
     // ROUTES WEATHER - ADMIN + WEATHER ONLY
     // ============================================
-    { 
-      path: "/weathermap", 
-      component: <WeathearMap />, 
+    {
+      path: "/weathermap",
+      component: <WeathearMap />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather']
     },
-    { 
-      path: "/weathermapfarm", 
-      component: <WeathearMapFarm />, 
+    {
+      path: "/weathermapfarm",
+      component: <WeathearMapFarm />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather']
     },
-    { 
-      path: "/weatherhistory", 
-      component: <WeatherHistory />, 
+    {
+      path: "/weatherhistory",
+      component: <WeatherHistory />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather']
     },
-    { 
-      path: "/weatherdas", 
-      component: <WeatherDashboard />, 
+    {
+      path: "/weatherdas",
+      component: <WeatherDashboard />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather']
     },
-    { 
-      path: "/weatherandsolar", 
-      component: <WeatherAndSolar />, 
+    {
+      path: "/weatherandsolar",
+      component: <WeatherAndSolar />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather']
     },
@@ -174,81 +177,81 @@ function App() {
     // ============================================
     // ROUTES FARM - ADMIN + FARMER ONLY
     // ============================================
-    { 
-      path: "/farmmanager", 
-      component: <FarmManager />, 
+    {
+      path: "/farmmanager",
+      component: <FarmManager />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/farmdatamanager", 
-      component: <FarmDataManager />, 
+    {
+      path: "/farmdatamanager",
+      component: <FarmDataManager />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/createfarm", 
-      component: <Create />, 
+    {
+      path: "/createfarm",
+      component: <Create />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/farmdata", 
-      component: <Farmdata />, 
+    {
+      path: "/farmdata",
+      component: <Farmdata />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/farmergroup", 
-      component: <FarmerGroupManager />, 
+    {
+      path: "/farmergroup",
+      component: <FarmerGroupManager />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/tabcrop", 
-      component: <Tabcrop />, 
+    {
+      path: "/tabcrop",
+      component: <Tabcrop />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/cropmanage", 
-      component: <Createcrop />, 
+    {
+      path: "/cropmanage",
+      component: <Createcrop />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/cropmanager", 
-      component: <CropManager />, 
+    {
+      path: "/cropmanager",
+      component: <CropManager />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/cropedit/:id", 
-      component: <CropEdit />, 
+    {
+      path: "/cropedit/:id",
+      component: <CropEdit />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/irrigationmanager", 
-      component: <IrrigationManager />, 
+    {
+      path: "/irrigationmanager",
+      component: <IrrigationManager />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/cropcoefficientmanager", 
-      component: <CropCoefficientManager />, 
+    {
+      path: "/cropcoefficientmanager",
+      component: <CropCoefficientManager />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/grademanager", 
-      component: <GradeManager />, 
+    {
+      path: "/grademanager",
+      component: <GradeManager />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
-    { 
-      path: "/storeProductManager", 
-      component: <StoreProductManager />, 
+    {
+      path: "/storeProductManager",
+      component: <StoreProductManager />,
       adminOnly: false,
       allowedRoles: ['admin', 'farmer']
     },
@@ -256,39 +259,39 @@ function App() {
     // ============================================
     // ROUTES FOREST - ADMIN + FOREST ONLY
     // ============================================
-    { 
-      path: "/forestpage", 
-      component: <ForestPage />, 
+    {
+      path: "/forestpage",
+      component: <ForestPage />,
       adminOnly: false,
       allowedRoles: ['admin', 'forest']
     },
-    { 
-      path: "/forestpoint", 
-      component: <ForestPoint />, 
+    {
+      path: "/forestpoint",
+      component: <ForestPoint />,
       adminOnly: false,
       allowedRoles: ['admin', 'forest']
     },
-    { 
-      path: "/foresttree", 
-      component: <ForestTree />, 
+    {
+      path: "/foresttree",
+      component: <ForestTree />,
       adminOnly: false,
       allowedRoles: ['admin', 'forest']
     },
-    { 
-      path: "/treemanager", 
-      component: <TreeManagement />, 
+    {
+      path: "/treemanager",
+      component: <TreeManagement />,
       adminOnly: false,
       allowedRoles: ['admin', 'forest']
     },
-    { 
-      path: "/reportforest", 
-      component: <ForestReport />, 
+    {
+      path: "/reportforest",
+      component: <ForestReport />,
       adminOnly: false,
       allowedRoles: ['admin', 'forest']
     },
-    { 
-      path: "/reportcarbonforest", 
-      component: <CarbonReportForest />, 
+    {
+      path: "/reportcarbonforest",
+      component: <CarbonReportForest />,
       adminOnly: false,
       allowedRoles: ['admin', 'forest']
     },
@@ -296,199 +299,199 @@ function App() {
     // ============================================
     // ROUTES PARTAGÉES - TOUS LES USERS
     // ============================================
-    { 
-      path: "/graph", 
-      component: <Graph />, 
+    {
+      path: "/graph",
+      component: <Graph />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/graphpest", 
-      component: <GraphPest />, 
+    {
+      path: "/graphpest",
+      component: <GraphPest />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/graphcgd", 
-      component: <GraphCGD />, 
+    {
+      path: "/graphcgd",
+      component: <GraphCGD />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/onemonth", 
-      component: <Onemonth />, 
+    {
+      path: "/onemonth",
+      component: <Onemonth />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/plantingdate", 
-      component: <PlantingDate />, 
+    {
+      path: "/plantingdate",
+      component: <PlantingDate />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/threemonth", 
-      component: <Threemonth />, 
+    {
+      path: "/threemonth",
+      component: <Threemonth />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/card", 
-      component: <Card />, 
+    {
+      path: "/card",
+      component: <Card />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/cardex", 
-      component: <Cardex />, 
+    {
+      path: "/cardex",
+      component: <Cardex />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/mapbox", 
-      component: <MapboxExample />, 
+    {
+      path: "/mapbox",
+      component: <MapboxExample />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/mapview", 
-      component: <MapView />, 
+    {
+      path: "/mapview",
+      component: <MapView />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/mapviewall", 
-      component: <MapViewAll />, 
+    {
+      path: "/mapviewall",
+      component: <MapViewAll />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    
+
     // District Routes - Tous
-    { 
-      path: "/district", 
-      component: <CreateDistrict />, 
+    {
+      path: "/district",
+      component: <CreateDistrict />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/districts/:id/view", 
-      component: <DistrictView />, 
+    {
+      path: "/districts/:id/view",
+      component: <DistrictView />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/districts", 
-      component: <DistrictList />, 
+    {
+      path: "/districts",
+      component: <DistrictList />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/districts/:id/edit", 
-      component: <DistrictEdit />, 
+    {
+      path: "/districts/:id/edit",
+      component: <DistrictEdit />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    
+
     // QR Routes - Tous
-    { 
-      path: "/qr", 
-      component: <QR />, 
+    {
+      path: "/qr",
+      component: <QR />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/qrproduce", 
-      component: <Produce />, 
+    {
+      path: "/qrproduce",
+      component: <Produce />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/qrconservation", 
-      component: <Conservation />, 
+    {
+      path: "/qrconservation",
+      component: <Conservation />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/qrfertilizer", 
-      component: <Fertilizer />, 
+    {
+      path: "/qrfertilizer",
+      component: <Fertilizer />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/qrexport", 
-      component: <Export />, 
+    {
+      path: "/qrexport",
+      component: <Export />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    
+
     // Report Routes - Tous
-    { 
-      path: "/reportfarmer", 
-      component: <FarmReport />, 
+    {
+      path: "/reportfarmer",
+      component: <FarmReport />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/reportcarbon", 
-      component: <CarbonReport />, 
+    {
+      path: "/reportcarbon",
+      component: <CarbonReport />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    
+
     // User Management Routes - Tous
-    { 
-      path: "/createUsers", 
-      component: <CreateUsers />, 
+    {
+      path: "/createUsers",
+      component: <CreateUsers />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/usermanager", 
-      component: <UserManagement />, 
+    {
+      path: "/usermanager",
+      component: <UserManagement />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    
+
     // Category Route - Tous
-    { 
-      path: "/categorymanager", 
-      component: <CategoryManager />, 
+    {
+      path: "/categorymanager",
+      component: <CategoryManager />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    
+
     // Dashboard Routes - Tous
-    { 
-      path: "/userDash", 
-      component: <UserDash />, 
+    {
+      path: "/userDash",
+      component: <UserDash />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/alertmessage", 
-      component: <AlertMessaging />, 
+    {
+      path: "/alertmessage",
+      component: <AlertMessaging />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    
+
     // EUDR Routes - Tous
-    { 
-      path: "/EUDRSubmission", 
-      component: <EUDRSubmitForm />, 
+    {
+      path: "/EUDRSubmission",
+      component: <EUDRSubmitForm />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    { 
-      path: "/stats-certificate", 
-      component: <UserCertificate />, 
+    {
+      path: "/stats-certificate",
+      component: <UserCertificate />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-    
+
     // Features Manager (Admin Only)
-    { 
-      path: "/featuresManager", 
-      component: <FeatureManager />, 
+    {
+      path: "/featuresManager",
+      component: <FeatureManager />,
       adminOnly: true,
       allowedRoles: ['admin']
     },
@@ -510,6 +513,15 @@ function App() {
         <Route path="/EUDRSubmissionForGuest" element={<EUDRSubmitFormForGuest />} />
         <Route path="/sectionfutur" element={<SectionFutur />} />
         <Route path="/test" element={<TestMap />} />
+
+
+        {/* ============================================ */}
+        {/* 🆕 NOUVELLES ROUTES DPO PAYMENT */}
+        {/* ============================================ */}
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/cancelled" element={<PaymentCancelled />} />
+        <Route path="/payment/error" element={<PaymentError />} />
+
 
         {/* ============================================ */}
         {/* HOME - ROUTE PROTÉGÉE */}
