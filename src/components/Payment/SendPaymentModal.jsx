@@ -13,10 +13,8 @@ export function SendPaymentModal({
   agent_id: passedAgent,
   onPaymentSuccess,
 }) {
-  // États pour la sélection de méthode
   const [paymentMethod, setPaymentMethod] = useState(null);
   
-  // États Mobile Money
   const [txnId, setTxnId] = useState((passedAgent || "1234") + Date.now());
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +22,6 @@ export function SendPaymentModal({
   const [phoneInput, setPhoneInput] = useState("");
   const [priceInfo, setPriceInfo] = useState(null);
 
-  // États DPO
   const [currency, setCurrency] = useState("UGX");
   const [emailInput, setEmailInput] = useState(passedEmail || "");
 
@@ -136,7 +133,17 @@ export function SendPaymentModal({
     setLoading(true);
     setResponse("");
 
+    console.log("\n" + "=".repeat(60));
+    console.log("🔵 FRONTEND: Initiating DPO Payment");
+    console.log("=".repeat(60));
+    console.log("Feature:", featureName);
+    console.log("Phone:", effectivePhone);
+    console.log("Email:", emailInput);
+    console.log("Currency:", currency);
+
     try {
+      console.log("🔵 FRONTEND: Sending POST to /api/payments/dpo/initiate...");
+      
       const res = await axiosInstance.post("/api/payments/dpo/initiate", {
         feature_name: featureName,
         phone_number: effectivePhone,
@@ -144,14 +151,32 @@ export function SendPaymentModal({
         currency: currency,
       });
 
+      console.log("🟢 FRONTEND: Response received!");
+      console.log("Response data:", res.data);
+      console.log("Success?", res.data.success);
+      console.log("Payment URL?", res.data.payment_url);
+      console.log("Error?", res.data.error);
+
       if (res.data.success) {
-        // Rediriger vers la page de paiement DPO
+        console.log("✅ FRONTEND: Success = true, redirecting to:", res.data.payment_url);
+        console.log("=".repeat(60) + "\n");
+        
+        // Redirection vers DPO
         window.location.href = res.data.payment_url;
       } else {
+        console.error("❌ FRONTEND: Success = false");
+        console.error("Error message:", res.data.error);
+        console.log("=".repeat(60) + "\n");
+        
         setResponse("Error: " + res.data.error);
         setLoading(false);
       }
     } catch (err) {
+      console.error("❌ FRONTEND: Exception caught!");
+      console.error("Error:", err);
+      console.error("Response data:", err.response?.data);
+      console.log("=".repeat(60) + "\n");
+      
       setResponse("Error: " + (err.response?.data?.error || err.message));
       setLoading(false);
     }
@@ -203,43 +228,25 @@ export function SendPaymentModal({
                 </div>
               )}
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <button
                   onClick={() => setPaymentMethod('mobile')}
-                  className="w-full p-5 border-2 border-green-500 rounded-xl hover:bg-green-50 transition-all duration-200 text-left group hover:shadow-md"
+                  className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 font-medium flex items-center justify-center"
                 >
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4 group-hover:bg-green-200 transition-colors">
-                      <span className="text-2xl">📱</span>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-gray-800">Mobile Money</h3>
-                      <p className="text-sm text-gray-600">MTN, Airtel (Direct Payment)</p>
-                      <p className="text-xs text-green-600 font-medium mt-1">✓ Instant confirmation</p>
-                    </div>
-                    <svg className="w-6 h-6 text-gray-400 group-hover:text-green-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  Pay with Mobile Money
                 </button>
 
                 <button
                   onClick={() => setPaymentMethod('dpo')}
-                  className="w-full p-5 border-2 border-blue-500 rounded-xl hover:bg-blue-50 transition-all duration-200 text-left group hover:shadow-md"
+                  className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center"
                 >
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
-                      <span className="text-2xl">💳</span>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-gray-800">Card or Mobile Money</h3>
-                      <p className="text-sm text-gray-600">Visa, Mastercard, MTN, Airtel & more</p>
-                      <p className="text-xs text-blue-600 font-medium mt-1">✓ Multiple currencies</p>
-                    </div>
-                    <svg className="w-6 h-6 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Pay with Card / Mobile Money (DPO)
                 </button>
               </div>
             </>
