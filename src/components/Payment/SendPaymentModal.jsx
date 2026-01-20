@@ -149,18 +149,20 @@ export function SendPaymentModal({
       console.log("Response data:", res.data);
 
       if (res.data.success) {
-        console.log("✅ Opening DPO in popup and starting polling...");
+        console.log("✅ Opening DPO in new tab and starting polling...");
         
-        // Ouvrir DPO dans un popup
-        const dpoWindow = window.open(
-          res.data.payment_url,
-          'DPO Payment',
-          'width=800,height=600,scrollbars=yes,resizable=yes'
-        );
+        // Ouvrir DPO dans un nouvel onglet
+        const dpoTab = window.open(res.data.payment_url, '_blank');
+        
+        if (!dpoTab) {
+          setResponse("❌ Popup blocked! Please allow popups for this site and try again.");
+          setLoading(false);
+          return;
+        }
 
         // Démarrer le polling comme pour mobile money
         setPolling(true);
-        startDPOPolling(res.data.trans_token, dpoWindow);
+        startDPOPolling(res.data.trans_token, dpoTab);
       } else {
         console.error("❌ FRONTEND: Success = false");
         setResponse("Error: " + res.data.error);
@@ -173,23 +175,23 @@ export function SendPaymentModal({
     }
   };
 
-  const startDPOPolling = (transToken, dpoWindow) => {
+  const startDPOPolling = (transToken, dpoTab) => {
     console.log("🔄 Starting DPO polling for token:", transToken);
     let attempts = 0;
     const maxAttempts = 6000; // 5 heures (6000 * 3s = 18000s = 5h)
     
-    setResponse("⏳ Payment window opened. Please complete your payment in the popup.");
+    setResponse("⏳ Payment tab opened. Please complete your payment in the new tab.");
     
     const interval = setInterval(async () => {
       attempts++;
       console.log(`🔍 Polling attempt ${attempts}/${maxAttempts}`);
       
-      // Vérifier si le popup est toujours ouvert
-      if (dpoWindow.closed) {
+      // Vérifier si l'onglet est toujours ouvert
+      if (dpoTab && dpoTab.closed) {
         clearInterval(interval);
         setPolling(false);
         setLoading(false);
-        setResponse("❌ Payment window was closed. If you completed payment, please wait a moment for confirmation.");
+        setResponse("❌ Payment tab was closed. If you completed payment, please wait a moment for confirmation.");
         return;
       }
       
@@ -202,11 +204,11 @@ export function SendPaymentModal({
         if (verification.success && verification.status === "verified") {
           clearInterval(interval);
           setPolling(false);
-          console.log("✅ Payment verified! Closing popup and triggering success...");
+          console.log("✅ Payment verified! Closing tab and triggering success...");
           
-          // Fermer le popup
-          if (dpoWindow && !dpoWindow.closed) {
-            dpoWindow.close();
+          // Fermer l'onglet
+          if (dpoTab && !dpoTab.closed) {
+            dpoTab.close();
           }
 
           setResponse("✅ Payment confirmed! Generating your report...");
@@ -236,8 +238,8 @@ export function SendPaymentModal({
           setLoading(false);
           setResponse("❌ Payment was declined or cancelled.");
           
-          if (dpoWindow && !dpoWindow.closed) {
-            dpoWindow.close();
+          if (dpoTab && !dpoTab.closed) {
+            dpoTab.close();
           }
         }
       } catch (err) {
@@ -252,8 +254,8 @@ export function SendPaymentModal({
         setLoading(false);
         setResponse("⏰ Payment verification timeout (5 hours). If you completed payment, it may take a few minutes to process. Please contact support if needed.");
         
-        if (dpoWindow && !dpoWindow.closed) {
-          dpoWindow.close();
+        if (dpoTab && !dpoTab.closed) {
+          dpoTab.close();
         }
       }
     }, 3000); // Poll toutes les 3 secondes
@@ -538,9 +540,9 @@ export function SendPaymentModal({
                         Payment in progress
                       </p>
                       <p className="text-xs text-blue-600">
-                        • Complete your payment in the popup window<br/>
+                        • Complete your payment in the new tab<br/>
                         • Don't close this page - we're waiting for confirmation<br/>
-                        • This usually takes 1-2 minutes
+                        • This can take up to 5 hours for some payment methods
                       </p>
                     </div>
                   </div>
