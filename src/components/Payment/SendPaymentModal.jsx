@@ -141,6 +141,19 @@ export function SendPaymentModal({
     console.log("Email:", emailInput);
     console.log("Currency:", currency);
 
+    // 💾 SAUVEGARDER LE CONTEXTE AVANT REDIRECTION DPO
+    const paymentContext = {
+      featureName: featureName,
+      phone: effectivePhone,
+      email: emailInput || passedEmail,
+      agent_id: passedAgent,
+      geojson: localStorage.getItem("polygon_geojson"), // GeoJSON déjà sauvegardé
+      timestamp: Date.now()
+    };
+    
+    localStorage.setItem("dpo_payment_context", JSON.stringify(paymentContext));
+    console.log("💾 Context saved to localStorage:", paymentContext);
+
     try {
       console.log("🔵 FRONTEND: Sending POST to /api/payments/dpo/initiate...");
       
