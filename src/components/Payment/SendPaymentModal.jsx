@@ -136,27 +136,8 @@ export function SendPaymentModal({
     console.log("\n" + "=".repeat(60));
     console.log("🔵 FRONTEND: Initiating DPO Payment");
     console.log("=".repeat(60));
-    console.log("Feature:", featureName);
-    console.log("Phone:", effectivePhone);
-    console.log("Email:", emailInput);
-    console.log("Currency:", currency);
-
-    // 💾 SAUVEGARDER LE CONTEXTE AVANT REDIRECTION DPO
-    const paymentContext = {
-      featureName: featureName,
-      phone: effectivePhone,
-      email: emailInput || passedEmail,
-      agent_id: passedAgent,
-      geojson: localStorage.getItem("polygon_geojson"), // GeoJSON déjà sauvegardé
-      timestamp: Date.now()
-    };
-    
-    localStorage.setItem("dpo_payment_context", JSON.stringify(paymentContext));
-    console.log("💾 Context saved to localStorage:", paymentContext);
 
     try {
-      console.log("🔵 FRONTEND: Sending POST to /api/payments/dpo/initiate...");
-      
       const res = await axiosInstance.post("/api/payments/dpo/initiate", {
         feature_name: featureName,
         phone_number: effectivePhone,
@@ -166,33 +147,89 @@ export function SendPaymentModal({
 
       console.log("🟢 FRONTEND: Response received!");
       console.log("Response data:", res.data);
-      console.log("Success?", res.data.success);
-      console.log("Payment URL?", res.data.payment_url);
-      console.log("Error?", res.data.error);
 
       if (res.data.success) {
-        console.log("✅ FRONTEND: Success = true, redirecting to:", res.data.payment_url);
-        console.log("=".repeat(60) + "\n");
+        console.log("✅ Opening DPO in popup and starting polling...");
         
-        // Redirection vers DPO
-        window.location.href = res.data.payment_url;
+        // Ouvrir DPO dans un popup
+        const dpoWindow = window.open(
+          res.data.payment_url,
+          'DPO Payment',
+          'width=800,height=600,scrollbars=yes,resizable=yes'
+        );
+
+        // Démarrer le polling comme pour mobile money
+        setPolling(true);
+        startDPOPolling(res.data.trans_token, dpoWindow);
       } else {
         console.error("❌ FRONTEND: Success = false");
-        console.error("Error message:", res.data.error);
-        console.log("=".repeat(60) + "\n");
-        
         setResponse("Error: " + res.data.error);
         setLoading(false);
       }
     } catch (err) {
-      console.error("❌ FRONTEND: Exception caught!");
-      console.error("Error:", err);
-      console.error("Response data:", err.response?.data);
-      console.log("=".repeat(60) + "\n");
-      
+      console.error("❌ FRONTEND: Exception caught!", err);
       setResponse("Error: " + (err.response?.data?.error || err.message));
       setLoading(false);
     }
+  };
+
+  const startDPOPolling = (transToken, dpoWindow) => {
+    console.log("🔄 Starting DPO polling for token:", transToken);
+    let attempts = 0;
+    const maxAttempts = 60; // 3 minutes (60 * 3s)
+    
+    const interval = setInterval(async () => {
+      attempts++;
+      console.log(`🔍 Polling attempt ${attempts}/${maxAttempts}`);
+      
+      try {
+        const res = await axiosInstance.get(`/api/payments/dpo/verify/${transToken}`);
+        const verification = res.data;
+
+        console.log("📊 Verification result:", verification);
+
+        if (verification.success && verification.status === "verified") {
+          clearInterval(interval);
+          setPolling(false);
+          console.log("✅ Payment verified! Closing popup and triggering success...");
+          
+          // Fermer le popup
+          if (dpoWindow && !dpoWindow.closed) {
+            dpoWindow.close();
+          }
+
+          // Déclencher le succès (comme mobile money)
+          if (onPaymentSuccess) {
+            onPaymentSuccess();
+          } else {
+            // Rediriger vers la page de succès
+            window.location.href = `/payment/success?TransactionToken=${transToken}`;
+          }
+        } else if (verification.status === "failed") {
+          clearInterval(interval);
+          setPolling(false);
+          setResponse("Payment failed or was declined.");
+          setLoading(false);
+          
+          if (dpoWindow && !dpoWindow.closed) {
+            dpoWindow.close();
+          }
+        } else if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setPolling(false);
+          setResponse("Payment timeout. Please check your transaction status.");
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("❌ Polling error:", err);
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+          setPolling(false);
+          setResponse("Error during verification: " + err.message);
+          setLoading(false);
+        }
+      }
+    }, 3000); // Poll toutes les 3 secondes
   };
 
   // ============ RENDER ============
@@ -396,7 +433,7 @@ export function SendPaymentModal({
                       value={phoneInput}
                       onChange={(e) => setPhoneInput(e.target.value)}
                       required
-                      disabled={loading}
+                      disabled={loading || polling}
                     />
                   </div>
                 )}
@@ -411,7 +448,7 @@ export function SendPaymentModal({
                     className="w-full p-2.5 border rounded-lg"
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
-                    disabled={loading}
+                    disabled={loading || polling}
                   />
                 </div>
 
@@ -423,7 +460,7 @@ export function SendPaymentModal({
                     className="w-full p-2.5 border rounded-lg"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    disabled={loading}
+                    disabled={loading || polling}
                   >
                     <option value="UGX">🇺🇬 UGX - Ugandan Shilling</option>
                     <option value="USD">🇺🇸 USD - US Dollar</option>
@@ -436,7 +473,7 @@ export function SendPaymentModal({
                 <button
                   type="submit"
                   className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium disabled:bg-gray-400 flex items-center justify-center"
-                  disabled={loading}
+                  disabled={loading || polling}
                 >
                   {loading ? (
                     <>
@@ -444,7 +481,15 @@ export function SendPaymentModal({
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Processing...
+                      Opening Payment Window...
+                    </>
+                  ) : polling ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Waiting for payment confirmation...
                     </>
                   ) : (
                     <>
@@ -456,6 +501,14 @@ export function SendPaymentModal({
                   )}
                 </button>
               </form>
+
+              {polling && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 text-center">
+                    ⏳ Please complete your payment in the popup window. Don't close this page!
+                  </p>
+                </div>
+              )}
 
               {response && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
