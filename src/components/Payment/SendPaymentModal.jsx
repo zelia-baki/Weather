@@ -14,7 +14,7 @@ export function SendPaymentModal({
   onPaymentSuccess,
 }) {
   const [paymentMethod, setPaymentMethod] = useState(null);
-  
+
   const [txnId, setTxnId] = useState((passedAgent || "1234") + Date.now());
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
@@ -150,10 +150,10 @@ export function SendPaymentModal({
 
       if (res.data.success) {
         console.log("✅ Opening DPO in new tab and starting polling...");
-        
+
         // Ouvrir DPO dans un nouvel onglet
         const dpoTab = window.open(res.data.payment_url, '_blank');
-        
+
         if (!dpoTab) {
           setResponse("❌ Popup blocked! Please allow popups for this site and try again.");
           setLoading(false);
@@ -176,67 +176,59 @@ export function SendPaymentModal({
   };
 
   const startDPOPolling = (transToken, dpoTab) => {
-    console.log("🔄 Starting DPO polling for token:", transToken);
-    let attempts = 0;
-    const maxAttempts = 6000; // 5 heures (6000 * 3s = 18000s = 5h)
-    
-    setResponse("⏳ Payment tab opened. Please complete your payment in the new tab.");
-    
+    const startTime = Date.now();
+    const MAX_DURATION = 5 * 60 * 60 * 1000; // 5 heures
+    const INTERVAL = 5000; // 5 secondes
+
+    setResponse("⏳ Waiting for payment confirmation...");
+
     const interval = setInterval(async () => {
-      attempts++;
-      console.log(`🔍 Polling attempt ${attempts}/${maxAttempts}`);
-      
+      const elapsed = Date.now() - startTime;
+
       try {
-        const res = await axiosInstance.get(`/api/payments/dpo/verify/${transToken}`);
-        const verification = res.data;
+        const res = await axiosInstance.get(
+          `/api/payments/dpo/verify/${transToken}`
+        );
 
-        console.log("📊 Verification result:", verification);
+        const status = res.data.status?.toLowerCase();
 
-        if (verification.success && verification.status === "verified") {
+        if (status === "verified") {
           clearInterval(interval);
           setPolling(false);
-          console.log("✅ Payment verified! Triggering success...");
+          setLoading(false);
 
-          setResponse("✅ Payment confirmed! Generating your report...");
+          setResponse("✅ Payment confirmed!");
 
-          // Déclencher le succès (comme mobile money)
-          if (onPaymentSuccess) {
-            onPaymentSuccess();
-          } else {
-            // Rediriger vers la page de succès
-            window.location.href = `/payment/success?TransactionToken=${transToken}`;
-          }
-        } else if (verification.status === "pending") {
-          // Continue polling - mise à jour du message
-          const remainingMinutes = Math.ceil((maxAttempts - attempts) * 3 / 60);
-          const remainingHours = Math.floor(remainingMinutes / 60);
-          const remainingMins = remainingMinutes % 60;
-          
-          if (remainingHours > 0) {
-            setResponse(`⏳ Waiting for payment confirmation... (${remainingHours}h ${remainingMins}min remaining)`);
-          } else {
-            setResponse(`⏳ Waiting for payment confirmation... (${remainingMins} minutes remaining)`);
-          }
-          console.log("⏳ Payment still pending, continuing...");
-        } else if (verification.status === "failed") {
+          if (onPaymentSuccess) onPaymentSuccess();
+          else window.location.href = `/payment/success?TransactionToken=${transToken}`;
+          return;
+        }
+
+        if (status === "failed") {
           clearInterval(interval);
           setPolling(false);
           setLoading(false);
           setResponse("❌ Payment was declined or cancelled.");
+          return;
         }
+
+        // sinon → pending → on continue
+        const remainingMs = MAX_DURATION - elapsed;
+        const remainingMin = Math.ceil(remainingMs / 60000);
+        setResponse(`⏳ Waiting for payment confirmation... (${remainingMin} min left)`);
+
       } catch (err) {
-        console.error("❌ Polling error:", err);
-        // Ne pas arrêter le polling pour une erreur réseau temporaire
+        // ERREUR RÉSEAU = ON CONTINUE
+        console.warn("Polling error, retrying...");
       }
-      
-      // Timeout final
-      if (attempts >= maxAttempts) {
+
+      if (elapsed >= MAX_DURATION) {
         clearInterval(interval);
         setPolling(false);
         setLoading(false);
-        setResponse("⏰ Payment verification timeout (5 hours). If you completed payment, it may take a few minutes to process. Please contact support if needed.");
+        setResponse("❌ Payment was declined or cancelled.");
       }
-    }, 3000); // Poll toutes les 3 secondes
+    }, INTERVAL);
   };
 
   // ============ RENDER ============
@@ -518,8 +510,8 @@ export function SendPaymentModal({
                         Payment in progress
                       </p>
                       <p className="text-xs text-blue-600">
-                        • Complete your payment in the new tab<br/>
-                        • Don't close this page - we're waiting for confirmation<br/>
+                        • Complete your payment in the new tab<br />
+                        • Don't close this page - we're waiting for confirmation<br />
                         • This can take up to 5 hours for some payment methods
                       </p>
                     </div>
@@ -528,16 +520,14 @@ export function SendPaymentModal({
               )}
 
               {response && !polling && (
-                <div className={`mt-4 p-3 rounded-lg border ${
-                  response.includes('✅') ? 'bg-green-50 border-green-200' :
-                  response.includes('⏳') ? 'bg-blue-50 border-blue-200' :
-                  'bg-red-50 border-red-200'
-                }`}>
-                  <p className={`text-sm ${
-                    response.includes('✅') ? 'text-green-700' :
-                    response.includes('⏳') ? 'text-blue-700' :
-                    'text-red-700'
-                  }`}>{response}</p>
+                <div className={`mt-4 p-3 rounded-lg border ${response.includes('✅') ? 'bg-green-50 border-green-200' :
+                    response.includes('⏳') ? 'bg-blue-50 border-blue-200' :
+                      'bg-red-50 border-red-200'
+                  }`}>
+                  <p className={`text-sm ${response.includes('✅') ? 'text-green-700' :
+                      response.includes('⏳') ? 'text-blue-700' :
+                        'text-red-700'
+                    }`}>{response}</p>
                 </div>
               )}
 
