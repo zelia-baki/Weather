@@ -186,15 +186,6 @@ export function SendPaymentModal({
       attempts++;
       console.log(`🔍 Polling attempt ${attempts}/${maxAttempts}`);
       
-      // Vérifier si l'onglet est toujours ouvert
-      if (dpoTab && dpoTab.closed) {
-        clearInterval(interval);
-        setPolling(false);
-        setLoading(false);
-        setResponse("❌ Payment tab was closed. If you completed payment, please wait a moment for confirmation.");
-        return;
-      }
-      
       try {
         const res = await axiosInstance.get(`/api/payments/dpo/verify/${transToken}`);
         const verification = res.data;
@@ -204,12 +195,7 @@ export function SendPaymentModal({
         if (verification.success && verification.status === "verified") {
           clearInterval(interval);
           setPolling(false);
-          console.log("✅ Payment verified! Closing tab and triggering success...");
-          
-          // Fermer l'onglet
-          if (dpoTab && !dpoTab.closed) {
-            dpoTab.close();
-          }
+          console.log("✅ Payment verified! Triggering success...");
 
           setResponse("✅ Payment confirmed! Generating your report...");
 
@@ -237,10 +223,6 @@ export function SendPaymentModal({
           setPolling(false);
           setLoading(false);
           setResponse("❌ Payment was declined or cancelled.");
-          
-          if (dpoTab && !dpoTab.closed) {
-            dpoTab.close();
-          }
         }
       } catch (err) {
         console.error("❌ Polling error:", err);
@@ -253,10 +235,6 @@ export function SendPaymentModal({
         setPolling(false);
         setLoading(false);
         setResponse("⏰ Payment verification timeout (5 hours). If you completed payment, it may take a few minutes to process. Please contact support if needed.");
-        
-        if (dpoTab && !dpoTab.closed) {
-          dpoTab.close();
-        }
       }
     }, 3000); // Poll toutes les 3 secondes
   };
