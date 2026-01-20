@@ -176,11 +176,22 @@ export function SendPaymentModal({
   const startDPOPolling = (transToken, dpoWindow) => {
     console.log("🔄 Starting DPO polling for token:", transToken);
     let attempts = 0;
-    const maxAttempts = 60; // 3 minutes (60 * 3s)
+    const maxAttempts = 6000; // 5 heures (6000 * 3s = 18000s = 5h)
+    
+    setResponse("⏳ Payment window opened. Please complete your payment in the popup.");
     
     const interval = setInterval(async () => {
       attempts++;
       console.log(`🔍 Polling attempt ${attempts}/${maxAttempts}`);
+      
+      // Vérifier si le popup est toujours ouvert
+      if (dpoWindow.closed) {
+        clearInterval(interval);
+        setPolling(false);
+        setLoading(false);
+        setResponse("❌ Payment window was closed. If you completed payment, please wait a moment for confirmation.");
+        return;
+      }
       
       try {
         const res = await axiosInstance.get(`/api/payments/dpo/verify/${transToken}`);
@@ -198,6 +209,8 @@ export function SendPaymentModal({
             dpoWindow.close();
           }
 
+          setResponse("✅ Payment confirmed! Generating your report...");
+
           // Déclencher le succès (comme mobile money)
           if (onPaymentSuccess) {
             onPaymentSuccess();
@@ -205,28 +218,42 @@ export function SendPaymentModal({
             // Rediriger vers la page de succès
             window.location.href = `/payment/success?TransactionToken=${transToken}`;
           }
+        } else if (verification.status === "pending") {
+          // Continue polling - mise à jour du message
+          const remainingMinutes = Math.ceil((maxAttempts - attempts) * 3 / 60);
+          const remainingHours = Math.floor(remainingMinutes / 60);
+          const remainingMins = remainingMinutes % 60;
+          
+          if (remainingHours > 0) {
+            setResponse(`⏳ Waiting for payment confirmation... (${remainingHours}h ${remainingMins}min remaining)`);
+          } else {
+            setResponse(`⏳ Waiting for payment confirmation... (${remainingMins} minutes remaining)`);
+          }
+          console.log("⏳ Payment still pending, continuing...");
         } else if (verification.status === "failed") {
           clearInterval(interval);
           setPolling(false);
-          setResponse("Payment failed or was declined.");
           setLoading(false);
+          setResponse("❌ Payment was declined or cancelled.");
           
           if (dpoWindow && !dpoWindow.closed) {
             dpoWindow.close();
           }
-        } else if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          setPolling(false);
-          setResponse("Payment timeout. Please check your transaction status.");
-          setLoading(false);
         }
       } catch (err) {
         console.error("❌ Polling error:", err);
-        if (attempts >= maxAttempts) {
-          clearInterval(interval);
-          setPolling(false);
-          setResponse("Error during verification: " + err.message);
-          setLoading(false);
+        // Ne pas arrêter le polling pour une erreur réseau temporaire
+      }
+      
+      // Timeout final
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        setPolling(false);
+        setLoading(false);
+        setResponse("⏰ Payment verification timeout (5 hours). If you completed payment, it may take a few minutes to process. Please contact support if needed.");
+        
+        if (dpoWindow && !dpoWindow.closed) {
+          dpoWindow.close();
         }
       }
     }, 3000); // Poll toutes les 3 secondes
@@ -504,15 +531,33 @@ export function SendPaymentModal({
 
               {polling && (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800 text-center">
-                    ⏳ Please complete your payment in the popup window. Don't close this page!
-                  </p>
+                  <div className="flex items-start gap-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 flex-shrink-0 mt-0.5"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-800 mb-1">
+                        Payment in progress
+                      </p>
+                      <p className="text-xs text-blue-600">
+                        • Complete your payment in the popup window<br/>
+                        • Don't close this page - we're waiting for confirmation<br/>
+                        • This usually takes 1-2 minutes
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {response && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-700">{response}</p>
+              {response && !polling && (
+                <div className={`mt-4 p-3 rounded-lg border ${
+                  response.includes('✅') ? 'bg-green-50 border-green-200' :
+                  response.includes('⏳') ? 'bg-blue-50 border-blue-200' :
+                  'bg-red-50 border-red-200'
+                }`}>
+                  <p className={`text-sm ${
+                    response.includes('✅') ? 'text-green-700' :
+                    response.includes('⏳') ? 'text-blue-700' :
+                    'text-red-700'
+                  }`}>{response}</p>
                 </div>
               )}
 
