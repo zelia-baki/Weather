@@ -175,10 +175,10 @@ export function SendPaymentModal({
     }
   };
 
-  const startDPOPolling = (transToken, dpoTab) => {
+  const startDPOPolling = (transToken) => {
     const startTime = Date.now();
     const MAX_DURATION = 5 * 60 * 60 * 1000; // 5 heures
-    const INTERVAL = 5000; // 5 secondes
+    const INTERVAL = 8000; // ⚠️ minimum 8s (anti-429)
 
     setResponse("⏳ Waiting for payment confirmation...");
 
@@ -190,46 +190,43 @@ export function SendPaymentModal({
           `/api/payments/dpo/verify/${transToken}`
         );
 
-        const status = res.data.status?.toLowerCase();
+        const status = res.data.status;
 
-        if (status === "verified") {
+        // ✅ PAYÉ
+        if (status === "paid") {
           clearInterval(interval);
           setPolling(false);
           setLoading(false);
 
-          setResponse("✅ Payment confirmed!");
-
-          if (onPaymentSuccess) onPaymentSuccess();
-          else window.location.href = `/payment/success?TransactionToken=${transToken}`;
+          if (onPaymentSuccess) {
+            onPaymentSuccess();
+          } else {
+            window.location.href = `/payment/success?TransactionToken=${transToken}`;
+          }
           return;
         }
 
-        if (status === "failed") {
-          clearInterval(interval);
-          setPolling(false);
-          setLoading(false);
-          setResponse("❌ Payment was declined or cancelled.");
-          return;
-        }
-
-        // sinon → pending → on continue
-        const remainingMs = MAX_DURATION - elapsed;
-        const remainingMin = Math.ceil(remainingMs / 60000);
-        setResponse(`⏳ Waiting for payment confirmation... (${remainingMin} min left)`);
+        // ⏳ TOUJOURS EN ATTENTE (CAS NORMAL)
+        setResponse("⏳ Waiting for payment confirmation...");
 
       } catch (err) {
-        // ERREUR RÉSEAU = ON CONTINUE
-        console.warn("Polling error, retrying...");
+        // 🚨 erreur réseau / 429 → on ignore
+        console.warn("DPO polling error, retrying...");
       }
 
+      // ⏱️ timeout UX uniquement (PAS un échec)
       if (elapsed >= MAX_DURATION) {
         clearInterval(interval);
         setPolling(false);
         setLoading(false);
-        setResponse("❌ Payment was declined or cancelled.");
+        setResponse(
+          "⏳ Payment is still processing. You will be notified once confirmed."
+        );
       }
+
     }, INTERVAL);
   };
+
 
   // ============ RENDER ============
   return (
@@ -521,12 +518,12 @@ export function SendPaymentModal({
 
               {response && !polling && (
                 <div className={`mt-4 p-3 rounded-lg border ${response.includes('✅') ? 'bg-green-50 border-green-200' :
-                    response.includes('⏳') ? 'bg-blue-50 border-blue-200' :
-                      'bg-red-50 border-red-200'
+                  response.includes('⏳') ? 'bg-blue-50 border-blue-200' :
+                    'bg-red-50 border-red-200'
                   }`}>
                   <p className={`text-sm ${response.includes('✅') ? 'text-green-700' :
-                      response.includes('⏳') ? 'text-blue-700' :
-                        'text-red-700'
+                    response.includes('⏳') ? 'text-blue-700' :
+                      'text-red-700'
                     }`}>{response}</p>
                 </div>
               )}
