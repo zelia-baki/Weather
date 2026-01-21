@@ -8,8 +8,7 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPrev
 
     const handleDownload = async () => {
         if (!ddsRef.current) return;
-        const blob = await generatePdfBlob(ddsRef, `DDS_${referenceNumber}`);
-        if (blob) {
+        const blob = await generatePdfBlob({ current: ddsRef.current }, `DDS_${referenceNumber}`); if (blob) {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
