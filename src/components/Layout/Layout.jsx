@@ -34,13 +34,13 @@ const Layout = ({ children }) => {
     // ============================================
     // FONCTIONS DE VÉRIFICATION D'ACCÈS PAR MENU
     // ============================================
-    
-    // Weather: Admin + Weather users
+
+    // Weather: Admin + Weather users + Farmer users
     const canAccessWeather = useMemo(() => {
-        return isAdmin || userRole === 'weather';
+        return isAdmin || userRole === 'weather' || userRole === 'farmer';
     }, [isAdmin, userRole]);
 
-    // Farm: Admin + Farmer users
+    // Farm: Admin + Farmer users ONLY (weather users cannot access)
     const canAccessFarm = useMemo(() => {
         return isAdmin || userRole === 'farmer';
     }, [isAdmin, userRole]);
@@ -64,7 +64,8 @@ const Layout = ({ children }) => {
     const canAccessEUDR = useMemo(() => {
         return isAdmin || ['weather', 'farmer', 'forest'].includes(userRole);
     }, [isAdmin, userRole]);
-
+    
+    
     // Toggle dropdown
     const toggleDropdown = (dropdown, value) => {
         setDropdownsVisible((prevState) => ({

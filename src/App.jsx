@@ -148,31 +148,31 @@ function App() {
       path: "/wateradvisory",
       component: <WaterAdvisory />,
       adminOnly: false,
-      allowedRoles: ['admin', 'weather']
+      allowedRoles:  ['admin', 'weather', 'farmer']
     },
     {
       path: "/weathermapfarm",
       component: <WeathearMapFarm />,
       adminOnly: false,
-      allowedRoles: ['admin', 'weather']
+      allowedRoles:  ['admin', 'weather', 'farmer']
     },
     {
       path: "/weatherhistory",
       component: <WeatherHistory />,
       adminOnly: false,
-      allowedRoles: ['admin', 'weather']
+      allowedRoles:  ['admin', 'weather', 'farmer']
     },
     {
       path: "/weatherdas",
       component: <WeatherDashboard />,
       adminOnly: false,
-      allowedRoles: ['admin', 'weather']
+      allowedRoles:  ['admin', 'weather', 'farmer']
     },
     {
       path: "/weatherandsolar",
       component: <WeatherAndSolar />,
       adminOnly: false,
-      allowedRoles: ['admin', 'weather']
+      allowedRoles: ['admin', 'weather', 'farmer']
     },
 
     // ============================================
