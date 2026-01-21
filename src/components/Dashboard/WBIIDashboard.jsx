@@ -15,55 +15,54 @@ const WBIIDashboard = () => {
   const [expandedInfo, setExpandedInfo] = useState(false);
   const [error, setError] = useState(null);
 
-  // Simulated API call - Replace with your actual API
-const fetchFarms = async () => {
-  try {
-    let allFarms = [];
-    let page = 1;
-    let totalPages = 1;
-    
-    // Boucle pour récupérer toutes les pages automatiquement
-    while (page <= totalPages) {
-      const response = await axiosInstance.get(`/api/farm/?page=${page}&page_size=100`);
+  const fetchFarms = async () => {
+    try {
+      let allFarms = [];
+      let page = 1;
+      let totalPages = 1;
       
-      let farms = [];
-      if (Array.isArray(response.data)) {
-        farms = response.data;
-        // Si c'est un simple array, on suppose qu'il n'y a qu'une page
-        totalPages = 1;
-      } else if (response.data?.results) {
-        // Structure Django REST Framework
-        farms = response.data.results;
-        totalPages = Math.ceil(response.data.count / 100);
-      } else if (response.data?.farms) {
-        farms = response.data.farms;
-        totalPages = response.data.total_pages || 1;
-      } else if (response.data?.data) {
-        farms = response.data.data;
-        totalPages = response.data.total_pages || 1;
-      } else if (response.data?.items) {
-        farms = response.data.items;
-        totalPages = response.data.total_pages || 1;
+      // Boucle pour récupérer toutes les pages automatiquement
+      while (page <= totalPages) {
+        const response = await axiosInstance.get(`/api/farm/?page=${page}&page_size=100`);
+        
+        let farms = [];
+        if (Array.isArray(response.data)) {
+          farms = response.data;
+          // Si c'est un simple array, on suppose qu'il n'y a qu'une page
+          totalPages = 1;
+        } else if (response.data?.results) {
+          // Structure Django REST Framework
+          farms = response.data.results;
+          totalPages = Math.ceil(response.data.count / 100);
+        } else if (response.data?.farms) {
+          farms = response.data.farms;
+          totalPages = response.data.total_pages || 1;
+        } else if (response.data?.data) {
+          farms = response.data.data;
+          totalPages = response.data.total_pages || 1;
+        } else if (response.data?.items) {
+          farms = response.data.items;
+          totalPages = response.data.total_pages || 1;
+        }
+        
+        allFarms = [...allFarms, ...farms];
+        page++;
+        
+        // Sécurité: arrêter si on a fait trop de requêtes
+        if (page > 50) {
+          console.warn('Stopped after 50 pages to prevent infinite loop');
+          break;
+        }
       }
       
-      allFarms = [...allFarms, ...farms];
-      page++;
-      
-      // Sécurité: arrêter si on a fait trop de requêtes
-      if (page > 50) {
-        console.warn('Stopped after 50 pages to prevent infinite loop');
-        break;
-      }
+      console.log(`Total farms loaded: ${allFarms.length} from ${page - 1} page(s)`);
+      return allFarms;
+    } catch (error) {
+      console.error('Error fetching farms:', error);
+      setError('Failed to load farms. Please try again.');
+      return [];
     }
-    
-    console.log(`Total farms loaded: ${allFarms.length} from ${page - 1} page(s)`);
-    return allFarms;
-  } catch (error) {
-    console.error('Error fetching farms:', error);
-    setError('Failed to load farms. Please try again.');
-    return [];
-  }
-};
+  };
 
   const fetchHistoricalWeatherData = async (lat, lon) => {
     try {
@@ -73,11 +72,31 @@ const fetchFarms = async () => {
       
       const formatDate = (date) => date.toISOString().split('T')[0];
       
-      const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
-      const response = await fetch(url);
-      return await response.json();
+      // Données historiques (3 derniers mois)
+      const historicalUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
+      const historicalResponse = await fetch(historicalUrl);
+      const historicalData = await historicalResponse.json();
+      
+      // Prévisions (10 prochains jours)
+      const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&forecast_days=10`;
+      const forecastResponse = await fetch(forecastUrl);
+      const forecastData = await forecastResponse.json();
+      
+      // Combiner les données
+      if (historicalData?.daily && forecastData?.daily) {
+        return {
+          daily: {
+            time: [...historicalData.daily.time, ...forecastData.daily.time],
+            temperature_2m_max: [...historicalData.daily.temperature_2m_max, ...forecastData.daily.temperature_2m_max],
+            temperature_2m_min: [...historicalData.daily.temperature_2m_min, ...forecastData.daily.temperature_2m_min],
+            precipitation_sum: [...historicalData.daily.precipitation_sum, ...forecastData.daily.precipitation_sum]
+          }
+        };
+      }
+      
+      return historicalData; // Fallback si les prévisions échouent
     } catch (error) {
-      console.error('Error fetching historical weather:', error);
+      console.error('Error fetching weather data:', error);
       return null;
     }
   };
@@ -87,6 +106,10 @@ const fetchFarms = async () => {
 
     const daily = weatherData.daily;
     const wbiiTimeSeries = [];
+    
+    // Déterminer la date actuelle pour savoir où commencent les prévisions
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     // WBII calculation parameters
     const OPTIMAL_TEMP_MIN = 20;
@@ -98,6 +121,9 @@ const fetchFarms = async () => {
 
     for (let i = 0; i < daily.time.length; i++) {
       const date = daily.time[i];
+      const dateObj = new Date(date);
+      const isForecast = dateObj > today; // Vérifier si c'est une prévision
+      
       const tempMax = daily.temperature_2m_max[i];
       const tempMin = daily.temperature_2m_min[i];
       const precipitation = daily.precipitation_sum[i];
@@ -148,7 +174,8 @@ const fetchFarms = async () => {
         tempStress: Math.round(tempStress * 10) / 10,
         waterStress: Math.round(waterStress * 10) / 10,
         riskLevel,
-        riskColor
+        riskColor,
+        isForecast // Nouveau champ pour identifier les prévisions
       });
     }
 
@@ -247,7 +274,14 @@ const fetchFarms = async () => {
       
       return (
         <div className="bg-white p-4 rounded-xl shadow-xl border-2 border-gray-200">
-          <p className="font-bold text-gray-900 mb-3 text-sm">{formatFullDate(data.date)}</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-bold text-gray-900 text-sm">{formatFullDate(data.date)}</p>
+            {data.isForecast && (
+              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">
+                Forecast
+              </span>
+            )}
+          </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-4">
               <span className="text-xs text-gray-600">WBII Index:</span>
@@ -317,7 +351,7 @@ const fetchFarms = async () => {
     };
   };
 
-  // 🆕 NOUVELLE FONCTION: Statistiques détaillées des événements météo
+  // NOUVELLE FONCTION: Statistiques détaillées des événements météo
   const getDetailedStatistics = () => {
     if (!wbiiData?.timeSeries) return null;
 
@@ -397,7 +431,7 @@ const fetchFarms = async () => {
                   <p className="text-sm text-gray-500">Weather-Based Impact Index</p>
                 </div>
               </div>
-              <p className="text-gray-600">Monitor agricultural risk factors across all farms over a 3-month period</p>
+              <p className="text-gray-600">Monitor agricultural risk factors across all farms over a 3-month period + 10-day forecast</p>
             </div>
             
             <button
@@ -568,7 +602,7 @@ const fetchFarms = async () => {
           </div>
         )}
 
-        {/* 🆕 NEW SECTION: Detailed Weather Event Statistics */}
+        {/* NEW SECTION: Detailed Weather Event Statistics */}
         {detailedStats && (
           <div className="bg-white rounded-3xl shadow-lg border border-purple-100 p-8">
             <div className="flex items-center gap-3 mb-6">
@@ -762,7 +796,7 @@ const fetchFarms = async () => {
           <div className="bg-white rounded-3xl shadow-lg border border-purple-100 p-12 flex flex-col items-center justify-center">
             <RefreshCw className="w-12 h-12 text-purple-500 animate-spin mb-4" />
             <p className="text-lg text-gray-600 font-medium">Loading WBII data...</p>
-            <p className="text-sm text-gray-400 mt-2">Analyzing 3 months of weather patterns</p>
+            <p className="text-sm text-gray-400 mt-2">Analyzing 3 months of weather patterns + 10-day forecast</p>
           </div>
         ) : wbiiData ? (
           <div className="bg-white rounded-3xl shadow-lg border border-purple-100 p-8">
@@ -772,7 +806,7 @@ const fetchFarms = async () => {
                   <TrendingUp className="w-5 h-5 text-purple-600" />
                   WBII Time Series - {wbiiData.farm.name}
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">Last 3 months of impact analysis</p>
+                <p className="text-sm text-gray-500 mt-1">Last 3 months of historical data + 10-day forecast</p>
               </div>
             </div>
 
@@ -829,7 +863,7 @@ const fetchFarms = async () => {
                 />
                 <YAxis 
                   yAxisId="left"
-                  label={{ value: 'WBII Score', angle: -90, position: 'insideLeft', style: { fontSize: '12px', fill: '#374151' } }}
+                  label={{ value: 'Index Score', angle: -90, position: 'insideLeft', style: { fontSize: '12px', fill: '#374151' } }}
                   style={{ fontSize: '11px', fill: '#6b7280' }}
                   domain={[0, 100]}
                 />
@@ -854,6 +888,28 @@ const fetchFarms = async () => {
                   stroke="#8b5cf6"
                   strokeWidth={3}
                   name="WBII Index"
+                />
+                
+                {/* Temperature Stress Line */}
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="tempStress"
+                  stroke="#f97316"
+                  strokeWidth={2}
+                  dot={false}
+                  name="Temperature Stress"
+                />
+                
+                {/* Water Stress Line */}
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="waterStress"
+                  stroke="#0ea5e9"
+                  strokeWidth={2}
+                  dot={false}
+                  name="Moisture Stress"
                 />
                 
                 {/* Precipitation Bars */}
@@ -886,9 +942,16 @@ const fetchFarms = async () => {
                   <div key={idx} className="bg-gradient-to-br from-red-50 to-orange-50 p-5 rounded-2xl border-2 border-red-200 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-3">
                       <p className="font-bold text-gray-900">{formatChartDate(day.date)}</p>
-                      <span className="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">
-                        WBII: {day.wbii}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">
+                          WBII: {day.wbii}
+                        </span>
+                        {day.isForecast && (
+                          <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+                            Forecast
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between">
@@ -939,7 +1002,7 @@ const fetchFarms = async () => {
             <div>
               <h4 className="font-semibold text-gray-900 mb-1">How to Use This Dashboard</h4>
               <p className="text-sm text-gray-700">
-                Select a farm to view its 3-month WBII analysis. Spikes in the graph indicate periods of high agricultural stress. 
+                Select a farm to view its 3-month WBII analysis plus 10-day forecast. Spikes in the graph indicate periods of high agricultural stress. 
                 Use this information to plan irrigation, pest control, and other farm management activities. 
                 Critical days (WBII &gt; 60) require immediate attention and protective measures.
               </p>
