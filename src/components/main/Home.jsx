@@ -44,7 +44,7 @@ const HomePage = () => {
       textColor: 'text-blue-700',
       color: 'bg-blue-500',
       buttonText: 'View Weather',
-      link: '/weathermap',
+      link: '/weathermapfarm',
       isBlurred: !(userRole === 'admin' || userRole === 'weather' || userRole === 'farmer'),
     },
     {

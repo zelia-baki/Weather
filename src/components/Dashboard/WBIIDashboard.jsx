@@ -16,30 +16,54 @@ const WBIIDashboard = () => {
   const [error, setError] = useState(null);
 
   // Simulated API call - Replace with your actual API
-  const fetchFarms = async () => {
-    try {
-      const response = await axiosInstance.get('/api/farm/');
+const fetchFarms = async () => {
+  try {
+    let allFarms = [];
+    let page = 1;
+    let totalPages = 1;
+    
+    // Boucle pour récupérer toutes les pages automatiquement
+    while (page <= totalPages) {
+      const response = await axiosInstance.get(`/api/farm/?page=${page}&page_size=100`);
       
-      // Handle different API response structures
       let farms = [];
       if (Array.isArray(response.data)) {
         farms = response.data;
+        // Si c'est un simple array, on suppose qu'il n'y a qu'une page
+        totalPages = 1;
+      } else if (response.data?.results) {
+        // Structure Django REST Framework
+        farms = response.data.results;
+        totalPages = Math.ceil(response.data.count / 100);
       } else if (response.data?.farms) {
         farms = response.data.farms;
+        totalPages = response.data.total_pages || 1;
       } else if (response.data?.data) {
         farms = response.data.data;
+        totalPages = response.data.total_pages || 1;
       } else if (response.data?.items) {
         farms = response.data.items;
+        totalPages = response.data.total_pages || 1;
       }
       
-      console.log('Farms loaded:', farms);
-      return farms;
-    } catch (error) {
-      console.error('Error fetching farms:', error);
-      setError('Failed to load farms. Please try again.');
-      return [];
+      allFarms = [...allFarms, ...farms];
+      page++;
+      
+      // Sécurité: arrêter si on a fait trop de requêtes
+      if (page > 50) {
+        console.warn('Stopped after 50 pages to prevent infinite loop');
+        break;
+      }
     }
-  };
+    
+    console.log(`Total farms loaded: ${allFarms.length} from ${page - 1} page(s)`);
+    return allFarms;
+  } catch (error) {
+    console.error('Error fetching farms:', error);
+    setError('Failed to load farms. Please try again.');
+    return [];
+  }
+};
 
   const fetchHistoricalWeatherData = async (lat, lon) => {
     try {
