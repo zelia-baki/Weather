@@ -53,6 +53,13 @@ export default function Dashboard() {
   // ===============================
   // FETCH FARMER STATS
   // ===============================
+    const formatArea = (areaInSquareMeters) => {
+    if (!areaInSquareMeters || areaInSquareMeters === 0) return '0 m²';
+    const hectares = areaInSquareMeters / 10000;
+    return hectares >= 0.01 
+      ? `${hectares.toFixed(2)} ha` 
+      : `${areaInSquareMeters.toFixed(0)} m²`;
+  };
   useEffect(() => {
     const fetchFarmerStats = async () => {
       try {
@@ -243,63 +250,98 @@ export default function Dashboard() {
 
   // Fonction pour récupérer les statistiques des aires
   useEffect(() => {
-    const fetchAreaStats = async () => {
-      try {
-        const ownerTypes = ['farmer', 'forest'];  // ✅ Ajout de 'forest'
-        const promises = ownerTypes.map(type =>
-          axiosInstance.get(`/api/points/getallbyownertype/${type}`)
-        );
+  const fetchAreaStats = async () => {
+    try {
+      const ownerTypes = ['farmer', 'forest'];
+      const promises = ownerTypes.map(type =>
+        axiosInstance.get(`/api/points/getallbyownertype/${type}`)
+      );
 
-        const responses = await Promise.all(promises);
+      const responses = await Promise.all(promises);
 
-        let totalArea = 0;
-        let totalPolygons = 0;
-        const areaByOwnerType = {};
+      let totalArea = 0;
+      let totalPolygons = 0;
+      const areaByOwnerType = {};
 
-        responses.forEach((response, index) => {
-          const data = response.data;
-          const ownerType = ownerTypes[index];
+      responses.forEach((response, index) => {
+        const data = response.data;
+        const ownerType = ownerTypes[index];
 
-          if (data.polygons && data.polygons.length > 0) {
-            let ownerTypeArea = 0;
+        // ✅ Validation stricte des données
+        if (!data.polygons || !Array.isArray(data.polygons) || data.polygons.length === 0) {
+          areaByOwnerType[ownerType] = { area: 0, count: 0 };
+          return;
+        }
 
-            data.polygons.forEach(polygon => {
-              const coordinates = polygon.points.map(point => [point.longitude, point.latitude]);
-              const area = turf.area({
-                type: 'Feature',
-                geometry: {
-                  type: 'Polygon',
-                  coordinates: [coordinates]
-                }
-              });
-              ownerTypeArea += area;
+        let ownerTypeArea = 0;
+        let validPolygonCount = 0;
+
+        data.polygons.forEach(polygon => {
+          // ✅ Vérifier que polygon.points existe et contient au moins 3 points
+          if (!polygon.points || !Array.isArray(polygon.points) || polygon.points.length < 3) {
+            console.warn(`Invalid polygon for ${ownerType}:`, polygon);
+            return;
+          }
+
+          try {
+            const coordinates = polygon.points.map(point => [point.longitude, point.latitude]);
+            
+            // ✅ Fermer le polygone si nécessaire (premier point = dernier point)
+            const firstPoint = coordinates[0];
+            const lastPoint = coordinates[coordinates.length - 1];
+            
+            if (firstPoint[0] !== lastPoint[0] || firstPoint[1] !== lastPoint[1]) {
+              coordinates.push([firstPoint[0], firstPoint[1]]);
+            }
+            
+            // Calculer l'aire avec turf.js
+            const area = turf.area({
+              type: 'Feature',
+              geometry: {
+                type: 'Polygon',
+                coordinates: [coordinates]
+              }
             });
-
-            areaByOwnerType[ownerType] = {
-              area: Math.round(ownerTypeArea * 100) / 100,
-              count: data.polygons.length
-            };
-
-            totalArea += ownerTypeArea;
-            totalPolygons += data.polygons.length;
+            
+            ownerTypeArea += area;
+            validPolygonCount++;
+          } catch (err) {
+            console.error(`Error calculating area for ${ownerType} polygon:`, err, polygon);
           }
         });
 
-        setAreaStats({
-          totalArea: Math.round(totalArea * 100) / 100,
-          polygonCount: totalPolygons,
-          areaByOwnerType,
-          loading: false
-        });
+        areaByOwnerType[ownerType] = {
+          area: Math.round(ownerTypeArea * 100) / 100,
+          count: validPolygonCount
+        };
 
-      } catch (error) {
-        console.error('Error fetching area stats:', error);
-        setAreaStats(prev => ({ ...prev, loading: false }));
-      }
-    };
+        totalArea += ownerTypeArea;
+        totalPolygons += validPolygonCount;
+      });
 
-    fetchAreaStats();
-  }, []);
+      setAreaStats({
+        totalArea: Math.round(totalArea * 100) / 100,
+        polygonCount: totalPolygons,
+        areaByOwnerType,
+        loading: false
+      });
+
+    } catch (error) {
+      console.error('Error fetching area stats:', error);
+      setAreaStats({
+        totalArea: 0,
+        polygonCount: 0,
+        areaByOwnerType: { 
+          farmer: { area: 0, count: 0 }, 
+          forest: { area: 0, count: 0 } 
+        },
+        loading: false
+      });
+    }
+  };
+
+  fetchAreaStats();
+}, []);
 
   if (stats.loading || areaStats.loading || farmerStats.loading || forestStats.loading || dynamicUserStats.loading || treeStats.loading) {
     return (
@@ -572,7 +614,7 @@ export default function Dashboard() {
 
         {/* Nouvelle section: Forest & Tree Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-lg p-6 border border-green-100">
+          <div className="bg-gradient-to-br from-white-50 to-emerald-50 rounded-2xl shadow-lg p-6 border border-green-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-green-800">🌲 Forest Health</h3>
               <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
@@ -595,7 +637,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg p-6 border border-blue-100">
+          <div className="bg-gradient-to-br from-white-50 to-indigo-50 rounded-2xl shadow-lg p-6 border border-blue-100">
             <h3 className="text-lg font-bold text-blue-800 mb-4">🌳 Tree Metrics</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
@@ -613,38 +655,29 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-lg p-6 border border-purple-100">
-            <h3 className="text-lg font-bold text-purple-800 mb-4">📊 Coverage</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total Area</span>
-                <span className="text-lg font-bold text-gray-800">
-                  {areaStats.totalArea >= 10000
-                    ? `${(areaStats.totalArea / 10000).toFixed(2)} ha`
-                    : `${areaStats.totalArea.toFixed(2)} m²`
-                  }
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Farmer Area</span>
-                <span className="text-lg font-bold text-emerald-600">
-                  {areaStats.areaByOwnerType['farmer']
-                    ? `${(areaStats.areaByOwnerType['farmer'].area / 10000).toFixed(2)} ha`
-                    : '0 ha'
-                  }
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Forest Area</span>
-                <span className="text-lg font-bold text-green-600">
-                  {areaStats.areaByOwnerType['forest']
-                    ? `${(areaStats.areaByOwnerType['forest'].area / 10000).toFixed(2)} ha`
-                    : '0 ha'
-                  }
-                </span>
-              </div>
-            </div>
-          </div>
+         <div className="bg-gradient-to-br from-white-50 to-pink-50 rounded-2xl shadow-lg p-6 border border-purple-100">
+  <h3 className="text-lg font-bold text-purple-800 mb-4">📊 Coverage</h3>
+  <div className="space-y-3">
+    <div className="flex justify-between items-center">
+      <span className="text-sm text-gray-600">Total Area</span>
+      <span className="text-lg font-bold text-gray-800">
+        {formatArea(areaStats.totalArea)}
+      </span>
+    </div>
+    <div className="flex justify-between items-center">
+      <span className="text-sm text-gray-600">Farmer Area</span>
+      <span className="text-lg font-bold text-emerald-600">
+        {formatArea(areaStats.areaByOwnerType['farmer']?.area)}
+      </span>
+    </div>
+    <div className="flex justify-between items-center">
+      <span className="text-sm text-gray-600">Forest Area</span>
+      <span className="text-lg font-bold text-green-600">
+        {formatArea(areaStats.areaByOwnerType['forest']?.area)}
+      </span>
+    </div>
+  </div>
+</div>
         </div>
 
         {/* Section des fonctionnalités et graphiques */}

@@ -10,6 +10,8 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 const WeatherDashboard = () => {
     const [location, setLocation] = useState({ lat: 0, lon: 0 });
+    const [latitude, setLatitude] = useState('');
+    const [longitude, setLongitude] = useState('');
     const [weatherData, setWeatherData] = useState(null);
     const [map, setMap] = useState(null);
     const [anomalyAlert, setAnomalyAlert] = useState(null);
@@ -17,7 +19,7 @@ const WeatherDashboard = () => {
     const [selectedFarmId, setSelectedFarmId] = useState('');
     const [forecastDays, setForecastDays] = useState([]);
     const [query, setQuery] = useState('');
-    const [forecastRange, setForecastRange] = useState(3); // Nouvel état pour la plage de prévision
+    const [forecastRange, setForecastRange] = useState(3);
 
     // Récupération de la liste des fermes
     useEffect(() => {
@@ -43,13 +45,26 @@ const WeatherDashboard = () => {
                 if (response.data.status === 'success') {
                     const geolocation = response.data.data.geolocation;
                     if (geolocation && geolocation.includes(',')) {
-                        const [longitude, latitude] = geolocation.split(',');
-                        setLocation({ lat: parseFloat(latitude), lon: parseFloat(longitude) });
+                        const [lon, lat] = geolocation.split(',');
+                        const parsedLat = parseFloat(lat);
+                        const parsedLon = parseFloat(lon);
+                        setLatitude(parsedLat);
+                        setLongitude(parsedLon);
+                        setLocation({ lat: parsedLat, lon: parsedLon });
                     }
                 }
             } catch (error) {
                 console.error('Error fetching farm properties:', error);
             }
+        }
+    };
+
+    // 🔹 Bouton pour appliquer les coordonnées manuelles
+    const handleApplyCoordinates = () => {
+        if (latitude && longitude) {
+            const parsedLat = parseFloat(latitude);
+            const parsedLon = parseFloat(longitude);
+            setLocation({ lat: parsedLat, lon: parsedLon });
         }
     };
 
@@ -61,18 +76,18 @@ const WeatherDashboard = () => {
 
             if (map) {
                 map.flyTo({
-                    center: [location.lat, location.lon],
+                    center: [location.lon, location.lat],
                     zoom: 10,
                     essential: true,
                 });
-                new mapboxgl.Marker().setLngLat([location.lat, location.lon]).addTo(map);
+                new mapboxgl.Marker().setLngLat([location.lon, location.lat]).addTo(map);
             }
         }
     }, [location, map, forecastRange]);
 
     // Récupération des données météo actuelles
     const fetchWeatherData = (lat, lon) => {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lon}&longitude=${lat}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=${forecastRange}`)
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=${forecastRange}`)
             .then(response => response.json())
             .then(data => {
                 setWeatherData(data);
@@ -81,7 +96,7 @@ const WeatherDashboard = () => {
 
     // Récupération des données de prévision et génération du tableau des jours
     const fetchForecastData = (lat, lon) => {
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lon}&longitude=${lat}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=${forecastRange}`)
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=${forecastRange}`)
             .then(response => response.json())
             .then(data => {
                 generateForecastDays(data);
@@ -233,6 +248,8 @@ const WeatherDashboard = () => {
                 lat: e.lngLat.lat,
                 lon: e.lngLat.lng,
             });
+            setLatitude(e.lngLat.lat);
+            setLongitude(e.lngLat.lng);
         });
 
         setMap(newMap);
@@ -249,6 +266,8 @@ const WeatherDashboard = () => {
                         const { center } = data.features[0];
                         const [lon, lat] = center;
                         setLocation({ lat, lon });
+                        setLatitude(lat);
+                        setLongitude(lon);
                         map.flyTo({ center: [lon, lat], zoom: 10 });
                         new mapboxgl.Marker().setLngLat([lon, lat]).addTo(map);
                     }
@@ -282,49 +301,125 @@ const WeatherDashboard = () => {
                     <h1 className="text-4xl font-bold text-gray-800">Anomaly Alert Detection</h1>
                 </header>
 
-                {/* Sélection de la ferme */}
+                {/* Sélection de la ferme ET coordonnées manuelles */}
+             <section className="mb-8">
+    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg p-8 border border-gray-100">
+        <div className="flex items-center mb-6">
+            <div className="bg-blue-100 p-3 rounded-lg mr-3">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800">Location Settings</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Sélection de ferme */}
+            <div className="relative">
+                <label className="flex items-center text-gray-700 mb-2 font-semibold text-sm" htmlFor="farm_id">
+                    <svg className="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Select Farm
+                </label>
+                <select
+                    id="farm_id"
+                    name="farm_id"
+                    value={selectedFarmId}
+                    onChange={handleFarmIdChange}
+                    className="w-full p-3 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 hover:border-blue-300 cursor-pointer"
+                >
+                    <option value="">-- Choose Farm --</option>
+                    {farms.map((farm) => (
+                        <option key={farm.id} value={farm.id}>
+                            {farm.name} - {farm.subcounty}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Latitude */}
+            <div className="relative">
+                <label className="flex items-center text-gray-700 mb-2 font-semibold text-sm">
+                    <svg className="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Latitude
+                </label>
+                <input
+                    type="text"
+                    value={latitude}
+                    onChange={(e) => setLatitude(e.target.value)}
+                    className="w-full p-3 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 hover:border-blue-300"
+                    placeholder="e.g., 1.3733"
+                />
+            </div>
+
+            {/* Longitude */}
+            <div className="relative">
+                <label className="flex items-center text-gray-700 mb-2 font-semibold text-sm">
+                    <svg className="w-4 h-4 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Longitude
+                </label>
+                <input
+                    type="text"
+                    value={longitude}
+                    onChange={(e) => setLongitude(e.target.value)}
+                    className="w-full p-3 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition duration-200 hover:border-indigo-300"
+                    placeholder="e.g., 32.2903"
+                />
+            </div>
+
+            {/* Bouton Apply */}
+            <div className="flex items-end">
+                <button
+                    onClick={handleApplyCoordinates}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center"
+                >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Apply
+                </button>
+            </div>
+        </div>
+
+        {/* Indicateur visuel des coordonnées actives */}
+        {latitude && longitude && (
+            <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
+                <div className="flex items-center">
+                    <svg className="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <p className="text-sm text-blue-800 font-medium">
+                        Active coordinates: <span className="font-bold">{latitude}°N, {longitude}°E</span>
+                    </p>
+                </div>
+            </div>
+        )}
+    </div>
+</section>
+
+                {/* Dropdown pour sélectionner la plage de prévision */}
                 <section className="mb-8">
-                    <div className="bg-white rounded-lg shadow p-6">
-                        <label className="block text-gray-700 mb-2" htmlFor="farm_id">
-                            Farm ID:
+                    <div className="bg-white rounded-lg shadow-md p-6 flex items-center space-x-4">
+                        <label htmlFor="forecastRange" className="text-lg font-semibold text-gray-700">
+                            Forecast Range:
                         </label>
                         <select
-                            id="farm_id"
-                            name="farm_id"
-                            value={selectedFarmId}
-                            onChange={handleFarmIdChange}
-                            className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            required
+                            id="forecastRange"
+                            value={forecastRange}
+                            onChange={(e) => setForecastRange(parseInt(e.target.value))}
+                            className="block w-full max-w-xs py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 ease-in-out"
                         >
-                            <option value="">Select Farm</option>
-                            {farms.map((farm) => (
-                                <option key={farm.id} value={farm.id}>
-                                    {farm.name} - {farm.subcounty}
-                                </option>
-                            ))}
+                            <option value={3}>3-Day Forecast</option>
+                            <option value={10}>10-Day Forecast</option>
                         </select>
                     </div>
                 </section>
-
-                {/* Dropdown pour sélectionner la plage de prévision */}
-        {/* Dropdown pour sélectionner la plage de prévision */}
-<section className="mb-8">
-  <div className="bg-white rounded-lg shadow-md p-6 flex items-center space-x-4">
-    <label htmlFor="forecastRange" className="text-lg font-semibold text-gray-700">
-      Forecast Range:
-    </label>
-    <select
-      id="forecastRange"
-      value={forecastRange}
-      onChange={(e) => setForecastRange(parseInt(e.target.value))}
-      className="block w-full max-w-xs py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 ease-in-out"
-    >
-      <option value={3}>3-Day Forecast</option>
-      <option value={10}>10-Day Forecast</option>
-    </select>
-  </div>
-</section>
-
 
                 {/* Contenu principal : Map et cartes de prévision */}
                 <section className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">

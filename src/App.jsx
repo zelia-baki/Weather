@@ -46,7 +46,7 @@ import GradeManager from './components/crop/GradeManager.jsx';
 import ContactUs from './components/main/ContactUs.jsx';
 import SignUp from './components/main/SignUp.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
-import WeathearMap from './components/mapbox/WeatherMap.jsx';
+import WaterAdvisory from './components/mapbox/WaterAdvisory.jsx';
 import WeathearMapFarm from './components/mapbox/WeatherMapFarm.jsx';
 import WeatherHistory from './components/Graph/WeatherHistory.jsx';
 import WeatherDashboard from './components/mapbox/WeatherDasboard.jsx';
@@ -72,6 +72,7 @@ import TreeManagement from './components/Forest/TreeManagement.jsx';
 import PaymentSuccess from './components/Payment/PaymentSuccess.jsx';
 import { PaymentCancelled } from './components/Payment/PaymentCancelled.jsx';
 import { PaymentError } from './components/Payment/PaymentError.jsx';
+import WBIIDashboard from './components/Dashboard/WBIIDashboard.jsx';
 
 // ============================================
 // NOUVEAU COMPOSANT: UserTypeRoute
@@ -144,8 +145,8 @@ function App() {
     // ROUTES WEATHER - ADMIN + WEATHER ONLY
     // ============================================
     {
-      path: "/weathermap",
-      component: <WeathearMap />,
+      path: "/wateradvisory",
+      component: <WaterAdvisory />,
       adminOnly: false,
       allowedRoles: ['admin', 'weather']
     },
@@ -473,7 +474,12 @@ function App() {
       adminOnly: false,
       allowedRoles: ['admin', 'weather', 'farmer', 'forest']
     },
-
+    {
+      path: "/wbiidashboard",
+      component: <WBIIDashboard />,
+      adminOnly: false,
+      allowedRoles: ['admin', 'weather', 'farmer', 'forest']
+    },
     // EUDR Routes - Tous
     {
       path: "/EUDRSubmission",

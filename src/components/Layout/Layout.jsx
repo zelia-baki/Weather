@@ -315,6 +315,12 @@ const Layout = ({ children }) => {
                                                 Alert Messaging
                                             </a>
                                         </li>
+                                         <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                            <a href="/wateradvisory" className="block w-full h-full">
+                                                Water Advisory
+                                            </a>
+                                        </li>
+                                       
                                     </ul>
                                 </div>
                             )}
@@ -339,6 +345,11 @@ const Layout = ({ children }) => {
                                         <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
                                             <a href="/userDash" className="block w-full h-full">
                                                 Dashboard
+                                            </a>
+                                        </li>
+                                          <li className="px-4 py-2 hover:bg-teal-100 hover:text-teal-700 cursor-pointer">
+                                            <a href="/wbiidashboard" className="block w-full h-full">
+                                                WBII Dashboard
                                             </a>
                                         </li>
                                     </ul>
