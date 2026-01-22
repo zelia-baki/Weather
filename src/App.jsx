@@ -68,7 +68,7 @@ import SectionFutur from './components/Layout/SectionFutur.jsx';
 import AlertMessaging from './components/Dashboard/AlertMessaging.jsx';
 import TestMap from './components/mapbox/Test.jsx';
 import UserCertificate from './components/Eudr/UserStatsCertificate.jsx';
-import TreeManagement from './components/Forest/TreeManagement.jsx';
+import TreeManagement from './components/Forest/TreeManagement/TreeManagement.jsx';
 import PaymentSuccess from './components/Payment/PaymentSuccess.jsx';
 import { PaymentCancelled } from './components/Payment/PaymentCancelled.jsx';
 import { PaymentError } from './components/Payment/PaymentError.jsx';
