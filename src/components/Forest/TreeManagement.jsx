@@ -5,14 +5,14 @@ import axiosInstance from '../../axiosInstance';
 import Swal from 'sweetalert2';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-
 const MAPBOX_TOKEN = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
 
 const TreeManagement = () => {
   const [trees, setTrees] = useState([]);
+  const [allTreesForMap, setAllTreesForMap] = useState([]);
   const [forests, setForests] = useState([]);
   const [selectedForest, setSelectedForest] = useState('all');
-  const [viewMode, setViewMode] = useState('map'); // 'map' or 'list'
+  const [viewMode, setViewMode] = useState('map');
   const [isAddingTree, setIsAddingTree] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingTree, setEditingTree] = useState(null);
@@ -20,7 +20,10 @@ const TreeManagement = () => {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState('coordinates'); // 'coordinates' or 'address'
+  const [searchType, setSearchType] = useState('coordinates');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTrees, setTotalTrees] = useState(0);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -41,27 +44,22 @@ const TreeManagement = () => {
   // Initialize map
   useEffect(() => {
     if (map.current) return;
-
     mapboxgl.accessToken = MAPBOX_TOKEN;
-
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      center: [47.5079, -18.8792], // Madagascar center
+      center: [47.5079, -18.8792],
       zoom: 10
     });
-
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
   }, []);
 
   // Handle map clicks for adding trees
   useEffect(() => {
     if (!map.current) return;
-
     const handleMapClick = (e) => {
       if (isAddingTree) {
         const { lng, lat } = e.lngLat;
-        console.log('Map clicked:', lng, lat); // Debug
         setFormData(prev => ({
           ...prev,
           latitude: lat.toFixed(6),
@@ -69,17 +67,12 @@ const TreeManagement = () => {
         }));
         setShowForm(true);
         setIsAddingTree(false);
-
-        // Add temporary marker
         new mapboxgl.Marker({ color: '#10b981' })
           .setLngLat([lng, lat])
           .addTo(map.current);
       }
     };
-
     map.current.on('click', handleMapClick);
-
-    // Cleanup
     return () => {
       if (map.current) {
         map.current.off('click', handleMapClick);
@@ -90,16 +83,23 @@ const TreeManagement = () => {
   // Fetch data
   useEffect(() => {
     fetchForests();
-    fetchTrees();
+    fetchAllTreesForMap();
     fetchStats();
   }, []);
 
+  // Fetch trees for list view when page or forest changes
+  useEffect(() => {
+    if (viewMode === 'list') {
+      fetchTrees(currentPage);
+    }
+  }, [currentPage, selectedForest, viewMode]);
+
   // Update markers when trees change
   useEffect(() => {
-    if (map.current && trees.length > 0) {
+    if (map.current && allTreesForMap.length > 0) {
       updateMarkers();
     }
-  }, [trees, selectedForest]);
+  }, [allTreesForMap, selectedForest]);
 
   const fetchForests = async () => {
     try {
@@ -110,22 +110,35 @@ const TreeManagement = () => {
     }
   };
 
-  const fetchTrees = async () => {
+  const fetchTrees = async (page = 1) => {
     try {
-      const response = await axiosInstance.get('/api/tree/');
+      const forestParam = selectedForest !== 'all' ? `&forest_id=${selectedForest}` : '';
+      const response = await axiosInstance.get(`/api/tree/?page=${page}${forestParam}`);
       setTrees(response.data.trees || []);
+      setCurrentPage(response.data.current_page || 1);
+      setTotalPages(response.data.total_pages || 1);
+      setTotalTrees(response.data.total_trees || 0);
     } catch (error) {
       console.error('Error fetching trees:', error);
       Swal.fire('Error', 'Failed to load trees', 'error');
     }
   };
-  // Download CSV template pour trees
+
+  const fetchAllTreesForMap = async () => {
+    try {
+      const forestParam = selectedForest !== 'all' ? `?forest_id=${selectedForest}` : '';
+      const response = await axiosInstance.get(`/api/tree/all${forestParam}`);
+      setAllTreesForMap(response.data.trees || []);
+    } catch (error) {
+      console.error('Error fetching all trees for map:', error);
+    }
+  };
+
   const downloadTreeCSVTemplate = () => {
     const template = `name,type,forest_id,latitude,longitude,height,diameter,date_planted,date_cut
 Example Tree 1,Oak,1,-18.8792,47.5079,15.5,45.2,2023-01-15,
 Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10
 Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
-
     const blob = new Blob([template], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -145,16 +158,13 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
   };
 
   const updateMarkers = () => {
-    // Clear existing markers
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
 
-    // Filter trees by selected forest
     const filteredTrees = selectedForest === 'all'
-      ? trees
-      : trees.filter(t => t.forest_id === parseInt(selectedForest));
+      ? allTreesForMap
+      : allTreesForMap.filter(t => t.forest_id === parseInt(selectedForest));
 
-    // Add new markers
     filteredTrees.forEach(tree => {
       if (tree.point) {
         const el = document.createElement('div');
@@ -185,26 +195,21 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
           </div>
         `;
 
-        const popup = new mapboxgl.Popup({ offset: 25 })
-          .setDOMContent(popupContent);
-
+        const popup = new mapboxgl.Popup({ offset: 25 }).setDOMContent(popupContent);
         const marker = new mapboxgl.Marker(el)
           .setLngLat([tree.point.longitude, tree.point.latitude])
           .setPopup(popup)
           .addTo(map.current);
 
-        // Add event listeners after popup opens
         popup.on('open', () => {
           const editBtn = document.getElementById(`edit-tree-${tree.id}`);
           const deleteBtn = document.getElementById(`delete-tree-${tree.id}`);
-
           if (editBtn) {
             editBtn.onclick = () => {
               popup.remove();
               handleEdit(tree);
             };
           }
-
           if (deleteBtn) {
             deleteBtn.onclick = () => {
               popup.remove();
@@ -217,7 +222,6 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
       }
     });
 
-    // Fit bounds if trees exist
     if (filteredTrees.length > 0 && filteredTrees[0].point) {
       const bounds = new mapboxgl.LngLatBounds();
       filteredTrees.forEach(tree => {
@@ -231,26 +235,23 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!formData.latitude || !formData.longitude) {
       Swal.fire('Error', 'Please click on the map to select a location', 'error');
       return;
     }
-
     try {
       const endpoint = editingTree ? `/api/tree/${editingTree.id}` : '/api/tree/create';
       const method = editingTree ? 'put' : 'post';
-
       await axiosInstance[method](endpoint, formData);
-
       Swal.fire('Success', `Tree ${editingTree ? 'updated' : 'created'} successfully`, 'success');
-
       setShowForm(false);
       setEditingTree(null);
       resetForm();
-      fetchTrees();
+      fetchAllTreesForMap();
+      if (viewMode === 'list') {
+        fetchTrees(currentPage);
+      }
       fetchStats();
-
     } catch (error) {
       console.error('Error saving tree:', error);
       Swal.fire('Error', error.response?.data?.error || 'Failed to save tree', 'error');
@@ -283,12 +284,14 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
       cancelButtonColor: '#3085d6',
       confirmButtonText: 'Yes, delete it!'
     });
-
     if (result.isConfirmed) {
       try {
         await axiosInstance.delete(`/api/tree/${treeId}`);
         Swal.fire('Deleted!', 'Tree has been deleted.', 'success');
-        fetchTrees();
+        fetchAllTreesForMap();
+        if (viewMode === 'list') {
+          fetchTrees(currentPage);
+        }
         fetchStats();
       } catch (error) {
         Swal.fire('Error', 'Failed to delete tree', 'error');
@@ -310,58 +313,36 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
     });
   };
 
-  // Search location on map
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       Swal.fire('Error', 'Please enter search criteria', 'error');
       return;
     }
-
     if (searchType === 'coordinates') {
-      // Search by coordinates (format: lat,lng or lng,lat)
       const coords = searchQuery.split(',').map(c => parseFloat(c.trim()));
-
       if (coords.length !== 2 || coords.some(isNaN)) {
         Swal.fire('Error', 'Invalid coordinates format. Use: latitude,longitude', 'error');
         return;
       }
-
       const [first, second] = coords;
-      // Try both lat,lng and lng,lat
       const lat = Math.abs(first) <= 90 ? first : second;
       const lng = Math.abs(second) <= 180 ? second : first;
-
-      map.current.flyTo({
-        center: [lng, lat],
-        zoom: 15,
-        duration: 2000
-      });
-
-      // Add temporary marker
+      map.current.flyTo({ center: [lng, lat], zoom: 15, duration: 2000 });
       new mapboxgl.Marker({ color: '#ef4444' })
         .setLngLat([lng, lat])
         .setPopup(new mapboxgl.Popup().setHTML(`<p>Search Result<br/>${lat}, ${lng}</p>`))
         .addTo(map.current)
         .togglePopup();
-
     } else {
-      // Search by address using Mapbox Geocoding API
       try {
         const response = await fetch(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${MAPBOX_TOKEN}&limit=1`
         );
         const data = await response.json();
-
         if (data.features && data.features.length > 0) {
           const [lng, lat] = data.features[0].center;
           const placeName = data.features[0].place_name;
-
-          map.current.flyTo({
-            center: [lng, lat],
-            zoom: 15,
-            duration: 2000
-          });
-
+          map.current.flyTo({ center: [lng, lat], zoom: 15, duration: 2000 });
           new mapboxgl.Marker({ color: '#ef4444' })
             .setLngLat([lng, lat])
             .setPopup(new mapboxgl.Popup().setHTML(`<p>${placeName}</p>`))
@@ -375,32 +356,25 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
         Swal.fire('Error', 'Failed to search location', 'error');
       }
     }
-
     setSearchQuery('');
     setShowSearch(false);
   };
 
-  // Bulk import from CSV
   const handleBulkImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
         const text = event.target.result;
         const lines = text.split('\n').filter(line => line.trim());
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-
-        // Validate headers
         const requiredHeaders = ['name', 'forest_id', 'latitude', 'longitude', 'height', 'diameter', 'date_planted'];
         const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
-
         if (missingHeaders.length > 0) {
           Swal.fire('Error', `Missing required columns: ${missingHeaders.join(', ')}`, 'error');
           return;
         }
-
         const trees = [];
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',').map(v => v.trim());
@@ -410,8 +384,6 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
           });
           trees.push(tree);
         }
-
-        // Show confirmation
         const result = await Swal.fire({
           title: 'Import Trees',
           text: `Found ${trees.length} trees. Continue?`,
@@ -420,13 +392,11 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
           confirmButtonText: 'Yes, import!',
           confirmButtonColor: '#10b981'
         });
-
         if (result.isConfirmed) {
           let successCount = 0;
           let errorCount = 0;
           let skippedCount = 0;
           const details = [];
-
           Swal.fire({
             title: 'Importing Trees...',
             html: `Progress: <b>0/${trees.length}</b>`,
@@ -435,7 +405,6 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
               Swal.showLoading();
             }
           });
-
           for (let i = 0; i < trees.length; i++) {
             try {
               const response = await axiosInstance.post('/api/tree/create', trees[i]);
@@ -449,8 +418,6 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
               });
             } catch (error) {
               const errorMsg = error.response?.data?.error || error.message;
-
-              // ✅ Détecter si c'est un doublon (selon le message d'erreur du backend)
               if (errorMsg.includes('already exists') || errorMsg.includes('duplicate')) {
                 skippedCount++;
                 details.push({
@@ -469,8 +436,6 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
                 });
               }
             }
-
-            // Update progress
             Swal.update({
               html: `Progress: <b>${i + 1}/${trees.length}</b><br/>
                    <span style="color: #059669;">Success: ${successCount}</span> | 
@@ -478,11 +443,7 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
                    <span style="color: #dc2626;">Errors: ${errorCount}</span>`
             });
           }
-
-          // ✅ Affichage détaillé des résultats
           let detailsHtml = '<div style="text-align: left; max-height: 400px; overflow-y: auto; padding: 10px;">';
-
-          // Succès
           if (successCount > 0) {
             detailsHtml += '<div style="margin-bottom: 15px;"><h4 style="color: #059669; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;"><span style="font-size: 20px;">✓</span> Successfully Created:</h4>';
             details.forEach(detail => {
@@ -496,8 +457,6 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
             });
             detailsHtml += '</div>';
           }
-
-          // Ignorés
           if (skippedCount > 0) {
             detailsHtml += '<div style="margin-bottom: 15px;"><h4 style="color: #d97706; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;"><span style="font-size: 20px;">⊗</span> Skipped (Already Exists):</h4>';
             details.forEach(detail => {
@@ -510,8 +469,6 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
             });
             detailsHtml += '</div>';
           }
-
-          // Erreurs
           if (errorCount > 0) {
             detailsHtml += '<div><h4 style="color: #dc2626; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;"><span style="font-size: 20px;">✗</span> Errors:</h4>';
             details.forEach(detail => {
@@ -524,9 +481,7 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
             });
             detailsHtml += '</div>';
           }
-
           detailsHtml += '</div>';
-
           Swal.fire({
             title: 'Import Complete!',
             html: `
@@ -552,8 +507,10 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
             confirmButtonText: 'OK',
             confirmButtonColor: '#10b981'
           });
-
-          fetchTrees();
+          fetchAllTreesForMap();
+          if (viewMode === 'list') {
+            fetchTrees(currentPage);
+          }
           fetchStats();
           setShowBulkImport(false);
         }
@@ -562,39 +519,26 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
         Swal.fire('Error', 'Failed to parse CSV file', 'error');
       }
     };
-
     reader.readAsText(file);
     e.target.value = null;
   };
-  // Download CSV template
-  const downloadCSVTemplate = () => {
-    const template = `name,type,forest_id,latitude,longitude,height,diameter,date_planted,date_cut
-Example Tree 1,Oak,1,-18.8792,47.5079,15.5,45.2,2023-01-15,
-Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
 
-    const blob = new Blob([template], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'tree_import_template.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
+  const getDisplayTrees = () => {
+    return viewMode === 'map' ? allTreesForMap : trees;
   };
 
-  const filteredTrees = selectedForest === 'all'
-    ? trees
-    : trees.filter(t => t.forest_id === parseInt(selectedForest));
+  const filteredTreesForDisplay = selectedForest === 'all'
+    ? getDisplayTrees()
+    : getDisplayTrees().filter(t => t.forest_id === parseInt(selectedForest));
 
   return (
     <div className="container mx-auto p-6">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-green-800 flex items-center gap-2 mb-4">
           <Trees className="w-8 h-8" />
           Tree Management System
         </h1>
 
-        {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="bg-green-50 p-4 rounded-lg border border-green-200">
@@ -612,7 +556,6 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
           </div>
         )}
 
-        {/* Controls */}
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => setIsAddingTree(!isAddingTree)}
@@ -624,7 +567,7 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
             {isAddingTree ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
             {isAddingTree ? 'Cancel Adding' : 'Add Tree'}
           </button>
-          {/* Dans la section Controls, après le bouton "Add Tree" */}
+
           <button
             onClick={() => setShowBulkImport(true)}
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition"
@@ -642,7 +585,14 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
           </button>
 
           <button
-            onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}
+            onClick={() => {
+              if (viewMode === 'map') {
+                setViewMode('list');
+                fetchTrees(1);
+              } else {
+                setViewMode('map');
+              }
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition"
           >
             {viewMode === 'map' ? <List className="w-5 h-5" /> : <MapIcon className="w-5 h-5" />}
@@ -651,7 +601,15 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
 
           <select
             value={selectedForest}
-            onChange={(e) => setSelectedForest(e.target.value)}
+            onChange={(e) => {
+              setSelectedForest(e.target.value);
+              setCurrentPage(1);
+              if (viewMode === 'map') {
+                fetchAllTreesForMap();
+              } else {
+                fetchTrees(1);
+              }
+            }}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
           >
             <option value="all">All Forests</option>
@@ -668,7 +626,6 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
         )}
       </div>
 
-      {/* Main Content */}
       {viewMode === 'map' ? (
         <div className="bg-white rounded-lg shadow-lg overflow-hidden" style={{ height: '600px' }}>
           <div ref={mapContainer} className="w-full h-full" />
@@ -688,7 +645,7 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
               </tr>
             </thead>
             <tbody>
-              {filteredTrees.map((tree, index) => (
+              {filteredTreesForDisplay.map((tree, index) => (
                 <tr key={tree.id} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                   <td className="px-4 py-3">{tree.name}</td>
                   <td className="px-4 py-3">{tree.type || 'N/A'}</td>
@@ -716,10 +673,33 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
               ))}
             </tbody>
           </table>
+
+          {viewMode === 'list' && totalPages > 1 && (
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+              <div className="text-sm text-gray-700">
+                Showing page {currentPage} of {totalPages} ({totalTrees} total trees)
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-green-700 transition"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-green-700 transition"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -743,9 +723,7 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Tree Name *
-                    </label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Tree Name *</label>
                     <input
                       type="text"
                       value={formData.name}
@@ -754,11 +732,8 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                       required
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Tree Type
-                    </label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Tree Type</label>
                     <input
                       type="text"
                       value={formData.type}
@@ -767,11 +742,8 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                       placeholder="e.g., Oak, Pine..."
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Forest *
-                    </label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Forest *</label>
                     <select
                       value={formData.forest_id}
                       onChange={(e) => setFormData({ ...formData, forest_id: e.target.value })}
@@ -784,11 +756,8 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                       ))}
                     </select>
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Height (m) *
-                    </label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Height (m) *</label>
                     <input
                       type="number"
                       step="0.1"
@@ -798,11 +767,8 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                       required
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Diameter (cm) *
-                    </label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Diameter (cm) *</label>
                     <input
                       type="number"
                       step="0.1"
@@ -812,11 +778,8 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                       required
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Date Planted *
-                    </label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Date Planted *</label>
                     <input
                       type="date"
                       value={formData.date_planted}
@@ -825,11 +788,8 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                       required
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Date Cut (optional)
-                    </label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Date Cut (optional)</label>
                     <input
                       type="date"
                       value={formData.date_cut}
@@ -837,11 +797,8 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Latitude *
-                    </label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Latitude *</label>
                     <input
                       type="text"
                       value={formData.latitude}
@@ -851,11 +808,8 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                       required
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      Longitude *
-                    </label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Longitude *</label>
                     <input
                       type="text"
                       value={formData.longitude}
@@ -866,7 +820,6 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                     />
                   </div>
                 </div>
-
                 <div className="flex gap-3 pt-4">
                   <button
                     type="submit"
@@ -892,7 +845,6 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
         </div>
       )}
 
-      {/* Search Location Modal */}
       {showSearch && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
@@ -901,41 +853,28 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                 <MapPin className="w-6 h-6" />
                 Search Location
               </h2>
-              <button
-                onClick={() => setShowSearch(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
+              <button onClick={() => setShowSearch(false)} className="text-gray-500 hover:text-gray-700">
                 <X className="w-6 h-6" />
               </button>
             </div>
-
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Search Type
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Search Type</label>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setSearchType('coordinates')}
-                    className={`flex-1 px-4 py-2 rounded-lg font-semibold transition ${searchType === 'coordinates'
-                      ? 'bg-orange-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
+                    className={`flex-1 px-4 py-2 rounded-lg font-semibold transition ${searchType === 'coordinates' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                   >
                     Coordinates
                   </button>
                   <button
                     onClick={() => setSearchType('address')}
-                    className={`flex-1 px-4 py-2 rounded-lg font-semibold transition ${searchType === 'address'
-                      ? 'bg-orange-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
+                    className={`flex-1 px-4 py-2 rounded-lg font-semibold transition ${searchType === 'address' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                   >
                     Address
                   </button>
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   {searchType === 'coordinates' ? 'Enter Coordinates (lat,lng)' : 'Enter Address'}
@@ -949,12 +888,9 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {searchType === 'coordinates'
-                    ? 'Format: latitude, longitude (e.g., -18.8792, 47.5079)'
-                    : 'Enter city, address, or place name'}
+                  {searchType === 'coordinates' ? 'Format: latitude, longitude (e.g., -18.8792, 47.5079)' : 'Enter city, address, or place name'}
                 </p>
               </div>
-
               <button
                 onClick={handleSearch}
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-lg transition"
@@ -967,7 +903,6 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
         </div>
       )}
 
-      {/* Bulk Import Modal */}
       {showBulkImport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
@@ -976,16 +911,11 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                 <Upload className="w-6 h-6" />
                 Bulk Import Trees
               </h2>
-              <button
-                onClick={() => setShowBulkImport(false)}
-                className="text-gray-500 hover:text-gray-700 transition"
-              >
+              <button onClick={() => setShowBulkImport(false)} className="text-gray-500 hover:text-gray-700 transition">
                 <X className="w-6 h-6" />
               </button>
             </div>
-
             <div className="space-y-4">
-              {/* ✅ Avertissement doublons GPS */}
               <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
@@ -996,12 +926,10 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                   <div className="mt-2 bg-white rounded p-2 text-xs text-amber-900">
                     <p className="font-mono">✓ "Oak 1" at -18.8792, 47.5079 - New tree</p>
                     <p className="font-mono">⊗ "Oak 1" at -18.8792, 47.5079 - Duplicate, skipped</p>
-                    <p className="font-mono">✓ "Oak 1" at -18.9000, 47.5200 - Different location 10m, created</p>
+                    <p className="font-mono">✓ "Oak 1" at -18.9000, 47.5200 - Different location, created</p>
                   </div>
                 </div>
               </div>
-
-              {/* Instructions */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -1022,8 +950,6 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                   <li>• <strong>date_cut</strong> - Format: YYYY-MM-DD (optional)</li>
                 </ul>
               </div>
-
-              {/* Download Template */}
               <button
                 onClick={downloadTreeCSVTemplate}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition flex items-center justify-center gap-2"
@@ -1031,8 +957,6 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                 <Download className="w-5 h-5" />
                 Download CSV Template
               </button>
-
-              {/* File Upload Area */}
               <div className="border-2 border-dashed border-purple-300 rounded-lg p-8 text-center bg-purple-50 hover:bg-purple-100 transition">
                 <Upload className="w-16 h-16 mx-auto text-purple-400 mb-4" />
                 <p className="text-gray-700 mb-2 font-semibold">Choose your CSV file to upload</p>
@@ -1051,8 +975,6 @@ Example Tree 2,Pine,1,-18.8800,47.5100,12.3,38.7,2023-02-20,2024-01-10`;
                   Select CSV File
                 </label>
               </div>
-
-              {/* Example Preview */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-700 mb-2">Example CSV Content:</h4>
                 <pre className="text-xs bg-white p-3 rounded border border-gray-300 overflow-x-auto">
