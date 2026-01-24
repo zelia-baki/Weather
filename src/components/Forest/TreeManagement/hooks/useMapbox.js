@@ -4,25 +4,56 @@ import mapboxgl from 'mapbox-gl';
 
 const MAPBOX_TOKEN = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
 
-export const useMapbox = (onMapClick) => {
+export const useMapbox = (onMapClick, initialTrees = []) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markers = useRef([]);
+  const hasAutoZoomed = useRef(false);
 
   useEffect(() => {
     if (map.current) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
+    // Déterminer le centre initial basé sur les arbres
+    let initialCenter = [47.5079, -18.8792]; // Madagascar par défaut
+    let initialZoom = 10;
+
+    if (initialTrees.length > 0) {
+      const firstTree = initialTrees[0];
+      if (firstTree.point) {
+        initialCenter = [firstTree.point.longitude, firstTree.point.latitude];
+        initialZoom = 13;
+        hasAutoZoomed.current = true;
+      }
+    }
+
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      center: [47.5079, -18.8792],
-      zoom: 10
+      center: initialCenter,
+      zoom: initialZoom
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
   }, []);
+
+  // Centrer sur le premier arbre une fois que les arbres sont chargés (si pas déjà fait)
+  useEffect(() => {
+    if (map.current && !hasAutoZoomed.current && initialTrees.length > 0) {
+      const firstTree = initialTrees[0];
+      if (firstTree.point) {
+        setTimeout(() => {
+          map.current.flyTo({
+            center: [firstTree.point.longitude, firstTree.point.latitude],
+            zoom: 13,
+            essential: true
+          });
+        }, 500);
+        hasAutoZoomed.current = true;
+      }
+    }
+  }, [initialTrees]);
 
   useEffect(() => {
     if (!map.current || !onMapClick) return;

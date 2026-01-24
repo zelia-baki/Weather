@@ -60,7 +60,7 @@ const TreeManagement = () => {
     }
   };
 
-  const { mapContainer, updateMarkers, flyTo, addTemporaryMarker } = useMapbox(handleMapClick);
+  const { mapContainer, updateMarkers, flyTo, addTemporaryMarker } = useMapbox(handleMapClick, allTreesForMap);
 
   useEffect(() => {
     if (viewMode === 'map' && allTreesForMap.length > 0) {
