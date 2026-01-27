@@ -4,7 +4,7 @@ import { Edit2, Trash2, MapPin } from 'lucide-react';
 
 // Moist Tropical Forest Model (Chave et al. 2014)
 // AGB = 0.0673 * (ρ * D² * H)^0.976
-const calculateAGB = (diameter, height, woodDensity = 0.6) => {
+const calculateAGB = (diameter, height, woodDensity = 0.5) => {
   if (!diameter || !height) return 0;
   const D = parseFloat(diameter); // DBH en cm
   const H = parseFloat(height);   // Hauteur en m
