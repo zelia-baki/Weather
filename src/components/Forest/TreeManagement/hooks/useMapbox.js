@@ -75,6 +75,32 @@ export const useMapbox = (onMapClick, initialTrees = []) => {
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
 
+    // Fonction de calcul AGB
+    const calculateAGB = (diameter, height, woodDensity = 0.6) => {
+      if (!diameter || !height) return 0;
+      const D = parseFloat(diameter);
+      const H = parseFloat(height);
+      const rho = woodDensity;
+      const AGB = 0.0673 * Math.pow((rho * D * D * H), 0.976);
+      return AGB;
+    };
+
+    // Fonction de calcul CO2
+    const calculateCO2 = (diameter, height, woodDensity = 0.6) => {
+      if (!diameter || !height) return { agb: 0, co2: 0 };
+      const AGB = calculateAGB(diameter, height, woodDensity);
+      const BGB = 0.2 * AGB;
+      const TB = AGB + BGB;
+      const TDW = TB * 0.725;
+      const TC = TDW * 0.5;
+      const CO2_kg = TC * 3.67;
+      const CO2_tonnes = CO2_kg / 1000;
+      return {
+        agb: AGB.toFixed(2),
+        co2: CO2_tonnes.toFixed(3)
+      };
+    };
+
     trees.forEach(tree => {
       if (tree.point) {
         const el = document.createElement('div');
@@ -86,6 +112,8 @@ export const useMapbox = (onMapClick, initialTrees = []) => {
         `;
         el.style.cursor = 'pointer';
 
+        const { agb, co2 } = calculateCO2(tree.diameter, tree.height);
+
         const popupContent = document.createElement('div');
         popupContent.style.padding = '10px';
         popupContent.innerHTML = `
@@ -96,6 +124,8 @@ export const useMapbox = (onMapClick, initialTrees = []) => {
               <p style="margin: 4px 0;"><strong>Forest:</strong> ${tree.forest_name || 'N/A'}</p>
               <p style="margin: 4px 0;"><strong>Height:</strong> ${tree.height}m</p>
               <p style="margin: 4px 0;"><strong>Diameter:</strong> ${tree.diameter}cm</p>
+              <p style="margin: 4px 0;"><strong>AGB:</strong> <span style="color: #047857; font-weight: 600;">${agb} kg</span></p>
+              <p style="margin: 4px 0;"><strong>tCO₂e:</strong> <span style="color: #2563eb; font-weight: 600;">${co2}</span></p>
               <p style="margin: 4px 0;"><strong>Planted:</strong> ${tree.date_planted || 'Unknown'}</p>
             </div>
             <div id="tree-actions-${tree.id}" style="margin-top: 12px; display: flex; gap: 8px;"></div>
