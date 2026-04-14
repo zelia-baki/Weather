@@ -12,20 +12,31 @@ const PolygonDrawer = ({
   initialCenter = [32.5825, 0.3476],
   zoom = 8,
   onChange,
+  // 🎯 NOUVELLES PROPS POUR LE HIGHLIGHTING
+  highlightModeToggle = "",
+  highlightSearchBar = "",
+  highlightPointModeInfo = "",
+  highlightDrawControls = ""
 }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const drawRef = useRef(null);
+  const geocoderRef = useRef(null);
 
   const [polygonGeoJSON, setPolygonGeoJSON] = useState(null);
   const [area, setArea] = useState(null);
   const [properties, setProperties] = useState([]);
   
-  // 🆕 États pour la construction point par point
   const [isPointMode, setIsPointMode] = useState(false);
   const [polygonPoints, setPolygonPoints] = useState([]);
   const [currentMarker, setCurrentMarker] = useState(null);
   const [polygonMarkers, setPolygonMarkers] = useState([]);
+  
+  const isPointModeRef = useRef(isPointMode);
+
+  useEffect(() => {
+    isPointModeRef.current = isPointMode;
+  }, [isPointMode]);
 
   useEffect(() => {
     mapboxgl.accessToken =
@@ -87,18 +98,16 @@ const PolygonDrawer = ({
     });
 
     map.addControl(geocoder);
+    geocoderRef.current = geocoder;
 
-    // 🆕 Gestion des résultats de recherche
     geocoder.on('result', (e) => {
       const { geometry, place_name } = e.result;
       const [lng, lat] = geometry.coordinates;
       
-      // Supprimer le marqueur précédent s'il existe
       if (currentMarker) {
         currentMarker.remove();
       }
       
-      // Créer un nouveau marqueur avec popup cliquable
       const marker = new mapboxgl.Marker({ color: '#ff6b6b' })
         .setLngLat([lng, lat])
         .addTo(map);
@@ -108,17 +117,16 @@ const PolygonDrawer = ({
         maxWidth: '250px'
       }).setHTML(`
           <div style="text-align: center; padding: 5px; font-size: 12px;">
-            <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">${place_name}</p>
             <p style="margin: 0; color: #666;">
               ${lng.toFixed(4)}, ${lat.toFixed(4)}
             </p>
-            ${isPointMode ? 
+            ${isPointModeRef.current ?
               `<button onclick="window.addPolygonPoint(${lng}, ${lat})" 
-                       style="background: #4CAF50; color: white; border: none; 
-                              padding: 6px 12px; border-radius: 4px; cursor: pointer; 
-                              margin-top: 8px; font-size: 11px; font-weight: bold;">
+                      style="background: #4CAF50; color: white; border: none; 
+                             padding: 6px 12px; border-radius: 4px; cursor: pointer; 
+                             margin-top: 8px; font-size: 11px; font-weight: bold;">
                 ➕ Add Point
-               </button>` : ''
+              </button>` : ''
             }
           </div>
         `);
@@ -150,35 +158,29 @@ const PolygonDrawer = ({
     map.on("draw.delete", updatePolygon);
 
     return () => {
-      // Nettoyage
       polygonMarkers.forEach(marker => marker.remove());
       if (currentMarker) currentMarker.remove();
       map.remove();
     };
   }, []);
 
-  // 🆕 Fonction pour ajouter un point au polygone (accessible globalement)
   useEffect(() => {
     window.addPolygonPoint = (lng, lat) => {
       const newPoints = [...polygonPoints, [lng, lat]];
       setPolygonPoints(newPoints);
       
-      // Créer un marqueur permanent pour ce point
       const marker = new mapboxgl.Marker({ color: '#4CAF50', scale: 0.8 })
         .setLngLat([lng, lat])
         .addTo(mapRef.current);
       
       setPolygonMarkers(prev => [...prev, marker]);
       
-      // Supprimer le marqueur temporaire de recherche
       if (currentMarker) {
         currentMarker.remove();
         setCurrentMarker(null);
       }
       
-      // Si on a au moins 3 points, créer le polygone
       if (newPoints.length >= 3) {
-        // Fermer le polygone en ajoutant le premier point à la fin
         const closedCoords = [...newPoints, newPoints[0]];
         
         const polygonFeature = {
@@ -190,7 +192,6 @@ const PolygonDrawer = ({
           }
         };
         
-        // Supprimer l'ancien polygone et créer le nouveau
         drawRef.current.deleteAll();
         drawRef.current.add(polygonFeature);
         
@@ -207,16 +208,13 @@ const PolygonDrawer = ({
     };
   }, [polygonPoints, currentMarker, onChange]);
 
-  // 🆕 Activer/désactiver le mode point par point
   const togglePointMode = () => {
     setIsPointMode(!isPointMode);
     if (isPointMode) {
-      // Réinitialiser si on désactive le mode
       resetPolygonConstruction();
     }
   };
 
-  // 🆕 Réinitialiser la construction point par point
   const resetPolygonConstruction = () => {
     setPolygonPoints([]);
     polygonMarkers.forEach(marker => marker.remove());
@@ -231,12 +229,10 @@ const PolygonDrawer = ({
     if (onChange) onChange(null);
   };
 
-  // ➕ Ajouter une propriété dynamique
   const addProperty = () => {
     setProperties([...properties, { name: "", value: "" }]);
   };
 
-  // 🔄 Modifier une propriété
   const updateProperty = (index, key, val) => {
     const updated = [...properties];
     updated[index][key] = val;
@@ -244,14 +240,12 @@ const PolygonDrawer = ({
     syncProperties(updated);
   };
 
-  // ❌ Supprimer une propriété
   const removeProperty = (index) => {
     const updated = properties.filter((_, i) => i !== index);
     setProperties(updated);
     syncProperties(updated);
   };
 
-  // 🔗 Met à jour polygonGeoJSON avec les props
   const syncProperties = (updatedProps) => {
     if (polygonGeoJSON) {
       const newPolygon = {
@@ -267,18 +261,25 @@ const PolygonDrawer = ({
 
   return (
     <div className="relative h-[500px] w-full flex">
-      {/* 🗺️ Map */}
+      {/* 🗺️ Map avec highlight conditionnel pour les contrôles de dessin */}
       <div
         ref={mapContainerRef}
-        className="flex-1 rounded-xl shadow-md relative"
+        className={`flex-1 rounded-xl shadow-md relative ${highlightDrawControls}`}
       />
+
+      {/* 🎯 Highlight sur la barre de recherche (overlay) */}
+      {highlightSearchBar && (
+        <div className={`absolute top-0 left-0 w-full pointer-events-none z-[9999] ${highlightSearchBar}`}>
+          <div className="h-12 mx-4 mt-4" />
+        </div>
+      )}
 
       {/* 📋 Panneau de contrôle */}
       <div className="w-80 bg-white border-l p-4 overflow-y-auto">
         <h2 className="text-lg font-semibold mb-3">Polygon Creator</h2>
         
-        {/* 🆕 Mode de construction */}
-        <div className="mb-4 p-3 bg-gray-50 rounded">
+        {/* 🆕 Mode de construction avec highlight */}
+        <div className={`mb-4 p-3 bg-gray-50 rounded ${highlightModeToggle}`}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Construction Mode:</span>
             <button
@@ -296,7 +297,7 @@ const PolygonDrawer = ({
           {isPointMode && (
             <div className="text-xs text-gray-600 space-y-1">
               <p>• Search for coordinates</p>
-              <p>• Click "Add to Polygon" on markers</p>
+              <p>• Click "Add Point" on markers</p>
               <p>• Need 3+ points to create polygon</p>
               <p className="text-green-600 font-medium">
                 Points added: {polygonPoints.length}
@@ -314,12 +315,21 @@ const PolygonDrawer = ({
           )}
         </div>
 
-        {/* Instructions */}
-        <div className="mb-4 p-2 bg-blue-50 rounded text-sm text-blue-800">
+        {/* Instructions avec highlight pour Point Mode */}
+        <div className={`mb-4 p-2 bg-blue-50 rounded text-sm text-blue-800 ${highlightPointModeInfo}`}>
           <strong>Search tips:</strong><br/>
           • Place names: "Paris", "New York"<br/>
           • Coordinates: "Lat: -12.34, Lng: 56.78"<br/>
           • Or simply: "-12.34, 56.78"
+          {isPointMode && (
+            <>
+              <br/><br/>
+              <strong className="text-green-700">Point Mode Active:</strong><br/>
+              • Search will show "Add Point" button<br/>
+              • Click it to add each corner<br/>
+              • Polygon forms after 3+ points
+            </>
+          )}
         </div>
 
         {/* Points du polygone en cours */}

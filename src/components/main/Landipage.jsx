@@ -96,7 +96,7 @@ const LandingPage = () => {
             href='/EUDRSubmissionForGuest'
             className="relative text-white after:absolute after:w-0 after:h-[2px] after:bg-teal-300 after:bottom-0 after:left-1/2 after:transform after:-translate-x-1/2 hover:after:w-full hover:after:left-0 transition-all duration-300"
           >
-            Resources
+            Tools
           </a>
           <a
             key='#'
