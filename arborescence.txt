@@ -1,5 +1,6 @@
 D:\project\Weather\
 ├── .babelrc.json
+├── .env.example
 ├── .eslintrc.cjs
 ├── .gitignore
 ├── .yarn
@@ -9,6 +10,7 @@ D:\project\Weather\
 ├── DDS_template.html
 ├── README.md
 ├── arborescence.py
+├── arborescence.txt
 ├── certificate.html
 ├── dist
 │   ├── assets
