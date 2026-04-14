@@ -7,16 +7,13 @@ import {
   FaChartLine, FaEnvelope, FaSatelliteDish, FaBars, FaTimes,
 } from "react-icons/fa";
 
-// ─── Thème centralisé ────────────────────────────────────────────────────────
 import {
   colors, fonts, radius, shadows,
   btnPrimary, btnOutline, featCard,
   sectionLabel, displayTitle, mutedText, monoLabel,
 } from "../../theme";
 
-/* ─── STYLES CSS LOCAUX (animations, classes dynamiques) ──────────────────── */
-// NOTE: les variables CSS globales (:root, body, scrollbar) sont injectées
-//       par ThemeProvider dans App.jsx — on ne les répète plus ici.
+/* ─── STYLES CSS LOCAUX ──────────────────────────────────────────────────────── */
 const LocalStyles = () => (
   <style>{`
     /* ── SPLASH ── */
@@ -88,7 +85,12 @@ const LocalStyles = () => (
       width: max-content;
     }
 
-    /* ── NAV ── */
+    /* ── NAV RESPONSIVE ── */
+    .desktop-nav {
+      display: flex;
+      gap: 36px;
+      align-items: center;
+    }
     .nav-link {
       font-family: var(--body); font-size: 13px; font-weight: 500;
       letter-spacing: 0.08em; color: var(--muted);
@@ -96,6 +98,22 @@ const LocalStyles = () => (
       transition: color 0.2s; text-transform: uppercase;
     }
     .nav-link:hover { color: var(--text); }
+
+    /* Desktop CTA buttons in header */
+    .header-cta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-signin { display: inline-flex; }
+
+    /* Hamburger: hidden on desktop */
+    .menu-burger {
+      background: none; border: none;
+      color: var(--text); font-size: 20px;
+      cursor: pointer; display: none;
+      padding: 4px;
+    }
 
     /* ── FEATURE CARD hover ── */
     .feat-card {
@@ -126,6 +144,7 @@ const LocalStyles = () => (
       border-radius: 100px; text-decoration: none;
       border: none; cursor: pointer;
       transition: all 0.25s; letter-spacing: 0.04em;
+      white-space: nowrap;
     }
     .btn-primary:hover {
       background: #4ade80;
@@ -139,6 +158,7 @@ const LocalStyles = () => (
       border-radius: 100px; text-decoration: none;
       border: 1px solid var(--border); cursor: pointer;
       transition: all 0.25s; letter-spacing: 0.04em;
+      white-space: nowrap;
     }
     .btn-outline:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.05); }
 
@@ -194,6 +214,147 @@ const LocalStyles = () => (
     /* ── GLOW BLOB ── */
     .glow-blob { position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; }
 
+    /* ── HERO ── */
+    .hero-inner {
+      max-width: 1200px; margin: 0 auto; width: 100%;
+      display: flex; align-items: center;
+      gap: 60px; justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .hero-left { flex: 1 1 480px; max-width: 600px; }
+    .hero-right { flex: 1 1 300px; display: flex; justify-content: center; }
+    .hero-cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 48px; }
+
+    /* ── EUDR HIGHLIGHT ── */
+    .eudr-section {
+      margin: 0 40px 120px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(34,197,94,0.06), rgba(96,165,250,0.04));
+      border: 1px solid rgba(34,197,94,0.12);
+      padding: 80px 60px;
+      display: flex; gap: 60px;
+      align-items: center; flex-wrap: wrap;
+      position: relative; overflow: hidden;
+    }
+    .eudr-grid {
+      flex: 1 1 280px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+
+    /* ── FOOTER ── */
+    .footer-inner {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap; gap: 20px;
+    }
+    .footer-links { display: flex; gap: 24px; }
+
+    /* ── FEATURES SECTION ── */
+    .features-section {
+      padding: 120px 40px;
+      max-width: 1240px; margin: 0 auto;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── CONTACT SECTION ── */
+    .contact-section {
+      padding: 120px 40px; text-align: center;
+      background: linear-gradient(180deg, transparent, rgba(34,197,94,0.03), transparent);
+    }
+    .contact-chips {
+      display: flex; gap: 12px;
+      justify-content: center; flex-wrap: wrap;
+    }
+
+    /* ══════════════════════════════════════════════
+       RESPONSIVE — TABLET  (≤ 1024px)
+    ══════════════════════════════════════════════ */
+    @media (max-width: 1024px) {
+      .orbit-container { width: 300px; height: 300px; }
+      .orbit-1 { width: 220px; height: 220px; }
+      .orbit-2 { width: 268px; height: 268px; }
+      .orbit-3 { width: 300px; height: 300px; }
+    }
+
+    /* ══════════════════════════════════════════════
+       RESPONSIVE — MOBILE  (≤ 768px)
+    ══════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+
+      /* ── Header ── */
+      .desktop-nav   { display: none !important; }
+      .header-signin { display: none !important; }
+      .menu-burger   { display: block !important; }
+      .header-cta .btn-primary { padding: 8px 16px; font-size: 12px; }
+
+      /* ── Hero ── */
+      .hero-section { padding: 60px 20px 40px !important; min-height: auto !important; }
+      .hero-inner   { gap: 32px; }
+      .hero-left    { flex: 1 1 100%; max-width: 100%; text-align: center; }
+      .hero-right   { flex: 1 1 100%; }
+      .hero-cta-row { justify-content: center; }
+
+      /* ── Orbit ── */
+      .orbit-container { width: 220px; height: 220px; }
+      .orbit-1 { width: 160px; height: 160px; }
+      .orbit-2 { width: 196px; height: 196px; }
+      .orbit-3 { width: 220px; height: 220px; }
+
+      /* ── Ticker ── */
+      .ticker-wrap { padding: 10px 0; }
+
+      /* ── Stats ── */
+      .stat-card {
+        flex: 1 1 calc(50% - 1px) !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--border);
+        padding: 20px 16px !important;
+      }
+
+      /* ── Features ── */
+      .features-section { padding: 64px 20px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .feat-card { padding: 24px; }
+
+      /* ── EUDR ── */
+      .eudr-section {
+        margin: 0 16px 64px !important;
+        padding: 40px 24px !important;
+        gap: 32px;
+      }
+      .eudr-grid { grid-template-columns: 1fr 1fr; }
+
+      /* ── Contact ── */
+      .contact-section { padding: 64px 20px; }
+
+      /* ── Footer ── */
+      .footer-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      .footer-links { gap: 16px; }
+      footer { padding: 32px 20px !important; }
+
+      /* ── Mobile nav link font ── */
+      .mobile-nav-link { font-size: 28px; }
+    }
+
+    /* ══════════════════════════════════════════════
+       RESPONSIVE — SMALL MOBILE  (≤ 480px)
+    ══════════════════════════════════════════════ */
+    @media (max-width: 480px) {
+      .eudr-grid { grid-template-columns: 1fr; }
+      .stat-card { flex: 1 1 100% !important; border-bottom: 1px solid var(--border) !important; }
+      .hero-cta-row .btn-primary,
+      .hero-cta-row .btn-outline { width: 100%; justify-content: center; }
+      .contact-chip { width: 100%; justify-content: center; }
+    }
+
     /* ── KEYFRAMES ── */
     @keyframes radarSpin  { from { transform: rotate(0deg);   } to { transform: rotate(360deg);   } }
     @keyframes loadBar    { from { width: 0; }                  to { width: 100%; } }
@@ -206,13 +367,6 @@ const LocalStyles = () => (
     @keyframes ticker     { from { transform: translateX(0);  } to { transform: translateX(-50%); } }
     @keyframes orbitSpin  { from { transform: translate(-50%,-50%) rotate(0deg);   } to { transform: translate(-50%,-50%) rotate(360deg);   } }
     @keyframes counterSpin{ from { transform: rotate(0deg);   } to { transform: rotate(-360deg);  } }
-
-    @media (max-width: 768px) {
-      .orbit-container { width: 260px; height: 260px; }
-      .orbit-1 { width: 180px; height: 180px; }
-      .orbit-2 { width: 220px; height: 220px; }
-      .orbit-3 { width: 256px; height: 256px; }
-    }
   `}</style>
 );
 
@@ -320,7 +474,6 @@ const Particles = () => (
 /* ─── ORBIT VISUAL ───────────────────────────────────────────────────────────── */
 const OrbitVisual = () => (
   <div className="orbit-container" style={{ flexShrink: 0 }}>
-    {/* Core */}
     <div style={{
       position: "absolute", top: "50%", left: "50%",
       transform: "translate(-50%, -50%)",
@@ -365,12 +518,12 @@ const LandingPage = () => {
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
 
   const features = [
-    { Icon: FaTree,         label: "Forest",  title: "Forest Management",   color: colors.green,  bg: "rgba(34,197,94,0.1)",   desc: "Real-time data insights for biodiversity and forestry conservation, anti-deforestation, afforestation & reforestation with satellite precision." },
-    { Icon: FaQrcode,       label: "Trace",   title: "Digital Trace ID",    color: colors.blue,   bg: colors.blueDim,          desc: "Track produce and inventory, trace supply chains from farm to fork by generating secure digital certificates & stamps." },
-    { Icon: FaTractor,      label: "Farm",    title: "Farm Management",     color: colors.amber,  bg: colors.amberDim,         desc: "Manage and monitor farm operations with actionable geospatial data insights and AI-driven crop performance analytics." },
-    { Icon: FaLeaf,         label: "EUDR",    title: "EUDR Compliance",     color: colors.purple, bg: colors.purpleDim,        desc: "Leverage advanced geospatial analytics and machine learning for environmental risk assessments and EUDR compliance verification." },
-    { Icon: FaCloudSunRain, label: "Climate", title: "Climate Intelligence",color: colors.sky,    bg: colors.skyDim,           desc: "Gain insights into how changing weather and climate patterns affect your business through area-based risk assessments." },
-    { Icon: FaChartLine,    label: "Carbon",  title: "Carbon Offset",       color: colors.greenLight, bg: "rgba(74,222,128,0.1)", desc: "Contribute to climate sustainability and the Net Zero agenda by managing and tracking carbon and GHG emissions precisely." },
+    { Icon: FaTree,         label: "Forest",  title: "Forest Management",    color: colors.green,      bg: "rgba(34,197,94,0.1)",   desc: "Real-time data insights for biodiversity and forestry conservation, anti-deforestation, afforestation & reforestation with satellite precision." },
+    { Icon: FaQrcode,       label: "Trace",   title: "Digital Trace ID",     color: colors.blue,       bg: colors.blueDim,          desc: "Track produce and inventory, trace supply chains from farm to fork by generating secure digital certificates & stamps." },
+    { Icon: FaTractor,      label: "Farm",    title: "Farm Management",      color: colors.amber,      bg: colors.amberDim,         desc: "Manage and monitor farm operations with actionable geospatial data insights and AI-driven crop performance analytics." },
+    { Icon: FaLeaf,         label: "EUDR",    title: "EUDR Compliance",      color: colors.purple,     bg: colors.purpleDim,        desc: "Leverage advanced geospatial analytics and machine learning for environmental risk assessments and EUDR compliance verification." },
+    { Icon: FaCloudSunRain, label: "Climate", title: "Climate Intelligence", color: colors.sky,        bg: colors.skyDim,           desc: "Gain insights into how changing weather and climate patterns affect your business through area-based risk assessments." },
+    { Icon: FaChartLine,    label: "Carbon",  title: "Carbon Offset",        color: colors.greenLight, bg: "rgba(74,222,128,0.1)",  desc: "Contribute to climate sustainability and the Net Zero agenda by managing and tracking carbon and GHG emissions precisely." },
   ];
 
   const stats = [
@@ -389,7 +542,6 @@ const LandingPage = () => {
 
   return (
     <>
-      {/* Styles locaux (animations) — les variables CSS viennent de ThemeProvider dans App.jsx */}
       <LocalStyles />
 
       {/* SPLASH */}
@@ -432,7 +584,7 @@ const LandingPage = () => {
         style={{
           position: "sticky", top: 0, zIndex: 200,
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "0 40px", height: 68,
+          padding: "0 clamp(16px, 4vw, 40px)", height: 68,
           background: "rgba(5,12,6,0.85)",
           backdropFilter: "blur(20px)",
           borderBottom: `1px solid ${colors.border}`,
@@ -448,8 +600,8 @@ const LandingPage = () => {
           </span>
         </div>
 
-        {/* Desktop nav */}
-        <nav style={{ display: "flex", gap: 36, alignItems: "center" }}>
+        {/* Desktop nav — hidden on mobile via CSS */}
+        <nav className="desktop-nav">
           {[
             { label: "Features", to: "features", scroll: true },
             { label: "About",    href: "/sectionfutur" },
@@ -466,25 +618,31 @@ const LandingPage = () => {
           )}
         </nav>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <a href="/login" className="btn-outline" style={{ padding: "9px 20px", fontSize: 13 }}>Sign In</a>
+        {/* CTA + burger */}
+        <div className="header-cta">
+          <a href="/login" className="btn-outline header-signin" style={{ padding: "9px 20px", fontSize: 13 }}>Sign In</a>
           <a href="/login" className="btn-primary" style={{ padding: "9px 20px", fontSize: 13 }}>Get Started</a>
-          <button onClick={() => setMenuOpen(true)} style={{ background: "none", border: "none", color: colors.text, fontSize: 20, cursor: "pointer", display: "none" }}>
+          {/* Burger — hidden on desktop via CSS */}
+          <button className="menu-burger" onClick={() => setMenuOpen(true)} aria-label="Open menu">
             <FaBars />
           </button>
         </div>
       </motion.header>
 
       {/* HERO */}
-      <section ref={heroRef} style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", padding: "80px 40px 60px", overflow: "hidden" }}>
+      <section
+        ref={heroRef}
+        className="hero-section"
+        style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", padding: "80px clamp(20px,5vw,60px) 60px", overflow: "hidden" }}
+      >
         <motion.div className="hero-grid-bg" style={{ position: "absolute", inset: 0, y: heroY }} />
         <div className="glow-blob" style={{ width: 500, height: 500, background: "rgba(34,197,94,0.07)", top: "-10%", right: "10%" }} />
         <div className="glow-blob" style={{ width: 400, height: 400, background: `${colors.amberDim}`, bottom: "0%", left: "5%" }} />
         <Particles />
 
-        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", display: "flex", alignItems: "center", gap: 60, justifyContent: "space-between", flexWrap: "wrap" }}>
+        <div className="hero-inner">
           {/* Left */}
-          <div style={{ flex: "1 1 480px", maxWidth: 600 }}>
+          <div className="hero-left">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={splashDone ? { opacity: 1, y: 0 } : {}}
@@ -497,7 +655,7 @@ const LandingPage = () => {
               </div>
 
               {/* Headline */}
-              <h1 style={{ ...displayTitle("clamp(44px, 6vw, 80px)"), fontWeight: 300, letterSpacing: "-0.01em", marginBottom: 28 }}>
+              <h1 style={{ ...displayTitle("clamp(36px, 5.5vw, 80px)"), fontWeight: 300, letterSpacing: "-0.01em", marginBottom: 28 }}>
                 Precision Agriculture{" "}
                 <em style={{ color: colors.green, fontStyle: "italic" }}>Intelligence</em>{" "}
                 from Space
@@ -507,13 +665,13 @@ const LandingPage = () => {
                 Data-driven monitoring and insights for your area of interest using next-generation satellite imagery, geospatial AI, and real-time traceability.
               </p>
 
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 48 }}>
+              <div className="hero-cta-row">
                 <a href="/login" className="btn-primary">Start Free Trial →</a>
                 <a href="/EUDRSubmissionForGuest" className="btn-outline">EUDR Tools</a>
               </div>
 
               {/* Social proof */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: fonts.body, fontSize: 12, color: colors.muted, flexWrap: "wrap" }}>
                 {[...Array(5)].map((_, i) => <span key={i} style={{ color: colors.amber }}>★</span>)}
                 <span>Trusted by 2,000+ agronomists worldwide</span>
               </div>
@@ -522,10 +680,10 @@ const LandingPage = () => {
 
           {/* Right */}
           <motion.div
+            className="hero-right"
             initial={{ opacity: 0, scale: 0.85 }}
             animate={splashDone ? { opacity: 1, scale: 1 } : {}}
             transition={{ delay: 0.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            style={{ flex: "1 1 300px", display: "flex", justifyContent: "center" }}
           >
             <OrbitVisual />
           </motion.div>
@@ -567,7 +725,7 @@ const LandingPage = () => {
       </section>
 
       {/* FEATURES */}
-      <section id="features" style={{ padding: "120px 40px", maxWidth: 1240, margin: "0 auto" }}>
+      <section id="features" className="features-section">
         <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} style={{ marginBottom: 64 }}>
           <div style={sectionLabel}>Platform Features</div>
           <h2 style={{ ...displayTitle(), maxWidth: 520 }}>
@@ -576,7 +734,7 @@ const LandingPage = () => {
           </h2>
         </motion.div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
+        <div className="features-grid">
           {features.map(({ Icon, label, title, color, bg, desc }, i) => (
             <motion.div
               key={i} className="feat-card"
@@ -606,18 +764,11 @@ const LandingPage = () => {
       </section>
 
       {/* EUDR HIGHLIGHT */}
-      <section style={{
-        margin: "0 40px 120px", borderRadius: radius.xl,
-        background: "linear-gradient(135deg, rgba(34,197,94,0.06), rgba(96,165,250,0.04))",
-        border: "1px solid rgba(34,197,94,0.12)",
-        padding: "80px 60px",
-        display: "flex", gap: 60, alignItems: "center", flexWrap: "wrap",
-        position: "relative", overflow: "hidden",
-      }}>
+      <section className="eudr-section">
         <div className="glow-blob" style={{ width: 300, height: 300, background: "rgba(34,197,94,0.08)", top: "-50%", right: "10%", filter: "blur(60px)" }} />
         <div style={{ flex: "1 1 400px" }}>
           <div style={sectionLabel}>New Feature</div>
-          <h2 style={{ ...displayTitle("clamp(32px,4vw,52px)"), marginBottom: 20 }}>
+          <h2 style={{ ...displayTitle("clamp(28px,4vw,52px)"), marginBottom: 20 }}>
             EUDR Compliance{" "}
             <em style={{ color: colors.green, fontStyle: "italic" }}>made simple</em>
           </h2>
@@ -627,12 +778,12 @@ const LandingPage = () => {
           <a href="/EUDRSubmissionForGuest" className="btn-primary">Try EUDR Tools Free →</a>
         </div>
 
-        <div style={{ flex: "1 1 280px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="eudr-grid">
           {[
             { icon: "🛰️", label: "Satellite Verified" },
-            { icon: "⚡", label: "Instant Results" },
-            { icon: "📄", label: "Auto-Generated Docs" },
-            { icon: "🔒", label: "EU Certified" },
+            { icon: "⚡", label: "Instant Results"    },
+            { icon: "📄", label: "Auto-Generated Docs"},
+            { icon: "🔒", label: "EU Certified"       },
           ].map(({ icon, label }) => (
             <div key={label} style={{ padding: 16, background: "rgba(255,255,255,0.03)", border: `1px solid ${colors.border}`, borderRadius: radius.md, textAlign: "center" }}>
               <div style={{ fontSize: 24, marginBottom: 8 }}>{icon}</div>
@@ -643,41 +794,45 @@ const LandingPage = () => {
       </section>
 
       {/* CONTACT */}
-      <section id="contact" style={{ padding: "120px 40px", textAlign: "center", background: "linear-gradient(180deg, transparent, rgba(34,197,94,0.03), transparent)" }}>
+      <section id="contact" className="contact-section">
         <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <div style={{ ...sectionLabel, textAlign: "center", marginBottom: 16 }}>Get In Touch</div>
-          <h2 style={{ ...displayTitle("clamp(40px,6vw,80px)"), marginBottom: 20 }}>
+          <h2 style={{ ...displayTitle("clamp(32px,6vw,80px)"), marginBottom: 20 }}>
             Join the big data{" "}
             <em style={{ color: colors.green, fontStyle: "italic" }}>revolution</em>
           </h2>
           <p style={{ ...mutedText(16), maxWidth: 480, margin: "0 auto 48px" }}>
             Explore and transform the way you do business with next-generation satellite intelligence.
           </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="/contactus" className="contact-chip"><FaEnvelope style={{ color: colors.green }} /><span>Email Us</span></a>
-            <a href="/signup"    className="contact-chip"><span>✦</span><span>Create Account</span></a>
-            <a href="/EUDRSubmissionForGuest" className="contact-chip"><FaGlobe style={{ color: colors.green }} /><span>Free Tools</span></a>
+          <div className="contact-chips">
+            <a href="/contactus"             className="contact-chip"><FaEnvelope style={{ color: colors.green }} /><span>Email Us</span></a>
+            <a href="/signup"                className="contact-chip"><span>✦</span><span>Create Account</span></a>
+            <a href="/EUDRSubmissionForGuest" className="contact-chip"><FaGlobe   style={{ color: colors.green }} /><span>Free Tools</span></a>
           </div>
         </motion.div>
       </section>
 
       {/* FOOTER */}
-      <footer style={{ borderTop: `1px solid ${colors.border}`, padding: "40px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontFamily: fonts.mono, fontSize: 13, fontWeight: 700, letterSpacing: "0.15em", color: colors.muted }}>NKUSU</span>
-          <span style={{ color: colors.border, fontSize: 12 }}>·</span>
-          <span style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>© {new Date().getFullYear()} Agriyields Traceability Portal</span>
-        </div>
-        <a href="mailto:nkusu@agriyields.com" style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: fonts.body, fontSize: 12, color: colors.muted, textDecoration: "none", transition: "color 0.2s" }}
-          onMouseOver={e => e.currentTarget.style.color = colors.green}
-          onMouseOut={e  => e.currentTarget.style.color = colors.muted}
-        >
-          <FaEnvelope style={{ fontSize: 11 }} /> nkusu@agriyields.com
-        </a>
-        <div style={{ display: "flex", gap: 24 }}>
-          {["Privacy", "Terms", "Blog"].map(l => (
-            <a key={l} href="#" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted, textDecoration: "none" }}>{l}</a>
-          ))}
+      <footer style={{ borderTop: `1px solid ${colors.border}`, padding: "40px clamp(20px,5vw,40px)" }}>
+        <div className="footer-inner">
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontFamily: fonts.mono, fontSize: 13, fontWeight: 700, letterSpacing: "0.15em", color: colors.muted }}>NKUSU</span>
+            <span style={{ color: colors.border, fontSize: 12 }}>·</span>
+            <span style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>© {new Date().getFullYear()} Agriyields Traceability Portal</span>
+          </div>
+          <a
+            href="mailto:nkusu@agriyields.com"
+            style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: fonts.body, fontSize: 12, color: colors.muted, textDecoration: "none", transition: "color 0.2s" }}
+            onMouseOver={e => e.currentTarget.style.color = colors.green}
+            onMouseOut={e  => e.currentTarget.style.color = colors.muted}
+          >
+            <FaEnvelope style={{ fontSize: 11 }} /> nkusu@agriyields.com
+          </a>
+          <div className="footer-links">
+            {["Privacy", "Terms", "Blog"].map(l => (
+              <a key={l} href="#" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted, textDecoration: "none" }}>{l}</a>
+            ))}
+          </div>
         </div>
       </footer>
     </>
