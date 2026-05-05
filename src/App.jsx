@@ -89,6 +89,9 @@ import CarbonReportForest from './components/gfw/CarbonReportForest.jsx';
 import FarmReport from './components/gfw/FarmReport.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
 
+// ─── Sentinel Hub ─────────────────────────────────────────────────────────────
+import SentinelDashboard from './components/Sentinel/SentinelDashboard.jsx';
+
 // ─── Districts ────────────────────────────────────────────────────────────────
 import CreateDistrict from './components/District/CreateDistrict.jsx';
 import DistrictView from './components/District/DistrictView.jsx';
@@ -230,6 +233,10 @@ const layoutRoutes = [
   // Reports
   { path: "/reportfarmer", component: <FarmReport />,   roles: ROLES.ALL },
   { path: "/reportcarbon", component: <CarbonReport />, roles: ROLES.ALL },
+
+  // Sentinel Hub — indices spectraux
+  { path: "/sentinel/farm/:farmId",   component: <SentinelDashboard entityType="farm" />,   roles: ROLES.FARM },
+  { path: "/sentinel/forest/:forestId", component: <SentinelDashboard entityType="forest" />, roles: ROLES.FOREST },
 
   // Users
   { path: "/createUsers", component: <CreateUsers />,    roles: ROLES.ALL },

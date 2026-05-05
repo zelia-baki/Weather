@@ -208,7 +208,10 @@ D:\project\Weather\
 │   │   │   ├── qr.jsx
 │   │   │   └── receipt-styles.js
 │   │   ├── SendDPOPaymentModal.jsx
+│   │   ├── Sentinel
+│   │   │   └── SentinelDashboard.jsx
 │   │   ├── SimpleTest.jsx
+│   │   ├── ThemeProvider.jsx
 │   │   ├── Users
 │   │   │   ├── CreateUsers.jsx
 │   │   │   └── UserManagement.jsx
@@ -275,7 +278,8 @@ D:\project\Weather\
 │   │   ├── useFeatureAccess.jsx
 │   │   └── useMapbox.jsx
 │   ├── index.css
-│   └── main.jsx
+│   ├── main.jsx
+│   └── theme.js
 ├── tailwind.config.js
 ├── vite.config.js
 └── yarn.lock
