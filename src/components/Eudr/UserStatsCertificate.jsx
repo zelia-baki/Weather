@@ -6,18 +6,20 @@ import html2pdf from "html2pdf.js";
 const UserStatsCertificate = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const userId = location.state?.userId || null;
+    const userId          = location.state?.userId          || null;
     const certificateType = location.state?.certificateType || "all";
 
-    const [stats, setStats]                   = useState(null);
-    const [areaStats, setAreaStats]           = useState([]);
-    const [areaLoading, setAreaLoading]       = useState(true);
-    const [loading, setLoading]               = useState(true);
-    const [error, setError]                   = useState(null);
+    const [stats,          setStats]          = useState(null);
+    const [areaStats,      setAreaStats]      = useState([]);
+    const [areaLoading,    setAreaLoading]    = useState(true);
+    const [loading,        setLoading]        = useState(true);
+    const [error,          setError]          = useState(null);
     const [downloadingPDF, setDownloadingPDF] = useState(false);
-    const [certificateId, setCertificateId]   = useState(null);
+    const [certificateId,  setCertificateId]  = useState(null);
 
-    // ── Fetch area stats (optional — page works without it) ──
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fetch area stats  ← SOURCE DE VÉRITÉ pour aires + comptage fermes
+    // ─────────────────────────────────────────────────────────────────────────
     useEffect(() => {
         const fetchAreaStats = async () => {
             try {
@@ -25,10 +27,8 @@ const UserStatsCertificate = () => {
                 if (res.data?.status === 'success' && Array.isArray(res.data.data)) {
                     setAreaStats(res.data.data);
                 }
-                // If empty or error → keep areaStats = [] and continue
             } catch (err) {
-                console.warn('Area stats unavailable (no polygons yet):', err.message);
-                // Not fatal — certificate renders without area data
+                console.warn('Area stats unavailable:', err.message);
             } finally {
                 setAreaLoading(false);
             }
@@ -36,14 +36,15 @@ const UserStatsCertificate = () => {
         fetchAreaStats();
     }, []);
 
-    // ── Fetch user farm stats ──
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fetch user farm stats
+    // ─────────────────────────────────────────────────────────────────────────
     useEffect(() => {
         const fetchStats = async () => {
             try {
                 setLoading(true);
                 setError(null);
 
-                // Guard: no location state → navigate to a valid entry point
                 if (!location.state) {
                     setError("No certificate data provided. Please access this page from the EUDR section.");
                     setLoading(false);
@@ -59,7 +60,7 @@ const UserStatsCertificate = () => {
                 if (response.data?.status === "success") {
                     let statsData = response.data.data;
 
-                    // Handle array response
+                    // Le endpoint /stats/by-user retourne un tableau, l'autre un objet
                     if (Array.isArray(statsData)) {
                         statsData = statsData.length > 0 ? statsData[0] : null;
                     }
@@ -70,7 +71,7 @@ const UserStatsCertificate = () => {
                         return;
                     }
 
-                    // Ensure required nested fields exist with safe defaults
+                    // Valeurs par défaut sécurisées
                     statsData.compliance_status = {
                         compliant_100:    0,
                         likely_compliant: 0,
@@ -85,12 +86,12 @@ const UserStatsCertificate = () => {
                         overall_rate:             0,
                         ...(statsData.compliance_percentages || {}),
                     };
-                    statsData.total_farms    = statsData.total_farms    ?? 0;
-                    statsData.username       = statsData.username        ?? "N/A";
-                    statsData.company_name   = statsData.company_name   ?? statsData.username ?? "N/A";
-                    statsData.user_type      = statsData.user_type       ?? "N/A";
-                    statsData.id_start       = statsData.id_start        ?? "N/A";
-                    statsData.user_id        = statsData.user_id         ?? userId ?? "N/A";
+                    statsData.total_farms  = statsData.total_farms  ?? 0;
+                    statsData.username     = statsData.username      ?? "N/A";
+                    statsData.company_name = statsData.company_name  ?? statsData.username ?? "N/A";
+                    statsData.user_type    = statsData.user_type     ?? "N/A";
+                    statsData.id_start     = statsData.id_start      ?? "N/A";
+                    statsData.user_id      = statsData.user_id       ?? userId ?? "N/A";
 
                     setStats(statsData);
                 } else {
@@ -103,17 +104,27 @@ const UserStatsCertificate = () => {
             }
         };
         fetchStats();
-    }, [userId]);  // eslint-disable-line
+    }, [userId]); // eslint-disable-line
 
-    // ── Area helpers — safe against empty areaStats ──────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helpers area  —  utilisent areaStats comme source unique de vérité
+    // ─────────────────────────────────────────────────────────────────────────
     const hasAreaData = areaStats.length > 0;
 
-    const getAreaByStatus = (status) =>
-        areaStats.find((a) => a.compliance_status === status)?.total_area || 0;
+    /** Cherche une entrée dans areaStats par son libellé exact (tel que stocké en DB) */
+    const findArea = (status) =>
+        areaStats.find((a) => a.compliance_status === status);
 
-    const getTreeLossByStatus = (status) =>
-        areaStats.find((a) => a.compliance_status === status)?.total_tree_cover_loss || 0;
+    const getAreaByStatus       = (status) => findArea(status)?.total_area           || 0;
+    const getTreeLossByStatus   = (status) => findArea(status)?.total_tree_cover_loss || 0;
 
+    /**
+     * Nombre de fermes par statut  ← LIT farm_count depuis areaStats
+     * (calculé côté backend dans la même requête que les aires → toujours cohérent)
+     */
+    const getFarmCountByStatus  = (status) => findArea(status)?.farm_count            || 0;
+
+    /** Pourcentages basés sur les aires (inchangé) */
     const getAreaPercentages = () => {
         if (!hasAreaData) return { compliant: "N/A", likely: "N/A", not: "N/A" };
         const totalArea = areaStats.reduce((acc, a) => acc + (a.total_area || 0), 0);
@@ -126,7 +137,7 @@ const UserStatsCertificate = () => {
     };
 
     const getTotalAreaForCertificate = () => {
-        if (!hasAreaData) return null; // null = "not available"
+        if (!hasAreaData) return null;
         const areaMap = {
             compliant:        getAreaByStatus("100% Compliant"),
             likely_compliant: getAreaByStatus("Likely Compliant"),
@@ -147,26 +158,40 @@ const UserStatsCertificate = () => {
             areaStats.reduce((acc, a) => acc + (a.total_tree_cover_loss || 0), 0);
     };
 
-    // ── PDF helpers ───────────────────────────────────────────
+    /**
+     * Nombre total de fermes depuis areaStats
+     * (fallback : stats.total_farms si pas de données de surface)
+     */
+    const getTotalFarmsFromArea = () => {
+        if (!hasAreaData) return stats?.total_farms ?? 0;
+        return areaStats.reduce((acc, a) => acc + (a.farm_count || 0), 0);
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PDF helpers
+    // ─────────────────────────────────────────────────────────────────────────
     const toDataURL = (url) =>
         fetch(url)
-            .then(res => res.blob())
-            .then(blob => new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror   = reject;
-                reader.readAsDataURL(blob);
-            }));
+            .then((res) => res.blob())
+            .then(
+                (blob) =>
+                    new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror   = reject;
+                        reader.readAsDataURL(blob);
+                    })
+            );
 
-    const saveCertificateToDatabase = async (stats, certType) => {
+    const saveCertificateToDatabase = async (statsData, certType) => {
         try {
             const response = await axiosInstance.post('/api/certificate/generate', {
-                userId: stats.user_id,
+                userId:          statsData.user_id,
                 certificateType: certType,
                 stats: {
-                    total_farms:              stats.total_farms,
-                    compliance_status:        stats.compliance_status,
-                    compliance_percentages:   stats.compliance_percentages,
+                    total_farms:            statsData.total_farms,
+                    compliance_status:      statsData.compliance_status,
+                    compliance_percentages: statsData.compliance_percentages,
                 },
             });
             if (response.data?.status === 'success') {
@@ -196,21 +221,23 @@ const UserStatsCertificate = () => {
             const images      = element.querySelectorAll("img");
             const originalSrcs = [];
 
-            await Promise.all(Array.from(images).map(async (img, index) => {
-                try {
-                    originalSrcs[index] = img.src;
-                    if (img.src.startsWith("http")) {
-                        const dataUrl = await toDataURL(img.src);
-                        img.src = dataUrl;
-                        await new Promise(resolve => {
-                            if (img.complete) resolve();
-                            else { img.onload = resolve; img.onerror = resolve; }
-                        });
+            await Promise.all(
+                Array.from(images).map(async (img, index) => {
+                    try {
+                        originalSrcs[index] = img.src;
+                        if (img.src.startsWith("http")) {
+                            const dataUrl = await toDataURL(img.src);
+                            img.src = dataUrl;
+                            await new Promise((resolve) => {
+                                if (img.complete) resolve();
+                                else { img.onload = resolve; img.onerror = resolve; }
+                            });
+                        }
+                    } catch (err) {
+                        console.error("Error converting image:", err);
                     }
-                } catch (err) {
-                    console.error("Error converting image:", err);
-                }
-            }));
+                })
+            );
 
             const opt = {
                 margin:   0,
@@ -219,23 +246,34 @@ const UserStatsCertificate = () => {
                 html2canvas: {
                     scale: 2, useCORS: false, logging: false, allowTaint: true,
                     onclone: (clonedDoc) => {
-                        clonedDoc.querySelectorAll('header img').forEach(img => {
+                        clonedDoc.querySelectorAll('header img').forEach((img) => {
                             if (img.alt === "Parrot Logo") {
-                                Object.assign(img.style, { width: '80px', height: '96px', objectFit: 'contain', display: 'block' });
+                                Object.assign(img.style, {
+                                    width: '80px', height: '96px',
+                                    objectFit: 'contain', display: 'block',
+                                });
                             } else {
-                                Object.assign(img.style, { width: '96px', height: '96px', objectFit: 'contain', display: 'block' });
+                                Object.assign(img.style, {
+                                    width: '96px', height: '96px',
+                                    objectFit: 'contain', display: 'block',
+                                });
                             }
                         });
-                        clonedDoc.querySelectorAll('.signature-img').forEach(img => {
-                            Object.assign(img.style, { width: '150px', height: 'auto', maxHeight: '60px', objectFit: 'contain', display: 'block' });
+                        clonedDoc.querySelectorAll('.signature-img').forEach((img) => {
+                            Object.assign(img.style, {
+                                width: '150px', height: 'auto',
+                                maxHeight: '60px', objectFit: 'contain', display: 'block',
+                            });
                         });
-                    }
+                    },
                 },
                 jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
             };
 
             await html2pdf().set(opt).from(element).save();
-            images.forEach((img, index) => { if (originalSrcs[index]) img.src = originalSrcs[index]; });
+            images.forEach((img, index) => {
+                if (originalSrcs[index]) img.src = originalSrcs[index];
+            });
             if (savedCertId) await trackDownload(savedCertId);
             alert("Certificate downloaded successfully!");
         } catch (err) {
@@ -246,17 +284,21 @@ const UserStatsCertificate = () => {
         }
     };
 
-    // ── Loading state ─────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // Loading state
+    // ─────────────────────────────────────────────────────────────────────────
     if (loading || areaLoading) return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4" />
                 <p className="text-gray-600 text-lg">Loading certificate data…</p>
             </div>
         </div>
     );
 
-    // ── Error state (replaces blank page) ─────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // Error state
+    // ─────────────────────────────────────────────────────────────────────────
     if (error || !stats) return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md text-center">
@@ -269,7 +311,9 @@ const UserStatsCertificate = () => {
                 </p>
                 {!hasAreaData && !error && (
                     <p className="text-amber-600 text-xs mb-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                        ⚠️ No GPS polygon data found. The certificate will show farm counts only, without area calculations. Add GPS coordinates to your farms for full coverage metrics.
+                        ⚠️ No GPS polygon data found. The certificate will show farm counts only,
+                        without area calculations. Add GPS coordinates to your farms for full
+                        coverage metrics.
                     </p>
                 )}
                 <div className="flex gap-3 justify-center mt-4">
@@ -290,33 +334,36 @@ const UserStatsCertificate = () => {
         </div>
     );
 
-    // ── Derived values ────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // Valeurs dérivées
+    // ─────────────────────────────────────────────────────────────────────────
     const areaPercentages = getAreaPercentages();
-    const totalArea       = getTotalAreaForCertificate();  // null if no polygons
-    const totalTreeLoss   = getTotalTreeCoverLoss();        // null if no polygons
+    const totalArea       = getTotalAreaForCertificate(); // null si pas de polygones
+    const totalTreeLoss   = getTotalTreeCoverLoss();       // null si pas de polygones
+    const totalFarmsArea  = getTotalFarmsFromArea();       // comptage depuis areaStats
 
     const certConfig = {
         compliant: {
             title:      "EUDR CERTIFICATE OF FULL COMPLIANCE",
-            farmsCount: stats.compliance_status.compliant_100,
+            farmsCount: getFarmCountByStatus("100% Compliant"),
             percentage: areaPercentages.compliant,
             color:      "text-green-700",
         },
         likely_compliant: {
             title:      "EUDR CERTIFICATE OF LIKELY COMPLIANCE",
-            farmsCount: stats.compliance_status.likely_compliant,
+            farmsCount: getFarmCountByStatus("Likely Compliant"),
             percentage: areaPercentages.likely,
             color:      "text-yellow-700",
         },
         not_compliant: {
             title:      "EUDR CERTIFICATE OF NON-COMPLIANCE",
-            farmsCount: stats.compliance_status.not_compliant,
+            farmsCount: getFarmCountByStatus("Not Compliant"),
             percentage: areaPercentages.not,
             color:      "text-red-700",
         },
         all: {
             title:      "EUDR COMPLIANCE CERTIFICATE",
-            farmsCount: stats.total_farms,
+            farmsCount: totalFarmsArea,
             percentage: hasAreaData
                 ? (parseFloat(areaPercentages.compliant) + parseFloat(areaPercentages.likely)).toFixed(2)
                 : "N/A",
@@ -324,23 +371,24 @@ const UserStatsCertificate = () => {
         },
     };
 
-    const { title, farmsCount, percentage, color } = certConfig[certificateType] || certConfig.all;
-    const currentDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const { title, farmsCount, percentage, color } =
+        certConfig[certificateType] || certConfig.all;
 
-    // ── Sub-component: one compliance row ─────────────────────
+    const currentDate = new Date().toLocaleDateString("en-US", {
+        year: "numeric", month: "long", day: "numeric",
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Sous-composant : une ligne de compliance
+    // ─────────────────────────────────────────────────────────────────────────
     const ComplianceItem = ({ label, status, colorClass }) => {
+        // ← Lecture depuis areaStats (farm_count retourné par le backend)
+        const count    = getFarmCountByStatus(status);
         const area     = getAreaByStatus(status);
         const treeLoss = getTreeLossByStatus(status);
-        const keyMap   = {
-            "100% Compliant":  "compliant_100",
-            "Likely Compliant": "likely_compliant",
-            "Not Compliant":   "not_compliant",
-            "No Report":       "no_report",
-        };
-        const count = stats.compliance_status[keyMap[status]] ?? 0;
-        const pct   = areaPercentages[
-            status === "100% Compliant"  ? "compliant" :
-            status === "Likely Compliant" ? "likely"   : "not"
+        const pct      = areaPercentages[
+            status === "100% Compliant"   ? "compliant" :
+            status === "Likely Compliant" ? "likely"    : "not"
         ];
 
         return (
@@ -348,7 +396,8 @@ const UserStatsCertificate = () => {
                 <div className="flex justify-between">
                     <span>{label}:</span>
                     <strong className={colorClass}>
-                        {count} farms{hasAreaData && pct !== "N/A" ? ` (${pct}%)` : ""}
+                        {count} farm{count !== 1 ? "s" : ""}
+                        {hasAreaData && pct !== "N/A" ? ` (${pct}%)` : ""}
                     </strong>
                 </div>
                 {hasAreaData && (
@@ -367,7 +416,9 @@ const UserStatsCertificate = () => {
         );
     };
 
-    // ── Render ────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // Render
+    // ─────────────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-gray-100 py-8 print:bg-white">
             <style>{`
@@ -375,7 +426,10 @@ const UserStatsCertificate = () => {
                 @media print {
                     body * { visibility: hidden !important; }
                     #certificate-content, #certificate-content * { visibility: visible !important; }
-                    #certificate-content { position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; overflow: hidden; }
+                    #certificate-content {
+                        position: absolute; left: 0; top: 0;
+                        width: 210mm; height: 297mm; overflow: hidden;
+                    }
                     html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
                 }
                 #certificate-content {
@@ -385,34 +439,45 @@ const UserStatsCertificate = () => {
                     background: white !important;
                 }
                 #certificate-content header img {
-                    width: 96px !important; height: 96px !important; object-fit: contain !important;
+                    width: 96px !important; height: 96px !important;
+                    object-fit: contain !important;
                     min-width: 96px !important; min-height: 96px !important;
-                    max-width: 96px !important; max-height: 96px !important; display: block !important;
+                    max-width: 96px !important; max-height: 96px !important;
+                    display: block !important;
                 }
                 #certificate-content header img[alt="Parrot Logo"] {
                     width: 80px !important; min-width: 80px !important; max-width: 80px !important;
                 }
                 .signature-img {
-                    width: 150px !important; height: auto !important; max-height: 60px !important;
-                    object-fit: contain !important; display: block !important;
+                    width: 150px !important; height: auto !important;
+                    max-height: 60px !important; object-fit: contain !important;
+                    display: block !important;
                 }
             `}</style>
 
             {/* ── Boutons d'action ── */}
             <div className="no-print max-w-4xl mx-auto mb-4 flex flex-wrap gap-3 justify-center">
-                <button onClick={() => navigate(-1)}
-                    className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition"
+                >
                     Back
                 </button>
-                <button onClick={() => window.print()}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                <button
+                    onClick={() => window.print()}
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                >
                     Print
                 </button>
-                <button onClick={handleDownloadPDF} disabled={downloadingPDF}
-                    className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2">
+                <button
+                    onClick={handleDownloadPDF}
+                    disabled={downloadingPDF}
+                    className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition
+                               disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+                >
                     {downloadingPDF ? (
                         <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                             <span>Generating PDF…</span>
                         </>
                     ) : "Download PDF"}
@@ -425,7 +490,9 @@ const UserStatsCertificate = () => {
                     <div className="bg-amber-50 border border-amber-300 text-amber-800 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
                         <span className="text-lg">⚠️</span>
                         <div>
-                            <strong>No GPS polygon data available.</strong> Area coverage and tree cover loss metrics are not shown. The certificate is still valid — add GPS polygons to your farms to include full area statistics.
+                            <strong>No GPS polygon data available.</strong> Area coverage and tree
+                            cover loss metrics are not shown. The certificate is still valid — add
+                            GPS polygons to your farms to include full area statistics.
                         </div>
                     </div>
                 </div>
@@ -468,30 +535,46 @@ const UserStatsCertificate = () => {
                             </div>
 
                             <p className="max-w-[900px] mx-auto text-justify leading-relaxed mb-4">
-                                has been evaluated according to the European Union Deforestation Regulation
-                                (EU Regulation 2023/1115) and shows a compliance rate across{" "}
-                                <strong>{farmsCount}</strong> farm{farmsCount !== 1 ? "s" : ""}
+                                has been evaluated according to the European Union Deforestation
+                                Regulation (EU Regulation 2023/1115) and shows a compliance rate
+                                across <strong>{farmsCount}</strong> farm{farmsCount !== 1 ? "s" : ""}
                                 {totalArea !== null && (
                                     <> covering a total area of{" "}
                                         <strong>{totalArea.toFixed(2)} hectares</strong>
                                         {totalTreeLoss !== null && totalTreeLoss > 0 && (
                                             <span> with a tree cover loss of{" "}
-                                                <strong className="text-red-600">{totalTreeLoss.toFixed(2)} hectares</strong>
+                                                <strong className="text-red-600">
+                                                    {totalTreeLoss.toFixed(2)} hectares
+                                                </strong>
                                             </span>
                                         )}
                                     </>
                                 )}
-                                . This certificate confirms the environmental compliance status indicated below.
+                                . This certificate confirms the environmental compliance status
+                                indicated below.
                             </p>
 
                             {/* Résumé de conformité */}
                             <div className="bg-[#f3efc8] border border-[#e4dda6] p-4 my-4 max-w-[900px] mx-auto shadow-inner">
                                 <div className="font-bold mb-2">Compliance Summary</div>
+
                                 {certificateType === "all" ? (
                                     <ul className="space-y-3 text-sm">
-                                        <ComplianceItem label="100% Compliant"  status="100% Compliant"  colorClass="text-green-700" />
-                                        <ComplianceItem label="Likely Compliant" status="Likely Compliant" colorClass="text-yellow-700" />
-                                        <ComplianceItem label="Not Compliant"   status="Not Compliant"   colorClass="text-red-700" />
+                                        <ComplianceItem
+                                            label="100% Compliant"
+                                            status="100% Compliant"
+                                            colorClass="text-green-700"
+                                        />
+                                        <ComplianceItem
+                                            label="Likely Compliant"
+                                            status="Likely Compliant"
+                                            colorClass="text-yellow-700"
+                                        />
+                                        <ComplianceItem
+                                            label="Not Compliant"
+                                            status="Not Compliant"
+                                            colorClass="text-red-700"
+                                        />
                                     </ul>
                                 ) : (
                                     <div className="text-center space-y-2">
@@ -543,12 +626,18 @@ const UserStatsCertificate = () => {
                                     <div><strong>Email:</strong> nkusu@agriyields.com</div>
                                 </div>
                                 <div className="text-right">
-                                    <div><strong>Total Farms:</strong> {stats.total_farms}</div>
+                                    <div><strong>Total Farms:</strong> {totalFarmsArea}</div>
                                     <div><strong>User Type:</strong> {stats.user_type}</div>
                                     <div className="mt-3 flex flex-col items-end">
-                                        <img src="/signature.jpg" alt="Authorized Signature" className="signature-img" />
-                                        <div className="text-xs text-gray-500 mt-1 border-t border-gray-300 pt-1"
-                                            style={{ width: '150px', textAlign: 'center' }}>
+                                        <img
+                                            src="/signature.jpg"
+                                            alt="Authorized Signature"
+                                            className="signature-img"
+                                        />
+                                        <div
+                                            className="text-xs text-gray-500 mt-1 border-t border-gray-300 pt-1"
+                                            style={{ width: '150px', textAlign: 'center' }}
+                                        >
                                             Authorized Signature
                                         </div>
                                     </div>
