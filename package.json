@@ -34,7 +34,7 @@
     "html2pdf.js": "^0.10.3",
     "install": "^0.13.0",
     "jsonwebtoken": "^9.0.2",
-    "jspdf": "^2.5.1",
+    "jspdf": "^4.2.1",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.542.0",
     "mapbox-gl": "^3.7.0",

@@ -47,6 +47,7 @@ import WaterAdvisory from './components/mapbox/WaterAdvisory.jsx';
 import WeathearMapFarm from './components/mapbox/WeatherMapFarm.jsx';
 import WeatherDashboard from './components/mapbox/WeatherDasboard.jsx';
 import TestMap from './components/mapbox/Test.jsx';
+import LocationAdvisory from './components/mapbox/LocationAdvisory.jsx';
 
 // ─── Weather ──────────────────────────────────────────────────────────────────
 import WeatherAndSolar from './components/Weather/WeatherAndSolar.jsx';
@@ -111,6 +112,10 @@ import Card from './components/Card/Card.jsx';
 import Cardex from './components/Card/Cardex.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 import FeatureManager from './components/Features/FeatureManager.jsx';
+// ─── Blog ─────────────────────────────────────────────────────────────────────
+import BlogAdmin from './components/Blog/BlogAdmin.jsx';
+import BlogPublic from './components/Blog/BlogPublic.jsx';
+
 
 // =============================================================================
 // GUARD : UserTypeRoute
@@ -214,6 +219,7 @@ const layoutRoutes = [
   { path: "/mapview",         component: <MapView />,         roles: ROLES.ALL },
   { path: "/mapviewall",      component: <MapViewAll />,      roles: ROLES.ALL },
 
+
   // Districts
   { path: "/district",            component: <CreateDistrict />, roles: ROLES.ALL },
   { path: "/districts/:id/view",  component: <DistrictView />,   roles: ROLES.ALL },
@@ -235,13 +241,17 @@ const layoutRoutes = [
   { path: "/createUsers", component: <CreateUsers />,    roles: ROLES.ALL },
   { path: "/usermanager", component: <UserManagement />, roles: ROLES.ALL },
 
+  //Blog
+  { path: "/blogadmin", component: <BlogAdmin />,    roles: ROLES.ALL },
+  { path: "/blogpublic", component: <BlogPublic />, roles: ROLES.ALL },
+
   // Category
   { path: "/categorymanager", component: <CategoryManager />, roles: ROLES.ALL },
 
   // Dashboard
   { path: "/userDash",       component: <UserDash />,        roles: ROLES.ALL },
   { path: "/alertmessage",   component: <AlertMessaging />,  roles: ROLES.ALL },
-  { path: "/wbiidashboard",  component: <WBIIDashboard />,   roles: ROLES.ALL },
+  // { path: "/wbiidashboard",  component: <WBIIDashboard />,   roles: ROLES.ALL },
 
   // EUDR
   { path: "/EUDRSubmission",  component: <EUDRSubmitForm />,  roles: ROLES.ALL },
@@ -249,6 +259,10 @@ const layoutRoutes = [
 
   // Admin only
   { path: "/featuresManager", component: <FeatureManager />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: "/wbiidashboard",  component: <WBIIDashboard />,   roles: ROLES.ADMIN, adminOnly: true },
+  { path: "/locationadvisory", component: <LocationAdvisory />,  roles: ROLES.ADMIN, adminOnly: true },
+
+
 ];
 
 // =============================================================================
