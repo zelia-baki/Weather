@@ -275,8 +275,8 @@ const layoutRoutes = [
   { path: "/alertmessage",  component: <AlertMessaging />, roles: ROLES.ALL },
   { path: "/wbiidashboard", component: <WBIIDashboard />,  roles: ROLES.ALL },
 
-  // EUDR
-  { path: "/EUDRSubmission",   component: <EUDRSubmitForm />,  roles: ROLES.ALL },
+  // EUDR — admin uniquement
+  { path: "/EUDRSubmission",   component: <EUDRSubmitForm />,  roles: ROLES.ADMIN, adminOnly: true },
   { path: "/stats-certificate",component: <UserCertificate />, roles: ROLES.ALL },
 
   // Admin only

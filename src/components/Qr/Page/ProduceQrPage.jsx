@@ -7,7 +7,6 @@ import ReceiptPreview from "../Component/ReceiptPreview";
 import { createFormSteps, stepNames } from "../Component/formStepsConfig";
 import useFetchData from "../../Qr/Produce/useFetchData";
 
-// ─── Auto-computation ─────────────────────────────────────────
 const recompute = (data, blocks) => {
   const totalWeight = blocks.reduce(
     (sum, _, i) => sum + (parseFloat(data[`farm_${i}_qty`]) || 0), 0
@@ -35,26 +34,24 @@ const GenerateQrCodeAndReceipt = () => {
 
   const formSteps = createFormSteps(farmBlocks, countries, produceCategories, grades, stores);
 
-  // Recompute on farmBlocks count change
   useEffect(() => {
-    setFormData((prev) => ({ ...prev, ...recompute(prev, farmBlocks) }));
+    setFormData(prev => ({ ...prev, ...recompute(prev, farmBlocks) }));
   }, [farmBlocks.length]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
+    setFormData(prev => {
       const next = { ...prev, [name]: value };
-      if (name.includes("_qty") || name === "price_per_kg") {
+      if (name.includes("_qty") || name === "price_per_kg")
         return { ...next, ...recompute(next, farmBlocks) };
-      }
       return next;
     });
   }, [farmBlocks]);
 
   const handleCategoryChange = async (e) => {
     const produceCategory = typeof e === "string" ? e : e?.target?.value;
-    setFormData((prev) => ({ ...prev, produceCategory }));
-    const cat = produceCategories.find((c) => c.name === produceCategory);
+    setFormData(prev => ({ ...prev, produceCategory }));
+    const cat = produceCategories.find(c => c.name === produceCategory);
     if (!cat) return;
     try {
       const res = await axiosInstance.get(`/api/grade/getbycrop/${cat.id}`);
@@ -65,53 +62,46 @@ const GenerateQrCodeAndReceipt = () => {
   const handleStoreChange = (e, type) => {
     const value = e.target.value;
     const store = type === "id"
-      ? stores.find((s) => s.id.toString() === value)
-      : stores.find((s) => s.name === value);
-    if (store) {
-      setFormData((prev) => ({ ...prev, store_id: store.id, store_name: store.name }));
-    } else {
-      setFormData((prev) => ({ ...prev, [type === "id" ? "store_id" : "store_name"]: value }));
-    }
+      ? stores.find(s => s.id?.toString() === value)
+      : stores.find(s => s.name === value);
+    if (store) setFormData(prev => ({ ...prev, store_id: store.id, store_name: store.name }));
+    else        setFormData(prev => ({ ...prev, [type === "id" ? "store_id" : "store_name"]: value }));
   };
 
   const handleFarmChange = async (e, index) => {
     const farm_id = e.target.value;
-    setFormData((prev) => {
+    setFormData(prev => {
       const next = { ...prev, [`farm_${index}_id`]: farm_id };
       return { ...next, ...recompute(next, farmBlocks) };
     });
-    setFarmBlocks((prev) => prev.map((f, i) => i === index ? { ...f, id: farm_id } : f));
+    setFarmBlocks(prev => prev.map((f, i) => i === index ? { ...f, id: farm_id } : f));
     if (farm_id) {
       try {
         const res = await axiosInstance.get(`/api/farm/${farm_id}`);
         if (res.data.status === "success") {
           const p = res.data.data;
-          setFormData((prev) => ({
+          setFormData(prev => ({
             ...prev,
             [`farm_${index}_phone`]:    p.phonenumber1 || p.phonenumber2 || "",
             [`farm_${index}_district`]: p.district_id  || "",
           }));
         }
-      } catch (err) { console.error(err); }
+      } catch {}
     }
   };
 
-  const addFarmBlock = () => setFarmBlocks((prev) => [...prev, { id: "", props: {} }]);
-
+  const addFarmBlock    = () => setFarmBlocks(prev => [...prev, { id: "", props: {} }]);
   const removeFarmBlock = (index) => {
     if (farmBlocks.length <= 1) return;
     const next = farmBlocks.filter((_, i) => i !== index);
     setFarmBlocks(next);
-    setFormData((prev) => {
+    setFormData(prev => {
       const d = { ...prev };
       delete d[`farm_${index}_id`]; delete d[`farm_${index}_phone`];
       delete d[`farm_${index}_district`]; delete d[`farm_${index}_qty`];
       return { ...d, ...recompute(d, next) };
     });
   };
-
-  const nextStep = () => { if (currentStep < formSteps.length - 1) setCurrentStep(currentStep + 1); };
-  const prevStep = () => { if (currentStep > 0) setCurrentStep(currentStep - 1); };
 
   const isStepValid = () => {
     const fields = formSteps[currentStep]?.fields || [];
@@ -127,12 +117,13 @@ const GenerateQrCodeAndReceipt = () => {
     return true;
   };
 
-  // Vérifie si on est à l'étape Transaction et si le poids est vide
   const TRANSACTION_STEP = 2;
   const weightMissing = currentStep === TRANSACTION_STEP &&
     (!formData.produce_weight || parseFloat(formData.produce_weight) === 0);
 
-  const handleSubmit = () => setQrData(JSON.stringify(formData, null, 2));
+  const handleSubmit    = () => setQrData(JSON.stringify(formData, null, 2));
+  const nextStep        = () => setCurrentStep(s => s + 1);
+  const prevStep        = () => setCurrentStep(s => s - 1);
 
   const handleDownloadPDF = async () => {
     if (isDownloading) return;
@@ -147,9 +138,9 @@ const GenerateQrCodeAndReceipt = () => {
         { qr_data_list: qrList, description: "Digital receipt for produce transaction." },
         { responseType: "blob" }
       );
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const url  = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
-      link.href = url;
+      link.href  = url;
       link.setAttribute("download", `receipts_${base.batch_number}_batches.pdf`);
       document.body.appendChild(link);
       link.click();
@@ -159,13 +150,14 @@ const GenerateQrCodeAndReceipt = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-teal-50 via-white to-blue-50 min-h-screen py-8">
+    // ✅ light-panel on root → fixes all text/label visibility inside
+    <div className="bg-gradient-to-br from-teal-50 via-white to-blue-50 min-h-screen py-8 light-panel">
       <div className="container mx-auto px-4">
         <h1 className="text-4xl font-bold mb-8 text-center text-teal-700">
           Digital receipt for produce transaction
         </h1>
 
-        <StepIndicator currentStep={currentStep} totalSteps={formSteps.length} stepNames={stepNames} />
+        <StepIndicator currentStep={currentStep} totalSteps={formSteps.length} stepNames={stepNames}/>
 
         <div className="flex gap-8 max-w-7xl mx-auto">
           <div className="w-1/2">
@@ -174,7 +166,6 @@ const GenerateQrCodeAndReceipt = () => {
                 {formSteps[currentStep]?.title}
               </h2>
 
-              {/* ── Signal poids manquant ── */}
               {weightMissing && (
                 <div className="flex items-start gap-3 bg-amber-50 border border-amber-300
                                 text-amber-800 rounded-xl px-4 py-3 mb-5 text-sm">
@@ -184,13 +175,9 @@ const GenerateQrCodeAndReceipt = () => {
                     <p className="text-xs mt-0.5 text-amber-700">
                       Go back to <strong>Step 1 — Farms</strong> and enter the
                       <strong> Weight contributed (kg)</strong> for each farm.
-                      The total produce weight will be auto-computed from those values.
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep(0)}
-                      className="mt-2 text-xs font-semibold text-amber-800 underline hover:no-underline"
-                    >
+                    <button type="button" onClick={() => setCurrentStep(0)}
+                      className="mt-2 text-xs font-semibold text-amber-800 underline hover:no-underline">
                       ← Go back to Farms step
                     </button>
                   </div>

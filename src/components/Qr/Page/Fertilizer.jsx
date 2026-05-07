@@ -7,7 +7,6 @@ import ReceiptPreview from "../Component/ReceiptPreview";
 import { createFertilizerFormSteps, fertilizerStepNames } from "../Component/fertilizerStepsConfig";
 import useFetchData from "../../Qr/Produce/useFetchData";
 
-// ─── Auto-computation ─────────────────────────────────────────
 const recompute = (data, blocks) => {
   const totalWeight = blocks.reduce(
     (sum, _, i) => sum + (parseFloat(data[`farm_${i}_qty`]) || 0), 0
@@ -35,16 +34,15 @@ const FertilizerQrPage = () => {
   const formSteps = createFertilizerFormSteps(farmBlocks, stores, agroInputType, agroInputCategory);
 
   useEffect(() => {
-    setFormData((prev) => ({ ...prev, ...recompute(prev, farmBlocks) }));
+    setFormData(prev => ({ ...prev, ...recompute(prev, farmBlocks) }));
   }, [farmBlocks.length]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
+    setFormData(prev => {
       const next = { ...prev, [name]: value };
-      if (name.includes("_qty") || name === "price_per_kg") {
+      if (name.includes("_qty") || name === "price_per_kg")
         return { ...next, ...recompute(next, farmBlocks) };
-      }
       return next;
     });
   }, [farmBlocks]);
@@ -53,13 +51,13 @@ const FertilizerQrPage = () => {
     const value = e.target.value;
     setAgroInputType(value);
     setAgroInputCategory("");
-    setFormData((prev) => ({ ...prev, agroInputType: value, agroInputCategory: "", agroInputSubCategory: "" }));
+    setFormData(prev => ({ ...prev, agroInputType: value, agroInputCategory: "", agroInputSubCategory: "" }));
   };
 
   const handleAgroInputCategoryChange = (e) => {
     const value = e.target.value;
     setAgroInputCategory(value);
-    setFormData((prev) => ({ ...prev, agroInputCategory: value, agroInputSubCategory: "" }));
+    setFormData(prev => ({ ...prev, agroInputCategory: value, agroInputSubCategory: "" }));
   };
 
   const handleFormChange = useCallback((e) => {
@@ -74,43 +72,40 @@ const FertilizerQrPage = () => {
   const handleStoreChange = (e, type) => {
     const value = e.target.value;
     const store = type === "id"
-      ? stores.find((s) => s.id.toString() === value)
-      : stores.find((s) => s.name === value);
-    if (store) {
-      setFormData((prev) => ({ ...prev, store_id: store.id, store_name: store.name }));
-    } else {
-      setFormData((prev) => ({ ...prev, [type === "id" ? "store_id" : "store_name"]: value }));
-    }
+      ? stores.find(s => s.id?.toString() === value)
+      : stores.find(s => s.name === value);
+    if (store) setFormData(prev => ({ ...prev, store_id: store.id, store_name: store.name }));
+    else        setFormData(prev => ({ ...prev, [type === "id" ? "store_id" : "store_name"]: value }));
   };
 
   const handleFarmChange = async (e, index) => {
     const farm_id = e.target.value;
-    setFormData((prev) => {
+    setFormData(prev => {
       const next = { ...prev, [`farm_${index}_id`]: farm_id };
       return { ...next, ...recompute(next, farmBlocks) };
     });
-    setFarmBlocks((prev) => prev.map((f, i) => i === index ? { ...f, id: farm_id } : f));
+    setFarmBlocks(prev => prev.map((f, i) => i === index ? { ...f, id: farm_id } : f));
     if (farm_id) {
       try {
         const res = await axiosInstance.get(`/api/farm/${farm_id}`);
         if (res.data.status === "success") {
           const p = res.data.data;
-          setFormData((prev) => ({
+          setFormData(prev => ({
             ...prev,
             [`farm_${index}_phone`]:    p.phonenumber1 || p.phonenumber2 || "",
             [`farm_${index}_district`]: p.district_id  || "",
           }));
         }
-      } catch (err) { console.error(err); }
+      } catch {}
     }
   };
 
-  const addFarmBlock    = () => setFarmBlocks((prev) => [...prev, { id: "", props: {} }]);
+  const addFarmBlock    = () => setFarmBlocks(prev => [...prev, { id: "", props: {} }]);
   const removeFarmBlock = (index) => {
     if (farmBlocks.length <= 1) return;
     const next = farmBlocks.filter((_, i) => i !== index);
     setFarmBlocks(next);
-    setFormData((prev) => {
+    setFormData(prev => {
       const d = { ...prev };
       delete d[`farm_${index}_id`]; delete d[`farm_${index}_phone`];
       delete d[`farm_${index}_district`]; delete d[`farm_${index}_qty`];
@@ -118,8 +113,8 @@ const FertilizerQrPage = () => {
     });
   };
 
-  const nextStep = () => { if (currentStep < formSteps.length - 1) setCurrentStep(currentStep + 1); };
-  const prevStep = () => { if (currentStep > 0) setCurrentStep(currentStep - 1); };
+  const nextStep = () => { if (currentStep < formSteps.length - 1) setCurrentStep(s => s + 1); };
+  const prevStep = () => { if (currentStep > 0) setCurrentStep(s => s - 1); };
 
   const isStepValid = () => {
     const fields = formSteps[currentStep]?.fields || [];
@@ -135,8 +130,7 @@ const FertilizerQrPage = () => {
     return true;
   };
 
-  // Signal poids manquant — étape 2 (Product Details)
-  const PRODUCT_STEP = 2;
+  const PRODUCT_STEP  = 2;
   const weightMissing = currentStep === PRODUCT_STEP &&
     (!formData.agroinput_weight || parseFloat(formData.agroinput_weight) === 0);
 
@@ -144,12 +138,12 @@ const FertilizerQrPage = () => {
     const farmsList = farmBlocks
       .map((_, i) => ({ id: data[`farm_${i}_id`] || "", phone: data[`farm_${i}_phone`] || "",
                         district: data[`farm_${i}_district`] || "", qty: data[`farm_${i}_qty`] || "0" }))
-      .filter((f) => f.id);
+      .filter(f => f.id);
     return [
-      `Farms: ${farmsList.map((f) => f.id).join(", ")}`,
-      `Phones: ${farmsList.map((f) => f.phone).join(", ")}`,
-      `Districts: ${farmsList.map((f) => f.district).join(", ")}`,
-      `Quantities (kg): ${farmsList.map((f) => f.qty).join(", ")}`,
+      `Farms: ${farmsList.map(f => f.id).join(", ")}`,
+      `Phones: ${farmsList.map(f => f.phone).join(", ")}`,
+      `Districts: ${farmsList.map(f => f.district).join(", ")}`,
+      `Quantities (kg): ${farmsList.map(f => f.qty).join(", ")}`,
       `Batch: ${data.batch_number}`,
       `Type: ${data.agroInputType}`,
       data.agroInputType === "Fertilizer" ? `Category: ${data.agroInputCategory} - ${data.agroInputSubCategory}` : "",
@@ -179,9 +173,9 @@ const FertilizerQrPage = () => {
         { qr_data_list: qrList, description: "Digital receipt for fertilizer transaction." },
         { responseType: "blob" }
       );
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const url  = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
-      link.href = url;
+      link.href  = url;
       link.setAttribute("download", `fertilizer_receipts_${base.batch_number}_batches.pdf`);
       document.body.appendChild(link);
       link.click();
@@ -191,13 +185,14 @@ const FertilizerQrPage = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-teal-50 via-white to-blue-50 min-h-screen py-8">
+    // ✅ light-panel on root → fixes all text/label visibility inside
+    <div className="bg-gradient-to-br from-teal-50 via-white to-blue-50 min-h-screen py-8 light-panel">
       <div className="container mx-auto px-4">
         <h1 className="text-4xl font-bold mb-8 text-center text-teal-700">
           Generate Digital Codes for Fertilizer Application
         </h1>
 
-        <StepIndicator currentStep={currentStep} totalSteps={formSteps.length} stepNames={fertilizerStepNames} />
+        <StepIndicator currentStep={currentStep} totalSteps={formSteps.length} stepNames={fertilizerStepNames}/>
 
         <div className="flex gap-8 max-w-7xl mx-auto">
           <div className="w-1/2">
@@ -206,7 +201,6 @@ const FertilizerQrPage = () => {
                 {formSteps[currentStep]?.title}
               </h2>
 
-              {/* ── Signal poids manquant ── */}
               {weightMissing && (
                 <div className="flex items-start gap-3 bg-amber-50 border border-amber-300
                                 text-amber-800 rounded-xl px-4 py-3 mb-5 text-sm">
@@ -216,13 +210,9 @@ const FertilizerQrPage = () => {
                     <p className="text-xs mt-0.5 text-amber-700">
                       Go back to <strong>Step 1 — Farms</strong> and enter the
                       <strong> Quantity applied (kg)</strong> for each farm.
-                      The total weight will be auto-computed from those values.
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep(0)}
-                      className="mt-2 text-xs font-semibold text-amber-800 underline hover:no-underline"
-                    >
+                    <button type="button" onClick={() => setCurrentStep(0)}
+                      className="mt-2 text-xs font-semibold text-amber-800 underline hover:no-underline">
                       ← Go back to Farms step
                     </button>
                   </div>
