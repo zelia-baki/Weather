@@ -1,66 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import axiosInstance from '../../../axiosInstance';
+import React, { useState, useEffect, useCallback } from "react";
+import axiosInstance from "../../../axiosInstance";
+import StepIndicator  from "../Component/StepIndicator";
+import FormNavigation from "../Component/FormNavigation";
+import FormStep       from "../Component/FormStep";
+import ReceiptPreview from "../Component/ReceiptPreview";
+import { createExportFormSteps, exportStepNames } from "../Component/exportStepsConfig";
 
-// Composants
-import StepIndicator from '../Component/StepIndicator';
-import FormNavigation from '../Component/FormNavigation';
-import FormStep from '../Component/FormStep';
-import ReceiptPreview from '../Component/ReceiptPreview';
+// ✅ Same hook as ProduceQrPage & FertilizerQrPage — handles pagination automatically
+import useFetchData from "../../Qr/Produce/useFetchData";
 
-// Configuration
-import { createExportFormSteps, exportStepNames } from '../Component/exportStepsConfig';
+// ─── Auto-computation ──────────────────────────────────────────────────────────
+const recompute = (data, blocks) => {
+  const totalWeight = blocks.reduce(
+    (sum, _, i) => sum + (parseFloat(data[`farm_${i}_qty`]) || 0),
+    0
+  );
+  return { produce_weight: totalWeight.toFixed(2) };
+};
 
-const PointForm = () => {
-
-  const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({
-    farm_id: '',
-    farmergroup_id: '',
-    district_name: '',
-    country_of_origin: '',
-    crop_category: '',
-    crop_grade: '',
-    crop: '',
-    produce_weight: '',
-    batch_number: '',
-    harvest_date: '',
-    timestamp: '',
-    geolocation: '',
-    store_name: '',
-    season: '',
-    destination_country: '',
-    channel_partner: '',
-    end_customer_name: '',
-    coffeeType: '',
-    hscode: '',
-    store_id: ''
+const ExportDigitalStamps = () => {
+  const [currentStep,    setCurrentStep]    = useState(0);
+  const [formData,       setFormData]       = useState({
+    farm_id: "", farmergroup_id: "", district_name: "", country_of_origin: "",
+    crop_category: "", crop_grade: "", crop: "", produce_weight: "",
+    batch_number: "", harvest_date: "", timestamp: "", geolocation: "",
+    store_name: "", season: "", destination_country: "", channel_partner: "",
+    end_customer_name: "", coffeeType: "", hscode: "", store_id: "",
   });
+  const [farmBlocks,     setFarmBlocks]     = useState([{ id: "", props: {} }]);
+  const [categorys,      setCategory]       = useState([]);
+  const [filteredCrops,  setFilteredCrops]  = useState([]);
+  const [cropGrades,     setCropGrades]     = useState([]);
+  const [qrData,         setQrData]         = useState(null);
+  const [isDownloading,  setIsDownloading]  = useState(false);
+  const [error,          setError]          = useState(null);
 
-  // États pour les données de l'API
-  const [farms, setFarms] = useState([]);
-  const [farmBlocks, setFarmBlocks] = useState([{ id: "", props: {} }]); // Ajout farmBlocks
-  const [categorys, setCategory] = useState([]);
-  const [districts, setDistricts] = useState([]);
+  // ✅ FIX: use useFetchData (paginated) instead of a single axiosInstance.get()
+  const farms        = useFetchData("/api/farm/",            "farms");       // ← was only loading page 1
+  const districts    = useFetchData("/api/district/",        "districts");
+  const countries    = useFetchData("/api/pays/",            "pays");
+  const stores       = useFetchData("/api/store/",           "stores");
+  const crops        = useFetchData("/api/crop/",            "crops");
+
+  // farmerGroups & categories — APIs return array/object directly, fetched separately
   const [farmerGroups, setFarmerGroups] = useState([]);
-  const [crops, setCrops] = useState([]);
-  const [countries, setCountries] = useState([]);
-  const [stores, setStores] = useState([]);
+  useEffect(() => {
+    axiosInstance.get("/api/farmergroup/")
+      .then(r => setFarmerGroups(Array.isArray(r.data) ? r.data : r.data.farmergroups || []))
+      .catch(() => {});
+    axiosInstance.get("/api/producecategory/")
+      .then(r => setCategory(r.data.categories || []))
+      .catch(() => {});
+  }, []);
 
-  // États pour les logiques conditionnelles
-  const [selectedCategoryId, setSelectedCategoryId] = useState('');
-  const [filteredCrops, setFilteredCrops] = useState([]);
-  const [selectedCropId, setSelectedCropId] = useState('');
-  const [cropGrades, setCropGrades] = useState([]);
-
-  // États pour QR et PDF
-  const [qrData, setQrData] = useState(null);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Configuration des étapes
+  // Build form steps
   const formSteps = createExportFormSteps(
     farmBlocks,
-    farmerGroups,
+    Array.isArray(farmerGroups) ? farmerGroups : [],
     districts,
     categorys,
     filteredCrops,
@@ -70,335 +66,198 @@ const PointForm = () => {
     formData.coffeeType
   );
 
-  // -------- Fetch des données initiales --------
+  // Recompute on farmBlocks count change
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [
-          farmsRes,
-          districtsRes,
-          farmerGroupsRes,
-          cropsRes,
-          countriesRes,
-          categorysRes,
-          storesRes
-        ] = await Promise.all([
-          axiosInstance.get('/api/farm/'),
-          axiosInstance.get('/api/district/'),
-          axiosInstance.get('/api/farmergroup/'),
-          axiosInstance.get('/api/crop/'),
-          axiosInstance.get('/api/pays/'),
-          axiosInstance.get('/api/producecategory/'),
-          axiosInstance.get('/api/store/')
-        ]);
+    setFormData(prev => ({ ...prev, ...recompute(prev, farmBlocks) }));
+  }, [farmBlocks.length]);
 
-        setFarms(farmsRes.data.farms || []);
-        setDistricts(districtsRes.data.districts || []);
-        setFarmerGroups(farmerGroupsRes.data || []);
-        setCrops(cropsRes.data.crops || []);
-        setCountries(countriesRes.data.pays || []);
-        setCategory(categorysRes.data.categories || []);
-        setStores(storesRes.data.stores || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // -------- Gestion des changements de formulaire --------
-  const handleChange = (e) => {
+  // ── Change handler ─────────────────────────────────────────────────────────
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
-    setFormData(prevData => ({
-      ...prevData,
-      [name]: value
-    }));
-
-    // Logiques conditionnelles
-    if (name === 'crop_category') {
-      handleCategoryChange(value);
-    } else if (name === 'crop') {
-      handleCropChange(value);
-    } else if (name === 'coffeeType') {
-      setFormData(prev => ({ ...prev, hscode: '' }));
-    }
-  };
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+      if (name.includes("_qty"))  return { ...next, ...recompute(next, farmBlocks) };
+      if (name === "coffeeType")  return { ...next, hscode: "" };
+      return next;
+    });
+    if (name === "crop_category") handleCategoryChange(value);
+    else if (name === "crop")     handleCropChange(value);
+  }, [farmBlocks]); // eslint-disable-line
 
   const handleCategoryChange = (selectedCatId) => {
-    setSelectedCategoryId(selectedCatId);
-    const filtered = crops.filter(crop => crop.category_id.toString() === selectedCatId);
+    const filtered = crops.filter(c => c.category_id?.toString() === selectedCatId?.toString());
     setFilteredCrops(filtered);
-    setFormData(prev => ({
-      ...prev,
-      crop_category: selectedCatId,
-      crop: '',
-      crop_grade: ''
-    }));
+    setFormData(prev => ({ ...prev, crop_category: selectedCatId, crop: "", crop_grade: "" }));
     setCropGrades([]);
-    setSelectedCropId('');
   };
 
-  const handleCropChange = (selectedCropId) => {
-    setSelectedCropId(selectedCropId);
-    setFormData(prev => ({
-      ...prev,
-      crop: selectedCropId,
-      crop_grade: ''
-    }));
-    fetchCropGrades(selectedCropId);
-  };
-
-  const fetchCropGrades = async (cropId) => {
+  const handleCropChange = (cropId) => {
+    setFormData(prev => ({ ...prev, crop: cropId, crop_grade: "" }));
     if (cropId) {
-      try {
-        const response = await axiosInstance.get(`/api/grade/getbycrop/${cropId}`);
-        setCropGrades(response.data.grades || []);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching grades:", err);
-        setError(err.response?.data?.message || "An error occurred while fetching grades.");
-        setCropGrades([]);
-      }
+      axiosInstance.get(`/api/grade/getbycrop/${cropId}`)
+        .then(r => setCropGrades(r.data.grades || []))
+        .catch(() => setCropGrades([]));
     } else {
       setCropGrades([]);
     }
   };
 
-  const handleFarmIdChange = async (e) => {
-    // Cette fonction est maintenant remplacée par handleFarmChange
-    console.warn("handleFarmIdChange deprecated, use handleFarmChange instead");
-  };
-
-  // -------- Gestion des blocs ferme --------
-  const handleFarmChange = async (e, index) => {
-    const farm_id = e.target.value;
-
-    setFormData((prev) => ({
-      ...prev,
-      [`farm_${index}_id`]: farm_id,
-    }));
-
-    setFarmBlocks((prev) =>
-      prev.map((f, i) => (i === index ? { ...f, id: farm_id } : f))
-    );
-
-    if (farm_id) {
-      try {
-        // Utiliser la même API que l'ancienne version export
-        const response = await axiosInstance.get(`/api/farm/${farm_id}`);
-        if (response.data.status === 'success') {
-          const farmProperties = response.data.data;
-          
-          setFarmBlocks((prev) =>
-            prev.map((f, i) =>
-              i === index ? { ...f, id: farm_id, props: farmProperties } : f
-            )
-          );
-          
-          // Auto-complétion des champs comme dans l'export original
-          setFormData((prev) => ({
-            ...prev,
-            [`farm_${index}_phone`]: farmProperties.phonenumber1 || farmProperties.phonenumber2 || "",
-            [`farm_${index}_district`]: farmProperties.district_id || "",
-
-            // Ajouter d'autres champs si nécessaire
-            ...farmProperties
-          }));
-        }
-      } catch (err) {
-        console.error("Error fetching farm properties:", err);
-      }
-    }
-  };
-
-  const addFarmBlock = () => {
-    setFarmBlocks((prev) => [...prev, { id: "", props: {} }]);
-  };
-
-  const removeFarmBlock = (index) => {
-    if (farmBlocks.length > 1) {
-      setFarmBlocks((prev) => prev.filter((_, i) => i !== index));
-      setFormData((prev) => {
-        const newData = { ...prev };
-        delete newData[`farm_${index}_id`];
-        delete newData[`farm_${index}_phone`];
-        delete newData[`farm_${index}_district`];
-        return newData;
-      });
-    }
-  };
-
   const handleStoreChange = (e, type) => {
     const value = e.target.value;
-    let store = null;
-
-    if (type === "id") {
-      store = stores.find(s => s.id.toString() === value);
-    } else if (type === "name") {
-      store = stores.find(s => s.name === value);
-    }
-
+    const store = type === "id"
+      ? stores.find(s => s.id?.toString() === value)
+      : stores.find(s => s.name === value);
     if (store) {
-      setFormData(prev => ({
-        ...prev,
-        store_id: store.id,
-        store_name: store.name,
-      }));
+      setFormData(prev => ({ ...prev, store_id: store.id, store_name: store.name }));
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [type === "id" ? "store_id" : "store_name"]: value,
-      }));
+      setFormData(prev => ({ ...prev, [type === "id" ? "store_id" : "store_name"]: value }));
     }
   };
 
-  // Gestion des changements avec logique personnalisée
-  const handleFormChange = (e) => {
-    const { name } = e.target;
-    
-    // Extraction de l'index pour les champs de ferme (farm_0_id, farm_1_id, etc.)
-    const farmMatch = name.match(/^farm_(\d+)_id$/);
-    
-    if (farmMatch) {
-      const index = parseInt(farmMatch[1], 10);
-      handleFarmChange(e, index);
-    } else if (name === "store_id") {
-      handleStoreChange(e, "id");
-    } else if (name === "store_name") {
-      handleStoreChange(e, "name");
-    } else {
-      handleChange(e);
+  // ── Farm auto-fill ─────────────────────────────────────────────────────────
+  const handleFarmChange = async (e, index) => {
+    const farm_id = e.target.value;
+    setFormData(prev => {
+      const next = { ...prev, [`farm_${index}_id`]: farm_id };
+      return { ...next, ...recompute(next, farmBlocks) };
+    });
+    setFarmBlocks(prev => prev.map((f, i) => i === index ? { ...f, id: farm_id } : f));
+    if (farm_id) {
+      try {
+        const res = await axiosInstance.get(`/api/farm/${farm_id}`);
+        if (res.data.status === "success") {
+          const p = res.data.data;
+          setFormData(prev => ({
+            ...prev,
+            [`farm_${index}_phone`]:    p.phonenumber1 || p.phonenumber2 || "",
+            [`farm_${index}_district`]: p.district_id  || "",
+          }));
+        }
+      } catch { /* ignore */ }
     }
   };
 
-  // -------- Navigation --------
-  const nextStep = () => {
-    if (currentStep < formSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
+  const addFarmBlock    = () => setFarmBlocks(prev => [...prev, { id: "", props: {} }]);
+  const removeFarmBlock = (index) => {
+    if (farmBlocks.length <= 1) return;
+    const next = farmBlocks.filter((_, i) => i !== index);
+    setFarmBlocks(next);
+    setFormData(prev => {
+      const d = { ...prev };
+      delete d[`farm_${index}_id`];
+      delete d[`farm_${index}_phone`];
+      delete d[`farm_${index}_district`];
+      delete d[`farm_${index}_qty`];
+      return { ...d, ...recompute(d, next) };
+    });
   };
 
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  // -------- Validation --------
+  // ── Validation ─────────────────────────────────────────────────────────────
   const isStepValid = () => {
-    const currentStepFields = formSteps[currentStep]?.fields || [];
-
-    for (let field of currentStepFields) {
+    const fields = formSteps[currentStep]?.fields || [];
+    for (const field of fields) {
       if (field.type === "group") {
-        // Validation spéciale pour les groupes de fermes
-        for (let subField of field.fields) {
-          if (subField.required && !formData[subField.name]) {
-            return false;
-          }
+        for (const sub of field.fields) {
+          if (sub.required && !formData[sub.name]) return false;
         }
       } else {
-        if (field.required && !formData[field.name]) {
-          return false;
-        }
+        if (field.required && !field.readOnly && !formData[field.name]) return false;
       }
     }
     return true;
   };
 
-  // -------- Génération du QR --------
+  // ── Weight warning ─────────────────────────────────────────────────────────
+  const PRODUCT_STEP  = 2;
+  const weightMissing = currentStep === PRODUCT_STEP &&
+    (!formData.produce_weight || parseFloat(formData.produce_weight) === 0);
+
+  // ── QR generation ──────────────────────────────────────────────────────────
   const generateQrData = (data) => {
-    // Récupérer toutes les fermes
     const farmsList = farmBlocks
       .map((_, i) => ({
-        id: data[`farm_${i}_id`],
-        phone: data[`farm_${i}_phone`],
-        district: data[`farm_${i}_district`],
+        id:       data[`farm_${i}_id`]       || "",
+        phone:    data[`farm_${i}_phone`]    || "",
+        district: data[`farm_${i}_district`] || "",
+        qty:      data[`farm_${i}_qty`]      || "0",
       }))
-      .filter((f) => f.id);
+      .filter(f => f.id);
 
-    return `
-Farms: ${farmsList.map((f) => `www.nkusu.com/farmmanager/${f.id}`).join(", ")}
-Phones: ${farmsList.map((f) => f.phone).join(", ")}
-Districts: ${farmsList.map((f) => f.district).join(", ")}
-Farmer Group: ${data.farmergroup_id}
-Destination: ${data.destination_country}
-CP: ${data.channel_partner}
-ECN: ${data.end_customer_name}
-Store Name: ${data.store_name}
-Crop Category: ${data.crop_category}
-Grade: ${data.crop_grade || 'N/A'}
-Coffee Type: ${data.coffeeType}
-HS Code: ${data.hscode}
-Season: ${data.season}
-Weight: ${data.produce_weight}
-Geolocation: ${data.geolocation}
-Country Origin: ${data.country_of_origin}
-Transaction Date: ${data.timestamp}
-    `.trim();
+    return [
+      `Farms: ${farmsList.map(f => `www.nkusu.com/farmmanager/${f.id}`).join(", ")}`,
+      `Phones: ${farmsList.map(f => f.phone).join(", ")}`,
+      `Districts: ${farmsList.map(f => f.district).join(", ")}`,
+      `Weights (kg): ${farmsList.map(f => f.qty).join(", ")}`,
+      `Total Weight: ${data.produce_weight} kg`,
+      `Farmer Group: ${data.farmergroup_id}`,
+      `Destination: ${data.destination_country}`,
+      `CP: ${data.channel_partner}`,
+      `ECN: ${data.end_customer_name}`,
+      `Store Name: ${data.store_name}`,
+      `Crop Category: ${data.crop_category}`,
+      `Grade: ${data.crop_grade || "N/A"}`,
+      `Coffee Type: ${data.coffeeType}`,
+      `HS Code: ${data.hscode}`,
+      `Season: ${data.season}`,
+      `Geolocation: ${data.geolocation}`,
+      `Country Origin: ${data.country_of_origin}`,
+      `Transaction Date: ${data.timestamp}`,
+    ].join("\n");
   };
 
-  // -------- Soumission --------
-  const handleSubmit = () => {
-    const qrText = generateQrData(formData);
-    setQrData(qrText);
-  };
+  const handleSubmit = () => setQrData(generateQrData(formData));
 
-  // -------- Téléchargement PDF --------
+  // ── PDF download ────────────────────────────────────────────────────────────
   const handleDownloadPDF = async () => {
     if (isDownloading) return;
-
     setIsDownloading(true);
-
     try {
-      const baseQrData = JSON.parse(JSON.stringify(formData));
-      const batchNumber = parseInt(baseQrData.batch_number, 10);
+      const batchNumber = parseInt(formData.batch_number, 10);
+      if (isNaN(batchNumber)) return;
 
-      if (isNaN(batchNumber)) {
-        console.error("Invalid batch number. Must be a number.");
-        setIsDownloading(false);
-        return;
-      }
+      const qrList = Array.from({ length: batchNumber }, (_, i) => ({
+        ...formData, batch_number: (i + 1).toString(),
+      }));
 
-      const qrDataList = [];
-      for (let i = 0; i < batchNumber; i++) {
-        const newQrData = { ...baseQrData, batch_number: (i + 1).toString() };
-        qrDataList.push(newQrData);
-      }
-
-      const response = await axiosInstance.post(
+      const res = await axiosInstance.post(
         "/api/qrcode/generate_pdf",
-        {
-          qr_data_list: qrDataList,
-          description: "Digital receipt for export transaction.",
-        },
-        {
-          responseType: "blob",
-        }
+        { qr_data_list: qrList, description: "Digital receipt for export transaction." },
+        { responseType: "blob" }
       );
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url  = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `export_receipts_${baseQrData.batch_number}_batches.pdf`);
+      link.href  = url;
+      link.setAttribute("download", `export_receipts_${batchNumber}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (err) {
-      console.error("Erreur lors du téléchargement du PDF:", err);
+      console.error(err);
     } finally {
       setIsDownloading(false);
     }
   };
 
-  // -------- Composant simplifié --------
+  // ── Farm count badge ────────────────────────────────────────────────────────
+  const loadedFarmCount = Array.isArray(farms) ? farms.length : 0;
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 min-h-screen py-8">
+    <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 min-h-screen py-8 light-panel">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-8 text-center text-blue-700">
-          Digital Export Stamps
-        </h1>
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-blue-700 mb-1">
+            Digital Export Stamps
+          </h1>
+          {/* ✅ Shows how many farms were loaded so user knows pagination worked */}
+          {loadedFarmCount > 0 && (
+            <p className="text-sm text-gray-400 flex items-center justify-center gap-1.5">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400"/>
+              {loadedFarmCount} farm{loadedFarmCount !== 1 ? "s" : ""} loaded
+            </p>
+          )}
+        </div>
 
         <StepIndicator
           currentStep={currentStep}
@@ -407,51 +266,81 @@ Transaction Date: ${data.timestamp}
         />
 
         <div className="flex gap-8 max-w-7xl mx-auto">
-          {/* Formulaire */}
+
+          {/* Form */}
           <div className="w-1/2">
-            <div className="bg-white p-8 rounded-xl shadow-lg">
-              <h2 className="text-2xl font-semibold mb-6 text-blue-700">
+            <div className="bg-white p-8 rounded-2xl shadow-lg">
+              <h2 className="text-xl font-semibold mb-6 text-blue-700">
                 {formSteps[currentStep]?.title}
               </h2>
 
               {error && (
-                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl">
                   {error}
+                </div>
+              )}
+
+              {/* Weight warning */}
+              {weightMissing && (
+                <div className="flex items-start gap-3 bg-amber-50 border border-amber-300
+                                text-amber-800 rounded-xl px-4 py-3 mb-5 text-sm">
+                  <span className="text-lg mt-0.5">⚠️</span>
+                  <div>
+                    <p className="font-semibold">Farm quantities not filled</p>
+                    <p className="text-xs mt-0.5 text-amber-700">
+                      Go back to <strong>Step 1 — Farm & Group</strong> and enter the
+                      <strong> Weight contributed (kg)</strong> for each farm.
+                      The total produce weight will be auto-computed.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(0)}
+                      className="mt-2 text-xs font-semibold text-amber-800 underline hover:no-underline"
+                    >
+                      ← Go back to Farm step
+                    </button>
+                  </div>
                 </div>
               )}
 
               <FormStep
                 step={formSteps[currentStep]}
                 formData={formData}
-                onChange={handleFormChange}
+                onChange={handleChange}
                 onCategoryChange={handleCategoryChange}
                 onStoreChange={handleStoreChange}
                 farmBlocks={farmBlocks}
                 onAddFarm={addFarmBlock}
                 onRemoveFarm={removeFarmBlock}
-                onFarmChange={handleFarmChange} // Nouvelle prop pour auto-complétion
+                onFarmChange={handleFarmChange}
                 farms={farms}
                 districts={districts}
+                showFarmQty={currentStep === 0}
+                farmQtyLabel="Weight contributed (kg)"
+                farmQtyKey="qty"
               />
 
               <FormNavigation
                 currentStep={currentStep}
                 totalSteps={formSteps.length}
-                onPrevStep={prevStep}
-                onNextStep={nextStep}
+                onPrevStep={() => setCurrentStep(s => s - 1)}
+                onNextStep={() => setCurrentStep(s => s + 1)}
                 onSubmit={handleSubmit}
                 isStepValid={isStepValid()}
               />
             </div>
           </div>
 
-          {/* Reçu et QR */}
+          {/* Receipt preview — unchanged */}
           <div className="w-1/2">
             <div className="sticky top-8">
               <ReceiptPreview
                 qrData={qrData}
                 onDownloadPDF={handleDownloadPDF}
                 isDownloading={isDownloading}
+                formData={formData}
+                farmBlocks={farmBlocks}
+                formType="export"
               />
             </div>
           </div>
@@ -461,4 +350,4 @@ Transaction Date: ${data.timestamp}
   );
 };
 
-export default PointForm;
+export default ExportDigitalStamps;

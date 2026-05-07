@@ -90,6 +90,9 @@ import CarbonReportForest from './components/gfw/CarbonReportForest.jsx';
 import FarmReport from './components/gfw/FarmReport.jsx';
 import CarbonReport from './components/gfw/CarbonReport.jsx';
 
+// ─── Sentinel Hub ─────────────────────────────────────────────────────────────
+import SentinelDashboard from './components/Sentinel/SentinelDashboard.jsx';
+
 // ─── Districts ────────────────────────────────────────────────────────────────
 import CreateDistrict from './components/District/CreateDistrict.jsx';
 import DistrictView from './components/District/DistrictView.jsx';
@@ -122,34 +125,30 @@ import BlogPublic from './components/Blog/BlogPublic.jsx';
 // =============================================================================
 const UserTypeRoute = ({ children, allowedRoles }) => {
   const token = localStorage.getItem('token');
-
   if (!token) return <Navigate to="/login" replace />;
-
   try {
     const { sub } = jwtDecode(token);
     const userType = sub?.user_type || '';
     const isAdmin  = sub?.is_admin  || false;
-
     if (isAdmin || allowedRoles.includes(userType)) return children;
-
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#050c06" }}>
-        <div style={{ background: "rgba(255,255,255,0.04)", padding: 40, borderRadius: 16, maxWidth: 400, textAlign: "center", border: "1px solid rgba(255,255,255,0.07)" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 600, color: "#e8f0e9", marginBottom: 12 }}>
+      <div style={{ display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#050c06" }}>
+        <div style={{ background:"rgba(255,255,255,0.04)",padding:40,borderRadius:16,maxWidth:400,textAlign:"center",border:"1px solid rgba(255,255,255,0.07)" }}>
+          <div style={{ fontSize:48,marginBottom:16 }}>🔒</div>
+          <h2 style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:600,color:"#e8f0e9",marginBottom:12 }}>
             Accès Réservé
           </h2>
-          <p style={{ fontFamily: "'Epilogue', sans-serif", fontSize: 14, color: "rgba(232,240,233,0.45)", marginBottom: 8 }}>
-            Fonctionnalité réservée aux rôles : <strong style={{ color: "#e8f0e9" }}>{allowedRoles.join(', ')}</strong>
+          <p style={{ fontFamily:"'Epilogue',sans-serif",fontSize:14,color:"rgba(232,240,233,0.45)",marginBottom:8 }}>
+            Fonctionnalité réservée aux rôles : <strong style={{ color:"#e8f0e9" }}>{allowedRoles.join(', ')}</strong>
           </p>
-          <p style={{ fontFamily: "'Epilogue', sans-serif", fontSize: 13, color: "rgba(232,240,233,0.45)", marginBottom: 24 }}>
-            Votre rôle : <strong style={{ color: "#ef4444" }}>{userType || 'Non défini'}</strong>
+          <p style={{ fontFamily:"'Epilogue',sans-serif",fontSize:13,color:"rgba(232,240,233,0.45)",marginBottom:24 }}>
+            Votre rôle : <strong style={{ color:"#ef4444" }}>{userType || 'Non défini'}</strong>
           </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <button onClick={() => window.history.back()} style={{ padding: "10px 20px", borderRadius: 100, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8f0e9", cursor: "pointer", fontFamily: "'Epilogue', sans-serif" }}>
+          <div style={{ display:"flex",gap:12,justifyContent:"center" }}>
+            <button onClick={() => window.history.back()} style={{ padding:"10px 20px",borderRadius:100,background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.1)",color:"#e8f0e9",cursor:"pointer",fontFamily:"'Epilogue',sans-serif" }}>
               Retour
             </button>
-            <button onClick={() => window.location.href = '/home'} style={{ padding: "10px 20px", borderRadius: 100, background: "#22c55e", border: "none", color: "#050c06", fontWeight: 700, cursor: "pointer", fontFamily: "'Epilogue', sans-serif" }}>
+            <button onClick={() => window.location.href='/home'} style={{ padding:"10px 20px",borderRadius:100,background:"#22c55e",border:"none",color:"#050c06",fontWeight:700,cursor:"pointer",fontFamily:"'Epilogue',sans-serif" }}>
               Accueil
             </button>
           </div>
@@ -163,79 +162,112 @@ const UserTypeRoute = ({ children, allowedRoles }) => {
 };
 
 // =============================================================================
-// ROUTE DEFINITIONS
+// FEATURE NAMES — centralisés ici pour éviter les fautes de frappe
+// Ces noms doivent correspondre exactement aux feature_name dans la DB
+// (FeatureManager → Feature Prices → feature_name)
 // =============================================================================
-
-// Rôles disponibles — centralisés pour éviter les fautes de frappe
-const ROLES = {
-  ALL:    ['admin', 'weather', 'farmer', 'forest'],
-  FARM:   ['admin', 'farmer'],
-  FOREST: ['admin', 'forest'],
-  WEATHER:['admin', 'weather', 'farmer'],
-  ADMIN:  ['admin'],
+export const FEATURES = {
+  STORE:         'store',           // StoreProductManager
+  FARMER_GROUP:  'farmergroup',     // FarmerGroupManager
+  // Ajoutez d'autres features ici si besoin
 };
 
+// =============================================================================
+// RÔLES — centralisés
+// =============================================================================
+const ROLES = {
+  ALL:     ['admin', 'weather', 'farmer', 'forest'],
+  FARM:    ['admin', 'farmer'],
+  FOREST:  ['admin', 'forest'],
+  WEATHER: ['admin', 'weather', 'farmer'],
+  ADMIN:   ['admin'],
+};
+
+// =============================================================================
+// ROUTE DEFINITIONS
+// feature  : string → active FeatureRoute (vérification paiement)
+// adminOnly: bool   → seuls les admins peuvent accéder (bypass feature check)
+// =============================================================================
 const layoutRoutes = [
   // ── Weather ──────────────────────────────────────────────────────────────
-  { path: "/wateradvisory",    component: <WaterAdvisory />,     roles: ROLES.WEATHER },
-  { path: "/weathermapfarm",   component: <WeathearMapFarm />,   roles: ROLES.WEATHER },
-  { path: "/weatherhistory",   component: <WeatherHistory />,    roles: ROLES.WEATHER },
-  { path: "/weatherdas",       component: <WeatherDashboard />,  roles: ROLES.WEATHER },
-  { path: "/weatherandsolar",  component: <WeatherAndSolar />,   roles: ROLES.WEATHER },
+  { path: "/wateradvisory",   component: <WaterAdvisory />,    roles: ROLES.WEATHER },
+  { path: "/weathermapfarm",  component: <WeathearMapFarm />,  roles: ROLES.WEATHER },
+  { path: "/weatherhistory",  component: <WeatherHistory />,   roles: ROLES.WEATHER },
+  { path: "/weatherdas",      component: <WeatherDashboard />, roles: ROLES.WEATHER },
+  { path: "/weatherandsolar", component: <WeatherAndSolar />,  roles: ROLES.WEATHER },
 
   // ── Farm ─────────────────────────────────────────────────────────────────
-  { path: "/farmmanager",             component: <FarmManager />,           roles: ROLES.FARM },
-  { path: "/farmdatamanager",         component: <FarmDataManager />,       roles: ROLES.FARM },
-  { path: "/createfarm",              component: <Create />,                roles: ROLES.FARM },
-  { path: "/farmdata",                component: <Farmdata />,              roles: ROLES.FARM },
-  { path: "/farmergroup",             component: <FarmerGroupManager />,    roles: ROLES.FARM },
-  { path: "/tabcrop",                 component: <Tabcrop />,               roles: ROLES.FARM },
-  { path: "/cropmanage",              component: <Createcrop />,            roles: ROLES.FARM },
-  { path: "/cropmanager",             component: <CropManager />,           roles: ROLES.FARM },
-  { path: "/cropedit/:id",            component: <CropEdit />,              roles: ROLES.FARM },
-  { path: "/irrigationmanager",       component: <IrrigationManager />,     roles: ROLES.FARM },
-  { path: "/cropcoefficientmanager",  component: <CropCoefficientManager />,roles: ROLES.FARM },
-  { path: "/grademanager",            component: <GradeManager />,          roles: ROLES.FARM },
-  { path: "/storeProductManager",     component: <StoreProductManager />,   roles: ROLES.FARM },
+  { path: "/farmmanager",    component: <FarmManager />,    roles: ROLES.FARM },
+  { path: "/farmdatamanager",component: <FarmDataManager />,roles: ROLES.FARM },
+  { path: "/createfarm",     component: <Create />,         roles: ROLES.FARM },
+  { path: "/farmdata",       component: <Farmdata />,       roles: ROLES.FARM },
+
+  // ✅ FEATURE GATING RESTAURÉ — farmergroup requiert le paiement de la feature
+  {
+    path:    "/farmergroup",
+    component: <FarmerGroupManager />,
+    roles:   ROLES.FARM,
+    feature: FEATURES.FARMER_GROUP,   // ← vérifie /api/payments/access/farmergroup
+  },
+
+  { path: "/tabcrop",                component: <Tabcrop />,               roles: ROLES.FARM },
+  { path: "/cropmanage",             component: <Createcrop />,            roles: ROLES.FARM },
+  { path: "/cropmanager",            component: <CropManager />,           roles: ROLES.FARM },
+  { path: "/cropedit/:id",           component: <CropEdit />,              roles: ROLES.FARM },
+  { path: "/irrigationmanager",      component: <IrrigationManager />,     roles: ROLES.FARM },
+  { path: "/cropcoefficientmanager", component: <CropCoefficientManager />,roles: ROLES.FARM },
+  { path: "/grademanager",           component: <GradeManager />,          roles: ROLES.FARM },
+
+  // ✅ FEATURE GATING RESTAURÉ — store requiert le paiement de la feature
+  {
+    path:    "/storeProductManager",
+    component: <StoreProductManager />,
+    roles:   ROLES.FARM,
+    feature: FEATURES.STORE,          // ← vérifie /api/payments/access/store
+  },
 
   // ── Forest ───────────────────────────────────────────────────────────────
-  { path: "/forestpage",        component: <ForestPage />,        roles: ROLES.FOREST },
-  { path: "/forestpoint",       component: <ForestPoint />,       roles: ROLES.FOREST },
-  { path: "/foresttree",        component: <ForestTree />,        roles: ROLES.FOREST },
-  { path: "/treemanager",       component: <TreeManagement />,    roles: ROLES.FOREST },
-  { path: "/reportforest",      component: <ForestReport />,      roles: ROLES.FOREST },
-  { path: "/reportcarbonforest",component: <CarbonReportForest />,roles: ROLES.FOREST },
+  { path: "/forestpage",         component: <ForestPage />,         roles: ROLES.FOREST },
+  { path: "/forestpoint",        component: <ForestPoint />,        roles: ROLES.FOREST },
+  { path: "/foresttree",         component: <ForestTree />,         roles: ROLES.FOREST },
+  { path: "/treemanager",        component: <TreeManagement />,     roles: ROLES.FOREST },
+  { path: "/reportforest",       component: <ForestReport />,       roles: ROLES.FOREST },
+  { path: "/reportcarbonforest", component: <CarbonReportForest />, roles: ROLES.FOREST },
 
-  // ── Shared — tous les rôles ───────────────────────────────────────────────
-  { path: "/graph",           component: <Graph />,           roles: ROLES.ALL },
-  { path: "/graphpest",       component: <GraphPest />,       roles: ROLES.ALL },
-  { path: "/graphcgd",        component: <GraphCGD />,        roles: ROLES.ALL },
-  { path: "/onemonth",        component: <Onemonth />,        roles: ROLES.ALL },
-  { path: "/plantingdate",    component: <PlantingDate />,    roles: ROLES.ALL },
-  { path: "/threemonth",      component: <Threemonth />,      roles: ROLES.ALL },
-  { path: "/card",            component: <Card />,            roles: ROLES.ALL },
-  { path: "/cardex",          component: <Cardex />,          roles: ROLES.ALL },
-  { path: "/mapbox",          component: <MapboxExample />,   roles: ROLES.ALL },
-  { path: "/mapview",         component: <MapView />,         roles: ROLES.ALL },
-  { path: "/mapviewall",      component: <MapViewAll />,      roles: ROLES.ALL },
+  // ── Shared ───────────────────────────────────────────────────────────────
+  { path: "/graph",        component: <Graph />,        roles: ROLES.ALL },
+  { path: "/graphpest",    component: <GraphPest />,    roles: ROLES.ALL },
+  { path: "/graphcgd",     component: <GraphCGD />,     roles: ROLES.ALL },
+  { path: "/onemonth",     component: <Onemonth />,     roles: ROLES.ALL },
+  { path: "/plantingdate", component: <PlantingDate />, roles: ROLES.ALL },
+  { path: "/threemonth",   component: <Threemonth />,   roles: ROLES.ALL },
+  { path: "/card",         component: <Card />,         roles: ROLES.ALL },
+  { path: "/cardex",       component: <Cardex />,       roles: ROLES.ALL },
+  { path: "/mapbox",       component: <MapboxExample />,roles: ROLES.ALL },
+  { path: "/mapview",      component: <MapView />,      roles: ROLES.ALL },
+  { path: "/mapviewall",   component: <MapViewAll />,   roles: ROLES.ALL },
 
 
   // Districts
-  { path: "/district",            component: <CreateDistrict />, roles: ROLES.ALL },
-  { path: "/districts/:id/view",  component: <DistrictView />,   roles: ROLES.ALL },
-  { path: "/districts",           component: <DistrictList />,   roles: ROLES.ALL },
-  { path: "/districts/:id/edit",  component: <DistrictEdit />,   roles: ROLES.ALL },
+  { path: "/district",           component: <CreateDistrict />, roles: ROLES.ALL },
+  { path: "/districts/:id/view", component: <DistrictView />,   roles: ROLES.ALL },
+  { path: "/districts",          component: <DistrictList />,   roles: ROLES.ALL },
+  { path: "/districts/:id/edit", component: <DistrictEdit />,   roles: ROLES.ALL },
 
   // QR
-  { path: "/qr",            component: <QR />,          roles: ROLES.ALL },
-  { path: "/qrproduce",     component: <Produce />,     roles: ROLES.ALL },
-  { path: "/qrconservation",component: <Conservation />,roles: ROLES.ALL },
-  { path: "/qrfertilizer",  component: <Fertilizer />,  roles: ROLES.ALL },
-  { path: "/qrexport",      component: <Export />,      roles: ROLES.ALL },
+  { path: "/qr",             component: <QR />,           roles: ROLES.ALL },
+  { path: "/qrproduce",      component: <Produce />,      roles: ROLES.ALL },
+  { path: "/qrconservation", component: <Conservation />, roles: ROLES.ALL },
+  { path: "/qrfertilizer",   component: <Fertilizer />,   roles: ROLES.ALL },
+  { path: "/qrexport",       component: <Export />,       roles: ROLES.ALL },
 
   // Reports
   { path: "/reportfarmer", component: <FarmReport />,   roles: ROLES.ALL },
   { path: "/reportcarbon", component: <CarbonReport />, roles: ROLES.ALL },
+
+  // Sentinel
+  { path: "/sentinel/farm/:farmId",     component: <SentinelDashboard entityType="farm" />,   roles: ROLES.FARM },
+  { path: "/sentinel/forest/:forestId", component: <SentinelDashboard entityType="forest" />, roles: ROLES.FOREST },
 
   // Users
   { path: "/createUsers", component: <CreateUsers />,    roles: ROLES.ALL },
@@ -249,13 +281,12 @@ const layoutRoutes = [
   { path: "/categorymanager", component: <CategoryManager />, roles: ROLES.ALL },
 
   // Dashboard
-  { path: "/userDash",       component: <UserDash />,        roles: ROLES.ALL },
-  { path: "/alertmessage",   component: <AlertMessaging />,  roles: ROLES.ALL },
-  // { path: "/wbiidashboard",  component: <WBIIDashboard />,   roles: ROLES.ALL },
+{ path: "/userDash",     component: <UserDash />,       roles: ROLES.ALL },
+  { path: "/alertmessage", component: <AlertMessaging />, roles: ROLES.ALL },
 
-  // EUDR
-  { path: "/EUDRSubmission",  component: <EUDRSubmitForm />,  roles: ROLES.ALL },
-  { path: "/stats-certificate",component: <UserCertificate />,roles: ROLES.ALL },
+  // EUDR — admin uniquement
+  { path: "/EUDRSubmission",   component: <EUDRSubmitForm />,  roles: ROLES.ADMIN, adminOnly: true },
+  { path: "/stats-certificate",component: <UserCertificate />, roles: ROLES.ALL },
 
   // Admin only
   { path: "/featuresManager", component: <FeatureManager />, roles: ROLES.ADMIN, adminOnly: true },
@@ -271,11 +302,9 @@ const layoutRoutes = [
 function App() {
   return (
     <BrowserRouter>
-      {/* ── ThemeProvider : injecte les variables CSS NKUSU une seule fois ── */}
       <ThemeProvider />
-
       <Routes>
-        {/* ── Routes publiques ─────────────────────────────────────────── */}
+        {/* ── Routes publiques ── */}
         <Route path="/"                       element={<Landipage />} />
         <Route path="/landipage"              element={<Landing />} />
         <Route path="/login"                  element={<Login />} />
@@ -287,22 +316,15 @@ function App() {
         <Route path="/sectionfutur"           element={<SectionFutur />} />
         <Route path="/test"                   element={<TestMap />} />
 
-        {/* ── Payment callbacks ────────────────────────────────────────── */}
+        {/* ── Payment callbacks ── */}
         <Route path="/payment/success"   element={<PaymentSuccess />} />
         <Route path="/payment/cancelled" element={<PaymentCancelled />} />
         <Route path="/payment/error"     element={<PaymentError />} />
 
-        {/* ── Home protégé ─────────────────────────────────────────────── */}
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
+        {/* ── Home protégé ── */}
+        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
 
-        {/* ── Routes protégées avec rôles ──────────────────────────────── */}
+        {/* ── Routes protégées avec rôles (et feature optionnelle) ── */}
         {layoutRoutes.map(({ path, component, roles, adminOnly = false, feature }) => (
           <Route
             key={path}
