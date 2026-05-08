@@ -40,36 +40,37 @@ const buildMenus = (isAdmin, role) => {
       id: "farm", label: "Farm", Icon: GiFarmer,
       show: isFarmer,
       items: [
-        { label: "Farmer Group",  href: "/farmergroup",         Icon: GiFarmer },
-        { label: "Farm Manager",  href: "/farmmanager",         Icon: RiPlantLine },
-        { label: "Crop",          href: "/cropmanage",          Icon: GiWheat },
-        { label: "District",      href: "/district",            Icon: TbMap2 },
-        { label: "View All",      href: "/mapviewall",          Icon: RiMapPinLine, state: { owner_type: "farmer" } },
-        { label: "Store",         href: "/storeProductManager", Icon: BsShop },
+        { label: "Farmer Group", href: "/farmergroup",         Icon: GiFarmer },
+        { label: "Farm Manager", href: "/farmmanager",         Icon: RiPlantLine },
+        { label: "Crop",         href: "/cropmanage",          Icon: GiWheat },
+        { label: "District",     href: "/district",            Icon: TbMap2 },
+        { label: "View All",     href: "/mapviewall",          Icon: RiMapPinLine, state: { owner_type: "farmer" } },
+        { label: "Store",        href: "/storeProductManager", Icon: BsShop },
       ],
     },
     {
       id: "digital", label: "Digital Trace", Icon: LuScanLine,
       show: isAll,
       items: [
-        { label: "Produce Stamps",              href: "/qrproduce",      Icon: FaQrcode },
-        { label: "Forest Conservation Stamps",  href: "/qrconservation", Icon: FaTree },
-        { label: "Export Stamps",               href: "/qrexport",       Icon: LuScanLine },
-        { label: "Fertilizer Stamps",           href: "/qrfertilizer",   Icon: TbPlant2 },
+        { label: "Produce Stamps",             href: "/qrproduce",      Icon: FaQrcode },
+        { label: "Forest Conservation Stamps", href: "/qrconservation", Icon: FaTree },
+        { label: "Export Stamps",              href: "/qrexport",       Icon: LuScanLine },
+        { label: "Fertilizer Stamps",          href: "/qrfertilizer",   Icon: TbPlant2 },
       ],
     },
     {
       id: "weather", label: "Weather", Icon: FaCloudSun,
       show: isWeather,
       items: [
-        { label: "Map Weather",      href: "/weathermapfarm", Icon: TbMap2 },
-        { label: "Weather History",  href: "/weatherhistory", Icon: MdHistory },
-        { label: "HDD & CDD",        href: "/onemonth",       Icon: MdOutlineWbSunny },
-        { label: "GDD for Pest",     href: "/graphpest",      Icon: TbChartBar },
-        { label: "Planting Date",    href: "/plantingdate",   Icon: BsCalendarDate },
-        { label: "Anomaly Alert",    href: "/weatherdas",     Icon: MdOutlineWarningAmber },
-        { label: "Alert Messaging",  href: "/alertmessage",   Icon: MdOutlineSms },
-        { label: "Water Advisory",   href: "/wateradvisory",  Icon: MdOutlineWaterDrop },
+        { label: "Map Weather",     href: "/weathermapfarm", Icon: TbMap2 },
+        { label: "Weather History", href: "/weatherhistory", Icon: MdHistory },
+        { label: "HDD & CDD",       href: "/onemonth",       Icon: MdOutlineWbSunny },
+        { label: "GDD for Pest",    href: "/graphpest",      Icon: TbChartBar },
+        { label: "Planting Date",   href: "/plantingdate",   Icon: BsCalendarDate },
+        { label: "Anomaly Alert",   href: "/weatherdas",     Icon: MdOutlineWarningAmber },
+        { label: "Alert Messaging", href: "/alertmessage",   Icon: MdOutlineSms },
+        { label: "Water Advisory",  href: "/wateradvisory",  Icon: MdOutlineWaterDrop },
+        { label: "Location Advisory", href: "/locationadvisory", Icon: RiMapPinLine },
       ],
     },
     {
@@ -78,6 +79,8 @@ const buildMenus = (isAdmin, role) => {
       items: [
         { label: "Dashboard",      href: "/userDash",      Icon: MdDashboard },
         { label: "WBII Dashboard", href: "/wbiidashboard", Icon: TbChartBar },
+        { label: "Admin Blog",     href: "/blogadmin",     Icon: FaFileContract },
+        { label: "Public Blog",    href: "/blogpublic",    Icon: FaFileContract },
       ],
     },
     {
@@ -115,7 +118,7 @@ const DesktopDropdown = ({ menu, active, onEnter, onLeave }) => {
         />
       </button>
 
-{active && (
+      {active && (
         <div
           className="dropdown absolute top-full left-0 mt-1 w-56 bg-white rounded-xl
                      shadow-2xl border border-gray-100 overflow-hidden z-50"

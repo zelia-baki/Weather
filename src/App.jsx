@@ -7,7 +7,6 @@ import ThemeProvider from "./components/ThemeProvider";
 
 // ─── Route guards ─────────────────────────────────────────────────────────────
 import ProtectedRoute from './ProtectedRoute.jsx';
-import WeatherOnlyRoute from './WeatherOnlyRoute.jsx';
 import FeatureRoute from './FeatureRoute.jsx';
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
@@ -30,9 +29,9 @@ import { PaymentCancelled } from './components/Payment/PaymentCancelled.jsx';
 import { PaymentError } from './components/Payment/PaymentError.jsx';
 
 // ─── Guest / EUDR ─────────────────────────────────────────────────────────────
-import EUDRSubmitFormForGuest from './components/Guest/EUDRSubmitFormForGuest.jsx';
 import EUDRSubmitForm from './components/Eudr/EUDRSubmitForm.jsx';
 import UserCertificate from './components/Eudr/UserStatsCertificate.jsx';
+import EUDRSubmitFormForGuest from './components/Guest/EUDRSubmitFormForGuest.jsx';
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 import UserDash from './components/Dashboard/UserDashBoard.jsx';
@@ -115,10 +114,10 @@ import Card from './components/Card/Card.jsx';
 import Cardex from './components/Card/Cardex.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 import FeatureManager from './components/Features/FeatureManager.jsx';
+
 // ─── Blog ─────────────────────────────────────────────────────────────────────
 import BlogAdmin from './components/Blog/BlogAdmin.jsx';
 import BlogPublic from './components/Blog/BlogPublic.jsx';
-
 
 // =============================================================================
 // GUARD : UserTypeRoute
@@ -126,21 +125,23 @@ import BlogPublic from './components/Blog/BlogPublic.jsx';
 const UserTypeRoute = ({ children, allowedRoles, requireWbii = false }) => {
   const token = localStorage.getItem('token');
   if (!token) return <Navigate to="/login" replace />;
+
   try {
     const { sub } = jwtDecode(token);
-    const userType = sub?.user_type || '';
-    const isAdmin  = sub?.is_admin  || false;
+    const userType      = sub?.user_type      || '';
+    const isAdmin       = sub?.is_admin        || false;
     const hasAccessWbii = sub?.has_access_wbii || false;
-        // Cas spécial WBII
+
+    // Cas spécial WBII
     if (requireWbii && !isAdmin && !hasAccessWbii) {
       return (
-        <div style={{ display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#050c06" }}>
-          <div style={{ background:"rgba(255,255,255,0.04)",padding:40,borderRadius:16,maxWidth:400,textAlign:"center",border:"1px solid rgba(255,255,255,0.07)" }}>
-            <div style={{ fontSize:48,marginBottom:16 }}>🔒</div>
-            <h2 style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:28,color:"#e8f0e9",marginBottom:12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#050c06' }}>
+          <div style={{ background: 'rgba(255,255,255,0.04)', padding: 40, borderRadius: 16, maxWidth: 400, textAlign: 'center', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: '#e8f0e9', marginBottom: 12 }}>
               Accès Restreint
             </h2>
-            <p style={{ fontFamily:"'Epilogue',sans-serif",fontSize:14,color:"rgba(232,240,233,0.45)" }}>
+            <p style={{ fontFamily: "'Epilogue', sans-serif", fontSize: 14, color: 'rgba(232,240,233,0.45)' }}>
               Vous n'avez pas accès au module WBII. Contactez votre administrateur.
             </p>
           </div>
@@ -149,24 +150,25 @@ const UserTypeRoute = ({ children, allowedRoles, requireWbii = false }) => {
     }
 
     if (isAdmin || allowedRoles.includes(userType)) return children;
+
     return (
-      <div style={{ display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#050c06" }}>
-        <div style={{ background:"rgba(255,255,255,0.04)",padding:40,borderRadius:16,maxWidth:400,textAlign:"center",border:"1px solid rgba(255,255,255,0.07)" }}>
-          <div style={{ fontSize:48,marginBottom:16 }}>🔒</div>
-          <h2 style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:600,color:"#e8f0e9",marginBottom:12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#050c06' }}>
+        <div style={{ background: 'rgba(255,255,255,0.04)', padding: 40, borderRadius: 16, maxWidth: 400, textAlign: 'center', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 600, color: '#e8f0e9', marginBottom: 12 }}>
             Accès Réservé
           </h2>
-          <p style={{ fontFamily:"'Epilogue',sans-serif",fontSize:14,color:"rgba(232,240,233,0.45)",marginBottom:8 }}>
-            Fonctionnalité réservée aux rôles : <strong style={{ color:"#e8f0e9" }}>{allowedRoles.join(', ')}</strong>
+          <p style={{ fontFamily: "'Epilogue', sans-serif", fontSize: 14, color: 'rgba(232,240,233,0.45)', marginBottom: 8 }}>
+            Fonctionnalité réservée aux rôles : <strong style={{ color: '#e8f0e9' }}>{allowedRoles.join(', ')}</strong>
           </p>
-          <p style={{ fontFamily:"'Epilogue',sans-serif",fontSize:13,color:"rgba(232,240,233,0.45)",marginBottom:24 }}>
-            Votre rôle : <strong style={{ color:"#ef4444" }}>{userType || 'Non défini'}</strong>
+          <p style={{ fontFamily: "'Epilogue', sans-serif", fontSize: 13, color: 'rgba(232,240,233,0.45)', marginBottom: 24 }}>
+            Votre rôle : <strong style={{ color: '#ef4444' }}>{userType || 'Non défini'}</strong>
           </p>
-          <div style={{ display:"flex",gap:12,justifyContent:"center" }}>
-            <button onClick={() => window.history.back()} style={{ padding:"10px 20px",borderRadius:100,background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.1)",color:"#e8f0e9",cursor:"pointer",fontFamily:"'Epilogue',sans-serif" }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button onClick={() => window.history.back()} style={{ padding: '10px 20px', borderRadius: 100, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', color: '#e8f0e9', cursor: 'pointer', fontFamily: "'Epilogue', sans-serif" }}>
               Retour
             </button>
-            <button onClick={() => window.location.href='/home'} style={{ padding:"10px 20px",borderRadius:100,background:"#22c55e",border:"none",color:"#050c06",fontWeight:700,cursor:"pointer",fontFamily:"'Epilogue',sans-serif" }}>
+            <button onClick={() => window.location.href = '/home'} style={{ padding: '10px 20px', borderRadius: 100, background: '#22c55e', border: 'none', color: '#050c06', fontWeight: 700, cursor: 'pointer', fontFamily: "'Epilogue', sans-serif" }}>
               Accueil
             </button>
           </div>
@@ -182,12 +184,10 @@ const UserTypeRoute = ({ children, allowedRoles, requireWbii = false }) => {
 // =============================================================================
 // FEATURE NAMES — centralisés ici pour éviter les fautes de frappe
 // Ces noms doivent correspondre exactement aux feature_name dans la DB
-// (FeatureManager → Feature Prices → feature_name)
 // =============================================================================
 export const FEATURES = {
-  STORE:         'store',           // StoreProductManager
-  FARMER_GROUP:  'farmergroup',     // FarmerGroupManager
-  // Ajoutez d'autres features ici si besoin
+  STORE:        'store',       // StoreProductManager
+  FARMER_GROUP: 'farmergroup', // FarmerGroupManager
 };
 
 // =============================================================================
@@ -203,115 +203,110 @@ const ROLES = {
 
 // =============================================================================
 // ROUTE DEFINITIONS
-// feature  : string → active FeatureRoute (vérification paiement)
-// adminOnly: bool   → seuls les admins peuvent accéder (bypass feature check)
+// feature     : string  → active FeatureRoute (vérification paiement)
+// adminOnly   : bool    → seuls les admins peuvent accéder
+// requireWbii : bool    → accès conditionnel au module WBII
 // =============================================================================
 const layoutRoutes = [
   // ── Weather ──────────────────────────────────────────────────────────────
-  { path: "/wateradvisory",   component: <WaterAdvisory />,    roles: ROLES.WEATHER },
-  { path: "/weathermapfarm",  component: <WeathearMapFarm />,  roles: ROLES.WEATHER },
-  { path: "/weatherhistory",  component: <WeatherHistory />,   roles: ROLES.WEATHER },
-  { path: "/weatherdas",      component: <WeatherDashboard />, roles: ROLES.WEATHER },
-  { path: "/weatherandsolar", component: <WeatherAndSolar />,  roles: ROLES.WEATHER },
+  { path: '/wateradvisory',   component: <WaterAdvisory />,    roles: ROLES.WEATHER },
+  { path: '/weathermapfarm',  component: <WeathearMapFarm />,  roles: ROLES.WEATHER },
+  { path: '/weatherhistory',  component: <WeatherHistory />,   roles: ROLES.WEATHER },
+  { path: '/weatherdas',      component: <WeatherDashboard />, roles: ROLES.WEATHER },
+  { path: '/weatherandsolar', component: <WeatherAndSolar />,  roles: ROLES.WEATHER },
 
   // ── Farm ─────────────────────────────────────────────────────────────────
-  { path: "/farmmanager",    component: <FarmManager />,    roles: ROLES.FARM },
-  { path: "/farmdatamanager",component: <FarmDataManager />,roles: ROLES.FARM },
-  { path: "/createfarm",     component: <Create />,         roles: ROLES.FARM },
-  { path: "/farmdata",       component: <Farmdata />,       roles: ROLES.FARM },
-
-  // ✅ FEATURE GATING RESTAURÉ — farmergroup requiert le paiement de la feature
+  { path: '/farmmanager',     component: <FarmManager />,     roles: ROLES.FARM },
+  { path: '/farmdatamanager', component: <FarmDataManager />, roles: ROLES.FARM },
+  { path: '/createfarm',      component: <Create />,          roles: ROLES.FARM },
+  { path: '/farmdata',        component: <Farmdata />,        roles: ROLES.FARM },
   {
-    path:    "/farmergroup",
+    path:      '/farmergroup',
     component: <FarmerGroupManager />,
-    roles:   ROLES.FARM,
-    feature: FEATURES.FARMER_GROUP,   // ← vérifie /api/payments/access/farmergroup
+    roles:     ROLES.FARM,
+    feature:   FEATURES.FARMER_GROUP,
   },
-
-  { path: "/tabcrop",                component: <Tabcrop />,               roles: ROLES.FARM },
-  { path: "/cropmanage",             component: <Createcrop />,            roles: ROLES.FARM },
-  { path: "/cropmanager",            component: <CropManager />,           roles: ROLES.FARM },
-  { path: "/cropedit/:id",           component: <CropEdit />,              roles: ROLES.FARM },
-  { path: "/irrigationmanager",      component: <IrrigationManager />,     roles: ROLES.FARM },
-  { path: "/cropcoefficientmanager", component: <CropCoefficientManager />,roles: ROLES.FARM },
-  { path: "/grademanager",           component: <GradeManager />,          roles: ROLES.FARM },
-
-  // ✅ FEATURE GATING RESTAURÉ — store requiert le paiement de la feature
+  { path: '/tabcrop',                component: <Tabcrop />,               roles: ROLES.FARM },
+  { path: '/cropmanage',             component: <Createcrop />,            roles: ROLES.FARM },
+  { path: '/cropmanager',            component: <CropManager />,           roles: ROLES.FARM },
+  { path: '/cropedit/:id',           component: <CropEdit />,              roles: ROLES.FARM },
+  { path: '/irrigationmanager',      component: <IrrigationManager />,     roles: ROLES.FARM },
+  { path: '/cropcoefficientmanager', component: <CropCoefficientManager />,roles: ROLES.FARM },
+  { path: '/grademanager',           component: <GradeManager />,          roles: ROLES.FARM },
   {
-    path:    "/storeProductManager",
+    path:      '/storeProductManager',
     component: <StoreProductManager />,
-    roles:   ROLES.FARM,
-    feature: FEATURES.STORE,          // ← vérifie /api/payments/access/store
+    roles:     ROLES.FARM,
+    feature:   FEATURES.STORE,
   },
 
   // ── Forest ───────────────────────────────────────────────────────────────
-  { path: "/forestpage",         component: <ForestPage />,         roles: ROLES.FOREST },
-  { path: "/forestpoint",        component: <ForestPoint />,        roles: ROLES.FOREST },
-  { path: "/foresttree",         component: <ForestTree />,         roles: ROLES.FOREST },
-  { path: "/treemanager",        component: <TreeManagement />,     roles: ROLES.FOREST },
-  { path: "/reportforest",       component: <ForestReport />,       roles: ROLES.FOREST },
-  { path: "/reportcarbonforest", component: <CarbonReportForest />, roles: ROLES.FOREST },
+  { path: '/forestpage',         component: <ForestPage />,         roles: ROLES.FOREST },
+  { path: '/forestpoint',        component: <ForestPoint />,        roles: ROLES.FOREST },
+  { path: '/foresttree',         component: <ForestTree />,         roles: ROLES.FOREST },
+  { path: '/treemanager',        component: <TreeManagement />,     roles: ROLES.FOREST },
+  { path: '/reportforest',       component: <ForestReport />,       roles: ROLES.FOREST },
+  { path: '/reportcarbonforest', component: <CarbonReportForest />, roles: ROLES.FOREST },
 
   // ── Shared ───────────────────────────────────────────────────────────────
-  { path: "/graph",        component: <Graph />,        roles: ROLES.ALL },
-  { path: "/graphpest",    component: <GraphPest />,    roles: ROLES.ALL },
-  { path: "/graphcgd",     component: <GraphCGD />,     roles: ROLES.ALL },
-  { path: "/onemonth",     component: <Onemonth />,     roles: ROLES.ALL },
-  { path: "/plantingdate", component: <PlantingDate />, roles: ROLES.ALL },
-  { path: "/threemonth",   component: <Threemonth />,   roles: ROLES.ALL },
-  { path: "/card",         component: <Card />,         roles: ROLES.ALL },
-  { path: "/cardex",       component: <Cardex />,       roles: ROLES.ALL },
-  { path: "/mapbox",       component: <MapboxExample />,roles: ROLES.ALL },
-  { path: "/mapview",      component: <MapView />,      roles: ROLES.ALL },
-  { path: "/mapviewall",   component: <MapViewAll />,   roles: ROLES.ALL },
-
+  { path: '/graph',        component: <Graph />,        roles: ROLES.ALL },
+  { path: '/graphpest',    component: <GraphPest />,    roles: ROLES.ALL },
+  { path: '/graphcgd',     component: <GraphCGD />,     roles: ROLES.ALL },
+  { path: '/onemonth',     component: <Onemonth />,     roles: ROLES.ALL },
+  { path: '/plantingdate', component: <PlantingDate />, roles: ROLES.ALL },
+  { path: '/threemonth',   component: <Threemonth />,   roles: ROLES.ALL },
+  { path: '/card',         component: <Card />,         roles: ROLES.ALL },
+  { path: '/cardex',       component: <Cardex />,       roles: ROLES.ALL },
+  { path: '/mapbox',       component: <MapboxExample />,roles: ROLES.ALL },
+  { path: '/mapview',      component: <MapView />,      roles: ROLES.ALL },
+  { path: '/mapviewall',   component: <MapViewAll />,   roles: ROLES.ALL },
 
   // Districts
-  { path: "/district",           component: <CreateDistrict />, roles: ROLES.ALL },
-  { path: "/districts/:id/view", component: <DistrictView />,   roles: ROLES.ALL },
-  { path: "/districts",          component: <DistrictList />,   roles: ROLES.ALL },
-  { path: "/districts/:id/edit", component: <DistrictEdit />,   roles: ROLES.ALL },
+  { path: '/district',           component: <CreateDistrict />, roles: ROLES.ALL },
+  { path: '/districts/:id/view', component: <DistrictView />,   roles: ROLES.ALL },
+  { path: '/districts',          component: <DistrictList />,   roles: ROLES.ALL },
+  { path: '/districts/:id/edit', component: <DistrictEdit />,   roles: ROLES.ALL },
 
   // QR
-  { path: "/qr",             component: <QR />,           roles: ROLES.ALL },
-  { path: "/qrproduce",      component: <Produce />,      roles: ROLES.ALL },
-  { path: "/qrconservation", component: <Conservation />, roles: ROLES.ALL },
-  { path: "/qrfertilizer",   component: <Fertilizer />,   roles: ROLES.ALL },
-  { path: "/qrexport",       component: <Export />,       roles: ROLES.ALL },
+  { path: '/qr',             component: <QR />,           roles: ROLES.ALL },
+  { path: '/qrproduce',      component: <Produce />,      roles: ROLES.ALL },
+  { path: '/qrconservation', component: <Conservation />, roles: ROLES.ALL },
+  { path: '/qrfertilizer',   component: <Fertilizer />,   roles: ROLES.ALL },
+  { path: '/qrexport',       component: <Export />,       roles: ROLES.ALL },
 
   // Reports
-  { path: "/reportfarmer", component: <FarmReport />,   roles: ROLES.ALL },
-  { path: "/reportcarbon", component: <CarbonReport />, roles: ROLES.ALL },
+  { path: '/reportfarmer', component: <FarmReport />,   roles: ROLES.ALL },
+  { path: '/reportcarbon', component: <CarbonReport />, roles: ROLES.ALL },
 
   // Sentinel
-  { path: "/sentinel/farm/:farmId",     component: <SentinelDashboard entityType="farm" />,   roles: ROLES.FARM },
-  { path: "/sentinel/forest/:forestId", component: <SentinelDashboard entityType="forest" />, roles: ROLES.FOREST },
+  { path: '/sentinel/farm/:farmId',     component: <SentinelDashboard entityType="farm" />,   roles: ROLES.FARM },
+  { path: '/sentinel/forest/:forestId', component: <SentinelDashboard entityType="forest" />, roles: ROLES.FOREST },
 
   // Users
-  { path: "/createUsers", component: <CreateUsers />,    roles: ROLES.ALL },
-  { path: "/usermanager", component: <UserManagement />, roles: ROLES.ALL },
+  { path: '/createUsers', component: <CreateUsers />,    roles: ROLES.ALL },
+  { path: '/usermanager', component: <UserManagement />, roles: ROLES.ALL },
 
-  //Blog
-  { path: "/blogadmin", component: <BlogAdmin />,    roles: ROLES.ALL },
-  { path: "/blogpublic", component: <BlogPublic />, roles: ROLES.ALL },
+  // Blog
+  { path: '/blogadmin',  component: <BlogAdmin />,  roles: ROLES.ALL },
+  { path: '/blogpublic', component: <BlogPublic />, roles: ROLES.ALL },
 
   // Category
-  { path: "/categorymanager", component: <CategoryManager />, roles: ROLES.ALL },
+  { path: '/categorymanager', component: <CategoryManager />, roles: ROLES.ALL },
 
   // Dashboard
-{ path: "/userDash",     component: <UserDash />,       roles: ROLES.ALL },
-  { path: "/alertmessage", component: <AlertMessaging />, roles: ROLES.ALL },
+  { path: '/userDash',     component: <UserDash />,       roles: ROLES.ALL },
+  { path: '/alertmessage', component: <AlertMessaging />, roles: ROLES.ALL },
 
-  // EUDR — admin uniquement
-  { path: "/EUDRSubmission",   component: <EUDRSubmitForm />,  roles: ROLES.ADMIN, adminOnly: true },
-  { path: "/stats-certificate",component: <UserCertificate />, roles: ROLES.ALL },
+  // EUDR
+  { path: '/EUDRSubmission',    component: <EUDRSubmitForm />,  roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/stats-certificate', component: <UserCertificate />, roles: ROLES.ALL },
 
   // Admin only
-  { path: "/featuresManager", component: <FeatureManager />, roles: ROLES.ADMIN, adminOnly: true },
-  { path: "/wbiidashboard", component: <WBIIDashboard />, roles: ROLES.ALL, requireWbii: true },
-  { path: "/locationadvisory", component: <LocationAdvisory />,  roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/featuresManager',  component: <FeatureManager />,  roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/locationadvisory', component: <LocationAdvisory />,roles: ROLES.ADMIN, adminOnly: true },
 
-
+  // WBII
+  { path: '/wbiidashboard', component: <WBIIDashboard />, roles: ROLES.ALL, requireWbii: true },
 ];
 
 // =============================================================================

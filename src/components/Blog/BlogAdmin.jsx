@@ -273,23 +273,31 @@ const BlogAdmin = () => {
     setRemoveCover(false);
   };
 
-  const handleEdit = post => {
-    setEditId(post.id);
-    setForm({
-      title:    post.title || '',
-      excerpt:  post.excerpt || '',
-      author:   post.author || '',
-      category: post.category || '',
-      tags:     (post.tags || []).join(', '),
-      body:     post.body || post.content || '',
-    });
-    // Affiche l'image existante (URL serveur)
-    if (coverPreview && coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
-    setCoverFile(null);
-    setCoverPreview(post.cover_image ? post.cover_image : '');
-    setRemoveCover(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+const handleEdit = async post => {
+  setEditId(post.id);
+  setForm({
+    title:    post.title || '',
+    excerpt:  post.excerpt || '',
+    author:   post.author || '',
+    category: post.category || '',
+    tags:     (post.tags || []).join(', '),
+    body:     '',   // on va le charger
+  });
+
+  // Charger le body depuis /api/blog/posts/<id>/
+  try {
+    const res = await axiosInstance.get(`/api/blog/posts/${post.id}/`);
+    setForm(f => ({ ...f, body: res.data.body || '' }));
+  } catch {
+    notify('Failed to load article content.', 'error');
+  }
+
+  if (coverPreview && coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+  setCoverFile(null);
+  setCoverPreview(post.cover_image ? post.cover_image : '');
+  setRemoveCover(false);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
   const handleDelete = async id => {
     if (!window.confirm('Delete this article?')) return;
