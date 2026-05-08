@@ -123,13 +123,31 @@ import BlogPublic from './components/Blog/BlogPublic.jsx';
 // =============================================================================
 // GUARD : UserTypeRoute
 // =============================================================================
-const UserTypeRoute = ({ children, allowedRoles }) => {
+const UserTypeRoute = ({ children, allowedRoles, requireWbii = false }) => {
   const token = localStorage.getItem('token');
   if (!token) return <Navigate to="/login" replace />;
   try {
     const { sub } = jwtDecode(token);
     const userType = sub?.user_type || '';
     const isAdmin  = sub?.is_admin  || false;
+    const hasAccessWbii = sub?.has_access_wbii || false;
+        // Cas spécial WBII
+    if (requireWbii && !isAdmin && !hasAccessWbii) {
+      return (
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#050c06" }}>
+          <div style={{ background:"rgba(255,255,255,0.04)",padding:40,borderRadius:16,maxWidth:400,textAlign:"center",border:"1px solid rgba(255,255,255,0.07)" }}>
+            <div style={{ fontSize:48,marginBottom:16 }}>🔒</div>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:28,color:"#e8f0e9",marginBottom:12 }}>
+              Accès Restreint
+            </h2>
+            <p style={{ fontFamily:"'Epilogue',sans-serif",fontSize:14,color:"rgba(232,240,233,0.45)" }}>
+              Vous n'avez pas accès au module WBII. Contactez votre administrateur.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     if (isAdmin || allowedRoles.includes(userType)) return children;
     return (
       <div style={{ display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"#050c06" }}>
@@ -290,7 +308,7 @@ const layoutRoutes = [
 
   // Admin only
   { path: "/featuresManager", component: <FeatureManager />, roles: ROLES.ADMIN, adminOnly: true },
-  { path: "/wbiidashboard",  component: <WBIIDashboard />,   roles: ROLES.ADMIN, adminOnly: true },
+  { path: "/wbiidashboard", component: <WBIIDashboard />, roles: ROLES.ALL, requireWbii: true },
   { path: "/locationadvisory", component: <LocationAdvisory />,  roles: ROLES.ADMIN, adminOnly: true },
 
 
@@ -325,13 +343,13 @@ function App() {
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
 
         {/* ── Routes protégées avec rôles (et feature optionnelle) ── */}
-        {layoutRoutes.map(({ path, component, roles, adminOnly = false, feature }) => (
+        {layoutRoutes.map(({ path, component, roles, adminOnly = false, feature, requireWbii = false }) => (
           <Route
             key={path}
             path={path}
             element={
               <ProtectedRoute adminOnly={adminOnly}>
-                <UserTypeRoute allowedRoles={roles}>
+                <UserTypeRoute allowedRoles={roles} requireWbii={requireWbii}>
                   {feature ? (
                     <FeatureRoute feature={feature}>
                       <Layout>{component}</Layout>

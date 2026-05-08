@@ -207,6 +207,43 @@ const WBIIDashboard = () => {
       setLoading(false);
     }
   };
+  useEffect(() => {
+  const loadFarms = async () => {
+    // Vérification permission WBII
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const { sub } = jwtDecode(token);
+        const isAdmin       = sub?.is_admin       || false;
+        const hasAccessWbii = sub?.has_access_wbii || false;
+        if (!isAdmin && !hasAccessWbii) {
+          setError('Accès refusé : vous ne disposez pas de la permission WBII.');
+          return;
+        }
+      } catch {
+        setError('Token invalide.');
+        return;
+      }
+    }
+
+    // Suite normale
+    setLoading(true);
+    try {
+      const farmData = await fetchFarms();
+      setFarms(farmData);
+      if (farmData.length > 0) {
+        await loadWBIIForFarm(farmData[0]);
+      } else {
+        setError('No farms found');
+      }
+    } catch (err) {
+      setError('Failed to initialize dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadFarms();
+}, []);
 
   useEffect(() => {
     const loadFarms = async () => {
@@ -440,12 +477,21 @@ const WBIIDashboard = () => {
           </div>
 
           {/* Error Banner */}
-          {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
+         {error && (
+  <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-8">
+    <div className="bg-white rounded-3xl shadow-lg border border-red-100 p-12 max-w-md w-full text-center">
+      <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">Accès Refusé</h2>
+      <p className="text-gray-600">{error}</p>
+      <button
+        onClick={() => window.history.back()}
+        className="mt-6 px-6 py-2.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl font-medium transition-all"
+      >
+        Retour
+      </button>
+    </div>
+  </div>
+)}
 
           {/* Info Section */}
           {expandedInfo && (
