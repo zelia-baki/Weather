@@ -73,7 +73,9 @@ import PaymentSuccess from './components/Payment/PaymentSuccess.jsx';
 import { PaymentCancelled } from './components/Payment/PaymentCancelled.jsx';
 import { PaymentError } from './components/Payment/PaymentError.jsx';
 import WBIIDashboard from './components/Dashboard/WBIIDashboard.jsx';
-
+import LocationAdvisory from './components/mapbox/LocationAdvisory.jsx';
+import BlogAdmin from './components/Blog/BlogAdmin.jsx';
+import BlogPublic from './components/Blog/BlogPublic.jsx';
 // ============================================
 // NOUVEAU COMPOSANT: UserTypeRoute
 // ============================================
@@ -501,6 +503,11 @@ function App() {
       adminOnly: true,
       allowedRoles: ['admin']
     },
+     { path: "/wbiidashboard",  component: <WBIIDashboard />,   roles: ROLES.ADMIN, adminOnly: true },
+  { path: "/locationadvisory", component: <LocationAdvisory />,  roles: ROLES.ADMIN, adminOnly: true },
+     //Blog
+  { path: "/blogadmin", component: <BlogAdmin />,    roles: ROLES.ALL },
+  { path: "/blogpublic", component: <BlogPublic />, roles: ROLES.ALL },
   ];
 
   return (
