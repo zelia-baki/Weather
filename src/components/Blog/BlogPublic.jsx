@@ -13,7 +13,7 @@ const catStyle = {
   'Article':     { bg: 'bg-purple-100',  text: 'text-purple-700',  dot: 'bg-purple-500'  },
 };
 
-// ── SVG de fallback (inchangé) ────────────────────────────────────────────────
+// ── SVG de fallback ───────────────────────────────────────────────────────────
 const CoverSVG = ({ category, tall = false }) => {
   const h = tall ? 320 : 180;
   if (category === 'Field Story')
@@ -43,10 +43,8 @@ const CoverSVG = ({ category, tall = false }) => {
   );
 };
 
-// ── Cover : vraie photo si disponible, SVG sinon ──────────────────────────────
 const Cover = ({ post, tall = false }) => {
-  const h = tall ? 260 : undefined; // undefined → height géré par le parent
-
+  const h = tall ? 260 : undefined;
   if (post.cover_image) {
     return (
       <img
@@ -92,11 +90,13 @@ const PostDetail = ({ post, onBack }) => {
   const [loadingBody, setLoadingBody] = useState(true);
 
   useEffect(() => {
-    axiosInstance.get(`/api/blog/posts/${post.slug}/content/`)
+    // ✅ CORRIGÉ : utilise /api/blog/posts/<id>/ au lieu de /content/
+    // Le Doc 2 retourne { ...meta, body } sur GET /posts/<post_id>/
+    axiosInstance.get(`/api/blog/posts/${post.id}/`)
       .then(res => setBody(res.data.body || ''))
       .catch(() => setBody(''))
       .finally(() => setLoadingBody(false));
-  }, [post.slug]);
+  }, [post.id]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 md:p-8">
@@ -107,7 +107,6 @@ const PostDetail = ({ post, onBack }) => {
         </button>
 
         <div className="bg-white rounded-3xl shadow-lg border border-purple-100 overflow-hidden">
-          {/* ── Cover (photo ou SVG) ── */}
           <div className="overflow-hidden" style={{ height: 260 }}>
             <Cover post={post} tall />
           </div>

@@ -61,7 +61,6 @@ const PreviewModal = ({ form, coverPreview, onClose }) => {
           </button>
         </div>
         <div className="p-6">
-          {/* Cover preview */}
           {coverPreview && (
             <div className="rounded-2xl overflow-hidden mb-5" style={{ height: 200 }}>
               <img src={coverPreview} alt="cover" className="w-full h-full object-cover" />
@@ -113,7 +112,6 @@ const CoverUpload = ({ coverPreview, onFileChange, onRemove }) => {
       </label>
 
       {coverPreview ? (
-        /* ── Aperçu de l'image choisie ── */
         <div className="relative rounded-2xl overflow-hidden border-2 border-purple-200" style={{ height: 160 }}>
           <img src={coverPreview} alt="cover preview" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/20 flex items-center justify-center gap-3 opacity-0 hover:opacity-100 transition-opacity">
@@ -130,7 +128,6 @@ const CoverUpload = ({ coverPreview, onFileChange, onRemove }) => {
           </div>
         </div>
       ) : (
-        /* ── Zone de drop ── */
         <div
           onClick={() => inputRef.current?.click()}
           onDrop={handleDrop}
@@ -150,7 +147,7 @@ const CoverUpload = ({ coverPreview, onFileChange, onRemove }) => {
         onChange={e => {
           const file = e.target.files[0];
           if (file) onFileChange(file);
-          e.target.value = '';          // reset pour pouvoir re-choisir le même fichier
+          e.target.value = '';
         }}
       />
     </div>
@@ -163,13 +160,12 @@ const BlogAdmin = () => {
   const [loading, setLoading]       = useState(true);
   const [saving, setSaving]         = useState(false);
   const [form, setForm]             = useState(EMPTY_FORM);
-  const [editId, setEditId]         = useState(null);
+  const [editId, setEditId]         = useState(null);   // string (slug) ou null
   const [preview, setPreview]       = useState(false);
   const [toast, setToast]           = useState({ msg: '', type: 'success' });
 
-  // Image de couverture : fichier File + URL de prévisualisation
-  const [coverFile, setCoverFile]   = useState(null);   // File | null
-  const [coverPreview, setCoverPreview] = useState(''); // blob URL ou URL serveur
+  const [coverFile, setCoverFile]       = useState(null);
+  const [coverPreview, setCoverPreview] = useState('');
   const [removeCover, setRemoveCover]   = useState(false);
 
   const notify = (msg, type = 'success') => {
@@ -191,7 +187,6 @@ const BlogAdmin = () => {
 
   useEffect(() => { fetchPosts(); }, []);
 
-  // Nettoyage de l'URL objet quand on change d'image
   useEffect(() => {
     return () => {
       if (coverPreview && coverPreview.startsWith('blob:')) {
@@ -224,26 +219,21 @@ const BlogAdmin = () => {
     setSaving(true);
 
     try {
-      // ── On utilise toujours FormData pour pouvoir envoyer le fichier ──
       const fd = new FormData();
       fd.append('title',    form.title.trim());
       fd.append('excerpt',  form.excerpt.trim());
       fd.append('author',   form.author.trim());
       fd.append('category', form.category);
       fd.append('body',     form.body.trim());
-      fd.append('read_time', calcRead(form.body));
 
       const tagsArr = form.tags.split(',').map(t => t.trim()).filter(Boolean);
       fd.append('tags', JSON.stringify(tagsArr));
 
-      if (coverFile) {
-        fd.append('cover_image', coverFile);
-      }
-      if (removeCover) {
-        fd.append('remove_cover', 'true');
-      }
+      if (coverFile) fd.append('cover_image', coverFile);
+      if (removeCover) fd.append('remove_cover', 'true');
 
       if (editId) {
+        // ✅ PATCH /api/blog/posts/<post_id>/ (le id est le slug dans Doc 2)
         await axiosInstance.patch(`/api/blog/posts/${editId}/`, fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
@@ -273,31 +263,34 @@ const BlogAdmin = () => {
     setRemoveCover(false);
   };
 
-const handleEdit = async post => {
-  setEditId(post.id);
-  setForm({
-    title:    post.title || '',
-    excerpt:  post.excerpt || '',
-    author:   post.author || '',
-    category: post.category || '',
-    tags:     (post.tags || []).join(', '),
-    body:     '',   // on va le charger
-  });
+  const handleEdit = async post => {
+    // ✅ CORRIGÉ : charge le body via GET /api/blog/posts/<post_id>/
+    // Dans Doc 2, ce endpoint retourne { ...meta, body }
+    setEditId(post.id);
+    setForm({
+      title:    post.title || '',
+      excerpt:  post.excerpt || '',
+      author:   post.author || '',
+      category: post.category || '',
+      tags:     (post.tags || []).join(', '),
+      body:     '',
+    });
 
-  // Charger le body depuis /api/blog/posts/<id>/
-  try {
-    const res = await axiosInstance.get(`/api/blog/posts/${post.id}/`);
-    setForm(f => ({ ...f, body: res.data.body || '' }));
-  } catch {
-    notify('Failed to load article content.', 'error');
-  }
+    try {
+      const res = await axiosInstance.get(`/api/blog/posts/${post.id}/`);
+      setForm(f => ({ ...f, body: res.data.body || '' }));
+    } catch {
+      notify('Failed to load article content.', 'error');
+    }
 
-  if (coverPreview && coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
-  setCoverFile(null);
-  setCoverPreview(post.cover_image ? post.cover_image : '');
-  setRemoveCover(false);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-};
+    if (coverPreview && coverPreview.startsWith('blob:')) URL.revokeObjectURL(coverPreview);
+    setCoverFile(null);
+    // ✅ La cover_image du Doc 2 est déjà une URL relative /api/blog/covers/<filename>
+    // Le backend la sert directement, pas besoin de préfixe localhost
+    setCoverPreview(post.cover_image || '');
+    setRemoveCover(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleDelete = async id => {
     if (!window.confirm('Delete this article?')) return;
@@ -354,14 +347,12 @@ const handleEdit = async post => {
                 )}
               </div>
 
-              {/* ── Cover image ── */}
               <CoverUpload
                 coverPreview={coverPreview}
                 onFileChange={handleCoverFile}
                 onRemove={handleRemoveCover}
               />
 
-              {/* Title */}
               <div className="mb-4">
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">Title *</label>
                 <input type="text" value={form.title} onChange={e => set('title', e.target.value)}
@@ -369,7 +360,6 @@ const handleEdit = async post => {
                   className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm text-gray-900 transition-colors" />
               </div>
 
-              {/* Excerpt */}
               <div className="mb-4">
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">Excerpt * <span className="text-gray-300 font-normal">(shown on the card)</span></label>
                 <textarea value={form.excerpt} onChange={e => set('excerpt', e.target.value)}
@@ -377,7 +367,6 @@ const handleEdit = async post => {
                   className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm text-gray-900 transition-colors resize-none" />
               </div>
 
-              {/* Author + Category */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Author *</label>
@@ -396,7 +385,6 @@ const handleEdit = async post => {
                 </div>
               </div>
 
-              {/* Tags */}
               <div className="mb-4">
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">Tags <span className="text-gray-300 font-normal">(comma-separated)</span></label>
                 <input type="text" value={form.tags} onChange={e => set('tags', e.target.value)}
@@ -404,7 +392,6 @@ const handleEdit = async post => {
                   className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:outline-none text-sm text-gray-900 transition-colors" />
               </div>
 
-              {/* Body */}
               <div className="mb-6">
                 <label className="block text-xs font-medium text-gray-500 mb-1.5">
                   Content * <span className="text-gray-300 font-normal">— use ## for headings, - for bullets, **bold**</span>
@@ -419,7 +406,6 @@ const handleEdit = async post => {
                 )}
               </div>
 
-              {/* Actions */}
               <div className="flex items-center gap-3 pt-2">
                 <button onClick={handleSubmit} disabled={saving}
                   className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2.5 rounded-xl font-medium text-sm shadow-md hover:opacity-90 transition-opacity disabled:opacity-60">
@@ -456,7 +442,7 @@ const handleEdit = async post => {
                 <div className="text-center py-10 text-gray-400 text-sm">No articles yet.</div>
               ) : (
                 <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-                  {[...posts].sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
+                  {[...posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                     .map(p => (
                       <div key={p.id}
                         className={`p-4 rounded-2xl border transition-all ${
@@ -464,7 +450,6 @@ const handleEdit = async post => {
                             ? 'border-purple-300 bg-purple-50'
                             : 'border-gray-100 bg-gray-50 hover:border-gray-200'
                         }`}>
-                        {/* Thumbnail si cover_image disponible */}
                         {p.cover_image && (
                           <div className="rounded-xl overflow-hidden mb-2" style={{ height: 80 }}>
                             <img src={p.cover_image} alt="" className="w-full h-full object-cover" />
@@ -476,7 +461,7 @@ const handleEdit = async post => {
                           }`}>
                             {p.category}
                           </span>
-                          <span className="text-xs text-gray-400 flex-shrink-0">{fmtDate(p.created_at || p.date)}</span>
+                          <span className="text-xs text-gray-400 flex-shrink-0">{fmtDate(p.created_at)}</span>
                         </div>
                         <p className="text-sm font-medium text-gray-800 leading-snug mb-2 line-clamp-2">{p.title}</p>
                         <p className="text-xs text-gray-400 mb-3">by {p.author}</p>
