@@ -128,8 +128,8 @@ const UserTypeRoute = ({ children, allowedRoles, requireWbii = false }) => {
 
   try {
     const { sub } = jwtDecode(token);
-    const userType      = sub?.user_type      || '';
-    const isAdmin       = sub?.is_admin        || false;
+    const userType = sub?.user_type || '';
+    const isAdmin = sub?.is_admin || false;
     const hasAccessWbii = sub?.has_access_wbii || false;
 
     // Cas spécial WBII
@@ -185,20 +185,19 @@ const UserTypeRoute = ({ children, allowedRoles, requireWbii = false }) => {
 // FEATURE NAMES — centralisés ici pour éviter les fautes de frappe
 // Ces noms doivent correspondre exactement aux feature_name dans la DB
 // =============================================================================
-export const FEATURES = {
-  STORE:        'store',       // StoreProductManager
-  FARMER_GROUP: 'farmergroup', // FarmerGroupManager
-};
+// Seules les features nécessitant un paiement figurent ici.
+// Ne jamais ajouter une feature d'accès libre dans cet objet.
+export const PAID_FEATURES = {};
 
 // =============================================================================
 // RÔLES — centralisés
 // =============================================================================
 const ROLES = {
-  ALL:     ['admin', 'weather', 'farmer', 'forest'],
-  FARM:    ['admin', 'farmer'],
-  FOREST:  ['admin', 'forest'],
+  ALL: ['admin', 'weather', 'farmer', 'forest'],
+  FARM: ['admin', 'farmer'],
+  FOREST: ['admin', 'forest'],
   WEATHER: ['admin', 'weather', 'farmer'],
-  ADMIN:   ['admin'],
+  ADMIN: ['admin'],
 };
 
 // =============================================================================
@@ -209,101 +208,91 @@ const ROLES = {
 // =============================================================================
 const layoutRoutes = [
   // ── Weather ──────────────────────────────────────────────────────────────
-  { path: '/wateradvisory',   component: <WaterAdvisory />,    roles: ROLES.WEATHER },
-  { path: '/weathermapfarm',  component: <WeathearMapFarm />,  roles: ROLES.WEATHER },
-  { path: '/weatherhistory',  component: <WeatherHistory />,   roles: ROLES.WEATHER },
-  { path: '/weatherdas',      component: <WeatherDashboard />, roles: ROLES.WEATHER },
-  { path: '/weatherandsolar', component: <WeatherAndSolar />,  roles: ROLES.WEATHER },
+  { path: '/wateradvisory', component: <WaterAdvisory />, roles: ROLES.WEATHER },
+  { path: '/weathermapfarm', component: <WeathearMapFarm />, roles: ROLES.WEATHER },
+  { path: '/weatherhistory', component: <WeatherHistory />, roles: ROLES.WEATHER },
+  { path: '/weatherdas', component: <WeatherDashboard />, roles: ROLES.WEATHER },
+  { path: '/weatherandsolar', component: <WeatherAndSolar />, roles: ROLES.WEATHER },
 
   // ── Farm ─────────────────────────────────────────────────────────────────
-  { path: '/farmmanager',     component: <FarmManager />,     roles: ROLES.FARM },
+  { path: '/farmmanager', component: <FarmManager />, roles: ROLES.FARM },
   { path: '/farmdatamanager', component: <FarmDataManager />, roles: ROLES.FARM },
-  { path: '/createfarm',      component: <Create />,          roles: ROLES.FARM },
-  { path: '/farmdata',        component: <Farmdata />,        roles: ROLES.FARM },
-  {
-    path:      '/farmergroup',
-    component: <FarmerGroupManager />,
-    roles:     ROLES.FARM,
-    feature:   FEATURES.FARMER_GROUP,
-  },
-  { path: '/tabcrop',                component: <Tabcrop />,               roles: ROLES.FARM },
-  { path: '/cropmanage',             component: <Createcrop />,            roles: ROLES.FARM },
-  { path: '/cropmanager',            component: <CropManager />,           roles: ROLES.FARM },
-  { path: '/cropedit/:id',           component: <CropEdit />,              roles: ROLES.FARM },
-  { path: '/irrigationmanager',      component: <IrrigationManager />,     roles: ROLES.FARM },
-  { path: '/cropcoefficientmanager', component: <CropCoefficientManager />,roles: ROLES.FARM },
-  { path: '/grademanager',           component: <GradeManager />,          roles: ROLES.FARM },
-  {
-    path:      '/storeProductManager',
-    component: <StoreProductManager />,
-    roles:     ROLES.FARM,
-    feature:   FEATURES.STORE,
-  },
+  { path: '/createfarm', component: <Create />, roles: ROLES.FARM },
+  { path: '/farmdata', component: <Farmdata />, roles: ROLES.FARM },
+  { path: '/farmergroup', component: <FarmerGroupManager />, roles: ROLES.FARM },
+  { path: '/tabcrop', component: <Tabcrop />, roles: ROLES.FARM },
+  { path: '/cropmanage', component: <Createcrop />, roles: ROLES.FARM },
+  { path: '/cropmanager', component: <CropManager />, roles: ROLES.FARM },
+  { path: '/cropedit/:id', component: <CropEdit />, roles: ROLES.FARM },
+  { path: '/irrigationmanager', component: <IrrigationManager />, roles: ROLES.FARM },
+  { path: '/cropcoefficientmanager', component: <CropCoefficientManager />, roles: ROLES.FARM },
+  { path: '/grademanager', component: <GradeManager />, roles: ROLES.FARM },
+  { path: '/storeProductManager', component: <StoreProductManager />, roles: ROLES.FARM },
 
   // ── Forest ───────────────────────────────────────────────────────────────
-  { path: '/forestpage',         component: <ForestPage />,         roles: ROLES.FOREST },
-  { path: '/forestpoint',        component: <ForestPoint />,        roles: ROLES.FOREST },
-  { path: '/foresttree',         component: <ForestTree />,         roles: ROLES.FOREST },
-  { path: '/treemanager',        component: <TreeManagement />,     roles: ROLES.FOREST },
-  { path: '/reportforest',       component: <ForestReport />,       roles: ROLES.FOREST },
+  { path: '/forestpage', component: <ForestPage />, roles: ROLES.FOREST },
+  { path: '/forestpoint', component: <ForestPoint />, roles: ROLES.FOREST },
+  { path: '/foresttree', component: <ForestTree />, roles: ROLES.FOREST },
+  { path: '/treemanager', component: <TreeManagement />, roles: ROLES.FOREST },
+  { path: '/reportforest', component: <ForestReport />, roles: ROLES.FOREST },
   { path: '/reportcarbonforest', component: <CarbonReportForest />, roles: ROLES.FOREST },
 
   // ── Shared ───────────────────────────────────────────────────────────────
-  { path: '/graph',        component: <Graph />,        roles: ROLES.ALL },
-  { path: '/graphpest',    component: <GraphPest />,    roles: ROLES.ALL },
-  { path: '/graphcgd',     component: <GraphCGD />,     roles: ROLES.ALL },
-  { path: '/onemonth',     component: <Onemonth />,     roles: ROLES.ALL },
+  { path: '/graph', component: <Graph />, roles: ROLES.ALL },
+  { path: '/graphpest', component: <GraphPest />, roles: ROLES.ALL },
+  { path: '/graphcgd', component: <GraphCGD />, roles: ROLES.ALL },
+  { path: '/onemonth', component: <Onemonth />, roles: ROLES.ALL },
   { path: '/plantingdate', component: <PlantingDate />, roles: ROLES.ALL },
-  { path: '/threemonth',   component: <Threemonth />,   roles: ROLES.ALL },
-  { path: '/card',         component: <Card />,         roles: ROLES.ALL },
-  { path: '/cardex',       component: <Cardex />,       roles: ROLES.ALL },
-  { path: '/mapbox',       component: <MapboxExample />,roles: ROLES.ALL },
-  { path: '/mapview',      component: <MapView />,      roles: ROLES.ALL },
-  { path: '/mapviewall',   component: <MapViewAll />,   roles: ROLES.ALL },
+  { path: '/threemonth', component: <Threemonth />, roles: ROLES.ALL },
+  { path: '/card', component: <Card />, roles: ROLES.ALL },
+  { path: '/cardex', component: <Cardex />, roles: ROLES.ALL },
+  { path: '/mapbox', component: <MapboxExample />, roles: ROLES.ALL },
+  { path: '/mapview', component: <MapView />, roles: ROLES.ALL },
+  { path: '/mapviewall', component: <MapViewAll />, roles: ROLES.ALL },
 
   // Districts
-  { path: '/district',           component: <CreateDistrict />, roles: ROLES.ALL },
-  { path: '/districts/:id/view', component: <DistrictView />,   roles: ROLES.ALL },
-  { path: '/districts',          component: <DistrictList />,   roles: ROLES.ALL },
-  { path: '/districts/:id/edit', component: <DistrictEdit />,   roles: ROLES.ALL },
+  { path: '/district', component: <CreateDistrict />, roles: ROLES.ALL },
+  { path: '/districts/:id/view', component: <DistrictView />, roles: ROLES.ALL },
+  { path: '/districts', component: <DistrictList />, roles: ROLES.ALL },
+  { path: '/districts/:id/edit', component: <DistrictEdit />, roles: ROLES.ALL },
 
   // QR
-  { path: '/qr',             component: <QR />,           roles: ROLES.ALL },
-  { path: '/qrproduce',      component: <Produce />,      roles: ROLES.ALL },
+  { path: '/qr', component: <QR />, roles: ROLES.ALL },
+  { path: '/qrproduce', component: <Produce />, roles: ROLES.ALL },
   { path: '/qrconservation', component: <Conservation />, roles: ROLES.ALL },
-  { path: '/qrfertilizer',   component: <Fertilizer />,   roles: ROLES.ALL },
-  { path: '/qrexport',       component: <Export />,       roles: ROLES.ALL },
+  { path: '/qrfertilizer', component: <Fertilizer />, roles: ROLES.ALL },
+  { path: '/qrexport', component: <Export />, roles: ROLES.ALL },
 
   // Reports
-  { path: '/reportfarmer', component: <FarmReport />,   roles: ROLES.ALL },
+  { path: '/reportfarmer', component: <FarmReport />, roles: ROLES.ALL },
   { path: '/reportcarbon', component: <CarbonReport />, roles: ROLES.ALL },
 
   // Sentinel
-  { path: '/sentinel/farm/:farmId',     component: <SentinelDashboard entityType="farm" />,   roles: ROLES.FARM },
+  { path: '/sentinel/farm/:farmId', component: <SentinelDashboard entityType="farm" />, roles: ROLES.FARM },
   { path: '/sentinel/forest/:forestId', component: <SentinelDashboard entityType="forest" />, roles: ROLES.FOREST },
 
   // Users
-  { path: '/createUsers', component: <CreateUsers />,    roles: ROLES.ALL },
+  { path: '/createUsers', component: <CreateUsers />, roles: ROLES.ALL },
   { path: '/usermanager', component: <UserManagement />, roles: ROLES.ALL },
 
   // Blog
-  { path: '/blogadmin',  component: <BlogAdmin />,  roles: ROLES.ALL },
+  { path: '/blogadmin', component: <BlogAdmin />, roles: ROLES.ALL },
   { path: '/blogpublic', component: <BlogPublic />, roles: ROLES.ALL },
 
   // Category
   { path: '/categorymanager', component: <CategoryManager />, roles: ROLES.ALL },
 
   // Dashboard
-  { path: '/userDash',     component: <UserDash />,       roles: ROLES.ALL },
+  { path: '/userDash', component: <UserDash />, roles: ROLES.ALL },
   { path: '/alertmessage', component: <AlertMessaging />, roles: ROLES.ALL },
 
   // EUDR
-  { path: '/EUDRSubmission',    component: <EUDRSubmitForm />,  roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/EUDRSubmission', component: <EUDRSubmitForm />, roles: ROLES.ADMIN, adminOnly: true },
   { path: '/stats-certificate', component: <UserCertificate />, roles: ROLES.ALL },
 
   // Admin only
-  { path: '/featuresManager',  component: <FeatureManager />,  roles: ROLES.ADMIN, adminOnly: true },
-  { path: '/locationadvisory', component: <LocationAdvisory />,roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/featuresManager', component: <FeatureManager />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/locationadvisory', component: <LocationAdvisory />, roles: ROLES.ADMIN, adminOnly: true },
 
   // WBII
   { path: '/wbiidashboard', component: <WBIIDashboard />, roles: ROLES.ALL, requireWbii: true },
@@ -318,21 +307,21 @@ function App() {
       <ThemeProvider />
       <Routes>
         {/* ── Routes publiques ── */}
-        <Route path="/"                       element={<Landipage />} />
-        <Route path="/landipage"              element={<Landing />} />
-        <Route path="/login"                  element={<Login />} />
-        <Route path="/contactus"              element={<ContactUs />} />
-        <Route path="/signup"                 element={<SignUp />} />
-        <Route path="/barnav"                 element={<BarNav />} />
-        <Route path="/payment-required"       element={<PaymentRequired />} />
+        <Route path="/" element={<Landipage />} />
+        <Route path="/landipage" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/contactus" element={<ContactUs />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/barnav" element={<BarNav />} />
+        <Route path="/payment-required" element={<PaymentRequired />} />
         <Route path="/EUDRSubmissionForGuest" element={<EUDRSubmitFormForGuest />} />
-        <Route path="/sectionfutur"           element={<SectionFutur />} />
-        <Route path="/test"                   element={<TestMap />} />
+        <Route path="/sectionfutur" element={<SectionFutur />} />
+        <Route path="/test" element={<TestMap />} />
 
         {/* ── Payment callbacks ── */}
-        <Route path="/payment/success"   element={<PaymentSuccess />} />
+        <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/cancelled" element={<PaymentCancelled />} />
-        <Route path="/payment/error"     element={<PaymentError />} />
+        <Route path="/payment/error" element={<PaymentError />} />
 
         {/* ── Home protégé ── */}
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />

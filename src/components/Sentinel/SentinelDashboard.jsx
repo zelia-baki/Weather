@@ -158,6 +158,20 @@ const LTVPanel = ({ ltv, onUpdate }) => {
         <DollarSign size={16} className="text-emerald-400" />
         Financial Analysis (LTV)
       </h3>
+
+      {ltv === null && (
+        <div className="mb-4 flex items-start gap-3 bg-yellow-950/40 border border-yellow-700/50
+                        rounded-xl px-4 py-3">
+          <AlertTriangle size={16} className="text-yellow-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-yellow-400 text-sm font-semibold">No area data available</p>
+            <p className="text-yellow-600 text-xs mt-0.5 leading-relaxed">
+              This farm has no polygon points defined. Add polygon points in the Map editor
+              to enable automatic area calculation and LTV analysis.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {[
           { label: 'Loan Amount (USD)', val: loanAmount,  set: setLoanAmount,  ph: 'e.g. 5000' },
