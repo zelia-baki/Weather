@@ -656,7 +656,7 @@ const LandingPage = () => {
 
               {/* Headline */}
               <h1 style={{ ...displayTitle("clamp(36px, 5.5vw, 80px)"), fontWeight: 300, letterSpacing: "-0.01em", marginBottom: 28 }}>
-                Precision Agriculture{" "}
+                Precision Technology{" "}
                 <em style={{ color: colors.green, fontStyle: "italic" }}>Intelligence</em>{" "}
                 from Space
               </h1>
@@ -673,7 +673,7 @@ const LandingPage = () => {
               {/* Social proof */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: fonts.body, fontSize: 12, color: colors.muted, flexWrap: "wrap" }}>
                 {[...Array(5)].map((_, i) => <span key={i} style={{ color: colors.amber }}>★</span>)}
-                <span>Trusted by 2,000+ agronomists worldwide</span>
+                <span>Trusted by 2,000+ Experts worldwide</span>
               </div>
             </motion.div>
           </div>
