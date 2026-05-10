@@ -207,43 +207,6 @@ const WBIIDashboard = () => {
       setLoading(false);
     }
   };
-  useEffect(() => {
-  const loadFarms = async () => {
-    // Vérification permission WBII
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const { sub } = jwtDecode(token);
-        const isAdmin       = sub?.is_admin       || false;
-        const hasAccessWbii = sub?.has_access_wbii || false;
-        if (!isAdmin && !hasAccessWbii) {
-          setError('Accès refusé : vous ne disposez pas de la permission WBII.');
-          return;
-        }
-      } catch {
-        setError('Token invalide.');
-        return;
-      }
-    }
-
-    // Suite normale
-    setLoading(true);
-    try {
-      const farmData = await fetchFarms();
-      setFarms(farmData);
-      if (farmData.length > 0) {
-        await loadWBIIForFarm(farmData[0]);
-      } else {
-        setError('No farms found');
-      }
-    } catch (err) {
-      setError('Failed to initialize dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
-  loadFarms();
-}, []);
 
   useEffect(() => {
     const loadFarms = async () => {

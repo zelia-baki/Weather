@@ -135,17 +135,17 @@ const UserTypeRoute = ({ children, allowedRoles, requireWbii = false }) => {
     // Cas spécial WBII
     if (requireWbii && !isAdmin && !hasAccessWbii) {
       return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#050c06' }}>
-          <div style={{ background: 'rgba(255,255,255,0.04)', padding: 40, borderRadius: 16, maxWidth: 400, textAlign: 'center', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: '#e8f0e9', marginBottom: 12 }}>
-              Accès Restreint
-            </h2>
-            <p style={{ fontFamily: "'Epilogue', sans-serif", fontSize: 14, color: 'rgba(232,240,233,0.45)' }}>
-              Vous n'avez pas accès au module WBII. Contactez votre administrateur.
-            </p>
-          </div>
-        </div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#050c06' }}>
+  <div style={{ background: 'rgba(255,255,255,0.04)', padding: 40, borderRadius: 16, maxWidth: 400, textAlign: 'center', border: '1px solid rgba(255,255,255,0.07)' }}>
+    <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+    <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: '#e8f0e9', marginBottom: 12 }}>
+      Restricted Access
+    </h2>
+    <p style={{ fontFamily: "'Epilogue', sans-serif", fontSize: 14, color: 'rgba(232,240,233,0.45)' }}>
+      You do not have access to the WBII module. Please contact your administrator.
+    </p>
+  </div>
+</div>
       );
     }
 
