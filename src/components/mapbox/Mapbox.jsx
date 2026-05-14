@@ -103,7 +103,7 @@ const CoordRow = ({ index, coord, onRemove }) => (
         letterSpacing: "0.02em",
       }}
     >
-      {parseFloat(coord[0]).toFixed(5)}, {parseFloat(coord[1]).toFixed(5)}
+      {parseFloat(coord[0]).toFixed(6)}, {parseFloat(coord[1]).toFixed(6)}
     </span>
     <button
       onClick={() => onRemove(index)}

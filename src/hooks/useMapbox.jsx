@@ -15,7 +15,7 @@ const useMapbox = ({ longitude, latitude, onPolygonChange, onPlaceSelect }) => {
 
         const map = new mapboxgl.Map({
             container: mapContainerRef.current,
-            style: "mapbox://styles/mapbox/satellite-v9",
+            style: "mapbox://styles/mapbox/satellite-v12",
             center: [longitude, latitude],
             zoom: 8,
         });

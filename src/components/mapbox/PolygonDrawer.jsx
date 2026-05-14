@@ -89,7 +89,7 @@ const PolygonDrawer = ({
       const popup = new mapboxgl.Popup({ offset: 28, maxWidth: "220px" }).setHTML(`
         <div style="font-family:'DM Sans',sans-serif;padding:8px 4px;text-align:center;">
           <div style="font-size:11px;color:#6b7280;margin-bottom:6px;">
-            ${lng.toFixed(5)}, ${lat.toFixed(5)}
+            ${lng.toFixed(6)}, ${lat.toFixed(6)}
           </div>
           ${isPointModeRef.current
             ? `<button onclick="window.addPolygonPoint(${lng},${lat})"
@@ -457,7 +457,7 @@ const PolygonDrawer = ({
                   {polygonPoints.map((pt, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs text-white/50">
                       <span className="text-green-400/60 font-mono">{String(i + 1).padStart(2, "0")}</span>
-                      <span>{pt[0].toFixed(4)}, {pt[1].toFixed(4)}</span>
+                      <span>{pt[0].toFixed(6)}, {pt[1].toFixed(6)}</span>
                     </div>
                   ))}
                 </div>

@@ -1,4 +1,4 @@
-D:\project\Weather\
+D:\project\Weather
 ├── .babelrc.json
 ├── .eslintrc.cjs
 ├── .gitignore
@@ -14,14 +14,14 @@ D:\project\Weather\
 ├── dist
 │   ├── assets
 │   │   ├── bg-CXlWhlXB.jpg
-│   │   ├── index-CF6zS70F.js
-│   │   ├── index-DA7L4hwh.css
-│   │   ├── index.es-C2DQiOnF.js
-│   │   ├── index.es-DXnklXOD.js
+│   │   ├── index-BNMsDsmY.js
+│   │   ├── index-brh9xBw-.css
+│   │   ├── index.es-C61eElJ1.js
+│   │   ├── index.es-Ccg-CcOF.js
 │   │   ├── parrot-CPW7Bwmu.jpg
 │   │   ├── purify.es-BFmuJLeH.js
 │   │   ├── purify.es-DGIRlouP.js
-│   │   └── stackblur-es-C5ZQnFD5.js
+│   │   └── stackblur-es-a4TeedCB.js
 │   ├── gifs
 │   │   ├── draw-mode-demo.gif
 │   │   └── point-mode-demo.gif
@@ -217,7 +217,8 @@ D:\project\Weather\
 │   │   ├── ThemeProvider.jsx
 │   │   ├── Users
 │   │   │   ├── CreateUsers.jsx
-│   │   │   └── UserManagement.jsx
+│   │   │   ├── UserManagement.jsx
+│   │   │   └── permissionsConfig.js
 │   │   ├── Weather
 │   │   │   └── WeatherAndSolar.jsx
 │   │   ├── crop
