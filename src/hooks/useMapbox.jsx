@@ -11,7 +11,7 @@ const useMapbox = ({ longitude, latitude, onPolygonChange, onPlaceSelect }) => {
     const [roundedArea, setRoundedArea] = useState();
 
     useEffect(() => {
-        mapboxgl.accessToken = "pk.eyJ1IjoibHdldHV0YiIsImEiOiJjbW9uNmpucGMwN20xMnNzYnIybW4xZ2p4In0.ioDc6xzhkarP3QfwNyEwHw";
+        mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
         const map = new mapboxgl.Map({
             container: mapContainerRef.current,

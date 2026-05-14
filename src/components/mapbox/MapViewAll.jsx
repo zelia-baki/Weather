@@ -6,8 +6,7 @@ import * as turf from "@turf/turf";
 import Swal from "sweetalert2";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-mapboxgl.accessToken =
-  "pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q";
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
 const COLORS = [
   "#22c55e","#3b82f6","#f59e0b","#ef4444","#8b5cf6",

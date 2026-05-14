@@ -5,8 +5,7 @@ import axiosInstance from "../../axiosInstance";
 import * as turf from "@turf/turf";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-mapboxgl.accessToken =
-  "pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q";
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
 const MAP_STYLES = [
   { id: "satellite",         label: "Satellite", url: "mapbox://styles/mapbox/satellite-streets-v12" },
