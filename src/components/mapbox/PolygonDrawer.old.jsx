@@ -7,6 +7,7 @@ import * as turf from "@turf/turf";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
+import { FaOldRepublic } from "react-icons/fa";
 
 const PolygonDrawer = ({
   initialCenter = [32.5825, 0.3476],
@@ -411,3 +412,5 @@ const PolygonDrawer = ({
 };
 
 export default PolygonDrawer;
+
+ceci est le old

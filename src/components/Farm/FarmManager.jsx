@@ -3,12 +3,14 @@ import axiosInstance from '../../axiosInstance';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import Papa from 'papaparse';
+import * as turf from '@turf/turf';
 import {
   Sprout, Search, Map, PenLine, ClipboardList, BarChart2,
   Leaf, Radio, Trash2, Plus, Edit2, Upload, FolderOpen,
   ChevronLeft, ChevronRight, AlertTriangle, X, Check,
-  Loader2, Wheat, Award,
+  Loader2, Wheat, Award, MapPin, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import PolygonDrawer from '../mapbox/PolygonDrawer.jsx';
 
 const EMPTY_FORM = {
   name: '', subcounty: '', district_id: '', farmergroup_id: '',
@@ -54,6 +56,11 @@ const FarmManager = () => {
   const [csvFile,       setCsvFile]       = useState(null);
   const [search,        setSearch]        = useState('');
   const [searching,     setSearching]     = useState(false);
+
+  // ── NEW : carte intégrée ──────────────────────────────────────────────────
+  const [showMap,         setShowMap]         = useState(false);
+  const [drawnPolygon,    setDrawnPolygon]     = useState(null);   // GeoJSON complet
+
   const searchTimer = useRef(null);
 
   const fetchFarms = useCallback(async (page, searchTerm = '') => {
@@ -85,6 +92,31 @@ const FarmManager = () => {
   };
   const clearSearch = () => { setSearch(''); setCurrentPage(1); fetchFarms(1, ''); };
 
+  // ── Callback appelé par PolygonDrawer à chaque modification ──────────────
+  const handlePolygonChange = useCallback((geojson) => {
+    setDrawnPolygon(geojson);
+
+    if (!geojson) {
+      // L'utilisateur a supprimé le polygone → on vide geolocation
+      setFormData(prev => ({ ...prev, geolocation: '' }));
+      return;
+    }
+
+    // Calcule le centroïde du polygone dessiné et remplit le champ geolocation
+    try {
+      const center = turf.centroid(geojson);
+      const [lng, lat] = center.geometry.coordinates;
+      setFormData(prev => ({
+        ...prev,
+        geolocation: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+      }));
+      // Efface l'erreur geolocation si elle était affichée
+      setFormErrors(prev => ({ ...prev, geolocation: undefined }));
+    } catch (err) {
+      console.error('Centroid error:', err);
+    }
+  }, []);
+
   const validate = () => {
     const e = {};
     if (!formData.name.trim())        e.name           = 'Farm name is required';
@@ -107,9 +139,14 @@ const FarmManager = () => {
     const errs = validate();
     if (Object.keys(errs).length) { setFormErrors(errs); return; }
     setSubmitting(true); setFormErrors({});
+
+    // Inclure le polygone GeoJSON dans le payload si disponible
+    const payload = { ...formData };
+    if (drawnPolygon) payload.polygon_geojson = JSON.stringify(drawnPolygon);
+
     try {
-      if (currentFarmId) await axiosInstance.post(`/api/farm/${currentFarmId}/update`, formData);
-      else               await axiosInstance.post('/api/farm/create', formData);
+      if (currentFarmId) await axiosInstance.post(`/api/farm/${currentFarmId}/update`, payload);
+      else               await axiosInstance.post('/api/farm/create', payload);
       await fetchFarms(currentPage, search);
       closeDrawer();
       Swal.fire({ icon: 'success', title: currentFarmId ? 'Farm updated!' : 'Farm created!',
@@ -126,7 +163,11 @@ const FarmManager = () => {
       phonenumber1: farm.phonenumber1 ?? farm.phonenumber ?? '', phonenumber2: farm.phonenumber2 ?? '',
       gender: farm.gender ?? '', cin: farm.cin ?? '',
     });
-    setCurrentFarmId(farm.id); setFormErrors({}); setDrawerOpen(true);
+    setCurrentFarmId(farm.id);
+    setFormErrors({});
+    setShowMap(false);
+    setDrawnPolygon(null);
+    setDrawerOpen(true);
   };
 
   const handleDelete = async (farmId, farmName) => {
@@ -140,8 +181,22 @@ const FarmManager = () => {
     } catch { setGlobalError('Error deleting farm.'); }
   };
 
-  const openDrawer  = () => { setFormData(EMPTY_FORM); setCurrentFarmId(null); setFormErrors({}); setDrawerOpen(true); };
-  const closeDrawer = () => { setDrawerOpen(false); setFormData(EMPTY_FORM); setCurrentFarmId(null); setFormErrors({}); };
+  const openDrawer  = () => {
+    setFormData(EMPTY_FORM);
+    setCurrentFarmId(null);
+    setFormErrors({});
+    setShowMap(false);
+    setDrawnPolygon(null);
+    setDrawerOpen(true);
+  };
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setFormData(EMPTY_FORM);
+    setCurrentFarmId(null);
+    setFormErrors({});
+    setShowMap(false);
+    setDrawnPolygon(null);
+  };
 
   const handleBulkUpload = () => {
     if (!csvFile) { Swal.fire('Error!', 'Select a CSV file first.', 'error'); return; }
@@ -158,12 +213,12 @@ const FarmManager = () => {
   };
 
   const farmActions = (farm) => [
-    { icon: <Map size={12}/>,           label: 'Map',       to: '/mapview',         state: { owner_id: farm.id, owner_type: 'farmer', geolocation: farm.geolocation }, cls: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' },
-    { icon: <PenLine size={12}/>,       label: 'Draw',      to: '/mapbox',          state: { owner_id: farm.id, owner_type: 'farmer', geolocation: farm.geolocation }, cls: 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200' },
-    { icon: <ClipboardList size={12}/>, label: 'Data',      to: '/farmdatamanager', state: { farmId: farm.id }, cls: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200' },
-    { icon: <BarChart2 size={12}/>,     label: 'EUDR Report',      to: '/reportfarmer',    state: { farmId: farm.id }, cls: 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200' },
-    { icon: <Leaf size={12}/>,          label: 'Carbon Report',    to: '/reportcarbon',    state: { farmId: farm.id }, cls: 'bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200' },
-    { icon: <Radio size={12}/>,         label: 'SatIndex', to: `/sentinel/farm/${farm.id}`, state: { farmId: farm.id }, cls: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200' },
+    { icon: <Map size={12}/>,           label: 'Map',        to: '/mapview',         state: { owner_id: farm.id, owner_type: 'farmer', geolocation: farm.geolocation }, cls: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' },
+    { icon: <PenLine size={12}/>,       label: 'Draw',       to: '/mapbox',          state: { owner_id: farm.id, owner_type: 'farmer', geolocation: farm.geolocation }, cls: 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200' },
+    { icon: <ClipboardList size={12}/>, label: 'Data',       to: '/farmdatamanager', state: { farmId: farm.id }, cls: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200' },
+    { icon: <BarChart2 size={12}/>,     label: 'EUDR Report',to: '/reportfarmer',    state: { farmId: farm.id }, cls: 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200' },
+    { icon: <Leaf size={12}/>,          label: 'Carbon Report', to: '/reportcarbon', state: { farmId: farm.id }, cls: 'bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200' },
+    { icon: <Radio size={12}/>,         label: 'SatIndex',   to: `/sentinel/farm/${farm.id}`, state: { farmId: farm.id }, cls: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200' },
   ];
 
   return (
@@ -331,12 +386,20 @@ const FarmManager = () => {
       )}
 
       {/* Drawer backdrop */}
-      {drawerOpen && <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={closeDrawer}/>}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+          onClick={showMap ? undefined : closeDrawer}  // bloquer la fermeture quand la carte est ouverte
+        />
+      )}
 
-      {/* Drawer */}
-      <div className={`fixed top-0 right-0 h-full z-50 w-full max-w-lg bg-white shadow-2xl
-                       flex flex-col transition-transform duration-300 ease-out light-panel
+      {/* ── DRAWER ──────────────────────────────────────────────────────────── */}
+      <div className={`fixed top-0 right-0 h-full z-50 flex flex-col transition-all duration-300 ease-out light-panel
+                       bg-white shadow-2xl
+                       ${showMap ? 'w-full max-w-5xl' : 'w-full max-w-lg'}
                        ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+
+        {/* Header du drawer */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 flex-shrink-0">
           <div>
             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -352,90 +415,159 @@ const FarmManager = () => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {/* 1 — Identity */}
-          <div>
-            <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold">1</span>
-              Farm Identity
-            </p>
-            <div className="space-y-4">
-              <Field label="Farm Name" required error={formErrors.name}>
-                <input type="text" placeholder="e.g. Namanya Farm" value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })} className={inputCls(formErrors.name)}/>
-              </Field>
-              <Field label="National ID (NIN)" required error={formErrors.cin}>
-                <input type="text" placeholder="e.g. CM1234567890" value={formData.cin}
-                  onChange={e => setFormData({ ...formData, cin: e.target.value })} className={inputCls(formErrors.cin)}/>
-              </Field>
-              <Field label="Gender" required error={formErrors.gender}>
-                <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })} className={selectCls(formErrors.gender)}>
-                  <option value="">Select gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
-              </Field>
-            </div>
-          </div>
-          <div className="border-t border-gray-100"/>
+        {/* Corps du drawer : formulaire + carte côte à côte si carte ouverte */}
+        <div className={`flex-1 overflow-hidden flex ${showMap ? 'flex-row' : 'flex-col'}`}>
 
-          {/* 2 — Location */}
-          <div>
-            <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold">2</span>
-              Location
-            </p>
-            <div className="space-y-4">
-              <Field label="Destination Country" required error={formErrors.subcounty}>
-                <select value={formData.subcounty} onChange={e => setFormData({ ...formData, subcounty: e.target.value })} className={selectCls(formErrors.subcounty)}>
-                  <option value="">Select country</option>
-                  {countriesList.map(c => <option key={c.nom_en_gb} value={c.nom_en_gb}>{c.nom_en_gb} / {c.nom_fr_fr}</option>)}
-                </select>
-              </Field>
-              <Field label="District" required error={formErrors.district_id}>
-                <select value={formData.district_id} onChange={e => setFormData({ ...formData, district_id: e.target.value })} className={selectCls(formErrors.district_id)}>
-                  <option value="">Select district</option>
-                  {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
-              </Field>
-              <Field label="Geolocation" required error={formErrors.geolocation}>
-                <input type="text" placeholder="latitude, longitude  →  0.3136, 32.5811"
-                  value={formData.geolocation} onChange={e => setFormData({ ...formData, geolocation: e.target.value })}
-                  className={inputCls(formErrors.geolocation)}/>
-                <p className="text-xs text-gray-400">Format: <code className="bg-gray-100 px-1 rounded text-gray-600">lat, lon</code> — or use the Draw tool.</p>
-              </Field>
-            </div>
-          </div>
-          <div className="border-t border-gray-100"/>
+          {/* ── Formulaire ── */}
+          <form onSubmit={handleSubmit} className={`overflow-y-auto px-6 py-5 space-y-5 ${showMap ? 'w-96 flex-shrink-0 border-r border-gray-100' : 'flex-1'}`}>
 
-          {/* 3 — Group & Contact */}
-          <div>
-            <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold">3</span>
-              Group & Contact
-            </p>
-            <div className="space-y-4">
-              <Field label="Farmer Group" required error={formErrors.farmergroup_id}>
-                <select value={formData.farmergroup_id} onChange={e => setFormData({ ...formData, farmergroup_id: e.target.value })} className={selectCls(formErrors.farmergroup_id)}>
-                  <option value="">Select group</option>
-                  {farmerGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </select>
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Phone 1">
-                  <input type="tel" placeholder="+256…" value={formData.phonenumber1}
-                    onChange={e => setFormData({ ...formData, phonenumber1: e.target.value })} className={inputCls(false)}/>
+            {/* 1 — Identity */}
+            <div>
+              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold">1</span>
+                Farm Identity
+              </p>
+              <div className="space-y-4">
+                <Field label="Farm Name" required error={formErrors.name}>
+                  <input type="text" placeholder="e.g. Namanya Farm" value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })} className={inputCls(formErrors.name)}/>
                 </Field>
-                <Field label="Phone 2">
-                  <input type="tel" placeholder="+256…" value={formData.phonenumber2}
-                    onChange={e => setFormData({ ...formData, phonenumber2: e.target.value })} className={inputCls(false)}/>
+                <Field label="National ID (NIN)" required error={formErrors.cin}>
+                  <input type="text" placeholder="e.g. CM1234567890" value={formData.cin}
+                    onChange={e => setFormData({ ...formData, cin: e.target.value })} className={inputCls(formErrors.cin)}/>
+                </Field>
+                <Field label="Gender" required error={formErrors.gender}>
+                  <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })} className={selectCls(formErrors.gender)}>
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
                 </Field>
               </div>
             </div>
-          </div>
-          <div className="h-4"/>
-        </form>
+            <div className="border-t border-gray-100"/>
 
+            {/* 2 — Location */}
+            <div>
+              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold">2</span>
+                Location
+              </p>
+              <div className="space-y-4">
+                <Field label="Destination Country" required error={formErrors.subcounty}>
+                  <select value={formData.subcounty} onChange={e => setFormData({ ...formData, subcounty: e.target.value })} className={selectCls(formErrors.subcounty)}>
+                    <option value="">Select country</option>
+                    {countriesList.map(c => <option key={c.nom_en_gb} value={c.nom_en_gb}>{c.nom_en_gb} / {c.nom_fr_fr}</option>)}
+                  </select>
+                </Field>
+                <Field label="District" required error={formErrors.district_id}>
+                  <select value={formData.district_id} onChange={e => setFormData({ ...formData, district_id: e.target.value })} className={selectCls(formErrors.district_id)}>
+                    <option value="">Select district</option>
+                    {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                </Field>
+
+                {/* Geolocation + bouton carte ─────────────────────────────── */}
+                <Field label="Geolocation" required error={formErrors.geolocation}>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="latitude, longitude  →  0.3136, 32.5811"
+                      value={formData.geolocation}
+                      onChange={e => setFormData({ ...formData, geolocation: e.target.value })}
+                      className={`${inputCls(formErrors.geolocation)} flex-1`}
+                    />
+                    {/* ── Bouton toggle carte ── */}
+                    <button
+                      type="button"
+                      onClick={() => setShowMap(v => !v)}
+                      title={showMap ? 'Close map' : 'Draw polygon on map'}
+                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-semibold transition-all
+                        ${showMap
+                          ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                          : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                        }`}
+                    >
+                      <MapPin size={15}/>
+                      {showMap ? <ChevronDown size={14}/> : <ChevronUp size={14}/>}
+                    </button>
+                  </div>
+
+                  {/* Indicateur polygone dessiné */}
+                  {drawnPolygon && (
+                    <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mt-1">
+                      <Check size={13} className="text-emerald-600"/>
+                      Polygon drawn —{' '}
+                      {drawnPolygon.geometry.coordinates[0].length - 1} vertices ·{' '}
+                      {(turf.area(drawnPolygon) / 10000).toFixed(2)} ha
+                    </div>
+                  )}
+
+                  <p className="text-xs text-gray-400">
+                    Saisie manuelle <code className="bg-gray-100 px-1 rounded text-gray-600">lat, lon</code> ou utilisez le bouton{' '}
+                    <MapPin size={11} className="inline"/> pour dessiner.
+                  </p>
+                </Field>
+              </div>
+            </div>
+            <div className="border-t border-gray-100"/>
+
+            {/* 3 — Group & Contact */}
+            <div>
+              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-bold">3</span>
+                Group & Contact
+              </p>
+              <div className="space-y-4">
+                <Field label="Farmer Group" required error={formErrors.farmergroup_id}>
+                  <select value={formData.farmergroup_id} onChange={e => setFormData({ ...formData, farmergroup_id: e.target.value })} className={selectCls(formErrors.farmergroup_id)}>
+                    <option value="">Select group</option>
+                    {farmerGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  </select>
+                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Phone 1">
+                    <input type="tel" placeholder="+256…" value={formData.phonenumber1}
+                      onChange={e => setFormData({ ...formData, phonenumber1: e.target.value })} className={inputCls(false)}/>
+                  </Field>
+                  <Field label="Phone 2">
+                    <input type="tel" placeholder="+256…" value={formData.phonenumber2}
+                      onChange={e => setFormData({ ...formData, phonenumber2: e.target.value })} className={inputCls(false)}/>
+                  </Field>
+                </div>
+              </div>
+            </div>
+            <div className="h-4"/>
+          </form>
+
+          {/* ── Carte intégrée (visible uniquement si showMap) ── */}
+          {showMap && (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {/* En-tête de la zone carte */}
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100 flex-shrink-0">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <MapPin size={15} className="text-emerald-600"/>
+                  Draw Farm Polygon
+                </div>
+                <div className="text-xs text-gray-400">
+                  {drawnPolygon
+                    ? `✅ Polygon ready — centroid auto-filled in geolocation`
+                    : 'Draw or use point mode to define the farm boundary'}
+                </div>
+              </div>
+
+              {/* PolygonDrawer occupe tout l'espace restant */}
+              <div className="flex-1 overflow-hidden">
+                <PolygonDrawer
+                  onChange={handlePolygonChange}
+                  fullscreen={false}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer du drawer */}
         <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-white flex gap-3">
           <button type="button" onClick={closeDrawer}
             className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium transition-colors">

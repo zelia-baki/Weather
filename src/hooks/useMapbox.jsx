@@ -11,11 +11,11 @@ const useMapbox = ({ longitude, latitude, onPolygonChange, onPlaceSelect }) => {
     const [roundedArea, setRoundedArea] = useState();
 
     useEffect(() => {
-        mapboxgl.accessToken = "pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q";
+        mapboxgl.accessToken = "pk.eyJ1IjoibHdldHV0YiIsImEiOiJjbW9uNmpucGMwN20xMnNzYnIybW4xZ2p4In0.ioDc6xzhkarP3QfwNyEwHw";
 
         const map = new mapboxgl.Map({
             container: mapContainerRef.current,
-            style: "mapbox://styles/mapbox/satellite-v12",
+            style: "mapbox://styles/mapbox/satellite-streets-v12",
             center: [longitude, latitude],
             zoom: 8,
         });

@@ -15,12 +15,11 @@ const COLORS = [
 ];
 
 const MAP_STYLES = [
-  { id: "satellite",         label: "Satellite", url: "mapbox://styles/mapbox/satellite-v9" },
+  { id: "satellite",         label: "Satellite", url: "mapbox://styles/mapbox/satellite-streets-v12" },
   { id: "satellite-streets", label: "Hybrid",    url: "mapbox://styles/mapbox/satellite-streets-v12" },
   { id: "outdoors",          label: "Terrain",   url: "mapbox://styles/mapbox/outdoors-v12" },
 ];
 
-// ── Custom farm pin SVG ──────────────────────────────────────────────────────
 const createFarmMarkerEl = (color) => {
   const el = document.createElement("div");
   el.style.cssText = "cursor:pointer;";
@@ -30,13 +29,10 @@ const createFarmMarkerEl = (color) => {
          style="filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));transition:transform .15s ease">
       <path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 24 16 24S32 28 32 16C32 7.16 24.84 0 16 0Z"
             fill="${color}"/>
-      <!-- Roof -->
       <path d="M9 17L16 11L23 17" stroke="white" stroke-width="1.8"
             stroke-linejoin="round" fill="none" stroke-linecap="round"/>
-      <!-- Walls -->
       <rect x="11" y="17" width="10" height="7" rx="1"
             fill="rgba(255,255,255,0.25)" stroke="white" stroke-width="1.5"/>
-      <!-- Door -->
       <rect x="14.5" y="20.5" width="3" height="3.5" rx="0.5"
             fill="rgba(255,255,255,0.9)"/>
     </svg>
@@ -52,7 +48,6 @@ const createFarmMarkerEl = (color) => {
   return el;
 };
 
-// ── Popup HTML ───────────────────────────────────────────────────────────────
 const loadingPopupHTML = () => `
   <div style="font-family:system-ui,sans-serif;min-width:200px;padding:4px;text-align:center">
     <div style="display:inline-block;width:18px;height:18px;border:2px solid #e5e7eb;
@@ -99,7 +94,6 @@ const farmPopupHTML = (farm, ownerId, areaHa, color) => `
   </div>
 `;
 
-// ── Stat chip ────────────────────────────────────────────────────────────────
 const Stat = ({ label, value, sub }) => (
   <div>
     <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.08em",
@@ -128,7 +122,6 @@ const MapViewAll = () => {
   const [loading,      setLoading]      = useState(true);
   const [panelOpen,    setPanelOpen]    = useState(true);
 
-  // ── Init map ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (mapRef.current) return;
     mapRef.current = new mapboxgl.Map({
@@ -143,7 +136,6 @@ const MapViewAll = () => {
     mapRef.current.on("move", () => setZoom(mapRef.current.getZoom().toFixed(2)));
   }, []);
 
-  // ── Style change ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current) return;
     const s = MAP_STYLES.find(m => m.id === styleId);
@@ -154,7 +146,6 @@ const MapViewAll = () => {
     });
   }, [styleId]); // eslint-disable-line
 
-  // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchPolygons = useCallback(async () => {
     setLoading(true);
     try {
@@ -175,44 +166,44 @@ const MapViewAll = () => {
 
   useEffect(() => { fetchPolygons(); }, [fetchPolygons]);
 
-  // ── Render polygons + markers ─────────────────────────────────────────────
-  // ⚠ Uses EXACT same coordinate logic as original MapViewAll to keep positions correct.
   const renderOnMap = useCallback((polys) => {
     if (!mapRef.current || polys.length === 0) return;
 
-    // Clean up old markers
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
-    const bounds   = new mapboxgl.LngLatBounds();
-    let   totalM2  = 0;
+    const bounds  = new mapboxgl.LngLatBounds();
+    let   totalM2 = 0;
 
     const features = polys.map((polygon, index) => {
-      // ── Exact same as original ──────────────────────────────────────────
-      const coordinates = polygon.points.map(point => [point.longitude, point.latitude]);
+      const rawCoords = polygon.points.map(p => [p.longitude, p.latitude]);
+
+      // ── KEY FIX: ensure ring is closed before creating GeoJSON ──────────
+      const coordinates = [...rawCoords];
+      if (coordinates.length >= 3) {
+        const [fx, fy] = coordinates[0];
+        const [lx, ly] = coordinates[coordinates.length - 1];
+        if (fx !== lx || fy !== ly) coordinates.push([fx, fy]);
+      }
 
       const polygonGeoJSON = {
-        type: "FeatureCollection",
-        features: [{
-          type: "Feature",
-          geometry: { type: "Polygon", coordinates: [coordinates] },
-          properties: {}
-        }]
+        type: "Feature",
+        geometry: { type: "Polygon", coordinates: [coordinates] },
+        properties: {},
       };
 
-      const area     = Math.round(turf.area(polygonGeoJSON.features[0]) * 100) / 100;
-      const centroid = turf.centroid(polygonGeoJSON.features[0]);
+      const area     = Math.round(turf.area(polygonGeoJSON) * 100) / 100;
+      const centroid = turf.centroid(polygonGeoJSON);
       const color    = COLORS[index % COLORS.length];
 
       totalM2 += area;
       coordinates.forEach(coord => bounds.extend(coord));
 
-      // ── Custom marker at centroid ─────────────────────────────────────
-      const lngLat   = centroid.geometry.coordinates;
-      const markerEl = createFarmMarkerEl(color);
-      const ownerId  = polygon.owner_id;
-      const areaHa   = (area / 10000).toFixed(4);
+      const lngLat  = centroid.geometry.coordinates;
+      const ownerId = polygon.owner_id;
+      const areaHa  = (area / 10000).toFixed(4);
 
+      const markerEl = createFarmMarkerEl(color);
       markerEl.addEventListener("click", async (e) => {
         e.stopPropagation();
         const popup = new mapboxgl.Popup({
@@ -245,7 +236,6 @@ const MapViewAll = () => {
 
     setTotalArea((totalM2 / 10000).toFixed(2));
 
-    // ── GeoJSON polygon layers ────────────────────────────────────────────
     const geojson = { type: "FeatureCollection", features };
     const src     = mapRef.current.getSource("polygons");
     if (src) {
@@ -256,7 +246,6 @@ const MapViewAll = () => {
         paint: { "fill-color": ["get", "color"], "fill-opacity": 0.3 } });
       mapRef.current.addLayer({ id: "polygons-outline", type: "line", source: "polygons",
         paint: { "line-color": ["get", "color"], "line-width": 2, "line-opacity": 0.9 } });
-      // Hover layer
       mapRef.current.addLayer({ id: "polygons-hover", type: "fill", source: "polygons",
         paint: { "fill-color": ["get", "color"], "fill-opacity": 0.55 },
         filter: ["==", "id", -1] });
@@ -270,7 +259,6 @@ const MapViewAll = () => {
       });
     }
 
-    // ── fitBounds — same padding as original (20), panel accounted for ────
     boundsRef.current = bounds;
     mapRef.current.fitBounds(bounds, { padding: 60, maxZoom: 14 });
 
@@ -283,7 +271,6 @@ const MapViewAll = () => {
     else mapRef.current.on("load", run);
   }, [polygons, renderOnMap]);
 
-  // ── Delete ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const handleClick = async (e) => {
       if (!e.target.classList.contains("mapbox-delete-btn")) return;
@@ -309,7 +296,6 @@ const MapViewAll = () => {
     return () => { if (el) el.removeEventListener("click", handleClick); };
   }, [owner_type, fetchPolygons]);
 
-  // ── Auto-dismiss notification ─────────────────────────────────────────────
   useEffect(() => {
     if (!notification) return;
     const t = setTimeout(() => setNotification(null), 5000);
@@ -317,13 +303,11 @@ const MapViewAll = () => {
   }, [notification]);
 
   const typeLabel = { farmer: "Farm", forest: "Forest" }[owner_type] || "Entity";
-
   const zoomToAll = () => {
     if (!mapRef.current || !boundsRef.current) return;
     mapRef.current.fitBounds(boundsRef.current, { padding: 60, maxZoom: 14, duration: 900 });
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div style={{ position: "relative", width: "100%", height: "calc(100vh - 60px)",
                   fontFamily: "system-ui,sans-serif", overflow: "hidden" }}>
@@ -339,10 +323,8 @@ const MapViewAll = () => {
         .farm-popup .mapboxgl-popup-tip { border-top-color: white !important; }
       `}</style>
 
-      {/* Map */}
       <div ref={mapContainerRef} style={{ position: "absolute", inset: 0 }}/>
 
-      {/* Loading overlay */}
       {loading && (
         <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)",
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30 }}>
@@ -359,7 +341,6 @@ const MapViewAll = () => {
         </div>
       )}
 
-      {/* Toast */}
       {notification && (
         <div style={{ position: "absolute", top: 16, left: "50%",
           transform: "translateX(-50%)", zIndex: 40, animation: "fadeIn .25s ease",
@@ -470,7 +451,6 @@ const MapViewAll = () => {
         )}
       </div>
 
-      {/* Bottom legend */}
       {polygons.length > 0 && !loading && (
         <div style={{ position: "absolute", bottom: 40, left: "50%",
           transform: "translateX(-50%)", zIndex: 20,
