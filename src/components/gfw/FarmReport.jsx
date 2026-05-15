@@ -1,114 +1,143 @@
-// FarmReport.jsx
-import React, { useRef, useState, useEffect, useCallback } from "react";
+/**
+ * FarmReport.jsx  —  v4
+ * PDF : downloadPDF() → Playwright backend (pdfUtils.js)
+ * Nom du fichier : EUDR_Report_<farmId>.pdf
+ */
+
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import axiosInstance from '../../axiosInstance.jsx';
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link } from 'react-router-dom';
 import Loading from '../main/Loading.jsx';
-import EudrReportSection from "../Guest/components/EudrReportSection.jsx";
-import { downloadPDF } from "../Guest/utils/pdfUtils.js";
+import EudrReportSection from '../Guest/components/EudrReportSection.jsx';
+import { downloadPDF } from '../Guest/utils/pdfUtils.js';
 
-const FullReport = () => {
-  const [farmInfo,     setFarmInfo]     = useState(null);
-  const [geoData,      setGeoData]      = useState(null);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
-  const [isDownloading,setIsDownloading]= useState(false);
-  const [isSaving,     setIsSaving]     = useState(false);
-  const [saveSuccess,  setSaveSuccess]  = useState(false);
-  const [saveError,    setSaveError]    = useState(null);
+// ── Spinner ──────────────────────────────────────────────────────────────────
+const Spinner = () => (
+  <svg
+    style={{ width: 18, height: 18, animation: 'spin 1s linear infinite' }}
+    fill="none" viewBox="0 0 24 24"
+  >
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10"
+      stroke="currentColor" strokeWidth="4" />
+    <path style={{ opacity: 0.75 }} fill="currentColor"
+      d="M4 12a8 8 0 018-8v8z" />
+  </svg>
+);
 
-  // ── GUARD : empêche toute sauvegarde multiple ────────────────────────────
-  const hasSaved = useRef(false);
+// ── Toast ────────────────────────────────────────────────────────────────────
+const Toast = ({ bg, children }) => (
+  <div style={{
+    position: 'fixed', top: 16, right: 16, zIndex: 9999,
+    background: bg, color: '#fff',
+    padding: '12px 20px', borderRadius: 10,
+    boxShadow: '0 4px 16px rgba(0,0,0,.2)',
+    display: 'flex', alignItems: 'center', gap: 10,
+    fontFamily: 'system-ui, sans-serif', fontSize: 14,
+  }}>
+    {children}
+  </div>
+);
 
-  const location = useLocation();
-  const farmId   = location.state?.farmId || "WAK0001";
+// ═════════════════════════════════════════════════════════════════════════════
+const FarmReport = () => {
+  const [farmInfo,      setFarmInfo]      = useState(null);
+  const [geoData,       setGeoData]       = useState(null);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isSaving,      setIsSaving]      = useState(false);
+  const [saveSuccess,   setSaveSuccess]   = useState(false);
+  const [saveError,     setSaveError]     = useState(null);
+  const [reportReady,   setReportReady]   = useState(false);
+
+  const hasSaved  = useRef(false);
   const reportRef = useRef();
+  const location  = useLocation();
+  const farmId    = location.state?.farmId || 'WAK0001';
 
-  // ── Sauvegarde (une seule fois par chargement de page) ───────────────────
-  const saveReportToDatabase = useCallback(async (reportData) => {
-    // 🛑 Sortie immédiate si déjà sauvegardé ou si farmInfo manquant
-    if (hasSaved.current) return;
-    if (!farmInfo?.farm_id) {
-      setSaveError('Farm ID is missing');
-      return;
-    }
+  // ── Sauvegarde DB ─────────────────────────────────────────────────────────
+  const saveReportToDatabase = useCallback(async (data) => {
+    if (hasSaved.current)     return;
+    if (!farmInfo?.farm_id) { setSaveError('Farm ID is missing'); return; }
 
-    hasSaved.current = true; // ← verrou posé AVANT l'appel async
+    hasSaved.current = true;
     setIsSaving(true);
     setSaveSuccess(false);
     setSaveError(null);
 
     try {
-      const payload = {
-        farm_id:                      farmInfo.farm_id,
-        project_area:                 `${reportData.areaInHectares?.toFixed(2)          || 0} ha`,
-        country_deforestation_risk_level: reportData.deforestationRiskLevel             || 'STANDARD',
-        radd_alert:                   `${reportData.raddAlertsArea?.toFixed(2)           || 0} ha`,
-        tree_cover_loss:              `${reportData.treeCoverLossArea?.toFixed(2)        || 0} ha`,
-        forest_cover_2020:             reportData.isJrcGlobalForestCover                || 'No data',
-        eudr_compliance_assessment:    reportData.complianceStatus?.status               || 'Assessment Pending',
-        protected_area_status:         JSON.stringify(reportData.protectedStatus         || {}),
-        tree_cover_drivers:            reportData.tscDriverDriver?.mostCommonValue       || 'Unknown',
-        cover_extent_area:            `${reportData.wriTropicalTreeCoverAvg?.toFixed(2) || 0}%`,
-        cover_extent_summary:          JSON.stringify(reportData.coverExtentDecileData   || {}),
-      };
-
-      await axiosInstance.post('/api/farmreport/create', payload);
-
+      await axiosInstance.post('/api/farmreport/create', {
+        farm_id:                          farmInfo.farm_id,
+        project_area:                    `${data.areaInHectares?.toFixed(2)          || 0} ha`,
+        country_deforestation_risk_level:  data.deforestationRiskLevel               || 'STANDARD',
+        radd_alert:                      `${data.raddAlertsArea?.toFixed(2)           || 0} ha`,
+        tree_cover_loss:                 `${data.treeCoverLossArea?.toFixed(2)        || 0} ha`,
+        forest_cover_2020:                data.isJrcGlobalForestCover                || 'No data',
+        eudr_compliance_assessment:       data.complianceStatus?.status              || 'Assessment Pending',
+        protected_area_status:            JSON.stringify(data.protectedStatus        || {}),
+        tree_cover_drivers:               data.tscDriverDriver?.mostCommonValue      || 'Unknown',
+        cover_extent_area:               `${data.wriTropicalTreeCoverAvg?.toFixed(2) || 0}%`,
+        cover_extent_summary:             JSON.stringify(data.coverExtentDecileData  || {}),
+      });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 5000);
-
     } catch (err) {
-      // En cas d'erreur, on libère le verrou pour permettre une nouvelle tentative
       hasSaved.current = false;
-
-      const errorMsg = err.response?.data?.msg || err.message || 'Failed to save report';
-      setSaveError(errorMsg);
+      setSaveError(err.response?.data?.msg || err.message || 'Failed to save report');
       setTimeout(() => setSaveError(null), 8000);
     } finally {
       setIsSaving(false);
     }
-  }, [farmInfo]); // farmInfo comme seule dépendance
+  }, [farmInfo]);
 
-  // ── Fetch données farm ───────────────────────────────────────────────────
+  const handleReportCalculated = useCallback((data) => {
+    setReportReady(true);
+    saveReportToDatabase(data);
+  }, [saveReportToDatabase]);
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchFarmReport = async () => {
+    const go = async () => {
       try {
-        const response = await axiosInstance.get(`/api/gfw/farm/${farmId}/report`);
-        if (response.data.error) {
-          setError(response.data.error);
-        } else {
-          setFarmInfo(response.data.farm_info);
-          setGeoData(response.data.report || {});
+        const res = await axiosInstance.get(`/api/gfw/farm/${farmId}/report`);
+        if (res.data.error) setError(res.data.error);
+        else {
+          setFarmInfo(res.data.farm_info);
+          setGeoData(res.data.report || {});
         }
-      } catch (err) {
+      } catch {
         setError('Failed to fetch farm report.');
-        console.error('Error fetching farm report:', err.response?.data || err.message);
       } finally {
         setLoading(false);
       }
     };
-    fetchFarmReport();
+    go();
   }, [farmId]);
 
-  // ── Reset du verrou si on change de farm ────────────────────────────────
   useEffect(() => {
     hasSaved.current = false;
+    setReportReady(false);
   }, [farmId]);
 
-  // ── Download PDF ─────────────────────────────────────────────────────────
+  // ── Téléchargement PDF ────────────────────────────────────────────────────
   const handleDownload = async () => {
+    if (!reportReady) {
+      alert('The report is still computing. Please wait a few seconds then try again.');
+      return;
+    }
     setIsDownloading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 6000));
-      await downloadPDF(reportRef);
+      await downloadPDF(reportRef, `EUDR_Report_${farmId}.pdf`);
     } catch (err) {
-      console.error("PDF generation failed:", err);
+      console.error('PDF failed:', err);
+      alert('PDF generation failed. Please try again.');
     } finally {
       setIsDownloading(false);
     }
   };
 
-  // ── États de chargement / erreur ─────────────────────────────────────────
+  // ── Guards ────────────────────────────────────────────────────────────────
   if (loading) return <Loading />;
 
   if (error === 'No polygon found. Please create a polygon for this forest.') {
@@ -128,70 +157,72 @@ const FullReport = () => {
     );
   }
 
-  if (error) return <p className="text-red-600">{error}</p>;
+  if (error) return <p className="text-red-600 p-6">{error}</p>;
+
+  const btnReady = reportReady && !isDownloading;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col items-center text-xl relative">
+    <>
+      {/* ── Toasts ── */}
+      {isSaving    && <Toast bg="#2563eb"><Spinner /> Saving report to database…</Toast>}
+      {saveSuccess && <Toast bg="#16a34a">✓ Report saved successfully!</Toast>}
+      {saveError   && <Toast bg="#dc2626">✗ {saveError}</Toast>}
 
-      {/* Saving… */}
-      {isSaving && (
-        <div className="fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
-          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path  className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-          </svg>
-          Saving report to database...
+      {/* ── Wrapper centré avec max-width identique au rapport ── */}
+      <div style={{
+        maxWidth: 800,
+        margin: '0 auto',
+        padding: '0 0 60px 0',
+      }}>
+
+        {/* ═══ Rapport EUDR ═══ */}
+        <div ref={reportRef}>
+          <EudrReportSection
+            results={geoData}
+            reportRef={reportRef}
+            farmInfo={farmInfo}
+            onReportCalculated={handleReportCalculated}
+          />
         </div>
-      )}
 
-      {/* Success */}
-      {saveSuccess && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
-          </svg>
-          Report saved successfully!
+        {/* ═══ Bouton PDF — collé sous le rapport, centré dans le même wrapper ═══ */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginTop: 32,
+        }}>
+          <button
+            onClick={handleDownload}
+            disabled={!btnReady}
+            style={{
+              display    : 'flex',
+              alignItems : 'center',
+              gap        : 8,
+              padding    : '13px 32px',
+              borderRadius: 10,
+              border     : 'none',
+              background : btnReady ? '#16a34a' : '#9ca3af',
+              color      : '#fff',
+              fontWeight : 700,
+              fontSize   : 14,
+              cursor     : btnReady ? 'pointer' : 'not-allowed',
+              boxShadow  : btnReady ? '0 4px 14px rgba(22,163,74,.4)' : 'none',
+              transition : 'background .2s',
+              fontFamily : 'system-ui, sans-serif',
+            }}
+          >
+            {isDownloading
+              ? <><Spinner /> Generating PDF…</>
+              : !reportReady
+              ? '⏳ Computing data…'
+              : `⬇ Download EUDR_Report_${farmId}.pdf`}
+          </button>
         </div>
-      )}
 
-      {/* Error */}
-      {saveError && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2">
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-          {saveError}
-        </div>
-      )}
-
-      {/* Rapport */}
-      <div ref={reportRef}>
-        <EudrReportSection
-          results={geoData}
-          reportRef={reportRef}
-          farmInfo={farmInfo}
-          onReportCalculated={saveReportToDatabase}
-        />
       </div>
-
-      {/* Bouton PDF */}
-      <button
-        onClick={handleDownload}
-        disabled={isDownloading}
-        className={`mt-6 flex items-center gap-2 px-6 py-3 rounded-lg shadow-md text-white font-semibold transition
-          ${isDownloading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
-      >
-        {isDownloading && (
-          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path  className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-          </svg>
-        )}
-        {isDownloading ? "Generating PDF..." : "Download PDF"}
-      </button>
-    </div>
+    </>
   );
 };
 
-export default FullReport;
+export default FarmReport;

@@ -1,368 +1,342 @@
-import React, { useRef, useState, useEffect } from "react";
-import { jsPDF } from "jspdf";
+/**
+ * CarbonReportForest.jsx  (FOREST)  —  v3
+ * ─────────────────────────────────────────────────────────────────────────
+ * - Correctif couleurs : IsolatedLight neutralise les surcharges du Layout
+ * - Header : parrotlogo.svg | titre | logo.jpg (Agriyields)
+ * - PDF : generatePDF → Playwright backend (pdfUtils.js v3)
+ * - Nom fichier : Carbon_Forest_Report_<forestId>.pdf
+ */
+
+import React, { useRef, useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
-import { useLocation, Link } from "react-router-dom";
-import html2canvas from "html2canvas";
-import Loading from '../main/Loading.jsx';
-import Heatmap from 'react-heatmap-grid';
+import { useLocation } from 'react-router-dom';
 import * as turf from '@turf/turf';
 import { Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import Loading from '../main/Loading.jsx';
+import CarbonForestPDF from './pdf/CarbonForestPDF.jsx';
+import { generatePDF }  from '../Guest/utils/pdfUtils.js';
 
+ChartJS.register(ArcElement, Tooltip, Legend);
 
+const MAPBOX_TOKEN = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
 
-const CarbonReport = () => {
-    const [forestInfo, setForestInfo] = useState(null);
-    const [geoData, setGeoData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const location = useLocation();
-    const forestId = location.state?.forestId || 1;
-    const [areaInSquareMeters, setAreaInSquareMeters] = useState(null);
-    const [areaInHectares, setAreaInHectares] = useState(null);
-    const reportRef = useRef();
-    const [dimensions, setDimensions] = useState({
-        width: window.innerWidth,
-        height: window.innerHeight,
-    });
-
-    const carbonGrossEmissions = Array.isArray(geoData) && geoData.length > 0 ? geoData[0]?.data_fields?.gfw_forest_carbon_gross_emissions__Mg_CO2e || 0 : 0;
-    const carbonGrossRemovals = Array.isArray(geoData) && geoData.length > 1 ? geoData[1]?.data_fields?.gfw_forest_carbon_gross_removals__Mg_CO2e || 0 : 0;
-    const carbonNetFlux = Array.isArray(geoData) && geoData.length > 2 ? geoData[2]?.data_fields?.gfw_forest_carbon_net_flux__Mg_CO2e || 0 : 0;
-    const carbonSequestration = Array.isArray(geoData) && geoData.length > 3 ? geoData[3]?.data_fields?.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C || 0 : 0;
-
-
-    const data = {
-        labels: ['Carbon Gross Emissions', 'Carbon Gross Removals', 'Carbon Net Flux' , 'Carbon Sequestration'],
-        datasets: [
-            {
-                data: [carbonGrossEmissions, carbonGrossRemovals, carbonNetFlux, carbonSequestration],
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56','#FFCC00'],
-                hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56','#FFCC00'],
-            },
-        ],
-    };
-
-    const options = {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'top',
-            },
-            title: {
-                display: true,
-                text: 'Carbon Emissions and Removals',
-            },
-        },
-    };
-
-
-    useEffect(() => {
-        const handleResize = () => {
-            setDimensions({
-                width: window.innerWidth,
-                height: window.innerHeight,
-            });
-        };
-
-        window.addEventListener("resize", handleResize);
-
-        // Nettoyage de l'écouteur lors du démontage du composant
-        return () => {
-            window.removeEventListener("resize", handleResize);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (Array.isArray(geoData) && geoData.length > 2) {
-            console.log('Updated geoData:', geoData);
-            console.log('carbon driver:', geoData[0]?.data_fields.area__ha);
-        }
-
-    }, [geoData]);
-
-    const calculatePolygonArea = (coordinates) => {
-        // Construct GeoJSON polygon
-        const polygon = {
-            type: "Feature",
-            geometry: {
-                type: "Polygon",
-                coordinates: [coordinates],
-            },
-        };
-
-        // Use turf to calculate area (in square meters)
-        const areaInSquareMeters = turf.area(polygon);
-
-        // Convert area to hectares (optional)
-        const areaInHectares = areaInSquareMeters / 10000;
-
-        return { areaInSquareMeters, areaInHectares };
-    };
-
-    const dataheat = [
-        [1, 1, 1, 1, 1],
-        [2, 1, 2, 1, 2],
-    ];
-
-    // Labels des axes
-    const xLabels = ['Risk Assessment', 'Protected Areas', 'Land Rights', 'Tree Cover Extent', 'Tree Cover Loss'];
-    const yLabels = ['True', 'False'];
-
-    // Fonction pour rendre les cellules
-    const renderCell = (x, y, value) => {
-        let icon;
-        let textColor;
-
-        // Log the value and its type for debugging purposes
-        // Directly use value since it's already a number
-        if (x === 1) {
-            icon = '❌';
-            textColor = 'text-red-500';
-        } else if (x === 2) {
-            icon = '✔️';
-            textColor = 'text-green-500';
-        } else {
-            icon = '⚠️'; // Default icon for other values
-            textColor = 'text-gray-500';
-        }
-
-        return (
-            <span className={`flex justify-center items-center text-xl ${textColor}`}>
-                {icon}
-            </span>
-        );
-    };
-    useEffect(() => {
-        const fetchForestReport = async () => {
-            console.log('Fetching forest report for forestId:', forestId);
-            try {
-                const response = await axiosInstance.get(`/api/gfw/forest/${forestId}/CarbonReport`);
-                if (response.data.error) {
-                    console.error('Error in API response:', response.data.error);
-                    setError(response.data.error);
-                } else {
-                    console.log('API Response:', response.data);
-                    setForestInfo(response.data.forest_info);
-                    const reportData = response.data.report || [];
-                    console.log('Report Data:', reportData);
-
-                    setGeoData(reportData);
-
-
-                    if (reportData.length > 0 && reportData[0]?.coordinates?.length > 0) {
-                        const coordinates = reportData[0].coordinates[0];
-                        console.log('Coordinates:', coordinates);
-                        const { areaInSquareMeters, areaInHectares } = calculatePolygonArea(coordinates);
-                        setAreaInSquareMeters(areaInSquareMeters);
-                        setAreaInHectares(areaInHectares);
-                        console.log('Area in m²:', areaInSquareMeters, 'Area in ha:', areaInHectares);
-                    } else {
-                        console.warn('No valid polygon data in report');
-                    }
-                }
-            } catch (err) {
-                setError('Failed to fetch farm report.');
-                console.error('Error fetching farm report:', err.response?.data || err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchForestReport();
-    }, [forestId]);
-
-    const generateMapboxUrl = (coordinates) => {
-        const geojson = {
-            type: "FeatureCollection",
-            features: [
-                {
-                    type: "Feature",
-                    geometry: {
-                        type: "Polygon",
-                        coordinates: [coordinates]
-                    },
-                    properties:{
-            stroke: "#00FF00",          // Vert vif pour la bordure
-            "stroke-width": 4,          // Bordure épaisse
-            "stroke-opacity": 1,
-            fill: "#00FF00",            // Même vert ou plus doux
-            "fill-opacity": 0.2         // Remplissage léger
-          }
-                }
-            ]
-        };
-        const encodedGeojson = encodeURIComponent(JSON.stringify(geojson));
-        console.log(dimensions);
-        const x = Math.min(dimensions.width, 1280);
-        return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/geojson(${encodedGeojson})/auto/${x}x500?access_token=pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q`;
-    };
-    const generatePdf = async () => {
-        const element = reportRef.current;
-        const pdf = new jsPDF("p", "mm", "a4");
-        const pages = element.querySelectorAll(".page");
-        const email = "nkusu@agriyields.com"; // Replace with your email
-
-        for (let i = 0; i < pages.length; i++) {
-            // Wait until all images in the current page are loaded
-            await new Promise((resolve) => {
-                const images = pages[i].getElementsByTagName("img");
-                let loadedCount = 0;
-
-                if (images.length === 0) {
-                    resolve(); // No images to load
-                } else {
-                    Array.from(images).forEach((img) => {
-                        img.onload = () => {
-                            loadedCount += 1;
-                            if (loadedCount === images.length) {
-                                resolve(); // All images loaded
-                            }
-                        };
-                        img.src = img.src; // Trigger reload if needed
-                    });
-                }
-            });
-
-            // Generate a canvas from the page
-            const canvas = await html2canvas(pages[i], {
-                scale: 2,
-                useCORS: true, // Enable CORS
-            });
-            const imgData = canvas.toDataURL("image/png");
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-            // Add the image to the PDF
-            pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-
-            // Add the email text to the bottom right corner
-            const margin = 10; // Margin from the edge
-            const emailX = pdfWidth - pdf.getTextWidth(email) - margin; // Calculate X position
-            const emailY = pdf.internal.pageSize.getHeight() - margin; // Calculate Y position
-            pdf.setFontSize(10); // Set font size
-            pdf.text(email, emailX, emailY); // Add email text
-
-            if (i < pages.length - 1) pdf.addPage(); // Add a new page if not the last
-        }
-
-        // Save the PDF
-        pdf.save("EUDR_Report.pdf");
-    };
-
-
-    if (loading) return <Loading />;
-    if (error) return <p className="text-red-600">{error}</p>;
-    const percentage =
-        (geoData[1].data_fields.area__ha / areaInHectares) * 100;
-
-    if (error === 'No polygon found. Please create a polygon for this forest.') {
-        return (
-            <div className="container mx-auto p-6">
-                <h1 className="text-3xl font-bold mb-6 text-red-600">{error}</h1>
-                <p className="text-lg font-medium text-gray-700 mb-6">
-                    It seems that no polygon data is available for this forest. You can create a polygon by clicking the link below:
-                </p>
-                <Link
-                    to="/create-polygon"
-                    className="inline-block px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                    Create Polygon
-                </Link>
-            </div>
-        );
-    }
-
-
-    return (
-        <div className="flex justify-center flex-col items-center text-xl">
-            {/* Report Content */}
-            <div ref={reportRef}>
-                {/* Page 1 */}
-                <div className="page bg-white p-6 shadow-md mb-4">
-                    <img
-                        src="/logo.jpg"
-                        alt="Description of image"
-                        style={{
-                            float: 'right',
-                            width: '200px',
-                            height: 'auto'
-                        }}
-                    />
-                    <h1 className="text-3xl font-bold mb-6 text-center">NKUSU/AGRIYIELDS REPORT</h1>
-                    {forestInfo && (
-                        <p className="p-4">
-                            Carbon report for Forest ID <strong>{forestInfo.farm_id}</strong>, owned by <strong>{forestInfo.name}</strong>
-                        </p>
-                    )}
-                
-                    <div className="container mx-auto p-4">
-                        <h2 className="text-xl font-semibold mb-4">Carbon Assessment summary</h2>
-                        <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-                            <thead className="bg-gray-100">
-                                <tr>
-                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Category</th>
-                                    <th className="py-2 px-4 border-b border-gray-300 text-left text-gray-700">Mg_CO2e</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr className="hover:bg-gray-100">
-                                    <td className="py-2 px-4 border-b border-gray-300">Carbon gross emissions</td>
-                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[0]?.data_fields.gfw_forest_carbon_gross_emissions__Mg_CO2e
-                                    }</td>
-                                </tr>
-                                <tr className="hover:bg-gray-100">
-                                    <td className="py-2 px-4 border-b border-gray-300">Carbon gross absorption</td>
-                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[1]?.data_fields.gfw_forest_carbon_gross_removals__Mg_CO2e}</td>
-                                </tr>
-                                <tr className="hover:bg-gray-100">
-                                    <td className="py-2 px-4 border-b border-gray-300">Carbon net Emmisions</td>
-                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[2]?.data_fields.gfw_forest_carbon_net_flux__Mg_CO2e}</td>
-                                </tr>
-                                <tr className="hover:bg-gray-100">
-                                    <td className="py-2 px-4 border-b border-gray-300">Carbon Sequestration potential</td>
-                                    <td className="py-2 px-4 border-b border-gray-300">{geoData[3]?.data_fields.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C} belowground
-                                        <br />
-                                    {geoData[4]?.data_fields.gfw_reforestable_extent_aboveground_carbon_potential_sequestration__Mg_C} aboveground
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div className="w-full max-w-md mx-auto">
-                        <Pie data={data} options={options} />
-                    </div>
-                    <div className="items-center justify-center mt-6 mb-6">
-                        <div className="overflow-hidden">
-                            <img
-                                src={generateMapboxUrl(geoData[0].coordinates[0])}
-                                alt="Map for the forest"
-                                className="object-cover w-full h-full"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Additional Pages
-        {[...Array(7)].map((_, index) => (
-          <div key={index} className="page bg-white p-6 shadow-md mb-4">
-            <h2 className="text-2xl font-bold">Page {index + 2}</h2>
-            <p className="mt-4">Content for page {index + 2}.</p>
-            <div className="bg-gray-200 w-full h-64 flex items-center justify-center mt-6">
-              <p className="text-gray-500">Figure Placeholder</p>
-            </div>
-          </div>
-        ))} */}
-            </div>
-
-            {/* Generate PDF Button */}
-            <button
-                onClick={generatePdf}
-                className="bg-blue-500 text-white px-6 py-3 rounded-md mt-6 hover:bg-blue-700 transition duration-300"
-            >
-                Generate PDF
-            </button>
-        </div>
-    );
+const buildMapboxUrl = (coords, w = 700) => {
+  const g = {
+    type: 'FeatureCollection',
+    features: [{ type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [coords] },
+      properties: { stroke: '#00FF00', 'stroke-width': 4, 'stroke-opacity': 1,
+        fill: '#00FF00', 'fill-opacity': 0.2 },
+    }],
+  };
+  return `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/geojson(${encodeURIComponent(JSON.stringify(g))})/auto/${w}x420?access_token=${MAPBOX_TOKEN}`;
 };
 
-export default CarbonReport;
+// ── Spinner ──────────────────────────────────────────────────────────────────
+const Spinner = () => (
+  <svg style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }}
+    fill="none" viewBox="0 0 24 24">
+    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <circle style={{ opacity: .25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path   style={{ opacity: .75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+  </svg>
+);
+
+// ── Isolation du thème global ─────────────────────────────────────────────────
+// Le Layout de l'app injecte des couleurs semi-transparentes (dark theme)
+// qui surchargent les textes. Ces règles les neutralisent complètement.
+const IsolatedLight = ({ children }) => (
+  <>
+    <style>{`
+      .cr-forest-isolated,
+      .cr-forest-isolated * {
+        color-scheme: light !important;
+        -webkit-text-fill-color: initial !important;
+      }
+      .cr-forest-isolated          { color: #1a1a1a; background: #fff; }
+      .cr-forest-isolated th       { color: #fff !important; }
+      .cr-forest-isolated .badge-w { color: #fff !important; }
+    `}</style>
+    <div className="cr-forest-isolated">{children}</div>
+  </>
+);
+
+// ── Constantes ────────────────────────────────────────────────────────────────
+const G      = '#15803d';
+const LGRAY  = '#f9fafb';
+const BORDER = '#dcfce7';
+
+const Section = ({ title, children }) => (
+  <div style={{ borderLeft: `4px solid ${G}`, paddingLeft: 16, marginBottom: 24 }}>
+    <h2 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+      letterSpacing: '0.05em', color: G, marginBottom: 12 }}>
+      {title}
+    </h2>
+    {children}
+  </div>
+);
+
+// ── Component ─────────────────────────────────────────────────────────────────
+const CarbonReportForest = () => {
+  const [forestInfo,         setForestInfo]         = useState(null);
+  const [geoData,            setGeoData]            = useState(null);
+  const [loading,            setLoading]            = useState(true);
+  const [error,              setError]              = useState(null);
+  const [isDownloading,      setIsDownloading]      = useState(false);
+  const [areaInSquareMeters, setAreaInSquareMeters] = useState(null);
+  const [areaInHectares,     setAreaInHectares]     = useState(null);
+
+  const pdfRef   = useRef();
+  const location = useLocation();
+  const forestId = location.state?.forestId || 1;
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const go = async () => {
+      try {
+        const res = await axiosInstance.get(`/api/gfw/forest/${forestId}/CarbonReport`);
+        if (res.data.error) { setError(res.data.error); return; }
+        setForestInfo(res.data.forest_info);
+        const report = res.data.report || [];
+        setGeoData(report);
+        if (report[0]?.coordinates?.[0]) {
+          const m2 = turf.area({
+            type: 'Feature',
+            geometry: { type: 'Polygon', coordinates: [report[0].coordinates[0]] },
+          });
+          setAreaInSquareMeters(m2);
+          setAreaInHectares(m2 / 10000);
+        }
+      } catch { setError('Failed to fetch forest carbon report.'); }
+      finally  { setLoading(false); }
+    };
+    go();
+  }, [forestId]);
+
+  // ── Carbon values ─────────────────────────────────────────────────────────
+  const grossEmissions = geoData?.[0]?.data_fields?.gfw_forest_carbon_gross_emissions__Mg_CO2e ?? 0;
+  const grossRemovals  = geoData?.[1]?.data_fields?.gfw_forest_carbon_gross_removals__Mg_CO2e  ?? 0;
+  const netFlux        = geoData?.[2]?.data_fields?.gfw_forest_carbon_net_flux__Mg_CO2e        ?? 0;
+  const seqBelow       = geoData?.[3]?.data_fields?.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C ?? 0;
+  const seqAbove       = geoData?.[4]?.data_fields?.gfw_reforestable_extent_aboveground_carbon_potential_sequestration__Mg_C ?? 0;
+  const netPositive    = parseFloat(netFlux) >= 0;
+
+  const pieData = {
+    labels: ['Gross Emissions', 'Gross Removals', 'Net Flux', 'Sequestration'],
+    datasets: [{
+      data: [Math.abs(grossEmissions), Math.abs(grossRemovals), Math.abs(netFlux), Math.abs(seqBelow)],
+      backgroundColor: ['#e53935', '#43a047', '#fb8c00', '#00acc1'],
+      borderWidth: 2, borderColor: '#fff',
+    }],
+  };
+
+  const coordinates = geoData?.[0]?.coordinates?.[0];
+  const mapUrl      = coordinates ? buildMapboxUrl(coordinates) : null;
+  const mapUrlPDF   = coordinates ? buildMapboxUrl(coordinates, 700) : null;
+
+  // ── PDF via Playwright backend ────────────────────────────────────────────
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      await generatePDF(pdfRef, `Carbon_Forest_Report_${forestId}.pdf`);
+    } catch (e) {
+      console.error('PDF error:', e);
+      alert('PDF generation failed. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // ── Guards ────────────────────────────────────────────────────────────────
+  if (loading) return <Loading />;
+  if (error)   return <p style={{ color: '#dc2626', padding: 24 }}>{error}</p>;
+
+  // ── Cell styles ──────────────────────────────────────────────────────────
+  const td0 = { padding: '6px 12px', background: '#f0fdf4', fontWeight: 600,
+    width: '35%', borderBottom: `1px solid ${BORDER}`, color: '#1a1a1a', fontSize: 13 };
+  const td1 = { padding: '6px 12px', borderBottom: `1px solid ${BORDER}`,
+    color: '#1a1a1a', fontSize: 13 };
+
+  return (
+    <IsolatedLight>
+      {/* ════════════════════════════════════════════════════════════════════
+          VUE ÉCRAN
+      ════════════════════════════════════════════════════════════════════ */}
+      <div style={{ maxWidth: 768, margin: '0 auto', padding: '16px 32px' }}>
+
+        {/* ── Header : parrotlogo | titre | logo ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          borderBottom: `4px solid ${G}`, paddingBottom: 16, marginBottom: 24,
+        }}>
+          <img
+            src="/parrotlogo.svg"
+            alt="Parrot"
+            style={{ width: 64, height: 64, objectFit: 'contain' }}
+          />
+          <div style={{ textAlign: 'center', flex: 1, padding: '0 16px' }}>
+            <h1 style={{ fontSize: 22, fontWeight: 800, textTransform: 'uppercase',
+              letterSpacing: '0.05em', color: '#111827', margin: 0 }}>
+              Carbon Emissions Assessment
+            </h1>
+            <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+              Regulation (EU) 2023/1115 — Forest
+            </p>
+          </div>
+          <img
+            src="/logo.jpg"
+            alt="Agriyields"
+            style={{ width: 64, height: 64, objectFit: 'contain', borderRadius: 8 }}
+          />
+        </div>
+
+        {/* ── Forest info ── */}
+        {forestInfo && (
+          <Section title="Forest Information">
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {[
+                  ['Forest Name',  forestInfo.name],
+                  ['Tree Type',    forestInfo.tree_type    ?? 'N/A'],
+                  ['Date Created', forestInfo.date_created ?? 'N/A'],
+                  ['Last Updated', forestInfo.date_updated ?? 'N/A'],
+                  ...(areaInHectares ? [[
+                    'Project Area',
+                    `${areaInSquareMeters?.toFixed(2)} m²  (${areaInHectares?.toFixed(2)} ha)`,
+                  ]] : []),
+                ].map(([l, v], i) => (
+                  <tr key={i}><td style={td0}>{l}</td><td style={td1}>{v}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        )}
+
+        {/* ── Carbon table ── */}
+        <Section title="Carbon Assessment Summary">
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: G }}>
+                <th style={{ textAlign: 'left', padding: '8px 16px', color: '#fff', fontWeight: 600 }}>
+                  Category
+                </th>
+                <th style={{ textAlign: 'left', padding: '8px 16px', color: '#fff', fontWeight: 600 }}>
+                  Value (Mg CO₂e)
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['Carbon Gross Emissions',             grossEmissions, '#e53935'],
+                ['Carbon Gross Absorption (Removals)', grossRemovals,  '#43a047'],
+                ['Carbon Net Emissions',               netFlux,        netPositive ? '#e53935' : '#43a047'],
+              ].map(([label, val, color], i) => (
+                <tr key={i} style={{ background: i % 2 === 0 ? LGRAY : '#fff' }}>
+                  <td style={{ padding: '8px 16px', borderBottom: `1px solid ${BORDER}`, color: '#1a1a1a' }}>
+                    {label}
+                  </td>
+                  <td style={{ padding: '8px 16px', borderBottom: `1px solid ${BORDER}` }}>
+                    <span className="badge-w" style={{
+                      background: color, color: '#fff',
+                      padding: '2px 8px', borderRadius: 12, fontWeight: 700, fontSize: 12,
+                    }}>
+                      {Number(val).toFixed(4)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {[
+                ['Carbon Sequestration Potential (Belowground)', `${Number(seqBelow).toFixed(4)} Mg C`],
+                ['Carbon Sequestration Potential (Aboveground)', `${Number(seqAbove).toFixed(4)} Mg C`],
+              ].map(([label, val], i) => (
+                <tr key={i} style={{ background: i % 2 === 0 ? LGRAY : '#fff' }}>
+                  <td style={{ padding: '8px 16px', borderBottom: `1px solid ${BORDER}`, color: '#1a1a1a' }}>
+                    {label}
+                  </td>
+                  <td style={{ padding: '8px 16px', borderBottom: `1px solid ${BORDER}`, color: '#1a1a1a' }}>
+                    {val}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Section>
+
+        {/* ── Net status badge ── */}
+        <div style={{
+          borderLeft: `4px solid ${netPositive ? '#ef4444' : G}`,
+          background: netPositive ? '#fef2f2' : '#f0fdf4',
+          padding: '10px 16px', borderRadius: '0 8px 8px 0', marginBottom: 24,
+        }}>
+          <p style={{
+            fontWeight: 700, fontSize: 13,
+            color: netPositive ? '#b91c1c' : G, margin: 0,
+          }}>
+            {netPositive
+              ? '⚠ This forest is a net carbon source.'
+              : '✓ This forest is a net carbon sink.'}
+          </p>
+        </div>
+
+        {/* ── Pie chart ── */}
+        <Section title="Carbon Emissions and Sequestration">
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: 256, height: 256 }}>
+              <Pie
+                data={pieData}
+                options={{ responsive: true, plugins: { legend: { position: 'bottom' } } }}
+              />
+            </div>
+          </div>
+        </Section>
+
+        {/* ── Map ── */}
+        {mapUrl && (
+          <Section title="Plot Map">
+            <img
+              src={mapUrl}
+              alt="Forest map"
+              crossOrigin="anonymous"
+              style={{ width: '100%', borderRadius: 8, border: `1px solid ${BORDER}` }}
+            />
+          </Section>
+        )}
+
+        {/* ── Download button ── */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32, marginBottom: 48 }}>
+          <button
+            onClick={handleDownload}
+            disabled={isDownloading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '12px 32px', borderRadius: 10, border: 'none',
+              background: isDownloading ? '#9ca3af' : G,
+              color: '#fff', fontWeight: 700, fontSize: 14,
+              cursor: isDownloading ? 'not-allowed' : 'pointer',
+              boxShadow: isDownloading ? 'none' : '0 4px 14px rgba(21,128,61,.35)',
+            }}
+          >
+            {isDownloading && <Spinner />}
+            {isDownloading ? 'Generating PDF…' : '⬇ Download PDF Report'}
+          </button>
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          DIV CACHÉ 794 PX — envoyé au backend Playwright
+          Styles 100 % inline → rendu fidèle garanti.
+      ════════════════════════════════════════════════════════════════════ */}
+      <CarbonForestPDF
+        pdfRef             = {pdfRef}
+        forestInfo         = {forestInfo}
+        geoData            = {geoData}
+        mapboxUrl          = {mapUrlPDF}
+        areaInHectares     = {areaInHectares}
+        areaInSquareMeters = {areaInSquareMeters}
+      />
+    </IsolatedLight>
+  );
+};
+
+export default CarbonReportForest;
