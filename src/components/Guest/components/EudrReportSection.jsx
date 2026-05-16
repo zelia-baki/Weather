@@ -3,12 +3,12 @@ import { renderEudrTable, generateMapboxUrl } from '../utils/reportUtils';
 import * as turf from '@turf/turf';
 import StaticForestMap from '../../mapbox/StaticForestMap.jsx';
 
-const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, reportType = 'farm' }) => {
+const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, onForestMapCaptured, reportType = 'farm' }) => {
   console.log(results["wri tropical tree cover extent"]?.[2]?.["data_fields"]);
-  
+
   // ✅ Déterminer les textes en fonction du type de rapport
   const getReportTexts = () => {
-    switch(reportType) {
+    switch (reportType) {
       case 'forest':
         return {
           entityType: 'Forest',
@@ -67,14 +67,14 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, r
   // ✅ Gestion des deux formats : Farm (object direct) et Forest (array transformé)
   const rawTreeCoverData = React.useMemo(() => {
     const treeCoverExtentArray = results["wri tropical tree cover extent"];
-    
+
     if (!treeCoverExtentArray || !Array.isArray(treeCoverExtentArray)) {
       return null;
     }
 
     // Pour Farm : chercher l'item avec data_fields qui est un array de points
-    const dataItem = treeCoverExtentArray.find(item => 
-      Array.isArray(item?.data_fields) && 
+    const dataItem = treeCoverExtentArray.find(item =>
+      Array.isArray(item?.data_fields) &&
       item.data_fields.length > 0 &&
       item.data_fields[0]?.latitude !== undefined
     );
@@ -87,9 +87,9 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, r
       console.warn('⚠️ No tree cover data available for map');
       return [];
     }
-    
+
     console.log('✅ Tree cover data points:', rawTreeCoverData.length);
-    
+
     return rawTreeCoverData.map(point => ({
       latitude: point.latitude,
       longitude: point.longitude,
@@ -311,7 +311,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, r
     // ✅ Calcul de la superficie
     let calculatedAreaSqM = 0;
     let calculatedAreaHa = 0;
-    
+
     if (coordinates && Array.isArray(coordinates) && coordinates.length >= 3) {
       const first = coordinates[0];
       const last = coordinates[coordinates.length - 1];
@@ -568,6 +568,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, r
             mapboxToken={TOKEN}
             title="Tree Cover Analysis"
             subtitle={`${TREE_COVER_DATA.length} data points`}
+            onImageCaptured={onForestMapCaptured} // <-- AJOUTEZ CETTE LIGNE
           />
         </div>
       </div>

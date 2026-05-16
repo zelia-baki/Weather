@@ -1,4 +1,4 @@
-// StaticForestMap.jsx - VERSION CORRIGÉE ET VALIDE
+// StaticForestMap.jsx - VERSION CORRIGÉE, OPTIMISÉE ET VALIDE
 import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 
@@ -6,6 +6,7 @@ const StaticForestMap = ({
   treeCoverData = [],
   mapboxToken,
   title = "Tree Cover Analysis",
+  onImageCaptured, // <-- Capte l'image pour l'envoyer au backend
 }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
@@ -51,7 +52,7 @@ const StaticForestMap = ({
     })),
   });
 
-  // 📸 Capture finale propre
+  // 📸 Capture finale propre et optimisée
   const generateMapImage = () => {
     if (!map.current) return;
     setTimeout(() => {
@@ -138,7 +139,14 @@ const StaticForestMap = ({
         ctx.fillText(item.label, startX + 5 + itemBoxSize + 4, y + itemBoxSize - 3);
       });
 
-      setCapturedImage(exportCanvas.toDataURL("image/png"));
+      // 📸 Une seule extraction Base64 propre
+      const base64Image = exportCanvas.toDataURL("image/png");
+      setCapturedImage(base64Image);
+
+      // Déclenchement du callback parent s'il existe
+      if (onImageCaptured) {
+        onImageCaptured(base64Image);
+      }
     }, 500);
   };
 
@@ -249,7 +257,6 @@ const StaticForestMap = ({
       }
     });
   }, [treeCoverData, mapboxToken, stats.bounds]);
-
   if (!mapboxToken || treeCoverData.length === 0) {
     return (
       <div className="w-full flex justify-center items-center bg-gray-50 h-96">
@@ -260,7 +267,7 @@ const StaticForestMap = ({
 
   return (
     <div className="relative w-full min-h-[400px]">
-      {/* Carte invisible haute résolution */}
+      {/* Carte invisible haute résolution — FIXÉ : Style épuré sans caractères d'échappement */}
       <div
         ref={mapContainer}
         style={{
@@ -273,7 +280,7 @@ const StaticForestMap = ({
         }}
       />
 
-      {/* Image finale */}
+      {/* Image finale affichée à l'écran */}
       {capturedImage ? (
         <div className="flex justify-center items-center w-full" style={{ height: "400px" }}>
           <img
