@@ -99,12 +99,10 @@ const CategoryManager = () => {
       if (editingId) {
         await axiosInstance.put(`/api/producecategory/${editingId}/edit`, {
           name: formName.trim(),
-          modified_by: 'admin',
         });
       } else {
         await axiosInstance.post('/api/producecategory/create', {
           name: formName.trim(),
-          created_by: 'admin',
         });
       }
       await fetchCategories();
