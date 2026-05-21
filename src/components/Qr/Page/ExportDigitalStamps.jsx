@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axiosInstance from "../../../axiosInstance";
-import StepIndicator  from "../Component/StepIndicator";
+import StepIndicator from "../Component/StepIndicator";
 import FormNavigation from "../Component/FormNavigation";
-import FormStep       from "../Component/FormStep";
+import FormStep from "../Component/FormStep";
 import ReceiptPreview from "../Component/ReceiptPreview";
 import { createExportFormSteps, exportStepNames } from "../Component/exportStepsConfig";
 
@@ -19,39 +19,58 @@ const recompute = (data, blocks) => {
 };
 
 const ExportDigitalStamps = () => {
-  const [currentStep,    setCurrentStep]    = useState(0);
-  const [formData,       setFormData]       = useState({
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formData, setFormData] = useState({
     farm_id: "", farmergroup_id: "", district_name: "", country_of_origin: "",
     crop_category: "", crop_grade: "", crop: "", produce_weight: "",
     batch_number: "", harvest_date: "", timestamp: "", geolocation: "",
     store_name: "", season: "", destination_country: "", channel_partner: "",
     end_customer_name: "", coffeeType: "", hscode: "", store_id: "",
   });
-  const [farmBlocks,     setFarmBlocks]     = useState([{ id: "", props: {} }]);
-  const [categorys,      setCategory]       = useState([]);
-  const [filteredCrops,  setFilteredCrops]  = useState([]);
-  const [cropGrades,     setCropGrades]     = useState([]);
-  const [qrData,         setQrData]         = useState(null);
-  const [isDownloading,  setIsDownloading]  = useState(false);
-  const [error,          setError]          = useState(null);
+  const [farmBlocks, setFarmBlocks] = useState([{ id: "", props: {} }]);
+  const [categorys, setCategory] = useState([]);
+  const [filteredCrops, setFilteredCrops] = useState([]);
+  const [cropGrades, setCropGrades] = useState([]);
+  const [qrData, setQrData] = useState(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [error, setError] = useState(null);
 
   // ✅ FIX: use useFetchData (paginated) instead of a single axiosInstance.get()
-  const farms        = useFetchData("/api/farm/",            "farms");       // ← was only loading page 1
-  const districts    = useFetchData("/api/district/",        "districts");
-  const countries    = useFetchData("/api/pays/",            "pays");
-  const stores       = useFetchData("/api/store/",           "stores");
-  const crops        = useFetchData("/api/crop/",            "crops");
+  const farms = useFetchData("/api/farm/", "farms");       // ← was only loading page 1
+  const districts = useFetchData("/api/district/", "districts");
+  const countries = useFetchData("/api/pays/", "pays");
+  const stores = useFetchData("/api/store/", "stores");
+  const crops = useFetchData("/api/crop/", "crops");
 
   // farmerGroups & categories — APIs return array/object directly, fetched separately
   const [farmerGroups, setFarmerGroups] = useState([]);
   useEffect(() => {
     axiosInstance.get("/api/farmergroup/")
       .then(r => setFarmerGroups(Array.isArray(r.data) ? r.data : r.data.farmergroups || []))
-      .catch(() => {});
+      .catch(() => { });
     axiosInstance.get("/api/producecategory/")
       .then(r => setCategory(r.data.categories || []))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
+  // Ajouter ce useEffect après les autres useEffect existants
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setFormData(prev => ({
+          ...prev,
+          geolocation: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+        }));
+      },
+      (err) => {
+        console.warn("Géolocalisation refusée ou indisponible :", err.message);
+        // Le champ reste vide → l'utilisateur saisit manuellement
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }, []); // ← s'exécute une seule fois au montage 
 
   // Build form steps
   const formSteps = createExportFormSteps(
@@ -76,12 +95,12 @@ const ExportDigitalStamps = () => {
     const { name, value } = e.target;
     setFormData(prev => {
       const next = { ...prev, [name]: value };
-      if (name.includes("_qty"))  return { ...next, ...recompute(next, farmBlocks) };
-      if (name === "coffeeType")  return { ...next, hscode: "" };
+      if (name.includes("_qty")) return { ...next, ...recompute(next, farmBlocks) };
+      if (name === "coffeeType") return { ...next, hscode: "" };
       return next;
     });
     if (name === "crop_category") handleCategoryChange(value);
-    else if (name === "crop")     handleCropChange(value);
+    else if (name === "crop") handleCropChange(value);
   }, [farmBlocks]); // eslint-disable-line
 
   const handleCategoryChange = (selectedCatId) => {
@@ -117,27 +136,50 @@ const ExportDigitalStamps = () => {
   // ── Farm auto-fill ─────────────────────────────────────────────────────────
   const handleFarmChange = async (e, index) => {
     const farm_id = e.target.value;
+
     setFormData(prev => {
       const next = { ...prev, [`farm_${index}_id`]: farm_id };
       return { ...next, ...recompute(next, farmBlocks) };
     });
     setFarmBlocks(prev => prev.map((f, i) => i === index ? { ...f, id: farm_id } : f));
+
     if (farm_id) {
       try {
         const res = await axiosInstance.get(`/api/farm/${farm_id}`);
         if (res.data.status === "success") {
           const p = res.data.data;
+
+          // ── Géolocation : DB en priorité, GPS en fallback ──────────────
+          let geoValue = p.geolocation || "";
+
+          if (!geoValue && index === 0) {
+            // Seulement pour la première ferme sélectionnée
+            geoValue = await new Promise((resolve) => {
+              if (!navigator.geolocation) return resolve("");
+              navigator.geolocation.getCurrentPosition(
+                (pos) => resolve(`${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`),
+                () => resolve(""),
+                { enableHighAccuracy: true, timeout: 6000 }
+              );
+            });
+          }
+
           setFormData(prev => ({
             ...prev,
-            [`farm_${index}_phone`]:    p.phonenumber1 || p.phonenumber2 || "",
-            [`farm_${index}_district`]: p.district_id  || "",
+            [`farm_${index}_phone`]: p.phonenumber1 || p.phonenumber2 || "",
+            [`farm_${index}_district`]: p.district_id || "",
+            // ── Ne remplace la géolocation que si : c'est la 1ère ferme
+            // OU le champ est encore vide (évite d'écraser une saisie manuelle)
+            ...(index === 0 || !prev.geolocation
+              ? { geolocation: geoValue }
+              : {}),
           }));
         }
       } catch { /* ignore */ }
     }
   };
 
-  const addFarmBlock    = () => setFarmBlocks(prev => [...prev, { id: "", props: {} }]);
+  const addFarmBlock = () => setFarmBlocks(prev => [...prev, { id: "", props: {} }]);
   const removeFarmBlock = (index) => {
     if (farmBlocks.length <= 1) return;
     const next = farmBlocks.filter((_, i) => i !== index);
@@ -168,7 +210,7 @@ const ExportDigitalStamps = () => {
   };
 
   // ── Weight warning ─────────────────────────────────────────────────────────
-  const PRODUCT_STEP  = 2;
+  const PRODUCT_STEP = 2;
   const weightMissing = currentStep === PRODUCT_STEP &&
     (!formData.produce_weight || parseFloat(formData.produce_weight) === 0);
 
@@ -176,10 +218,10 @@ const ExportDigitalStamps = () => {
   const generateQrData = (data) => {
     const farmsList = farmBlocks
       .map((_, i) => ({
-        id:       data[`farm_${i}_id`]       || "",
-        phone:    data[`farm_${i}_phone`]    || "",
+        id: data[`farm_${i}_id`] || "",
+        phone: data[`farm_${i}_phone`] || "",
         district: data[`farm_${i}_district`] || "",
-        qty:      data[`farm_${i}_qty`]      || "0",
+        qty: data[`farm_${i}_qty`] || "0",
       }))
       .filter(f => f.id);
 
@@ -224,9 +266,9 @@ const ExportDigitalStamps = () => {
         { qr_data_list: qrList, description: "Digital receipt for export transaction." },
         { responseType: "blob" }
       );
-      const url  = window.URL.createObjectURL(new Blob([res.data]));
+      const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement("a");
-      link.href  = url;
+      link.href = url;
       link.setAttribute("download", `export_receipts_${batchNumber}.pdf`);
       document.body.appendChild(link);
       link.click();
@@ -253,7 +295,7 @@ const ExportDigitalStamps = () => {
           {/* ✅ Shows how many farms were loaded so user knows pagination worked */}
           {loadedFarmCount > 0 && (
             <p className="text-sm text-gray-400 flex items-center justify-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400"/>
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
               {loadedFarmCount} farm{loadedFarmCount !== 1 ? "s" : ""} loaded
             </p>
           )}

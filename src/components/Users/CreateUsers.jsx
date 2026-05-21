@@ -57,8 +57,8 @@ const CreateUser = () => {
     try {
       await axiosInstance.post('/api/users/create', formData);
       Swal.fire({
-        title: 'Utilisateur créé !',
-        text: `${formData.username} a été créé avec succès.`,
+        title: 'User created!',
+        text: `${formData.username} has been created successfully.`,
         icon: 'success',
         confirmButtonText: 'OK',
       });
@@ -69,8 +69,8 @@ const CreateUser = () => {
       });
     } catch (err) {
       Swal.fire({
-        title: 'Erreur',
-        text: err.response?.data?.message || 'Une erreur est survenue.',
+        title: 'Error',
+        text: err.response?.data?.message || 'Something went wrong.',
         icon: 'error',
       });
     }
@@ -79,7 +79,7 @@ const CreateUser = () => {
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white w-full max-w-xl p-6 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-5 text-center text-gray-800">Créer un utilisateur</h2>
+        <h2 className="text-xl font-bold mb-5 text-center text-gray-800">Create a user</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -127,19 +127,19 @@ const CreateUser = () => {
             </div>
           </div>
 
-          {/* ── Permissions modulaires ──────────────────────────────────────── */}
+          {/* ── Module permissions ──────────────────────────────────────────── */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-semibold text-gray-700">Module Permissions</h4>
               <div className="flex gap-2">
                 <button type="button" onClick={() => setAllPermissions(true)}
                   className="text-xs text-green-600 hover:underline font-medium">
-                  Tout activer
+                  Enable all
                 </button>
                 <span className="text-gray-300">|</span>
                 <button type="button" onClick={() => setAllPermissions(false)}
                   className="text-xs text-red-500 hover:underline font-medium">
-                  Tout désactiver
+                  Disable all
                 </button>
               </div>
             </div>
@@ -177,11 +177,11 @@ const CreateUser = () => {
                 permissions: { ...DEFAULT_PERMISSIONS },
               })}
               className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-5 rounded-lg transition text-sm">
-              Réinitialiser
+              Reset
             </button>
             <button type="submit"
               className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg transition text-sm">
-              Créer l'utilisateur
+              Create user
             </button>
           </div>
         </form>

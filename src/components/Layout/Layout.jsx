@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { MdManageAccounts, MdDashboard, MdHistory, MdOutlineWaterDrop,
          MdOutlineWbSunny, MdOutlineWarningAmber, MdOutlineSms } from "react-icons/md";
 import { FiLogOut, FiMenu, FiX, FiChevronDown } from "react-icons/fi";
 import { FaTree, FaCloudSun, FaQrcode, FaFileContract, FaCrown, FaUser } from "react-icons/fa";
-import { TbPlant2, TbMap2, TbChartBar } from "react-icons/tb";
+import { TbPlant2, TbMap2, TbChartBar, TbTag } from "react-icons/tb";   // ← TbTag ajouté
 import { RiPlantLine, RiMapPinLine } from "react-icons/ri";
 import { BsCalendarDate, BsShop } from "react-icons/bs";
 import { GiFarmer, GiForestCamp, GiWheat } from "react-icons/gi";
@@ -40,12 +40,13 @@ const buildMenus = (isAdmin, role) => {
       id: "farm", label: "Farm", Icon: GiFarmer,
       show: isFarmer,
       items: [
-        { label: "Farmer Group", href: "/farmergroup",         Icon: GiFarmer },
-        { label: "Farm Manager", href: "/farmmanager",         Icon: RiPlantLine },
-        { label: "Crop",         href: "/cropmanage",          Icon: GiWheat },
-        { label: "District",     href: "/district",            Icon: TbMap2 },
-        { label: "View All",     href: "/mapviewall",          Icon: RiMapPinLine, state: { owner_type: "farmer" } },
-        { label: "Store",        href: "/storeProductManager", Icon: BsShop },
+        { label: "Farmer Group",  href: "/farmergroup",         Icon: GiFarmer },
+        { label: "Farm Manager",  href: "/farmmanager",         Icon: RiPlantLine },
+        { label: "Crop",          href: "/cropmanage",          Icon: GiWheat },
+        { label: "Categories",    href: "/categorymanager",     Icon: TbTag },          // ← nouveau
+        { label: "District",      href: "/district",            Icon: TbMap2 },
+        { label: "View All",      href: "/mapviewall",          Icon: RiMapPinLine, state: { owner_type: "farmer" } },
+        { label: "Store",         href: "/storeProductManager", Icon: BsShop },
       ],
     },
     {
@@ -62,15 +63,15 @@ const buildMenus = (isAdmin, role) => {
       id: "weather", label: "Weather", Icon: FaCloudSun,
       show: isWeather,
       items: [
-        { label: "Map Weather",     href: "/weathermapfarm", Icon: TbMap2 },
-        { label: "Weather History", href: "/weatherhistory", Icon: MdHistory },
-        { label: "HDD & CDD",       href: "/onemonth",       Icon: MdOutlineWbSunny },
-        { label: "GDD for Pest",    href: "/graphpest",      Icon: TbChartBar },
-        { label: "Planting Date",   href: "/plantingdate",   Icon: BsCalendarDate },
-        { label: "Anomaly Alert",   href: "/weatherdas",     Icon: MdOutlineWarningAmber },
-        { label: "Alert Messaging", href: "/alertmessage",   Icon: MdOutlineSms },
-        { label: "Water Advisory",  href: "/wateradvisory",  Icon: MdOutlineWaterDrop },
-        { label: "Location Advisory", href: "/locationadvisory", Icon: RiMapPinLine },
+        { label: "Map Weather",       href: "/weathermapfarm",    Icon: TbMap2 },
+        { label: "Weather History",   href: "/weatherhistory",    Icon: MdHistory },
+        { label: "HDD & CDD",         href: "/onemonth",          Icon: MdOutlineWbSunny },
+        { label: "GDD for Pest",      href: "/graphpest",         Icon: TbChartBar },
+        { label: "Planting Date",     href: "/plantingdate",      Icon: BsCalendarDate },
+        { label: "Anomaly Alert",     href: "/weatherdas",        Icon: MdOutlineWarningAmber },
+        { label: "Alert Messaging",   href: "/alertmessage",      Icon: MdOutlineSms },
+        { label: "Water Advisory",    href: "/wateradvisory",     Icon: MdOutlineWaterDrop },
+        { label: "Location Advisory", href: "/locationadvisory",  Icon: RiMapPinLine },
       ],
     },
     {

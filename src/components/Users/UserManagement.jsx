@@ -19,7 +19,7 @@ const Toggle = ({ checked, onToggle }) => (
   </button>
 );
 
-// ─── Modal rapide de gestion des permissions ──────────────────────────────────
+// ─── Quick permissions management modal ──────────────────────────────────────
 const PermissionsModal = ({ user, onClose, onToggle }) => {
   if (!user) return null;
   const perms = user.permissions || {};
@@ -41,7 +41,7 @@ const PermissionsModal = ({ user, onClose, onToggle }) => {
               Permissions — <span className="text-green-700">{user.username}</span>
             </h3>
             <p className="text-xs text-gray-400 mt-0.5">
-              {enabledCount} module{enabledCount !== 1 ? 's' : ''} activé{enabledCount !== 1 ? 's' : ''}
+              {enabledCount} module{enabledCount !== 1 ? 's' : ''} enabled
             </p>
           </div>
           <button
@@ -83,7 +83,7 @@ const PermissionsModal = ({ user, onClose, onToggle }) => {
             onClick={onClose}
             className="w-full py-2 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium hover:bg-gray-200 transition"
           >
-            Fermer
+            Close
           </button>
         </div>
       </div>
@@ -203,7 +203,7 @@ const UserManagement = () => {
       setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, has_access_wbii: newValue } : u));
       Swal.fire({
         toast: true, position: 'top-end', icon: 'success',
-        title: newValue ? `WBII activé pour ${user.username}` : `WBII désactivé pour ${user.username}`,
+        title: newValue ? `WBII enabled for ${user.username}` : `WBII disabled for ${user.username}`,
         showConfirmButton: false, timer: 2500, timerProgressBar: true,
       });
     } catch (err) {
@@ -220,6 +220,13 @@ const UserManagement = () => {
       const updatedUser = { ...user, permissions: newPerms };
       setUsers((prev) => prev.map((u) => u.id === user.id ? updatedUser : u));
       setPermTarget(updatedUser);
+
+      // ── Force admin token refresh so it sees the up-to-date DB state ───────
+      // The target user will get a fresh token on their next navigation
+      axiosInstance.post('/api/token/refresh').then(({ data }) => {
+        if (data.token) localStorage.setItem('token', data.token);
+      }).catch(() => {});
+
     } catch (err) {
       Swal.fire({ title: 'Error', text: 'Could not update permissions.', icon: 'error' });
     }
@@ -252,7 +259,7 @@ const UserManagement = () => {
         + Create User
       </button>
 
-      {/* ── Modal créer / modifier ──────────────────────────────────────────── */}
+      {/* ── Create / Edit modal ─────────────────────────────────────────────── */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-xl shadow-2xl w-[500px] max-h-[92vh] overflow-y-auto">
@@ -312,12 +319,12 @@ const UserManagement = () => {
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => setAllPermissions(true)}
                       className="text-xs text-green-600 hover:text-green-800 hover:underline font-medium">
-                      Tout activer
+                      Enable all
                     </button>
                     <span className="text-gray-300">|</span>
                     <button type="button" onClick={() => setAllPermissions(false)}
                       className="text-xs text-red-500 hover:text-red-700 hover:underline font-medium">
-                      Tout désactiver
+                      Disable all
                     </button>
                   </div>
                 </div>
@@ -350,11 +357,11 @@ const UserManagement = () => {
               <div className="flex justify-between">
                 <button type="button" onClick={resetForm}
                   className="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition text-sm font-medium">
-                  {editing ? 'Annuler' : 'Fermer'}
+                  {editing ? 'Cancel' : 'Close'}
                 </button>
                 <button type="submit"
                   className="bg-blue-500 text-white py-2 px-5 rounded-lg hover:bg-blue-600 transition text-sm font-semibold">
-                  {editing ? 'Mettre à jour' : 'Créer'}
+                  {editing ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>
@@ -369,7 +376,7 @@ const UserManagement = () => {
         onToggle={handleQuickPermToggle}
       />
 
-      {/* ── Liste des utilisateurs ──────────────────────────────────────────── */}
+      {/* ── User list ───────────────────────────────────────────────────────── */}
       <ul className="space-y-3 mt-6">
         {users.filter(Boolean).map((user) => {
           const enabled = countEnabled(user);
@@ -405,7 +412,7 @@ const UserManagement = () => {
                       ) : null
                     )}
                     {enabled === 0 && !user.has_access_wbii && (
-                      <span className="text-xs text-gray-400 italic">Aucun module activé</span>
+                      <span className="text-xs text-gray-400 italic">No modules enabled</span>
                     )}
                   </div>
                 </div>
