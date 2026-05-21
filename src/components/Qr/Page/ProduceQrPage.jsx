@@ -22,6 +22,7 @@ const GenerateQrCodeAndReceipt = () => {
   const [currentStep,   setCurrentStep]   = useState(0);
   const [formData,      setFormData]      = useState({});
   const [farmBlocks,    setFarmBlocks]    = useState([{ id: "", props: {} }]);
+  const [crops,         setCrops]         = useState([]);   // ← NEW
   const [grades,        setGrades]        = useState([]);
   const [qrData,        setQrData]        = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -32,7 +33,8 @@ const GenerateQrCodeAndReceipt = () => {
   const stores            = useFetchData("/api/store/",           "stores");
   const produceCategories = useFetchData("/api/producecategory/", "categories");
 
-  const formSteps = createFormSteps(farmBlocks, countries, produceCategories, grades, stores);
+  // crops et grades sont passés EN PLUS maintenant
+  const formSteps = createFormSteps(farmBlocks, countries, produceCategories, crops, grades, stores);
 
   useEffect(() => {
     setFormData(prev => ({ ...prev, ...recompute(prev, farmBlocks) }));
@@ -48,15 +50,36 @@ const GenerateQrCodeAndReceipt = () => {
     });
   }, [farmBlocks]);
 
+  // ── Catégorie → fetch les crops, reset crop + grade ─────────────────────
   const handleCategoryChange = async (e) => {
     const produceCategory = typeof e === "string" ? e : e?.target?.value;
-    setFormData(prev => ({ ...prev, produceCategory }));
+    // Reset les champs dépendants
+    setFormData(prev => ({ ...prev, produceCategory, crop_id: "", Crop_grade: "" }));
+    setCrops([]);
+    setGrades([]);
+
     const cat = produceCategories.find(c => c.name === produceCategory);
     if (!cat) return;
     try {
-      const res = await axiosInstance.get(`/api/grade/getbycrop/${cat.id}`);
+      const res = await axiosInstance.get(`/api/crop/getbycat/${cat.id}`);
+      setCrops(res.data.status === "success" ? res.data.crops : []);
+    } catch {
+      setCrops([]);
+    }
+  };
+
+  // ── Crop → fetch les grades, reset grade ────────────────────────────────
+  const handleCropChange = async (e) => {
+    const crop_id = e.target.value;
+    setFormData(prev => ({ ...prev, crop_id, Crop_grade: "" }));
+    setGrades([]);
+    if (!crop_id) return;
+    try {
+      const res = await axiosInstance.get(`/api/grade/getbycrop/${crop_id}`);
       setGrades(res.data.status === "success" ? res.data.grades : []);
-    } catch { setGrades([]); }
+    } catch {
+      setGrades([]);
+    }
   };
 
   const handleStoreChange = (e, type) => {
@@ -111,7 +134,7 @@ const GenerateQrCodeAndReceipt = () => {
           if (sub.required && !formData[sub.name]) return false;
         }
       } else {
-        if (field.required && !field.readOnly && !formData[field.name]) return false;
+        if (field.required && !field.readOnly && !field.disabled && !formData[field.name]) return false;
       }
     }
     return true;
@@ -150,7 +173,6 @@ const GenerateQrCodeAndReceipt = () => {
   };
 
   return (
-    // ✅ light-panel on root → fixes all text/label visibility inside
     <div className="bg-gradient-to-br from-teal-50 via-white to-blue-50 min-h-screen py-8 light-panel">
       <div className="container mx-auto px-4">
         <h1 className="text-4xl font-bold mb-8 text-center text-teal-700">
@@ -189,6 +211,7 @@ const GenerateQrCodeAndReceipt = () => {
                 formData={formData}
                 onChange={handleChange}
                 onCategoryChange={handleCategoryChange}
+                onCropChange={handleCropChange}      
                 onStoreChange={handleStoreChange}
                 farmBlocks={farmBlocks}
                 onAddFarm={addFarmBlock}

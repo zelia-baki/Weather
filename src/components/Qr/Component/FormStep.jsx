@@ -8,6 +8,7 @@ const FormStep = ({
   formData,
   onChange,
   onCategoryChange,
+  onCropChange,       // ← NEW
   onStoreChange,
   farmBlocks,
   onAddFarm,
@@ -15,17 +16,17 @@ const FormStep = ({
   onFarmChange,
   farms,
   districts,
-  // Contrôle du champ par-ferme
-  showFarmQty = false,
+  showFarmQty  = false,
   farmQtyLabel = "Weight (kg)",
   farmQtyKey   = "qty",
 }) => {
   const renderField = (field) => {
     let customOnChange = onChange;
 
-    if (field.name === "produceCategory")  customOnChange = onCategoryChange;
-    else if (field.name === "store_id")    customOnChange = (e) => onStoreChange?.(e, "id");
-    else if (field.name === "store_name")  customOnChange = (e) => onStoreChange?.(e, "name");
+    if      (field.name === "produceCategory") customOnChange = onCategoryChange;
+    else if (field.name === "crop_id")         customOnChange = onCropChange;       // ← NEW
+    else if (field.name === "store_id")        customOnChange = (e) => onStoreChange?.(e, "id");
+    else if (field.name === "store_name")      customOnChange = (e) => onStoreChange?.(e, "name");
 
     if (field.type === "select") {
       return (
