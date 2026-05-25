@@ -61,14 +61,14 @@ const OutOfBoundsAlert = ({ items }) => {
 // INDEX METADATA
 // ─────────────────────────────────────────────────────────────
 const META = {
-  ndvi: { label: 'NDVI', full: 'Vegetation Health',        Icon: Leaf,       color: '#16a34a', fill: 'rgba(22,163,74,0.12)',   group: 'vegetation' },
-  evi:  { label: 'EVI',  full: 'Enhanced Vegetation',      Icon: TrendingUp, color: '#0d9488', fill: 'rgba(13,148,136,0.12)',  group: 'vegetation' },
-  savi: { label: 'SAVI', full: 'Soil Adjusted Vegetation', Icon: Wheat,      color: '#65a30d', fill: 'rgba(101,163,13,0.12)',  group: 'vegetation' },
-  ndmi: { label: 'NDMI', full: 'Moisture Index',           Icon: Droplets,   color: '#0284c7', fill: 'rgba(2,132,199,0.12)',   group: 'water'      },
-  ndwi: { label: 'NDWI', full: 'Water Body Index',         Icon: Waves,      color: '#0ea5e9', fill: 'rgba(14,165,233,0.12)',  group: 'water'      },
-  nmdi: { label: 'NMDI', full: 'Drought Index',            Icon: Sun,        color: '#f97316', fill: 'rgba(249,115,22,0.12)',  group: 'drought'    },
-  nbr:  { label: 'NBR',  full: 'Burn Ratio',               Icon: Flame,      color: '#ef4444', fill: 'rgba(239,68,68,0.12)',   group: 'fire'       },
-  bsi:  { label: 'BSI',  full: 'Bare Soil Index',          Icon: Mountain,   color: '#92400e', fill: 'rgba(146,64,14,0.12)',   group: 'soil'       },
+  ndvi: { label: 'NDVI', full: 'Vegetation Health', Icon: Leaf, color: '#16a34a', fill: 'rgba(22,163,74,0.12)', group: 'vegetation' },
+  evi: { label: 'EVI', full: 'Enhanced Vegetation', Icon: TrendingUp, color: '#0d9488', fill: 'rgba(13,148,136,0.12)', group: 'vegetation' },
+  savi: { label: 'SAVI', full: 'Soil Adjusted Vegetation', Icon: Wheat, color: '#65a30d', fill: 'rgba(101,163,13,0.12)', group: 'vegetation' },
+  ndmi: { label: 'NDMI', full: 'Moisture Index', Icon: Droplets, color: '#0284c7', fill: 'rgba(2,132,199,0.12)', group: 'water' },
+  ndwi: { label: 'NDWI', full: 'Water Body Index', Icon: Waves, color: '#0ea5e9', fill: 'rgba(14,165,233,0.12)', group: 'water' },
+  nmdi: { label: 'NMDI', full: 'Drought Index', Icon: Sun, color: '#f97316', fill: 'rgba(249,115,22,0.12)', group: 'drought' },
+  nbr: { label: 'NBR', full: 'Burn Ratio', Icon: Flame, color: '#ef4444', fill: 'rgba(239,68,68,0.12)', group: 'fire' },
+  bsi: { label: 'BSI', full: 'Bare Soil Index', Icon: Mountain, color: '#92400e', fill: 'rgba(146,64,14,0.12)', group: 'soil' },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ const META = {
 const Spinner = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 gap-4">
     <div className="relative w-16 h-16">
-      <div className="absolute inset-0 border-4 border-emerald-900 rounded-full" />
+      <div className="absolute inset-0 border-4 border-t-emerald-900 rounded-full" />
       <div className="absolute inset-0 border-4 border-t-emerald-400 rounded-full animate-spin" />
       <div className="absolute inset-0 flex items-center justify-center">
         <Satellite size={22} className="text-emerald-400" />
@@ -106,13 +106,13 @@ const TierBadge = ({ tier }) => {
 // INDEX CARD
 // ─────────────────────────────────────────────────────────────
 const IndexCard = ({ idx, data, active, onClick }) => {
-  const meta     = META[idx];
+  const meta = META[idx];
   const { Icon } = meta;
-  const history  = data?.history || [];
-  const last     = history[history.length - 1];
-  const val      = last?.[idx]?.value;
-  const tier     = last?.[idx]?.tier;
-  const rawVal   = last?.[idx]?.raw;
+  const history = data?.history || [];
+  const last = history[history.length - 1];
+  const val = last?.[idx]?.value;
+  const tier = last?.[idx]?.tier;
+  const rawVal = last?.[idx]?.raw;
   const forecast = data?.forecast?.[idx]?.[0];
 
   return (
@@ -123,8 +123,8 @@ const IndexCard = ({ idx, data, active, onClick }) => {
           : 'border border-slate-700 bg-slate-900 hover:border-slate-500'}`}
       style={active ? {
         borderColor: meta.color,
-        background:  meta.color + '18',
-        boxShadow:   `0 0 20px ${meta.color}30`,
+        background: meta.color + '18',
+        boxShadow: `0 0 20px ${meta.color}30`,
       } : {}}>
 
       <div className="flex items-start justify-between mb-2">
@@ -144,7 +144,6 @@ const IndexCard = ({ idx, data, active, onClick }) => {
           <p className="text-2xl font-black" style={{ color: meta.color }}>
             {val != null ? val.toFixed(4) : '—'}
           </p>
-          {/* Show raw Sentinel value when it differs from the clamped value */}
           {rawVal != null && rawVal !== val && (
             <p className="text-xs text-orange-400 font-mono mt-0.5 flex items-center gap-1">
               <AlertTriangle size={10} />
@@ -168,9 +167,9 @@ const IndexCard = ({ idx, data, active, onClick }) => {
 // CHART DATA BUILDER
 // ─────────────────────────────────────────────────────────────
 function buildChartData(idx, history, forecast) {
-  const meta      = META[idx];
+  const meta = META[idx];
   const histDates = history.map(h => h.date.substring(0, 7));
-  const pad       = histDates.length;
+  const pad = histDates.length;
   return {
     labels: [...histDates, ...forecast.map(f => f.quarter)],
     datasets: [
@@ -229,157 +228,187 @@ const CHART_OPTIONS = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// LTV PANEL
+// FULLY DYNAMIC LTVPANEL COMPONENT (MULTI-INDEX)
 // ─────────────────────────────────────────────────────────────
-const LTVPanel = ({ ltv, onUpdate, ltvLoading }) => {
-  const [loanAmount,  setLoanAmount]  = useState('');
-  const [yieldPerHa,  setYieldPerHa]  = useState('1.5');
-  const [pricePerTon, setPricePerTon] = useState('500');
+const LTVPanel = ({ ltv, onUpdate, ltvLoading, activeIndex = "ndvi" }) => {
+  const [loan, setLoan] = useState(ltv?.loan_amount_usd || "");
+  const [yieldH, setYieldH] = useState(ltv?.yield_t_per_ha || "1.5");
+  const [price, setPrice] = useState(ltv?.price_per_t || "500");
 
-  // Track whether this is the initial mount to avoid calling onUpdate on load.
-  // Without this guard, the debounce effect fires on mount → triggers handleLTVUpdate
-  // → which was causing the infinite remount loop.
-  const isFirstRender = useRef(true);
-
-  const buildParams = () => ({
-    ...(loanAmount.trim() !== '' && { loan_amount: parseFloat(loanAmount) }),
-    yield_t_per_ha: parseFloat(yieldPerHa)  || 1.5,
-    price_per_t:    parseFloat(pricePerTon) || 500,
-  });
-
-  const handleApply = () => onUpdate(buildParams());
-
-  // Auto-recalculate when yield or price change, but skip the initial render.
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
+    if (ltv) {
+      if (ltv.loan_amount_usd != null) setLoan(ltv.loan_amount_usd);
+      if (ltv.yield_t_per_ha != null) setYieldH(ltv.yield_t_per_ha);
+      if (ltv.price_per_t != null) setPrice(ltv.price_per_t);
     }
-    const t = setTimeout(handleApply, 600);
-    return () => clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yieldPerHa, pricePerTon]);
+  }, [ltv]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onUpdate({
+      loan_amount: loan ? parseFloat(loan) : null,
+      yield_t_per_ha: yieldH ? parseFloat(yieldH) : 1.5,
+      price_per_t: price ? parseFloat(price) : 500,
+    });
+  };
+
+  // Dynamic extraction of index data calculated by sentinel_utils.py
+  const currentIndexData = ltv?.indices?.[activeIndex];
+
+  // Fallbacks if the index does not exist yet or if using global NDVI keys
+  const factorValue = currentIndexData ? currentIndexData.factor : ltv?.ndvi_factor;
+  const adjYield = currentIndexData ? currentIndexData.adjusted_yield_t_ha : ltv?.adjusted_yield_t_ha;
+  const cropValue = currentIndexData ? currentIndexData.estimated_crop_value_usd : ltv?.estimated_crop_value_usd;
+  const ltvRatio = currentIndexData ? currentIndexData.ltv_ratio_pct : ltv?.ltv_ratio_pct;
+  const premium = currentIndexData ? currentIndexData.insurance_premium_pct : ltv?.insurance_premium_pct;
+  const idxColor = currentIndexData ? currentIndexData.color : "#10b981";
+
+  // Extraction of the farm area
+  const areaHa = ltv?.area_ha;
 
   return (
-    <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6">
-      <h3 className="font-bold text-white text-base mb-1 flex items-center gap-2">
-        <DollarSign size={16} className="text-emerald-400" />
-        Financial Analysis (LTV)
-      </h3>
-      <p className="text-xs text-slate-500 mb-4">
-        Area &amp; crop value are computed automatically from GPS polygon points.
-        The <span className="text-slate-300 font-semibold">LTV Ratio</span> requires a loan amount.
-      </p>
+    <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
+      <div className="mb-6 flex flex-col justify-between gap-4 border-b border-slate-800 pb-4 sm:flex-row sm:items-center">
+        <div>
+          <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+            <DollarSign className="text-emerald-500" size={20} />
+            Financial Analysis &amp; Agricultural Viability (LTV)
+          </h3>
+          <p className="text-xs text-slate-400 mt-1">
+            Calculations synchronized with the currently active index: <span className="font-bold uppercase" style={{ color: idxColor }}>{activeIndex}</span>
+          </p>
+        </div>
 
-      <div className="grid grid-cols-3 gap-3 mb-3">
-        {[
-          { label: 'Yield (t/ha)',               val: yieldPerHa,   set: setYieldPerHa,  ph: '1.5'      },
-          { label: 'Price (USD/t)',               val: pricePerTon,  set: setPricePerTon, ph: '500'      },
-          { label: 'Loan Amount (USD) — optional', val: loanAmount,   set: setLoanAmount,  ph: 'e.g. 5000' },
-        ].map(({ label, val, set, ph }) => (
-          <div key={label}>
-            <p className="text-xs text-slate-500 mb-1">{label}</p>
-            <input
-              value={val}
-              onChange={e => set(e.target.value)}
-              placeholder={ph}
-              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2
-                         text-sm text-white focus:outline-none focus:border-emerald-500"
-            />
+        {ltv?.composite && (
+          <div className="rounded-lg bg-emerald-950/40 border border-emerald-500/30 p-2.5 px-4 text-right">
+            <span className="text-[10px] text-emerald-400 font-bold tracking-wider uppercase block">🧮 Global Composite Summary</span>
+            <span className="text-sm font-bold text-emerald-200">
+              LTV: {ltv.composite.ltv_ratio_pct}% <span className="text-slate-500 font-normal">|</span> Premium: {ltv.composite.insurance_premium_pct}%
+            </span>
           </div>
-        ))}
+        )}
       </div>
 
-      <button
-        onClick={handleApply}
-        disabled={ltvLoading}
-        className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50
-                   text-white text-sm font-semibold py-2 rounded-lg transition-colors mb-4
-                   flex items-center justify-center gap-2">
-        {ltvLoading
-          ? <><Loader2 size={14} className="animate-spin" /> Calculating...</>
-          : 'Recalculate LTV'}
-      </button>
+      <form onSubmit={handleSubmit} className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4 items-end">
+        <div>
+          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Loan Amount (USD)</label>
+          <input
+            type="number"
+            value={loan}
+            onChange={(e) => setLoan(e.target.value)}
+            placeholder="E.g., 5000"
+            className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Target Yield (t/ha)</label>
+          <input
+            type="number"
+            step="0.1"
+            value={yieldH}
+            onChange={(e) => setYieldH(e.target.value)}
+            className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Market Price ($/t)</label>
+          <input
+            type="number"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={ltvLoading}
+          className="flex h-9 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors disabled:opacity-50"
+        >
+          {ltvLoading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+          Recalculate
+        </button>
+      </form>
 
-      {ltv ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {[
-            { label: 'Area',                val: `${ltv.area_ha} ha`,                              color: '#e2e8f0'                                              },
-            { label: 'Adjusted Yield',      val: `${ltv.adjusted_yield_t_ha} t/ha`,                color: '#e2e8f0'                                              },
-            { label: 'Estimated Crop Value',val: `$${ltv.estimated_crop_value_usd?.toLocaleString()}`, color: '#34d399'                                          },
-            { label: 'NDVI Factor',         val: ltv.ndvi_factor,                                  color: '#e2e8f0'                                              },
-            { label: 'Insurance Premium',   val: `${ltv.insurance_premium_pct}%`,
-              color: ltv.insurance_premium_pct > 6 ? '#f97316' : '#16a34a'                                                                                       },
-            { label: 'LTV Ratio',
-              val:   ltv.ltv_ratio_pct != null ? `${ltv.ltv_ratio_pct}%` : '— (loan required)',
-              color: ltv.ltv_ratio_pct == null  ? '#4b5563'
-                   : ltv.ltv_ratio_pct > 80     ? '#f97316' : '#16a34a',
-              Icon:  ltv.ltv_ratio_pct > 80 ? AlertTriangle : (ltv.ltv_ratio_pct != null ? Shield : null),
-            },
-          ].map(({ label, val, color, Icon: BI }) => (
-            <div key={label} className="bg-slate-800 rounded-xl p-3 text-center">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                {BI && <BI size={11} style={{ color }} />}
-                <p className="text-xs text-slate-500">{label}</p>
-              </div>
-              <p className="font-bold text-base" style={{ color }}>{val}</p>
-            </div>
-          ))}
+      {/* Grid passed to sm:grid-cols-6 to host the 6 metrics cards */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-6">
+        <div className="rounded-xl border border-slate-900 bg-slate-900/50 p-4">
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block mb-1">
+            Farm Area
+          </span>
+          <p className="text-xl font-bold text-slate-200">
+            {areaHa != null ? `${areaHa.toFixed(2)} ha` : "—"}
+          </p>
         </div>
-      ) : (
-        <div className="flex items-start gap-3 bg-yellow-950/30 border border-yellow-700/40
-                        rounded-xl px-4 py-3">
-          <AlertTriangle size={15} className="text-yellow-500 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-yellow-400 text-sm font-semibold">No GPS polygon points</p>
-            <p className="text-yellow-600 text-xs mt-0.5">
-              Add polygon points in the map editor to enable automatic area calculation and LTV analysis.
-            </p>
-          </div>
+
+        <div className="rounded-xl border border-slate-900 bg-slate-900/50 p-4">
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block mb-1">
+            Prod. Factor ({activeIndex.toUpperCase()})
+          </span>
+          <p className="text-xl font-bold text-slate-200">{factorValue?.toFixed(4) || "—"}</p>
         </div>
-      )}
+
+        <div className="rounded-xl border border-slate-900 bg-slate-900/50 p-4">
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block mb-1">
+            Adjusted Yield
+          </span>
+          <p className="text-xl font-bold text-emerald-400">{adjYield?.toFixed(2) || "—"} t/ha</p>
+        </div>
+
+        <div className="rounded-xl border border-slate-900 bg-slate-900/50 p-4">
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block mb-1">
+            Est. Crop Value
+          </span>
+          <p className="text-xl font-bold text-amber-500">${cropValue?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || "—"}</p>
+        </div>
+
+        <div className="rounded-xl border border-slate-900 bg-slate-900/50 p-4" style={{ borderColor: `${idxColor}33` }}>
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block mb-1">
+            Loan-to-Value Ratio
+          </span>
+          <p className="text-xl font-bold" style={{ color: idxColor }}>{ltvRatio != null ? `${ltvRatio}%` : "—"}</p>
+        </div>
+
+        <div className="rounded-xl border border-slate-900 bg-slate-900/50 p-4">
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block mb-1">
+            Insurance Premium
+          </span>
+          <p className="text-xl font-bold text-cyan-400">{premium?.toFixed(2) || "—"} %</p>
+        </div>
+      </div>
     </div>
   );
 };
-
 // ─────────────────────────────────────────────────────────────
 // MAIN DASHBOARD
 // ─────────────────────────────────────────────────────────────
 export default function SentinelDashboard({ entityType = 'farm' }) {
-  const params   = useParams();
+  const params = useParams();
   const location = useLocation();
 
-  const rawId    = params.farmId || params.forestId
-                 || location.state?.farmId || location.state?.forestId || null;
+  const rawId = params.farmId || params.forestId
+    || location.state?.farmId || location.state?.forestId || null;
   const entityId = (rawId && rawId !== 'undefined' && rawId !== 'null')
-                 ? String(rawId).trim() : null;
-  const type     = entityType || (params.forestId ? 'forest' : 'farm');
+    ? String(rawId).trim() : null;
+  const type = entityType || (params.forestId ? 'forest' : 'farm');
 
   useEffect(() => {
     console.log('[Sentinel] entityId:', entityId, 'type:', type);
   }, []);
 
-  // Main data state
-  const [data,      setData]      = useState(null);
-  const [loading,   setLoading]   = useState(true);   // full-page spinner (initial load only)
-  const [error,     setError]     = useState(null);
-  const [active,    setActive]    = useState('ndvi');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [active, setActive] = useState('ndvi'); // serves as activeIndex
   const [exporting, setExporting] = useState(false);
 
-  // LTV has its own loading state so it never triggers the full-page spinner.
-  // Using a ref for ltvParams avoids creating a new fetchData reference on every
-  // LTV update, which was the root cause of the infinite re-render loop.
   const [ltvLoading, setLtvLoading] = useState(false);
   const ltvParamsRef = useRef({});
 
-  // ── fetchData ───────────────────────────────────────────────
-  // Does NOT depend on ltvParams (uses the ref instead), so its reference
-  // is stable and the useEffect below fires only once on mount.
   const fetchData = useCallback(async (extraParams = {}) => {
     if (!entityId) { setError('No entity ID'); setLoading(false); return; }
     setLoading(true); setError(null);
     try {
-      const url  = type === 'forest'
+      const url = type === 'forest'
         ? `/api/sentinel/forest/${entityId}/sat-index`
         : `/api/sentinel/farm/${entityId}/sat-index`;
       const resp = await axiosInstance.get(url, {
@@ -391,13 +420,10 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
     } finally {
       setLoading(false);
     }
-  }, [entityId, type]); // stable — no ltvParams dependency
+  }, [entityId, type]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ── handleLTVUpdate ─────────────────────────────────────────
-  // Uses its own ltvLoading state — never shows the full-page Spinner,
-  // so LTVPanel stays mounted and the debounce loop is broken.
   const handleLTVUpdate = useCallback((p) => {
     ltvParamsRef.current = p;
     const url = type === 'forest'
@@ -405,12 +431,11 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
       : `/api/sentinel/farm/${entityId}/sat-index`;
     setLtvLoading(true);
     axiosInstance.get(url, { params: p })
-      .then(r  => setData(r.data))
+      .then(r => setData(r.data))
       .catch(e => setError(e.response?.data?.error || 'LTV calculation failed'))
       .finally(() => setLtvLoading(false));
   }, [entityId, type]);
 
-  // ── PDF export ──────────────────────────────────────────────
   const handleExportPdf = async () => {
     setExporting(true);
     try {
@@ -419,7 +444,7 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
         { params: ltvParamsRef.current, responseType: 'blob' },
       );
       const link = document.createElement('a');
-      link.href  = window.URL.createObjectURL(new Blob([resp.data]));
+      link.href = window.URL.createObjectURL(new Blob([resp.data]));
       link.setAttribute('download', `sat_index_${entityId}.pdf`);
       document.body.appendChild(link); link.click(); link.remove();
     } catch {
@@ -429,7 +454,6 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
     }
   };
 
-  // ── Render guards ───────────────────────────────────────────
   if (loading) return <Spinner />;
 
   if (error || !data) return (
@@ -446,19 +470,16 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
     </div>
   );
 
-  // ── Data ────────────────────────────────────────────────────
-  const history  = data.history  || [];
+  const history = data.history || [];
   const forecast = data.forecast || {};
-  const groups   = [
-    { title: 'Vegetation',      Icon: Leaf,     keys: ['ndvi', 'evi', 'savi'] },
+  const groups = [
+    { title: 'Vegetation', Icon: Leaf, keys: ['ndvi', 'evi', 'savi'] },
     { title: 'Water & Drought', Icon: Droplets, keys: ['ndmi', 'ndwi', 'nmdi'] },
-    { title: 'Fire & Soil',     Icon: Flame,    keys: ['nbr',  'bsi']          },
+    { title: 'Fire & Soil', Icon: Flame, keys: ['nbr', 'bsi'] },
   ];
 
-  // ── Render ──────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-
       {/* ── Sticky header ── */}
       <div className="sticky top-0 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
@@ -516,8 +537,6 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
 
       {/* ── Page body ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-
-        {/* Out-of-bounds alert — only visible when Sentinel returned values outside [-1,1] */}
         <OutOfBoundsAlert items={data.out_of_bounds} />
 
         {/* ── Index cards grouped by category ── */}
@@ -578,11 +597,11 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
                 <tr className="text-left text-xs uppercase tracking-wide text-slate-500 border-b border-slate-800">
                   <th className="px-5 py-3">Quarter</th>
                   {Object.entries(META).map(([idx, m]) => (
-                    <th key={idx} className="px-4 py-3 text-center">
+                    <td key={idx} className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <m.Icon size={11} style={{ color: m.color }} /> {m.label}
                       </div>
-                    </th>
+                    </td>
                   ))}
                 </tr>
               </thead>
@@ -633,11 +652,11 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
                 <tr className="text-left uppercase tracking-wide text-slate-500 border-b border-slate-800">
                   <th className="px-5 py-2">Date</th>
                   {Object.entries(META).map(([idx, m]) => (
-                    <th key={idx} className="px-4 py-2 text-center">
+                    <td key={idx} className="px-4 py-2 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <m.Icon size={10} style={{ color: m.color }} /> {m.label}
                       </div>
-                    </th>
+                    </td>
                   ))}
                 </tr>
               </thead>
@@ -654,7 +673,6 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
                               <span className="font-semibold" style={{ color: d.tier?.color }}>
                                 {d.value.toFixed(4)}
                               </span>
-                              {/* Show raw value in orange if it was clamped */}
                               {d.raw != null && d.raw !== d.value && (
                                 <span className="text-orange-500 font-mono" style={{ fontSize: '9px' }}>
                                   raw {d.raw.toFixed(4)}
@@ -680,6 +698,7 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
             ltv={data.ltv}
             onUpdate={handleLTVUpdate}
             ltvLoading={ltvLoading}
+            activeIndex={active}
           />
         )}
 
