@@ -5,8 +5,9 @@ import parrot from "../img/parrot.jpg";
 import {
   FaGlobe, FaCloudSunRain, FaLeaf, FaTree, FaTractor, FaQrcode,
   FaChartLine, FaEnvelope, FaSatelliteDish, FaBars, FaTimes,
+  FaShieldAlt, FaLink, FaMapMarkedAlt, FaBolt,
 } from "react-icons/fa";
-
+import { FaSatellite, FaFileAlt, FaLock } from "react-icons/fa";
 import {
   colors, fonts, radius, shadows,
   btnPrimary, btnOutline, featCard,
@@ -463,7 +464,7 @@ const Particles = () => (
         style={{
           left: `${Math.random() * 100}%`,
           bottom: `${Math.random() * 30}%`,
-          "--dur":   `${6 + Math.random() * 10}s`,
+          "--dur": `${6 + Math.random() * 10}s`,
           "--delay": `${Math.random() * 8}s`,
         }}
       />
@@ -498,9 +499,9 @@ const OrbitVisual = () => (
     </div>
 
     {[
-      { label: "Forest", x: "85%", y: "8%"  },
-      { label: "Farm",   x: "5%",  y: "45%" },
-      { label: "EUDR",   x: "78%", y: "82%" },
+      { label: "Forest", x: "85%", y: "8%" },
+      { label: "Farm", x: "5%", y: "45%" },
+      { label: "EUDR", x: "78%", y: "82%" },
     ].map(({ label, x, y }) => (
       <div key={label} style={{ position: "absolute", left: x, top: y, ...monoLabel("rgba(34,197,94,0.6)"), fontSize: "9px" }}>
         {label}
@@ -512,32 +513,36 @@ const OrbitVisual = () => (
 /* ─── LANDING PAGE ───────────────────────────────────────────────────────────── */
 const LandingPage = () => {
   const [splashDone, setSplashDone] = useState(false);
-  const [menuOpen,   setMenuOpen]   = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef });
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
 
   const features = [
-    { Icon: FaTree,         label: "Forest",  title: "Forest Management",    color: colors.green,      bg: "rgba(34,197,94,0.1)",   desc: "Real-time data insights for biodiversity and forestry conservation, anti-deforestation, afforestation & reforestation with satellite precision." },
-    { Icon: FaQrcode,       label: "Trace",   title: "Digital Trace ID",     color: colors.blue,       bg: colors.blueDim,          desc: "Track produce and inventory, trace supply chains from farm to fork by generating secure digital certificates & stamps." },
-    { Icon: FaTractor,      label: "Farm",    title: "Farm Management",      color: colors.amber,      bg: colors.amberDim,         desc: "Manage and monitor farm operations with actionable geospatial data insights and AI-driven crop performance analytics." },
-    { Icon: FaLeaf,         label: "EUDR",    title: "EUDR Compliance",      color: colors.purple,     bg: colors.purpleDim,        desc: "Leverage advanced geospatial analytics and machine learning for environmental risk assessments and EUDR compliance verification." },
-    { Icon: FaCloudSunRain, label: "Climate", title: "Climate Intelligence", color: colors.sky,        bg: colors.skyDim,           desc: "Gain insights into how changing weather and climate patterns affect your business through area-based risk assessments." },
-    { Icon: FaChartLine,    label: "Carbon",  title: "Carbon Offset",        color: colors.greenLight, bg: "rgba(74,222,128,0.1)",  desc: "Contribute to climate sustainability and the Net Zero agenda by managing and tracking carbon and GHG emissions precisely." },
+    { Icon: FaTree, label: "Forest", title: "Forest Management", color: colors.green, bg: "rgba(34,197,94,0.1)", desc: "Real-time data insights for biodiversity and forestry conservation, anti-deforestation, afforestation & reforestation with satellite precision." },
+    { Icon: FaQrcode, label: "Trace", title: "Digital Trace ID", color: colors.blue, bg: colors.blueDim, desc: "Track produce and inventory, trace supply chains from farm to fork by generating secure digital certificates & stamps." },
+    { Icon: FaTractor, label: "Farm", title: "Farm Management", color: colors.amber, bg: colors.amberDim, desc: "Manage and monitor farm operations with actionable geospatial data insights and AI-driven crop performance analytics." },
+    { Icon: FaLeaf, label: "EUDR", title: "EUDR Compliance", color: colors.purple, bg: colors.purpleDim, desc: "Leverage advanced geospatial analytics and machine learning for environmental risk assessments and EUDR compliance verification." },
+    { Icon: FaCloudSunRain, label: "Climate", title: "Climate Intelligence", color: colors.sky, bg: colors.skyDim, desc: "Gain insights into how changing weather and climate patterns affect your business through area-based risk assessments." },
+    { Icon: FaChartLine, label: "Carbon", title: "Carbon Offset", color: colors.greenLight, bg: "rgba(74,222,128,0.1)", desc: "Contribute to climate sustainability and the Net Zero agenda by managing and tracking carbon and GHG emissions precisely." },
   ];
 
   const stats = [
     { val: "50M+", label: "Hectares Monitored" },
-    { val: "120+", label: "Countries Covered"  },
-    { val: "99.2%",label: "EUDR Accuracy"      },
-    { val: "< 3s", label: "Satellite Refresh"  },
+    { val: "120+", label: "Countries Covered" },
+    { val: "99.2%", label: "EUDR Accuracy" },
+    { val: "< 3s", label: "Satellite Refresh" },
   ];
 
-  const ticker = [
-    "🌍 Forest Risk Assessment", "📡 Live Satellite Feed",
-    "🌿 Carbon Sequestration",   "🔗 Supply Chain Traceability",
-    "📊 EUDR Compliance",        "🌱 Biodiversity Monitoring",
-    "🗺️ Geospatial Intelligence","⚡ Real-Time Analytics",
+  const tickerItems = [
+    { icon: FaTree, label: "Forest Risk Assessment" },
+    { icon: FaSatelliteDish, label: "Live Satellite Feed" },
+    { icon: FaLeaf, label: "Carbon Sequestration" },
+    { icon: FaLink, label: "Supply Chain Traceability" },
+    { icon: FaShieldAlt, label: "EUDR Compliance" },
+    { icon: FaCloudSunRain, label: "Biodiversity Monitoring" },
+    { icon: FaMapMarkedAlt, label: "Geospatial Intelligence" },
+    { icon: FaBolt, label: "Real-Time Analytics" },
   ];
 
   return (
@@ -604,9 +609,9 @@ const LandingPage = () => {
         <nav className="desktop-nav">
           {[
             { label: "Features", to: "features", scroll: true },
-            { label: "About",    href: "/sectionfutur" },
-            { label: "Tools",    href: "/EUDRSubmissionForGuest" },
-            { label: "Contact",  to: "contact", scroll: true },
+            { label: "About", href: "/sectionfutur" },
+            { label: "Tools", href: "/EUDRSubmissionForGuest" },
+            { label: "Contact", to: "contact", scroll: true },
           ].map((item) =>
             item.scroll ? (
               <ScrollLink key={item.label} to={item.to} smooth duration={500} offset={-80} className="nav-link">
@@ -700,9 +705,10 @@ const LandingPage = () => {
       <div style={{ borderTop: `1px solid ${colors.border}`, borderBottom: `1px solid ${colors.border}`, padding: "14px 0", background: "rgba(34,197,94,0.03)" }}>
         <div className="ticker-wrap">
           <div className="ticker-track">
-            {[...ticker, ...ticker].map((item, i) => (
-              <span key={i} style={{ fontFamily: fonts.mono, fontSize: 11, color: "rgba(34,197,94,0.55)", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>
-                {item}
+            {[...tickerItems, ...tickerItems].map(({ icon: Icon, label }, i) => (
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: fonts.mono, fontSize: 11, color: "rgba(34,197,94,0.55)", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>
+                <Icon style={{ fontSize: 11 }} />
+                {label}
               </span>
             ))}
           </div>
@@ -743,7 +749,7 @@ const LandingPage = () => {
               onMouseMove={(e) => {
                 const r = e.currentTarget.getBoundingClientRect();
                 e.currentTarget.style.setProperty("--mx", `${((e.clientX - r.left) / r.width * 100).toFixed(1)}%`);
-                e.currentTarget.style.setProperty("--my", `${((e.clientY - r.top)  / r.height * 100).toFixed(1)}%`);
+                e.currentTarget.style.setProperty("--my", `${((e.clientY - r.top) / r.height * 100).toFixed(1)}%`);
               }}
             >
               <span style={{ position: "absolute", top: 24, right: 24, fontFamily: fonts.mono, fontSize: 11, color: "rgba(255,255,255,0.15)", letterSpacing: "0.1em" }}>
@@ -779,18 +785,20 @@ const LandingPage = () => {
         </div>
 
         <div className="eudr-grid">
-          {[
-            { icon: "🛰️", label: "Satellite Verified" },
-            { icon: "⚡", label: "Instant Results"    },
-            { icon: "📄", label: "Auto-Generated Docs"},
-            { icon: "🔒", label: "EU Certified"       },
-          ].map(({ icon, label }) => (
-            <div key={label} style={{ padding: 16, background: "rgba(255,255,255,0.03)", border: `1px solid ${colors.border}`, borderRadius: radius.md, textAlign: "center" }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>{icon}</div>
-              <div style={mutedText(12)}>{label}</div>
-            </div>
-          ))}
-        </div>
+  {[
+    { icon: FaSatellite, label: "Satellite Verified", color: colors.green  },
+    { icon: FaBolt,      label: "Instant Results",    color: colors.amber  },
+    { icon: FaFileAlt,   label: "Auto-Generated Docs",color: colors.sky    },
+    { icon: FaLock,      label: "EU Certified",       color: colors.purple },
+  ].map(({ icon: Icon, label, color }) => (
+    <div key={label} style={{ padding: 16, background: "rgba(255,255,255,0.03)", border: `1px solid ${colors.border}`, borderRadius: radius.md, textAlign: "center" }}>
+      <div style={{ fontSize: 22, marginBottom: 8, color, display: "flex", justifyContent: "center" }}>
+        <Icon />
+      </div>
+      <div style={mutedText(12)}>{label}</div>
+    </div>
+  ))}
+</div>
       </section>
 
       {/* CONTACT */}
@@ -805,9 +813,9 @@ const LandingPage = () => {
             Explore and transform the way you do business with next-generation satellite intelligence.
           </p>
           <div className="contact-chips">
-            <a href="/contactus"             className="contact-chip"><FaEnvelope style={{ color: colors.green }} /><span>Email Us</span></a>
-            <a href="/signup"                className="contact-chip"><span>✦</span><span>Create Account</span></a>
-            <a href="/EUDRSubmissionForGuest" className="contact-chip"><FaGlobe   style={{ color: colors.green }} /><span>Free Tools</span></a>
+            <a href="/contactus" className="contact-chip"><FaEnvelope style={{ color: colors.green }} /><span>Email Us</span></a>
+            <a href="/signup" className="contact-chip"><span>✦</span><span>Create Account</span></a>
+            <a href="/EUDRSubmissionForGuest" className="contact-chip"><FaGlobe style={{ color: colors.green }} /><span>Free Tools</span></a>
           </div>
         </motion.div>
       </section>
@@ -824,7 +832,7 @@ const LandingPage = () => {
             href="mailto:nkusu@agriyields.com"
             style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: fonts.body, fontSize: 12, color: colors.muted, textDecoration: "none", transition: "color 0.2s" }}
             onMouseOver={e => e.currentTarget.style.color = colors.green}
-            onMouseOut={e  => e.currentTarget.style.color = colors.muted}
+            onMouseOut={e => e.currentTarget.style.color = colors.muted}
           >
             <FaEnvelope style={{ fontSize: 11 }} /> nkusu@agriyields.com
           </a>
