@@ -5,16 +5,74 @@ import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
   LineElement, BarElement, Filler, Tooltip, Legend,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
+import { Line, Scatter } from "react-chartjs-2";
 import {
   Leaf, TrendingUp, Wheat, Droplets, Waves, Sun,
   Flame, Mountain, Satellite, RefreshCw, Zap,
   Download, Activity, BarChart2, DollarSign,
-  AlertTriangle, Shield, Database, Loader2,
+  AlertTriangle, Shield, Database, Loader2, Sprout,
 } from "lucide-react";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement,
   BarElement, Filler, Tooltip, Legend);
+
+// ─────────────────────────────────────────────────────────────
+// YEAR-OVER-YEAR PALETTE (for the 5-year NDVI seasonal overlay)
+// ─────────────────────────────────────────────────────────────
+const YEAR_COLORS = {
+  2020: '#64748b', // slate
+  2021: '#ef4444', // red
+  2022: '#f97316', // orange
+  2023: '#0ea5e9', // sky
+  2024: '#22c55e', // green
+  2025: '#a855f7', // purple (in case partial year present)
+};
+
+// ─────────────────────────────────────────────────────────────
+// SIMPLE LINEAR REGRESSION (least squares) with optional
+// calibration points that are added with extra weight so the
+// line is pulled toward locally-observed ground truth.
+// ─────────────────────────────────────────────────────────────
+function linearRegression(points) {
+  // points: [{x, y, weight}]
+  let sumW = 0, sumWX = 0, sumWY = 0, sumWXY = 0, sumWXX = 0;
+  for (const p of points) {
+    const w = p.weight ?? 1;
+    sumW += w;
+    sumWX += w * p.x;
+    sumWY += w * p.y;
+    sumWXY += w * p.x * p.y;
+    sumWXX += w * p.x * p.x;
+  }
+  const denom = (sumW * sumWXX) - (sumWX * sumWX);
+  if (Math.abs(denom) < 1e-9) {
+    // fallback: flat line at mean y
+    const meanY = sumW > 0 ? sumWY / sumW : 0;
+    return { slope: 0, intercept: meanY };
+  }
+  const slope = ((sumW * sumWXY) - (sumWX * sumWY)) / denom;
+  const intercept = (sumWY - slope * sumWX) / sumW;
+  return { slope, intercept };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Build {year -> {Q1..Q4: ndviValue}} from history rows
+// ─────────────────────────────────────────────────────────────
+function buildYearlyNdvi(history) {
+  const byYear = {};
+  for (const row of history) {
+    const d = row.date;
+    if (!d) continue;
+    const year = parseInt(d.substring(0, 4), 10);
+    const month = parseInt(d.substring(5, 7), 10);
+    const q = Math.ceil(month / 3);
+    const val = row.ndvi?.value ?? row.ndvi ?? null;
+    if (val == null) continue;
+    if (!byYear[year]) byYear[year] = {};
+    byYear[year][`Q${q}`] = val;
+  }
+  return byYear;
+}
 
 // ─────────────────────────────────────────────────────────────
 // OUT-OF-BOUNDS ALERT
@@ -228,6 +286,215 @@ const CHART_OPTIONS = {
 };
 
 // ─────────────────────────────────────────────────────────────
+// CHART: NDVI seasonal pattern, one line per year (Q1-Q4)
+// ─────────────────────────────────────────────────────────────
+function buildYearlySeasonalChart(history) {
+  const byYear = buildYearlyNdvi(history);
+  const years = Object.keys(byYear).map(Number).sort((a, b) => a - b);
+  const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+
+  const datasets = years.map(year => ({
+    label: String(year),
+    data: quarters.map(q => byYear[year][q] ?? null),
+    borderColor: YEAR_COLORS[year] || '#94a3b8',
+    backgroundColor: 'transparent',
+    borderWidth: 2.5,
+    tension: 0.35,
+    spanGaps: true,
+    pointRadius: 3,
+    pointBackgroundColor: YEAR_COLORS[year] || '#94a3b8',
+  }));
+
+  return { labels: quarters, datasets };
+}
+
+const SEASONAL_CHART_OPTIONS = {
+  responsive: true, maintainAspectRatio: false,
+  interaction: { mode: 'index', intersect: false },
+  plugins: {
+    legend: {
+      display: true, position: 'top', align: 'end',
+      labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } },
+    },
+    tooltip: {
+      backgroundColor: '#0f172a', borderColor: '#334155', borderWidth: 1,
+      titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+      callbacks: {
+        label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(4) ?? 'N/A'}`,
+      },
+    },
+  },
+  scales: {
+    x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: '#1e293b' } },
+    y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' }, min: 0, max: 1 },
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
+// CHART: NDVI (X) vs Yield (Y) scatter + regression line
+//
+// Each historical NDVI point is converted to a "base yield"
+// estimate using the LTV production-factor formula
+// (factor scaled by yield_t_per_ha). The two manually entered
+// historical yields (HY1/HY2) are treated as ground-truth
+// calibration points — they get a much higher regression weight
+// so the fitted line is pulled toward locally observed reality.
+// ─────────────────────────────────────────────────────────────
+function buildNdviYieldChart(history, yieldTPerHa, hy1, hy2, currentNdvi) {
+  // NDVI -> base-factor approximation mirroring _compute_index_factor
+  // for ndvi: optimal=0.70, range_lo=0, invert=false
+  const ndviToFactor = (v) => {
+    const raw = v / 0.70;
+    return Math.max(0.30, Math.min(1.0, raw));
+  };
+
+  // Historical scatter points: x = NDVI, y = base estimated yield (t/ha)
+  const histPoints = [];
+  for (const row of history) {
+    const val = row.ndvi?.value ?? row.ndvi ?? null;
+    if (val == null) continue;
+    const factor = ndviToFactor(val);
+    histPoints.push({ x: val, y: +(yieldTPerHa * factor).toFixed(3) });
+  }
+
+  // Regression points start as the base estimates (weight 1)
+  const regressionInputs = histPoints.map(p => ({ ...p, weight: 1 }));
+
+  // Calibration points (HY1 / HY2) — yearly mean NDVI vs real yield,
+  // weighted heavily so the line snaps toward ground truth.
+  const byYear = buildYearlyNdvi(history);
+  const years = Object.keys(byYear).map(Number).sort((a, b) => a - b);
+  const calibrationPoints = [];
+
+  const meanNdviForYear = (year) => {
+    const q = byYear[year];
+    if (!q) return null;
+    const vals = Object.values(q).filter(v => v != null);
+    if (!vals.length) return null;
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  };
+
+  // HY1 -> second-to-last year with data, HY2 -> last year with data
+  const calibYears = years.slice(-2);
+  const calibValues = [hy1, hy2];
+  calibYears.forEach((year, i) => {
+    const ndviMean = meanNdviForYear(year);
+    const y = calibValues[i];
+    if (ndviMean != null && y != null && !isNaN(y) && y > 0) {
+      const pt = { x: +ndviMean.toFixed(4), y: parseFloat(y), weight: 25, year };
+      calibrationPoints.push(pt);
+      regressionInputs.push(pt);
+    }
+  });
+
+  const { slope, intercept } = linearRegression(
+    regressionInputs.length ? regressionInputs : [{ x: 0.5, y: yieldTPerHa, weight: 1 }]
+  );
+
+  // Regression line across NDVI range
+  const xs = histPoints.map(p => p.x);
+  const xMin = xs.length ? Math.min(...xs, ...calibrationPoints.map(p => p.x)) : 0;
+  const xMax = xs.length ? Math.max(...xs, ...calibrationPoints.map(p => p.x)) : 1;
+  const lo = Math.max(0, xMin - 0.05);
+  const hi = Math.min(1, xMax + 0.05);
+  const lineData = [
+    { x: lo, y: Math.max(0, slope * lo + intercept) },
+    { x: hi, y: Math.max(0, slope * hi + intercept) },
+  ];
+
+  // Prediction for the current NDVI value
+  let prediction = null;
+  if (currentNdvi != null) {
+    prediction = Math.max(0, slope * currentNdvi + intercept);
+  }
+
+  const datasets = [
+    {
+      label: 'Historical NDVI → Est. Yield',
+      data: histPoints,
+      type: 'scatter',
+      backgroundColor: 'rgba(34,197,94,0.55)',
+      borderColor: '#22c55e',
+      pointRadius: 4,
+      showLine: false,
+    },
+    {
+      label: 'Regression (calibrated)',
+      data: lineData,
+      type: 'line',
+      borderColor: '#38bdf8',
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderDash: [4, 4],
+      pointRadius: 0,
+      tension: 0,
+      fill: false,
+    },
+  ];
+
+  if (calibrationPoints.length) {
+    datasets.push({
+      label: 'Historical Yield (analyst input)',
+      data: calibrationPoints,
+      type: 'scatter',
+      backgroundColor: '#eab308',
+      borderColor: '#fde047',
+      pointRadius: 7,
+      pointStyle: 'star',
+      showLine: false,
+    });
+  }
+
+  if (prediction != null && currentNdvi != null) {
+    datasets.push({
+      label: 'Predicted Yield (current NDVI)',
+      data: [{ x: currentNdvi, y: prediction }],
+      type: 'scatter',
+      backgroundColor: '#f472b6',
+      borderColor: '#fbcfe8',
+      pointRadius: 8,
+      pointStyle: 'triangle',
+      showLine: false,
+    });
+  }
+
+  return {
+    chartData: { datasets },
+    slope, intercept, prediction,
+    calibrationPoints,
+  };
+}
+
+const NDVI_YIELD_CHART_OPTIONS = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: true, position: 'top', align: 'end',
+      labels: { color: '#94a3b8', boxWidth: 10, font: { size: 10 } },
+    },
+    tooltip: {
+      backgroundColor: '#0f172a', borderColor: '#334155', borderWidth: 1,
+      titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+      callbacks: {
+        label: ctx => ` ${ctx.dataset.label}: NDVI ${ctx.parsed.x?.toFixed(3)} → ${ctx.parsed.y?.toFixed(2)} t/ha`,
+      },
+    },
+  },
+  scales: {
+    x: {
+      type: 'linear', min: 0, max: 1,
+      title: { display: true, text: 'NDVI', color: '#64748b', font: { size: 11 } },
+      ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' },
+    },
+    y: {
+      title: { display: true, text: 'Yield (t/ha)', color: '#64748b', font: { size: 11 } },
+      ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' },
+      beginAtZero: true,
+    },
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
 // FULLY DYNAMIC LTVPANEL COMPONENT (MULTI-INDEX)
 // ─────────────────────────────────────────────────────────────
 const LTVPanel = ({ ltv, onUpdate, ltvLoading, activeIndex = "ndvi" }) => {
@@ -378,6 +645,142 @@ const LTVPanel = ({ ltv, onUpdate, ltvLoading, activeIndex = "ndvi" }) => {
     </div>
   );
 };
+
+// ─────────────────────────────────────────────────────────────
+// YIELD ANALYSIS PANEL
+//   - 5-year seasonal NDVI overlay (one line per year, Q1-Q4)
+//   - NDVI vs Yield scatter + calibrated linear regression
+//   - 2 manual "Historical Yield" inputs (shown in yellow) used
+//     as ground-truth calibration points for the regression
+// ─────────────────────────────────────────────────────────────
+const YieldAnalysisPanel = ({ history, ltv, currentNdvi }) => {
+  const [hy1, setHy1] = useState("");
+  const [hy2, setHy2] = useState("");
+
+  const yieldTPerHa = ltv?.yield_t_per_ha ?? 1.5;
+
+  const seasonalChart = buildYearlySeasonalChart(history);
+
+  const hy1Num = hy1 === "" ? null : parseFloat(hy1);
+  const hy2Num = hy2 === "" ? null : parseFloat(hy2);
+
+  const { chartData, slope, intercept, prediction, calibrationPoints } =
+    buildNdviYieldChart(history, yieldTPerHa, hy1Num, hy2Num, currentNdvi);
+
+  const byYear = buildYearlyNdvi(history);
+  const years = Object.keys(byYear).map(Number).sort((a, b) => a - b);
+  const calibYears = years.slice(-2);
+
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 shadow-xl space-y-6">
+      <div className="border-b border-slate-800 pb-4">
+        <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+          <Sprout className="text-emerald-500" size={20} />
+          Yield Analysis &amp; ML Calibration
+        </h3>
+        <p className="text-xs text-slate-400 mt-1">
+          Compare seasonal NDVI patterns year over year, and calibrate a yield-prediction
+          model with two real historical yields.
+        </p>
+      </div>
+
+      {/* ── 5-year seasonal NDVI overlay ───────────────────────── */}
+      <div>
+        <h4 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
+          <Leaf size={14} className="text-emerald-400" />
+          NDVI Seasonal Pattern — Year over Year
+        </h4>
+        <p className="text-xs text-slate-500 mb-3">
+          Each line is one year (Q1 → Q4). Use this to spot anomalous seasons
+          (e.g. a drop in a given quarter) before they affect yield.
+        </p>
+        <div className="h-64">
+          <Line data={seasonalChart} options={SEASONAL_CHART_OPTIONS} />
+        </div>
+      </div>
+
+      {/* ── Historical yield inputs ────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {[0, 1].map(i => {
+          const val = i === 0 ? hy1 : hy2;
+          const setVal = i === 0 ? setHy1 : setHy2;
+          const year = calibYears[i];
+          return (
+            <div key={i} className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4">
+              <label className="block text-xs font-semibold text-yellow-400 uppercase tracking-wider mb-2">
+                Historical Yield {i + 1} (t/ha){year ? ` — ${year}` : ''}
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={val}
+                onChange={(e) => setVal(e.target.value)}
+                placeholder="E.g., 1.8"
+                className="w-full rounded-lg border border-yellow-500/30 bg-slate-900 px-3 py-2 text-sm
+                           text-yellow-300 font-bold focus:border-yellow-400 focus:outline-none"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">
+                Real yield reported for {year ? `year ${year}` : 'a recent year'} — used to
+                calibrate the model to local conditions.
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── NDVI vs Yield scatter + regression ─────────────────── */}
+      <div>
+        <h4 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
+          <TrendingUp size={14} className="text-sky-400" />
+          NDVI vs Yield — Regression Model
+        </h4>
+        <p className="text-xs text-slate-500 mb-3">
+          Green dots: estimated yield from each historical NDVI reading using the LTV
+          production factor. Yellow stars: your manually entered historical yields
+          (used to calibrate the regression). Dashed line: calibrated regression.
+          Pink triangle: predicted yield at the current NDVI.
+        </p>
+        <div className="h-72">
+          <Scatter data={chartData} options={NDVI_YIELD_CHART_OPTIONS} />
+        </div>
+      </div>
+
+      {/* ── Prediction summary ─────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="rounded-xl border border-slate-900 bg-slate-900/50 p-4">
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block mb-1">
+            Current NDVI
+          </span>
+          <p className="text-xl font-bold text-emerald-400">
+            {currentNdvi != null ? currentNdvi.toFixed(4) : '—'}
+          </p>
+        </div>
+        <div className="rounded-xl border border-pink-500/30 bg-pink-500/5 p-4">
+          <span className="text-[10px] text-pink-400 font-medium uppercase tracking-wider block mb-1">
+            Predicted Yield
+          </span>
+          <p className="text-xl font-bold text-pink-300">
+            {prediction != null ? `${prediction.toFixed(2)} t/ha` : '—'}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-900 bg-slate-900/50 p-4">
+          <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block mb-1">
+            Regression
+          </span>
+          <p className="text-sm font-mono text-slate-300">
+            y = {slope.toFixed(3)}·x + {intercept.toFixed(3)}
+          </p>
+          <p className="text-[10px] text-slate-500 mt-1">
+            {calibrationPoints.length
+              ? `Calibrated with ${calibrationPoints.length} real yield point(s).`
+              : 'Enter historical yields above to calibrate.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─────────────────────────────────────────────────────────────
 // MAIN DASHBOARD
 // ─────────────────────────────────────────────────────────────
@@ -701,6 +1104,16 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
             activeIndex={active}
           />
         )}
+
+        {/* ── Yield analysis (5-yr NDVI seasonal + regression) ── */}
+        {type === 'farm' && (
+          <YieldAnalysisPanel
+            history={history}
+            ltv={data.ltv}
+            currentNdvi={history[history.length - 1]?.ndvi?.value ?? null}
+          />
+        )}
+
 
         <p className="text-center text-xs text-slate-600 pb-4">
           Sentinel-2 L2A · Statistical API · Max cloud cover 30% · Quarterly aggregation ·

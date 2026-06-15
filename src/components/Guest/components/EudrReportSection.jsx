@@ -104,6 +104,8 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
     results["tree cover loss"]?.[0]?.coordinates?.[0] ||
     results["soil carbon"]?.[0]?.coordinates?.[0];
 
+  console.log("ETO", coordinates);
+
   const determineComplianceStatus = (treeCoverLoss, hasForestCover) => {
     const hasTreeCoverLoss = treeCoverLoss > 0;
     console.log(treeCoverLoss, hasForestCover);
