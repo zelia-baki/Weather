@@ -7,12 +7,10 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
   const [noteText, setNoteText] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
 
-  // ─── Utilitaire CSV ───────────────────────────────────────────
   const downloadCSV = (filename, rows) => {
     const csv = rows.map(r => r.map(cell =>
       typeof cell === 'string' && cell.includes(',') ? `"${cell}"` : cell
     ).join(',')).join('\n');
-
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -22,7 +20,6 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
     URL.revokeObjectURL(url);
   };
 
-  // ─── Export CSV ───────────────────────────────────────────────
   const handleExportCSV = () => {
     if (!timeSeries || !farmName) return;
     const safeDate = new Date().toISOString().split('T')[0];
@@ -76,15 +73,13 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
     }
   };
 
-  // ─── Capture du graphique via html2canvas ─────────────────────
   const captureChart = async () => {
     if (!chartRef?.current) return null;
     try {
-      // html2canvas est chargé globalement (déjà installé)
       const html2canvas = window.html2canvas || (await import('html2canvas')).default;
       const canvas = await html2canvas(chartRef.current, {
         backgroundColor: '#ffffff',
-        scale: 2, // haute résolution
+        scale: 2,
         useCORS: true,
         logging: false,
       });
@@ -95,27 +90,10 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
     }
   };
 
-  // ─── Génération du contenu HTML du PDF ───────────────────────
   const buildPDFContent = (chartImageBase64) => {
     const exportDate = new Date().toLocaleDateString('en-GB', {
       day: '2-digit', month: 'long', year: 'numeric'
     });
-
-    const tableRows = (timeSeries || []).slice(0, 100).map(d => {
-      const riskBg = d.wbii > 60 ? '#fde8e8' : d.wbii > 40 ? '#fff3e0' : d.wbii > 20 ? '#fffde7' : '#e8f5e9';
-      const riskColor = d.wbii > 60 ? '#c62828' : d.wbii > 40 ? '#e65100' : d.wbii > 20 ? '#f9a825' : '#2e7d32';
-      return `
-        <tr>
-          <td>${d.date}${d.isForecast ? ' <span style="font-size:10px;color:#1565c0;background:#e3f2fd;padding:1px 5px;border-radius:3px;">forecast</span>' : ''}</td>
-          <td style="text-align:center;background:${riskBg};color:${riskColor};font-weight:600;">${d.wbii}</td>
-          <td style="text-align:center;">${d.tempMin}° / ${d.tempMax}°</td>
-          <td style="text-align:center;">${d.tempAvg}°C</td>
-          <td style="text-align:center;">${d.precipitation} mm</td>
-          <td style="text-align:center;">${d.tempStress}</td>
-          <td style="text-align:center;">${d.waterStress}</td>
-          <td style="text-align:center;color:${riskColor};font-weight:600;">${d.riskLevel}</td>
-        </tr>`;
-    }).join('');
 
     const statsBlock = stats ? `
       <div class="stats-grid">
@@ -125,6 +103,133 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
         <div class="stat-card critical"><div class="stat-label">Critical days</div><div class="stat-value" style="color:#c62828;">${stats.criticalDays}</div></div>
       </div>` : '';
 
+    const chartBlock = chartImageBase64 ? `
+      <h2 class="section-title">WBII Time Series Chart</h2>
+      <div class="chart-container">
+        <img src="${chartImageBase64}" alt="WBII Chart" style="width:100%;border-radius:8px;border:1px solid #e0e0e0;" />
+        <p style="font-size:10px;color:#888;margin-top:6px;text-align:center;">
+          WBII Index · Temperature Stress · Moisture Stress · Precipitation — Last 3 months + 10-day forecast
+        </p>
+      </div>` : `
+      <h2 class="section-title">WBII Time Series Chart</h2>
+      <div style="background:#f5f5f5;border:1px dashed #ccc;border-radius:8px;padding:20px;text-align:center;color:#888;font-size:12px;margin-bottom:20px;">
+        Chart could not be captured. Please ensure the chart is visible on screen before exporting.
+      </div>`;
+
+    // ── Detailed Weather Statistics — design fidèle à la capture d'écran ──
+    const detailedStatsBlock = detailedStats ? `
+      <div class="dws-wrapper">
+        <!-- En-tête section -->
+        <div class="dws-header">
+          <div class="dws-header-icon">&#9927;</div>
+          <div>
+            <div class="dws-header-title">Detailed Weather Statistics</div>
+            <div class="dws-header-sub">Analysis over ${detailedStats.totalDays} days</div>
+          </div>
+        </div>
+
+        <!-- Precipitation Events -->
+        <div class="dws-sub-header">
+          <span class="dws-sub-icon precip-icon">&#128167;</span>
+          <span class="dws-sub-title">Precipitation Events</span>
+        </div>
+        <div class="dws-cards-row">
+          <div class="dws-card" style="background:linear-gradient(135deg,#e8f4fd,#d0eaf8);border:1.5px solid #a8d5f0;">
+            <div class="dws-card-top">
+              <span class="dws-card-icon" style="color:#2196f3;">&#127783;</span>
+              <span class="dws-card-badge" style="background:#bbdefb;color:#1565c0;">&gt; 10mm</span>
+            </div>
+            <div class="dws-card-label">Heavy Rain</div>
+            <div class="dws-card-value">${detailedStats.heavyRainDays} days</div>
+            <div class="dws-card-sub">&#8776; ${detailedStats.heavyRainPerMonth} days/month</div>
+          </div>
+          <div class="dws-card" style="background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1.5px solid #80deea;">
+            <div class="dws-card-top">
+              <span class="dws-card-icon" style="color:#00bcd4;">&#9729;</span>
+              <span class="dws-card-badge" style="background:#b2ebf2;color:#00695c;">5-10mm</span>
+            </div>
+            <div class="dws-card-label">Moderate Rain</div>
+            <div class="dws-card-value">${detailedStats.moderateRainDays} days</div>
+            <div class="dws-card-sub">&#8776; ${detailedStats.moderateRainPerMonth} days/month</div>
+          </div>
+          <div class="dws-card" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb);border:1.5px solid #90caf9;">
+            <div class="dws-card-top">
+              <span class="dws-card-icon" style="color:#42a5f5;">&#128167;</span>
+              <span class="dws-card-badge" style="background:#bbdefb;color:#1565c0;">1-5mm</span>
+            </div>
+            <div class="dws-card-label">Light Rain</div>
+            <div class="dws-card-value">${detailedStats.lightRainDays} days</div>
+            <div class="dws-card-sub">&#8776; ${detailedStats.lightRainPerMonth} days/month</div>
+          </div>
+          <div class="dws-card" style="background:linear-gradient(135deg,#fffde7,#fff9c4);border:1.5px solid #fff176;">
+            <div class="dws-card-top">
+              <span class="dws-card-icon" style="color:#f9a825;">&#9728;</span>
+              <span class="dws-card-badge" style="background:#fff9c4;color:#f57f17;">&lt; 1mm</span>
+            </div>
+            <div class="dws-card-label">Dry Days</div>
+            <div class="dws-card-value">${detailedStats.droughtDays} days</div>
+            <div class="dws-card-sub">&#8776; ${detailedStats.droughtPerMonth} days/month</div>
+          </div>
+        </div>
+        <!-- Precip summary bar -->
+        <div class="dws-summary-bar" style="background:#f0f8ff;border:1px solid #cce5ff;">
+          <span>Total precipitation: <strong style="color:#1565c0;">${detailedStats.totalPrecip}mm</strong></span>
+          <span>Daily average: <strong style="color:#1565c0;">${detailedStats.avgPrecip}mm</strong></span>
+          <span>Maximum recorded: <strong style="color:#1565c0;">${detailedStats.maxPrecip}mm</strong></span>
+        </div>
+
+        <!-- Temperature Events -->
+        <div class="dws-sub-header" style="margin-top:18px;">
+          <span class="dws-sub-icon temp-icon" style="color:#ef5350;">&#127777;</span>
+          <span class="dws-sub-title">Temperature Events</span>
+        </div>
+        <div class="dws-cards-row">
+          <div class="dws-card" style="background:linear-gradient(135deg,#fde8e8,#ffcdd2);border:1.5px solid #ef9a9a;">
+            <div class="dws-card-top">
+              <span class="dws-card-icon" style="color:#e53935;">&#127774;</span>
+              <span class="dws-card-badge" style="background:#ffcdd2;color:#b71c1c;">&gt; 35°C</span>
+            </div>
+            <div class="dws-card-label">Extreme Heat</div>
+            <div class="dws-card-value">${detailedStats.veryHotDays} days</div>
+            <div class="dws-card-sub">&#8776; ${detailedStats.veryHotDaysPerMonth} days/month</div>
+          </div>
+          <div class="dws-card" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:1.5px solid #ffcc80;">
+            <div class="dws-card-top">
+              <span class="dws-card-icon" style="color:#fb8c00;">&#127777;</span>
+              <span class="dws-card-badge" style="background:#ffe0b2;color:#e65100;">&gt; 29°C</span>
+            </div>
+            <div class="dws-card-label">Hot Days</div>
+            <div class="dws-card-value">${detailedStats.hotDays} days</div>
+            <div class="dws-card-sub">&#8776; ${detailedStats.hotDaysPerMonth} days/month</div>
+          </div>
+          <div class="dws-card" style="background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1.5px solid #80deea;">
+            <div class="dws-card-top">
+              <span class="dws-card-icon" style="color:#00acc1;">&#127777;</span>
+              <span class="dws-card-badge" style="background:#b2ebf2;color:#006064;">&lt; 20°C</span>
+            </div>
+            <div class="dws-card-label">Cool Days</div>
+            <div class="dws-card-value">${detailedStats.coldDays} days</div>
+            <div class="dws-card-sub">&#8776; ${detailedStats.coldDaysPerMonth} days/month</div>
+          </div>
+          <div class="dws-card" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb);border:1.5px solid #90caf9;">
+            <div class="dws-card-top">
+              <span class="dws-card-icon" style="color:#1976d2;">&#127777;</span>
+              <span class="dws-card-badge" style="background:#bbdefb;color:#0d47a1;">&lt; 15°C</span>
+            </div>
+            <div class="dws-card-label">Extreme Cold</div>
+            <div class="dws-card-value">${detailedStats.veryColdDays} days</div>
+            <div class="dws-card-sub">&#8776; ${detailedStats.veryColdDaysPerMonth} days/month</div>
+          </div>
+        </div>
+        <!-- Temp summary bar -->
+        <div class="dws-summary-bar" style="background:#fff8f0;border:1px solid #ffe0b2;">
+          <span>Average temperature: <strong style="color:#e65100;">${detailedStats.avgTemp}°C</strong></span>
+          <span>Maximum recorded: <strong style="color:#c62828;">${detailedStats.maxTemp}°C</strong></span>
+          <span>Minimum recorded: <strong style="color:#1565c0;">${detailedStats.minTemp}°C</strong></span>
+        </div>
+      </div>` : '';
+
+    // ── Weather Event Summary ──
     const weatherBlock = detailedStats ? `
       <h2 class="section-title">Weather event summary</h2>
       <div class="two-col">
@@ -160,25 +265,12 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
         </div>
       </div>` : '';
 
+    // ── Notes ──
     const noteBlock = noteText.trim() ? `
       <div class="note-box">
         <div class="note-label">Notes</div>
         <div class="note-content">${noteText.trim().replace(/\n/g, '<br/>')}</div>
       </div>` : '';
-
-    // Bloc graphique : image capturée OU message de fallback
-    const chartBlock = chartImageBase64 ? `
-      <h2 class="section-title">WBII Time Series Chart</h2>
-      <div class="chart-container">
-        <img src="${chartImageBase64}" alt="WBII Chart" style="width:100%;border-radius:8px;border:1px solid #e0e0e0;" />
-        <p style="font-size:10px;color:#888;margin-top:6px;text-align:center;">
-          WBII Index · Temperature Stress · Moisture Stress · Precipitation — Last 3 months + 10-day forecast
-        </p>
-      </div>` : `
-      <h2 class="section-title">WBII Time Series Chart</h2>
-      <div style="background:#f5f5f5;border:1px dashed #ccc;border-radius:8px;padding:20px;text-align:center;color:#888;font-size:12px;margin-bottom:20px;">
-        Chart could not be captured. Please ensure the chart is visible on screen before exporting.
-      </div>`;
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -188,7 +280,7 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #222; background: #fff; padding: 32px 40px; }
-  
+
   .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #5c35d4; padding-bottom: 14px; margin-bottom: 20px; }
   .header-left h1 { font-size: 20px; font-weight: 700; color: #3d2a9e; }
   .header-left p { font-size: 11px; color: #666; margin-top: 3px; }
@@ -208,6 +300,29 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
 
   .chart-container { margin-bottom: 20px; }
 
+  /* ── Detailed Weather Statistics ── */
+  .dws-wrapper { background: #fff; border: 1.5px solid #e8e0ff; border-radius: 14px; padding: 20px 22px; margin-bottom: 20px; }
+  .dws-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .dws-header-icon { width: 36px; height: 36px; background: linear-gradient(135deg,#4fc3f7,#29b6f6); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; flex-shrink: 0; }
+  .dws-header-title { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+  .dws-header-sub { font-size: 11px; color: #888; margin-top: 2px; }
+
+  .dws-sub-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .dws-sub-icon { font-size: 16px; }
+  .dws-sub-title { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+
+  .dws-cards-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
+  .dws-card { border-radius: 12px; padding: 12px 14px; }
+  .dws-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .dws-card-icon { font-size: 20px; }
+  .dws-card-badge { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+  .dws-card-label { font-size: 11px; color: #555; font-weight: 500; margin-bottom: 4px; }
+  .dws-card-value { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
+  .dws-card-sub { font-size: 10px; color: #777; }
+
+  .dws-summary-bar { display: flex; justify-content: space-between; padding: 8px 14px; border-radius: 8px; font-size: 11px; color: #444; margin-bottom: 4px; }
+
+  /* ── Weather Event Summary ── */
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
   .sub-title { font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
   .mini-table { width: 100%; border-collapse: collapse; font-size: 11px; }
@@ -215,11 +330,6 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
   .mini-table td { padding: 4px 8px; border-bottom: 1px solid #f0f0f0; }
   .mini-table tr:last-child td { border-bottom: none; }
   .mini-summary { font-size: 10px; color: #666; margin-top: 6px; }
-
-  .daily-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px; }
-  .daily-table th { background: #ede9ff; color: #3d2a9e; font-weight: 600; padding: 6px 8px; text-align: left; border-bottom: 2px solid #c4b5fd; }
-  .daily-table td { padding: 4px 8px; border-bottom: 1px solid #f0f0f0; }
-  .daily-table tr:hover td { background: #fafafa; }
 
   .note-box { background: #fffde7; border: 1px solid #f9e04b; border-radius: 6px; padding: 14px 16px; margin-bottom: 20px; }
   .note-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #b8860b; margin-bottom: 6px; }
@@ -249,33 +359,17 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
     ${farmGeolocation ? `<p>Coordinates: ${farmGeolocation}</p>` : ''}
   </div>
 
-  ${noteBlock}
-
   <div class="section-title">Summary statistics</div>
   ${statsBlock}
 
   ${chartBlock}
 
+  <div class="section-title">Detailed Weather Statistics</div>
+  ${detailedStatsBlock}
+
   ${weatherBlock}
 
-  <div class="section-title">Daily WBII data${timeSeries && timeSeries.length > 100 ? ' (first 100 days)' : ''}</div>
-  <table class="daily-table">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>WBII</th>
-        <th>Temp min/max</th>
-        <th>Temp avg</th>
-        <th>Rainfall</th>
-        <th>Heat stress</th>
-        <th>Water stress</th>
-        <th>Risk level</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${tableRows}
-    </tbody>
-  </table>
+  ${noteBlock}
 
   <div class="footer">Generated by WBII Dashboard &nbsp;·&nbsp; ${farmName} &nbsp;·&nbsp; ${exportDate}</div>
 
@@ -283,17 +377,14 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
 </html>`;
   };
 
-  // ─── Export PDF via nouvelle fenêtre + print ──────────────────
   const handleExportPDF = async () => {
     setIsCapturing(true);
     let chartImageBase64 = null;
-
     try {
       chartImageBase64 = await captureChart();
     } catch (e) {
       console.warn('Could not capture chart:', e);
     }
-
     setIsCapturing(false);
 
     const html = buildPDFContent(chartImageBase64);
@@ -305,9 +396,7 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
     win.document.write(html);
     win.document.close();
     win.onload = () => {
-      setTimeout(() => {
-        win.print();
-      }, 400);
+      setTimeout(() => { win.print(); }, 400);
     };
     setShowNoteModal(false);
   };
@@ -316,7 +405,6 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
 
   return (
     <>
-      {/* Boutons */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <button
           onClick={handleExportCSV}
@@ -339,7 +427,6 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
         </button>
       </div>
 
-      {/* Modal pour les notes */}
       {showNoteModal && (
         <div
           style={{
@@ -353,7 +440,6 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
             background: '#fff', borderRadius: 16, padding: 28, width: 480,
             maxWidth: '90vw', boxShadow: '0 8px 32px rgba(0,0,0,0.18)'
           }}>
-            {/* Header modal */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: '#3d2a9e', margin: 0 }}>Export PDF</h2>
@@ -367,7 +453,6 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
               </button>
             </div>
 
-            {/* Note textarea */}
             <label style={{ fontSize: 12, fontWeight: 600, color: '#555', display: 'block', marginBottom: 6 }}>
               Add a note <span style={{ fontWeight: 400, color: '#aaa' }}>(optional – will appear in the PDF)</span>
             </label>
@@ -389,12 +474,10 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
               {noteText.length} characters
             </p>
 
-            {/* What's included */}
             <div style={{ background: '#f5f3ff', borderRadius: 8, padding: '10px 14px', margin: '14px 0', fontSize: 11, color: '#534AB7' }}>
-              <strong>PDF will include:</strong> farm name & coordinates · summary stats · <strong>WBII chart</strong> · weather events · full daily data table
+              <strong>PDF will include:</strong> farm name & coordinates · summary stats · <strong>WBII chart</strong> · detailed weather stats · weather events · notes
             </div>
 
-            {/* Boutons modal */}
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button
                 onClick={() => setShowNoteModal(false)}
