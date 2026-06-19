@@ -1,9 +1,12 @@
 // WaterAdvisory.jsx
 // Original fixes preserved:
-//   Fix 1: source unifiée (daily endpoint) pour 24h + 7 jours → plus d'écart entre les deux panneaux
+//   Fix 1: source unifiée (daily endpoint) pour 24h + 10 jours → plus d'écart entre les deux panneaux
 //   Fix 2: Kc par stade de croissance (ini/mid/end) selon FAO-56 → plus de surestimation sur café jeune
 //   Fix 3: affichage mm/jour uniquement, plus de confusion mm/h
+// Updated: 7-day → 10-day advisory window
 // New: 30-day precipitation + ETc bar/line chart (Chart.js via react-chartjs-2)
+// New: dynamic Kc — FAO-56 climate adjustment (RH min + wind) on Kc_mid/Kc_end,
+//      plus a manual intra-stage progression slider that interpolates toward the next stage's Kc.
 
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
@@ -46,6 +49,69 @@ export const GROWTH_STAGES = [
   { id: 'end', label: 'Late season (Kc_end)', desc: 'Ripening / harvest' },
 ];
 
+// Stage that follows each stage, used for intra-stage interpolation.
+// 'ini' progresses toward 'mid'; 'mid' progresses toward 'end'; 'end' has nothing after it.
+const NEXT_STAGE = { ini: 'mid', mid: 'end', end: null };
+
+// Default crop height (m) used in the FAO-56 climate adjustment formula
+// when no crop-specific height is available. 3m is a reasonable generic
+// default for tree/shrub crops (e.g. coffee); adjust per-crop later if needed.
+const DEFAULT_CROP_HEIGHT_M = 3;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FAO-56 CLIMATE ADJUSTMENT FOR Kc_mid / Kc_end
+// Kc_adj = Kc_tab + [0.04(u2 - 2) - 0.004(RHmin - 45)] * (h / 3)^0.3
+//   u2     = mean wind speed at 2m (m/s) — approximated from available wind data
+//   RHmin  = mean minimum relative humidity (%) during the stage — approximated
+//            from available average relative humidity (we don't have a true daily
+//            min, so this is a practical estimate, not a strict FAO-56 RHmin)
+//   h      = mean plant height (m) during the stage
+// Only applied to Kc_mid and Kc_end, per FAO-56 (Kc_ini is not climate-adjusted).
+// ─────────────────────────────────────────────────────────────────────────────
+const adjustKcForClimate = (kcTab, windSpeed, humidity, cropHeight = DEFAULT_CROP_HEIGHT_M) => {
+  if (kcTab === null || kcTab === undefined) return null;
+
+  const u2 = windSpeed ?? 2;       // fallback to neutral 2 m/s if unknown
+  const rhMin = humidity ?? 45;    // fallback to neutral 45% if unknown
+  const h = cropHeight ?? DEFAULT_CROP_HEIGHT_M;
+
+  const adjustment = (0.04 * (u2 - 2) - 0.004 * (rhMin - 45)) * Math.pow(h / 3, 0.3);
+  return kcTab + adjustment;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESOLVE ACTIVE Kc
+// Combines:
+//   1. FAO-56 climate adjustment (mid/end only)
+//   2. Manual intra-stage progression slider (0-100%) — interpolates toward
+//      the next stage's (climate-adjusted) Kc as the slider increases.
+// ─────────────────────────────────────────────────────────────────────────────
+const resolveActiveKc = (kcValues, stage, progressPct, windSpeed, humidity, defaultKc) => {
+  if (!kcValues) return defaultKc;
+
+  const rawCurrent = kcValues[stage] ?? kcValues.mid ?? defaultKc;
+  const currentAdj = (stage === 'mid' || stage === 'end')
+    ? adjustKcForClimate(rawCurrent, windSpeed, humidity)
+    : rawCurrent; // Kc_ini not climate-adjusted
+
+  const nextStage = NEXT_STAGE[stage];
+  if (!nextStage || progressPct <= 0) {
+    return currentAdj;
+  }
+
+  const rawNext = kcValues[nextStage];
+  if (rawNext === null || rawNext === undefined) {
+    return currentAdj; // nothing to interpolate toward
+  }
+
+  const nextAdj = (nextStage === 'mid' || nextStage === 'end')
+    ? adjustKcForClimate(rawNext, windSpeed, humidity)
+    : rawNext;
+
+  const t = Math.min(100, Math.max(0, progressPct)) / 100;
+  return currentAdj + (nextAdj - currentAdj) * t;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // FUNCTION 1 — Net Water Deficit
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,7 +144,7 @@ const calculateNetWaterDeficit = (dailyEtC, dailyPrecipitation, landSurface) => 
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FUNCTION 2 — Daily weather + 7-day advisory (unified daily endpoint)
+// FUNCTION 2 — Daily weather + 10-day advisory (unified daily endpoint)
 // ─────────────────────────────────────────────────────────────────────────────
 const fetchDailyWeatherAndAdvisory = async (latitude, longitude, kc = 0.95) => {
   const dailyUrl =
@@ -88,7 +154,7 @@ const fetchDailyWeatherAndAdvisory = async (latitude, longitude, kc = 0.95) => {
     `temperature_2m_max,temperature_2m_min` +
     `&hourly=temperature_2m,relative_humidity_2m,` +
     `shortwave_radiation,wind_speed_1000hPa` +
-    `&timezone=auto&forecast_days=7`;
+    `&timezone=auto&forecast_days=10`;
 
   try {
     const response = await fetch(dailyUrl);
@@ -219,6 +285,7 @@ const WaterAdvisory = () => {
   const [selectedCrop,   setSelectedCrop]   = useState('');
   const [kcValues,       setKcValues]       = useState({ ini: null, mid: null, end: null });
   const [growthStage,    setGrowthStage]    = useState('mid');
+  const [stageProgress,  setStageProgress]  = useState(0); // 0-100, manual intra-stage slider
   const [activeKc,       setActiveKc]       = useState(null);
 
   const [latitude,       setLatitude]       = useState(0);
@@ -246,7 +313,7 @@ const WaterAdvisory = () => {
     return 'Torrential rain, flood risk.';
   };
 
-  // ── Unified refresh (today + 7-day + 30-day) ─────────────────────────────
+  // ── Unified refresh (today + 10-day + 30-day) ────────────────────────────
   const refreshAllData = async (lat, lon, kc) => {
     if (!lat || !lon) return;
     setLoadingWeekly(true);
@@ -254,7 +321,7 @@ const WaterAdvisory = () => {
 
     const resolvedKc = kc ?? defaultKc;
 
-    // Today + 7-day
+    // Today + 10-day
     const { todayWeather, weeklyAdvisory: weekly } =
       await fetchDailyWeatherAndAdvisory(lat, lon, resolvedKc);
 
@@ -278,19 +345,17 @@ const WaterAdvisory = () => {
     setLoadingMonthly(false);
   };
 
-  // ── Kc resolution ─────────────────────────────────────────────────────────
-  const resolveKc = (kv, stage) => {
-    if (!kv) return defaultKc;
-    return kv[stage] ?? kv.mid ?? defaultKc;
-  };
+  // ── Kc resolution (climate-adjusted + intra-stage progression) ───────────
+  const resolveKc = (kv, stage, progress = stageProgress) =>
+    resolveActiveKc(kv, stage, progress, windSpeed, humidity, defaultKc);
 
   useEffect(() => {
-    const kc = resolveKc(kcValues, growthStage);
+    const kc = resolveKc(kcValues, growthStage, stageProgress);
     setActiveKc(kc);
     if (dailyEt0 !== null) setDailyEtC(dailyEt0 * kc);
     if (latitude && longitude) refreshAllData(latitude, longitude, kc);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [growthStage, kcValues]);
+  }, [growthStage, kcValues, stageProgress]);
 
   useEffect(() => {
     if (dailyEtC !== null && dailyPrecipitation !== null) {
@@ -312,19 +377,46 @@ const WaterAdvisory = () => {
       .catch(console.error);
   }, []);
 
+  // Normalizes a free-text stage name from the DB ('debut', 'Initial', 'Mid',
+  // 'Late', 'End', etc.) to one of the 3 keys used by the frontend: ini/mid/end.
+  // 'Late' and 'End' are treated as the same bucket since GROWTH_STAGES only
+  // has 3 stages (no separate dev/late split in this app).
+  const normalizeStageKey = (stage) => {
+    const s = (stage || '').toLowerCase().trim();
+    if (s === 'debut' || s === 'initial' || s === 'ini')      return 'ini';
+    if (s === 'mid' || s === 'mid-season' || s === 'midseason') return 'mid';
+    if (s === 'late' || s === 'end' || s === 'late-season')   return 'end';
+    return null; // unrecognized/custom stage name — ignored for Kc resolution
+  };
+
   const fetchKcValues = async (cropId) => {
     if (!cropId) return;
     try {
       const response = await axiosInstance.get(`/api/kc/getbycrop/${cropId}`);
       const raw = response.data;
-      if (raw.kc_ini !== undefined || raw.kc_mid !== undefined || raw.kc_end !== undefined) {
-        setKcValues({ ini: raw.kc_ini ?? null, mid: raw.kc_mid ?? null, end: raw.kc_end ?? null });
-      } else if (raw.kc_value?.[0]?.kc_value !== undefined) {
-        const single = raw.kc_value[0].kc_value;
-        setKcValues({ ini: single, mid: single, end: single });
-      } else {
-        setKcValues({ ini: null, mid: null, end: null });
-      }
+
+      // Expected real shape: an array of rows like
+      // [{ id, crop_id, stage: 'Initial', kc_value: 1.05 }, { stage: 'Mid', kc_value: 1.10 }, ...]
+      // It may come back directly as an array, or wrapped under a key
+      // (e.g. raw.coefficients or raw.kc_value) depending on the endpoint.
+      const rows = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw.coefficients)
+          ? raw.coefficients
+          : Array.isArray(raw.kc_value)
+            ? raw.kc_value
+            : [];
+
+      const next = { ini: null, mid: null, end: null };
+      rows.forEach(row => {
+        const key = normalizeStageKey(row.stage);
+        const value = row.kc_value != null ? parseFloat(row.kc_value) : null;
+        if (key && value != null && !Number.isNaN(value)) {
+          next[key] = value;
+        }
+      });
+
+      setKcValues(next);
     } catch (error) {
       console.error('Error fetching Kc values:', error);
       setKcValues({ ini: null, mid: null, end: null });
@@ -334,8 +426,14 @@ const WaterAdvisory = () => {
   const handleCropSelect = (e) => {
     const cropId = e.target.value;
     setSelectedCrop(cropId);
+    setStageProgress(0);
     if (cropId) fetchKcValues(cropId);
     else setKcValues({ ini: null, mid: null, end: null });
+  };
+
+  const handleStageSelect = (stageId) => {
+    setGrowthStage(stageId);
+    setStageProgress(0); // reset progression when switching stage manually
   };
 
   // ── SMS ───────────────────────────────────────────────────────────────────
@@ -491,7 +589,7 @@ const WaterAdvisory = () => {
           }
         }
 
-        const kc = resolveKc(kcValues, growthStage);
+        const kc = resolveKc(kcValues, growthStage, stageProgress);
         await refreshAllData(latN, lonN, kc);
       }
     } catch (error) {
@@ -544,7 +642,7 @@ const WaterAdvisory = () => {
       const lon = geometry.coordinates[0];
       setLatitude(lat);
       setLongitude(lon);
-      const kc = resolveKc(kcValues, growthStage);
+      const kc = resolveKc(kcValues, growthStage, stageProgress);
       await refreshAllData(lat, lon, kc);
     });
 
@@ -561,7 +659,7 @@ const WaterAdvisory = () => {
         setLatitude(lat);
         setLongitude(lng);
 
-        const kc = resolveKc(kcValues, growthStage);
+        const kc = resolveKc(kcValues, growthStage, stageProgress);
         const { todayWeather } = await fetchDailyWeatherAndAdvisory(lat, lng, kc);
 
         await refreshAllData(lat, lng, kc);
@@ -609,6 +707,10 @@ const WaterAdvisory = () => {
 
   const canShowAdvisory    = selectedCrop && dailyEtC !== null && landSurface > 0;
   const currentKcDisplay   = (activeKc ?? defaultKc).toFixed(2);
+  const nextStageId        = NEXT_STAGE[growthStage];
+  const nextStageLabel     = nextStageId
+    ? GROWTH_STAGES.find(s => s.id === nextStageId)?.label
+    : null;
 
   // ── 30-day chart derived stats ─────────────────────────────────────────────
   const monthlyTotalRain = monthlyRain.reduce((s, v) => s + v, 0);
@@ -803,12 +905,24 @@ const WaterAdvisory = () => {
                 <label className="block text-sm font-bold text-gray-900">Growth Stage (FAO-56):</label>
                 <div className="grid grid-cols-3 gap-2">
                   {GROWTH_STAGES.map(stage => {
-                    const kcForStage = kcValues[stage.id];
-                    const isActive   = growthStage === stage.id;
+                    const rawKc    = kcValues[stage.id];
+                    const isActive = growthStage === stage.id;
+
+                    // Each badge shows the REAL Kc that would be used if this stage
+                    // is/were active: climate-adjusted for mid/end, and including the
+                    // slider interpolation if this happens to be the currently active stage.
+                    const displayedKc = isActive
+                      ? activeKc
+                      : (rawKc != null
+                          ? ((stage.id === 'mid' || stage.id === 'end')
+                              ? adjustKcForClimate(rawKc, windSpeed, humidity)
+                              : rawKc)
+                          : null);
+
                     return (
                       <button
                         key={stage.id}
-                        onClick={() => setGrowthStage(stage.id)}
+                        onClick={() => handleStageSelect(stage.id)}
                         className={`p-2 rounded-lg border text-xs font-semibold transition-all ${
                           isActive
                             ? 'bg-blue-600 border-blue-600 text-white shadow'
@@ -817,7 +931,7 @@ const WaterAdvisory = () => {
                       >
                         <div>{stage.id === 'ini' ? 'Initial' : stage.id === 'mid' ? 'Mid-season' : 'Late season'}</div>
                         <div className={`mt-0.5 font-bold ${isActive ? 'text-blue-100' : 'text-blue-600'}`}>
-                          Kc = {kcForStage != null ? kcForStage.toFixed(2) : '—'}
+                          Kc = {displayedKc != null ? displayedKc.toFixed(2) : '—'}
                         </div>
                       </button>
                     );
@@ -826,14 +940,47 @@ const WaterAdvisory = () => {
                 <p className="text-xs text-gray-500 pl-1">
                   {GROWTH_STAGES.find(s => s.id === growthStage)?.desc}
                   &nbsp;— Active Kc: <strong>{currentKcDisplay}</strong>
+                  {(growthStage === 'mid' || growthStage === 'end') && (
+                    <span className="text-gray-400"> (climate-adjusted)</span>
+                  )}
                 </p>
 
-                {kcValues.ini !== null &&
-                 kcValues.ini === kcValues.mid &&
-                 kcValues.mid === kcValues.end && (
+                {/* Intra-stage progression slider */}
+                {nextStageId && (
+                  <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-gray-700">
+                        Progress within stage
+                      </label>
+                      <span className="text-xs font-bold text-blue-600">{stageProgress}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={stageProgress}
+                      onChange={e => setStageProgress(parseInt(e.target.value, 10))}
+                      className="w-full accent-blue-600"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Slide right as the crop approaches{' '}
+                      <strong>{nextStageLabel}</strong> — Kc gradually shifts toward that stage's value
+                      instead of jumping abruptly.
+                    </p>
+                  </div>
+                )}
+
+                {(kcValues.ini === null || kcValues.mid === null || kcValues.end === null) && (
                   <div className="mt-1 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-700">
-                    ⚠️ Your API returned a single Kc for all stages. Update the crop database to store
-                    Kc_ini, Kc_mid, and Kc_end separately (see FAO-56 Table 12) for accurate results.
+                    ⚠️ Missing Kc value(s) for this crop:{' '}
+                    {[
+                      kcValues.ini === null && 'Initial',
+                      kcValues.mid === null && 'Mid',
+                      kcValues.end === null && 'Late',
+                    ].filter(Boolean).join(', ')}.
+                    Add the missing stage(s) in the Crop Coefficient Manager (FAO-56 Table 12)
+                    for accurate climate adjustment and stage-transition results.
                   </div>
                 )}
               </div>
@@ -1011,12 +1158,12 @@ const WaterAdvisory = () => {
         </div>
       </div>
 
-      {/* ── 7-Day Advisory Table ── */}
+      {/* ── 10-Day Advisory Table ── */}
       {(weeklyAdvisory.length > 0 || loadingWeekly) && selectedCrop && (
         <div className="max-w-6xl mx-auto mt-6 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-xl font-bold text-gray-800">📅 7-Day Water Advisory</h3>
+              <h3 className="text-xl font-bold text-gray-800">📅 10-Day Water Advisory</h3>
               {activeKc && (
                 <p className="text-xs text-gray-500 mt-0.5">
                   Kc = {currentKcDisplay} ({GROWTH_STAGES.find(s => s.id === growthStage)?.label})
@@ -1101,7 +1248,7 @@ const WaterAdvisory = () => {
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-gray-200 bg-gray-50 text-sm font-semibold text-gray-700">
-                    <td className="py-3 px-4" colSpan={3}>7-Day Totals</td>
+                    <td className="py-3 px-4" colSpan={3}>10-Day Totals</td>
                     <td className="py-3 px-4 text-right">
                       {weeklyAdvisory.reduce((s, d) => s + parseFloat(d.etc), 0).toFixed(2)} mm
                     </td>
