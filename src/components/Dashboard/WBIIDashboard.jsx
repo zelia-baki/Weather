@@ -6,7 +6,7 @@ import {
   CloudRain, Sun, Thermometer, Activity
 } from 'lucide-react';
 import axiosInstance from '../../axiosInstance';
-import ExportButtons from './ExportButtons';
+import ExportButtons from './Exportbuttons';
 
 const WBIIDashboard = () => {
   const [farms, setFarms] = useState([]);
