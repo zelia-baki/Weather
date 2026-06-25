@@ -715,17 +715,30 @@ const YieldAnalysisPanel = ({ history, forecast, ltv, activeIndex, onCalibrate }
   // Dynamic years from history + forecast (e.g. 2020→2026)
   const allYears = useMemo(() => {
     const set = new Set();
-    // history: date = "2020-01-01"
     history.forEach(r => set.add(r.date.substring(0, 4)));
-    // forecast: quarter = "2025-Q2"
     Object.values(forecast).forEach(arr =>
       arr.forEach(f => set.add(f.quarter.substring(0, 4)))
     );
     return [...set].sort();
   }, [history, forecast]);
 
+  // Historical-only years (exclut les années de forecast/futures) — c'est
+  // ce qu'il faut utiliser pour les labels HY1/HY2, car un "rendement
+  // historique" doit forcément correspondre à une vraie année passée.
+  const currentYear = new Date().getFullYear();
+
+  const historicalYears = useMemo(() => {
+    const set = new Set();
+    history.forEach(r => {
+      const y = r.date.substring(0, 4);
+      if (parseInt(y, 10) < currentYear) set.add(y);
+    });
+    return [...set].sort();
+  }, [history, currentYear]);
+
   // Derive the 2 most-recent full years for HY label hints
-  const recentYears = allYears.slice(-2); // [N-2, N-1] from end — actually last 2
+  // (ex: en 2026 → [2024, 2025])
+  const recentYears = historicalYears.slice(-2);
 
   const [hy1, setHy1] = useState(ltv?.hist_yield_1 != null ? String(ltv.hist_yield_1) : "");
   const [hy2, setHy2] = useState(ltv?.hist_yield_2 != null ? String(ltv.hist_yield_2) : "");
