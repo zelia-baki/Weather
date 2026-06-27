@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import ModalTree from './ModalTree'; // Assurez-vous que le chemin est correct
+import ModalTree from './ModalTree';
+import axiosInstance from '../../../axiosInstance';
+import Swal from 'sweetalert2';
+import { Download } from 'lucide-react';
 
 const ForestTree = () => {
   const [isTreeModalOpen, setIsTreeModalOpen] = useState(false);
@@ -7,16 +10,86 @@ const ForestTree = () => {
   const openTreeModal = () => setIsTreeModalOpen(true);
   const closeTreeModal = () => setIsTreeModalOpen(false);
 
+  const handleExportTreePoints = async () => {
+    const { value: forestId } = await Swal.fire({
+      title: 'Export Tree Points',
+      input: 'number',
+      inputLabel: 'Forest ID',
+      inputPlaceholder: 'Enter the forest ID to export',
+      showCancelButton: true,
+      confirmButtonText: 'Export',
+      confirmButtonColor: '#059669',
+      customClass: { popup: 'rounded-2xl' },
+      inputValidator: (value) => {
+        if (!value) return 'Forest ID is required';
+      },
+    });
+
+    if (!forestId) return;
+
+    try {
+      const r = await axiosInstance.get(`/api/tree/forest/${forestId}/export/points`);
+      const { geojson, total_exported, skipped, forest_name } = r.data;
+
+      if (!total_exported) {
+        Swal.fire({
+          icon: 'info', title: 'No tree points to export',
+          text: 'This forest has no trees with valid geolocation.',
+          customClass: { popup: 'rounded-2xl' },
+        });
+        return;
+      }
+
+      const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/geo+json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = `forest_${forestId}_tree_points.geojson`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Export complete',
+        text: skipped?.length
+          ? `${total_exported} tree point(s) exported from "${forest_name}". ${skipped.length} skipped (missing point).`
+          : `${total_exported} tree point(s) exported from "${forest_name}".`,
+        timer: 3000, showConfirmButton: false, customClass: { popup: 'rounded-2xl' },
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: 'error', title: 'Export failed',
+        text: err.response?.data?.message || 'Could not export tree points for this forest.',
+        customClass: { popup: 'rounded-2xl' },
+      });
+    }
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-center">Tree Management</h1>
-      <div className="flex justify-center mb-6">
-        <button
-          onClick={openTreeModal}
-          className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-md shadow hover:bg-blue-700 transition duration-300"
-        >
-          Create Tree
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-emerald-50/20 p-4 sm:p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Tree Management</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Create trees and export their boundary points</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleExportTreePoints}
+              className="inline-flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-sm px-4 py-2 rounded-xl font-medium transition-colors"
+            >
+              <Download size={15}/> Export Tree Points
+            </button>
+            <button
+              onClick={openTreeModal}
+              className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-xl font-medium shadow-sm transition-colors"
+            >
+              Create Tree
+            </button>
+          </div>
+        </div>
       </div>
 
       <ModalTree isOpen={isTreeModalOpen} onClose={closeTreeModal}>

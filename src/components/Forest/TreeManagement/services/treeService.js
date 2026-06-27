@@ -30,6 +30,12 @@ export const treeService = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
+  exportTreePoints: (forestId = null) => {
+    const endpoint = forestId && forestId !== 'all'
+      ? `/api/tree/forest/${forestId}/export/points`
+      : '/api/tree/export/points';
+    return axiosInstance.get(endpoint);
+  },
 
   // Forests
   fetchForests: () => axiosInstance.get('/api/forest/'),
