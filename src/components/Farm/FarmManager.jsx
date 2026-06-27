@@ -9,6 +9,7 @@ import {
   Leaf, Radio, Trash2, Plus, Edit2, Upload, FolderOpen,
   ChevronLeft, ChevronRight, AlertTriangle, X, Check,
   Loader2, Wheat, Award, MapPin, ChevronDown, ChevronUp,
+  Download,
 } from 'lucide-react';
 import PolygonDrawer from '../mapbox/PolygonDrawer.jsx';
 
@@ -35,31 +36,31 @@ const Field = ({ label, required, error, children }) => (
       {label}{required && <span className="text-red-400">*</span>}
     </label>
     {children}
-    {error && <p className="text-xs text-red-500 flex items-center gap-1"><AlertTriangle size={11}/>{error}</p>}
+    {error && <p className="text-xs text-red-500 flex items-center gap-1"><AlertTriangle size={11} />{error}</p>}
   </div>
 );
 
 const FarmManager = () => {
-  const [farms,         setFarms]         = useState([]);
+  const [farms, setFarms] = useState([]);
   const [countriesList, setCountriesList] = useState([]);
-  const [districts,     setDistricts]     = useState([]);
-  const [farmerGroups,  setFarmerGroups]  = useState([]);
-  const [formData,      setFormData]      = useState(EMPTY_FORM);
-  const [formErrors,    setFormErrors]    = useState({});
+  const [districts, setDistricts] = useState([]);
+  const [farmerGroups, setFarmerGroups] = useState([]);
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formErrors, setFormErrors] = useState({});
   const [currentFarmId, setCurrentFarmId] = useState(null);
-  const [currentPage,   setCurrentPage]   = useState(1);
-  const [totalPages,    setTotalPages]    = useState(1);
-  const [totalFarms,    setTotalFarms]    = useState(0);
-  const [drawerOpen,    setDrawerOpen]    = useState(false);
-  const [submitting,    setSubmitting]    = useState(false);
-  const [globalError,   setGlobalError]   = useState('');
-  const [csvFile,       setCsvFile]       = useState(null);
-  const [search,        setSearch]        = useState('');
-  const [searching,     setSearching]     = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalFarms, setTotalFarms] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [globalError, setGlobalError] = useState('');
+  const [csvFile, setCsvFile] = useState(null);
+  const [search, setSearch] = useState('');
+  const [searching, setSearching] = useState(false);
 
   // ── NEW : carte intégrée ──────────────────────────────────────────────────
-  const [showMap,         setShowMap]         = useState(false);
-  const [drawnPolygon,    setDrawnPolygon]     = useState(null);   // GeoJSON complet
+  const [showMap, setShowMap] = useState(false);
+  const [drawnPolygon, setDrawnPolygon] = useState(null);   // GeoJSON complet
 
   const searchTimer = useRef(null);
 
@@ -72,15 +73,15 @@ const FarmManager = () => {
       setTotalPages(r.data.total_pages ?? 1);
       setTotalFarms(r.data.total_farms ?? r.data.farms?.length ?? 0);
     } catch { setGlobalError('Error fetching farms.'); }
-    finally  { setSearching(false); }
+    finally { setSearching(false); }
   }, []);
 
   useEffect(() => {
     fetchFarms(currentPage, search);
-    axiosInstance.get('/api/district/').then(r => setDistricts(r.data.districts ?? [])).catch(() => {});
-    axiosInstance.get('/api/farmergroup/').then(r => setFarmerGroups(r.data ?? [])).catch(() => {});
-    axiosInstance.get('/api/pays/').then(r => setCountriesList(r.data.pays ?? [])).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    axiosInstance.get('/api/district/').then(r => setDistricts(r.data.districts ?? [])).catch(() => { });
+    axiosInstance.get('/api/farmergroup/').then(r => setFarmerGroups(r.data ?? [])).catch(() => { });
+    axiosInstance.get('/api/pays/').then(r => setCountriesList(r.data.pays ?? [])).catch(() => { });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   const handleSearchChange = (e) => {
@@ -119,18 +120,18 @@ const FarmManager = () => {
 
   const validate = () => {
     const e = {};
-    if (!formData.name.trim())        e.name           = 'Farm name is required';
-    if (!formData.subcounty)          e.subcounty      = 'Destination country is required';
-    if (!formData.district_id)        e.district_id    = 'District is required';
-    if (!formData.farmergroup_id)     e.farmergroup_id = 'Farmer group is required';
-    if (!formData.geolocation.trim()) e.geolocation    = 'Geolocation is required';
+    if (!formData.name.trim()) e.name = 'Farm name is required';
+    if (!formData.subcounty) e.subcounty = 'Destination country is required';
+    if (!formData.district_id) e.district_id = 'District is required';
+    if (!formData.farmergroup_id) e.farmergroup_id = 'Farmer group is required';
+    if (!formData.geolocation.trim()) e.geolocation = 'Geolocation is required';
     else {
       const parts = formData.geolocation.trim().split(',');
       if (parts.length !== 2 || parts.some(p => isNaN(parseFloat(p.trim()))))
         e.geolocation = 'Format: latitude, longitude  (e.g. 0.3136, 32.5811)';
     }
-    if (!formData.gender)             e.gender = 'Gender is required';
-    if (!formData.cin.trim())         e.cin    = 'National ID is required';
+    if (!formData.gender) e.gender = 'Gender is required';
+    if (!formData.cin.trim()) e.cin = 'National ID is required';
     return e;
   };
 
@@ -146,11 +147,13 @@ const FarmManager = () => {
 
     try {
       if (currentFarmId) await axiosInstance.post(`/api/farm/${currentFarmId}/update`, payload);
-      else               await axiosInstance.post('/api/farm/create', payload);
+      else await axiosInstance.post('/api/farm/create', payload);
       await fetchFarms(currentPage, search);
       closeDrawer();
-      Swal.fire({ icon: 'success', title: currentFarmId ? 'Farm updated!' : 'Farm created!',
-        text: `"${formData.name}" saved.`, timer: 2000, showConfirmButton: false, customClass: { popup: 'rounded-2xl' } });
+      Swal.fire({
+        icon: 'success', title: currentFarmId ? 'Farm updated!' : 'Farm created!',
+        text: `"${formData.name}" saved.`, timer: 2000, showConfirmButton: false, customClass: { popup: 'rounded-2xl' }
+      });
     } catch (err) {
       Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.msg || err.message || 'Could not save.', customClass: { popup: 'rounded-2xl' } });
     } finally { setSubmitting(false); }
@@ -171,9 +174,11 @@ const FarmManager = () => {
   };
 
   const handleDelete = async (farmId, farmName) => {
-    const r = await Swal.fire({ title: `Delete "${farmName}"?`, text: 'Cannot be undone.',
+    const r = await Swal.fire({
+      title: `Delete "${farmName}"?`, text: 'Cannot be undone.',
       icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444',
-      confirmButtonText: 'Delete', customClass: { popup: 'rounded-2xl' } });
+      confirmButtonText: 'Delete', customClass: { popup: 'rounded-2xl' }
+    });
     if (!r.isConfirmed) return;
     try {
       await axiosInstance.post(`/api/farm/${farmId}/delete`);
@@ -181,7 +186,7 @@ const FarmManager = () => {
     } catch { setGlobalError('Error deleting farm.'); }
   };
 
-  const openDrawer  = () => {
+  const openDrawer = () => {
     setFormData(EMPTY_FORM);
     setCurrentFarmId(null);
     setFormErrors({});
@@ -200,7 +205,8 @@ const FarmManager = () => {
 
   const handleBulkUpload = () => {
     if (!csvFile) { Swal.fire('Error!', 'Select a CSV file first.', 'error'); return; }
-    Papa.parse(csvFile, { header: true, skipEmptyLines: true,
+    Papa.parse(csvFile, {
+      header: true, skipEmptyLines: true,
       complete: async (result) => {
         if (result.errors.length) { Swal.fire('Error!', 'Invalid CSV.', 'error'); return; }
         try {
@@ -211,14 +217,86 @@ const FarmManager = () => {
       },
     });
   };
+  const handleExportPolygons = async () => {
+    try {
+      const r = await axiosInstance.get('/api/farm/export/polygons');
+      const { geojson, total_exported, skipped } = r.data;
+
+      if (!total_exported) {
+        Swal.fire({
+          icon: 'info', title: 'No polygons to export',
+          text: 'No farm currently has a saved boundary.', customClass: { popup: 'rounded-2xl' }
+        });
+        return;
+      }
+
+      // Ajout de la superficie (ha) dans les properties via Turf
+      geojson.features = geojson.features.map((f) => ({
+        ...f,
+        properties: {
+          ...f.properties,
+          area_ha: Number((turf.area(f) / 10000).toFixed(4)),
+        },
+      }));
+
+      const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/geo+json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const date = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `farms_polygons_export_${date}.geojson`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Export complete',
+        text: skipped?.length
+          ? `${total_exported} polygon(s) exported. ${skipped.length} farm(s) skipped (no boundary).`
+          : `${total_exported} polygon(s) exported.`,
+        timer: 3000, showConfirmButton: false, customClass: { popup: 'rounded-2xl' },
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: 'error', title: 'Export failed',
+        text: err.response?.data?.message || err.message || 'Could not export polygons.',
+        customClass: { popup: 'rounded-2xl' }
+      });
+    }
+  };
+  const handleExportFarmPolygon = async (farm) => {
+    try {
+      const r = await axiosInstance.get(`/api/farm/${farm.id}/export/polygon`);
+      const { geojson } = r.data;
+
+      const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/geo+json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${farm.id}_polygon.geojson`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Export failed',
+        text: err.response?.data?.message || err.message || 'Could not export polygon for this farm.',
+        customClass: { popup: 'rounded-2xl' },
+      });
+    }
+  };
 
   const farmActions = (farm) => [
-    { icon: <Map size={12}/>,           label: 'Map',        to: '/mapview',         state: { owner_id: farm.id, owner_type: 'farmer', geolocation: farm.geolocation }, cls: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' },
-    { icon: <PenLine size={12}/>,       label: 'Draw',       to: '/mapbox',          state: { owner_id: farm.id, owner_type: 'farmer', geolocation: farm.geolocation }, cls: 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200' },
-    { icon: <ClipboardList size={12}/>, label: 'Data',       to: '/farmdatamanager', state: { farmId: farm.id }, cls: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200' },
-    { icon: <BarChart2 size={12}/>,     label: 'EUDR Report',to: '/reportfarmer',    state: { farmId: farm.id }, cls: 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200' },
-    { icon: <Leaf size={12}/>,          label: 'Carbon Report', to: '/reportcarbon', state: { farmId: farm.id }, cls: 'bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200' },
-    { icon: <Radio size={12}/>,         label: 'SatIndex',   to: `/sentinel/farm/${farm.id}`, state: { farmId: farm.id }, cls: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200' },
+    { icon: <Map size={12} />, label: 'Map', to: '/mapview', state: { owner_id: farm.id, owner_type: 'farmer', geolocation: farm.geolocation }, cls: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200' },
+    { icon: <PenLine size={12} />, label: 'Draw', to: '/mapbox', state: { owner_id: farm.id, owner_type: 'farmer', geolocation: farm.geolocation }, cls: 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200' },
+    { icon: <ClipboardList size={12} />, label: 'Data', to: '/farmdatamanager', state: { farmId: farm.id }, cls: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200' },
+    { icon: <BarChart2 size={12} />, label: 'EUDR Report', to: '/reportfarmer', state: { farmId: farm.id }, cls: 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200' },
+    { icon: <Leaf size={12} />, label: 'Carbon Report', to: '/reportcarbon', state: { farmId: farm.id }, cls: 'bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200' },
+    { icon: <Radio size={12} />, label: 'SatIndex', to: `/sentinel/farm/${farm.id}`, state: { farmId: farm.id }, cls: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200' },
   ];
 
   return (
@@ -229,34 +307,39 @@ const FarmManager = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <Sprout size={22} className="text-emerald-600"/> Farm Management
+              <Sprout size={22} className="text-emerald-600" /> Farm Management
             </h1>
             <p className="text-sm text-gray-400 mt-0.5">
               {search ? `${totalFarms} result${totalFarms !== 1 ? 's' : ''} for "${search}"`
-                      : `${totalFarms} farm${totalFarms !== 1 ? 's' : ''} registered`}
+                : `${totalFarms} farm${totalFarms !== 1 ? 's' : ''} registered`}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link to="/mapviewall" state={{ owner_type: 'farmer' }}
               className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-xl font-medium transition-colors">
-              <Map size={15}/> View All
+              <Map size={15} /> View All
             </Link>
+            <button onClick={handleExportPolygons}
+              className="inline-flex items-center gap-1.5 border border-gray-200 bg-white
+             hover:bg-gray-50 text-gray-600 text-sm px-4 py-2 rounded-xl font-medium transition-colors">
+              <Download size={15} /> Export Polygons
+            </button>
             <button onClick={openDrawer}
               className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-xl font-medium shadow-sm transition-colors">
-              <Plus size={15}/> Create Farm
+              <Plus size={15} /> Create Farm
             </button>
           </div>
         </div>
         {/* Certificates */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide self-center flex items-center gap-1">
-            <Award size={12}/> Certificates:
+            <Award size={12} /> Certificates:
           </span>
           {[
-            { label: 'All',           state: 'all',              cls: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-            { label: 'Compliant',     state: 'compliant',        cls: 'bg-green-100 text-green-700 hover:bg-green-200' },
-            { label: 'Likely',        state: 'likely_compliant', cls: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
-            { label: 'Non-Compliant', state: 'not_compliant',    cls: 'bg-red-100 text-red-700 hover:bg-red-200' },
+            { label: 'All', state: 'all', cls: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+            { label: 'Compliant', state: 'compliant', cls: 'bg-green-100 text-green-700 hover:bg-green-200' },
+            { label: 'Likely', state: 'likely_compliant', cls: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+            { label: 'Non-Compliant', state: 'not_compliant', cls: 'bg-red-100 text-red-700 hover:bg-red-200' },
           ].map(({ label, state, cls }) => (
             <Link key={state} to="/stats-certificate" state={{ certificateType: state }}
               className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${cls}`}>
@@ -270,7 +353,7 @@ const FarmManager = () => {
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            {searching ? <Loader2 size={16} className="animate-spin text-emerald-500"/> : <Search size={16}/>}
+            {searching ? <Loader2 size={16} className="animate-spin text-emerald-500" /> : <Search size={16} />}
           </span>
           <input type="text" placeholder="Search across all farms — name, location, NIN…"
             value={search} onChange={handleSearchChange}
@@ -279,28 +362,28 @@ const FarmManager = () => {
                        focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
           {search && (
             <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-              <X size={16}/>
+              <X size={16} />
             </button>
           )}
         </div>
         <div className="flex gap-2">
-          <input type="file" accept=".csv" onChange={e => setCsvFile(e.target.files[0])} className="hidden" id="csvUpload"/>
+          <input type="file" accept=".csv" onChange={e => setCsvFile(e.target.files[0])} className="hidden" id="csvUpload" />
           <label htmlFor="csvUpload"
             className="cursor-pointer inline-flex items-center gap-1.5 border border-gray-200 bg-white
                        hover:bg-gray-50 text-gray-600 text-sm px-4 py-2.5 rounded-xl transition-colors">
-            <FolderOpen size={15}/> {csvFile ? csvFile.name.substring(0, 12) + '…' : 'CSV'}
+            <FolderOpen size={15} /> {csvFile ? csvFile.name.substring(0, 12) + '…' : 'CSV'}
           </label>
           <button onClick={handleBulkUpload}
             className="inline-flex items-center gap-1.5 bg-gray-700 hover:bg-gray-800 text-white text-sm px-4 py-2.5 rounded-xl font-medium transition-colors">
-            <Upload size={15}/> Upload
+            <Upload size={15} /> Upload
           </button>
         </div>
       </div>
 
       {globalError && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
-          <AlertTriangle size={15}/> {globalError}
-          <button onClick={() => setGlobalError('')} className="ml-auto text-red-400 hover:text-red-600"><X size={15}/></button>
+          <AlertTriangle size={15} /> {globalError}
+          <button onClick={() => setGlobalError('')} className="ml-auto text-red-400 hover:text-red-600"><X size={15} /></button>
         </div>
       )}
 
@@ -308,7 +391,7 @@ const FarmManager = () => {
       <div className="space-y-3">
         {farms.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-            <Wheat size={40} className="mx-auto mb-3 text-gray-300"/>
+            <Wheat size={40} className="mx-auto mb-3 text-gray-300" />
             <p className="text-gray-500 font-medium">No farms found</p>
             <p className="text-gray-400 text-sm mt-1">
               {search ? 'Try a different search term' : 'Create your first farm to get started'}
@@ -316,7 +399,7 @@ const FarmManager = () => {
             {!search && (
               <button onClick={openDrawer}
                 className="mt-4 inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-5 py-2 rounded-xl font-medium transition-colors">
-                <Plus size={15}/> Create Farm
+                <Plus size={15} /> Create Farm
               </button>
             )}
           </div>
@@ -335,9 +418,9 @@ const FarmManager = () => {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-1 ml-12">
-                  {farm.subcounty   && <span className="text-xs text-gray-500">{farm.subcounty}</span>}
+                  {farm.subcounty && <span className="text-xs text-gray-500">{farm.subcounty}</span>}
                   {farm.phonenumber && <span className="text-xs text-gray-500">{farm.phonenumber}</span>}
-                  {farm.gender      && <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{farm.gender}</span>}
+                  {farm.gender && <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{farm.gender}</span>}
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5 sm:justify-end">
@@ -347,13 +430,17 @@ const FarmManager = () => {
                     {icon} {label}
                   </Link>
                 ))}
+                <button onClick={() => handleExportFarmPolygon(farm)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border bg-cyan-50 text-cyan-700 hover:bg-cyan-100 border-cyan-200 transition-colors">
+                  <Download size={12} /> Export
+                </button>
                 <button onClick={() => handleEdit(farm)}
                   className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-200 transition-colors">
-                  <Edit2 size={12}/> Edit
+                  <Edit2 size={12} /> Edit
                 </button>
                 <button onClick={() => handleDelete(farm.id, farm.name)}
                   className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border bg-red-50 text-red-700 hover:bg-red-100 border-red-200 transition-colors">
-                  <Trash2 size={12}/> Delete
+                  <Trash2 size={12} /> Delete
                 </button>
               </div>
             </div>
@@ -366,13 +453,12 @@ const FarmManager = () => {
         <div className="flex items-center justify-between mt-5 bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-3">
           <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
             className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
-            <ChevronLeft size={16}/> Previous
+            <ChevronLeft size={16} /> Previous
           </button>
           <div className="flex items-center gap-1">
             {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map(page => (
               <button key={page} onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                  currentPage === page ? 'bg-emerald-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
+                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === page ? 'bg-emerald-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
                 {page}
               </button>
             ))}
@@ -380,7 +466,7 @@ const FarmManager = () => {
           </div>
           <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
             className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-800 disabled:opacity-40 disabled:cursor-not-allowed">
-            Next <ChevronRight size={16}/>
+            Next <ChevronRight size={16} />
           </button>
         </div>
       )}
@@ -403,7 +489,7 @@ const FarmManager = () => {
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 flex-shrink-0">
           <div>
             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              {currentFarmId ? <Edit2 size={18} className="text-yellow-500"/> : <Plus size={18} className="text-emerald-600"/>}
+              {currentFarmId ? <Edit2 size={18} className="text-yellow-500" /> : <Plus size={18} className="text-emerald-600" />}
               {currentFarmId ? 'Edit Farm' : 'New Farm'}
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
@@ -411,7 +497,7 @@ const FarmManager = () => {
             </p>
           </div>
           <button onClick={closeDrawer} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
-            <X size={18}/>
+            <X size={18} />
           </button>
         </div>
 
@@ -430,11 +516,11 @@ const FarmManager = () => {
               <div className="space-y-4">
                 <Field label="Farm Name" required error={formErrors.name}>
                   <input type="text" placeholder="e.g. Namanya Farm" value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })} className={inputCls(formErrors.name)}/>
+                    onChange={e => setFormData({ ...formData, name: e.target.value })} className={inputCls(formErrors.name)} />
                 </Field>
                 <Field label="National ID (NIN)" required error={formErrors.cin}>
                   <input type="text" placeholder="e.g. CM1234567890" value={formData.cin}
-                    onChange={e => setFormData({ ...formData, cin: e.target.value })} className={inputCls(formErrors.cin)}/>
+                    onChange={e => setFormData({ ...formData, cin: e.target.value })} className={inputCls(formErrors.cin)} />
                 </Field>
                 <Field label="Gender" required error={formErrors.gender}>
                   <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })} className={selectCls(formErrors.gender)}>
@@ -445,7 +531,7 @@ const FarmManager = () => {
                 </Field>
               </div>
             </div>
-            <div className="border-t border-gray-100"/>
+            <div className="border-t border-gray-100" />
 
             {/* 2 — Location */}
             <div>
@@ -488,15 +574,15 @@ const FarmManager = () => {
                           : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
                         }`}
                     >
-                      <MapPin size={15}/>
-                      {showMap ? <ChevronDown size={14}/> : <ChevronUp size={14}/>}
+                      <MapPin size={15} />
+                      {showMap ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                     </button>
                   </div>
 
                   {/* Indicateur polygone dessiné */}
                   {drawnPolygon && (
                     <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mt-1">
-                      <Check size={13} className="text-emerald-600"/>
+                      <Check size={13} className="text-emerald-600" />
                       Polygon drawn —{' '}
                       {drawnPolygon.geometry.coordinates[0].length - 1} vertices ·{' '}
                       {(turf.area(drawnPolygon) / 10000).toFixed(2)} ha
@@ -505,12 +591,12 @@ const FarmManager = () => {
 
                   <p className="text-xs text-gray-400">
                     Saisie manuelle <code className="bg-gray-100 px-1 rounded text-gray-600">lat, lon</code> ou utilisez le bouton{' '}
-                    <MapPin size={11} className="inline"/> pour dessiner.
+                    <MapPin size={11} className="inline" /> pour dessiner.
                   </p>
                 </Field>
               </div>
             </div>
-            <div className="border-t border-gray-100"/>
+            <div className="border-t border-gray-100" />
 
             {/* 3 — Group & Contact */}
             <div>
@@ -528,16 +614,16 @@ const FarmManager = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Phone 1">
                     <input type="tel" placeholder="+256…" value={formData.phonenumber1}
-                      onChange={e => setFormData({ ...formData, phonenumber1: e.target.value })} className={inputCls(false)}/>
+                      onChange={e => setFormData({ ...formData, phonenumber1: e.target.value })} className={inputCls(false)} />
                   </Field>
                   <Field label="Phone 2">
                     <input type="tel" placeholder="+256…" value={formData.phonenumber2}
-                      onChange={e => setFormData({ ...formData, phonenumber2: e.target.value })} className={inputCls(false)}/>
+                      onChange={e => setFormData({ ...formData, phonenumber2: e.target.value })} className={inputCls(false)} />
                   </Field>
                 </div>
               </div>
             </div>
-            <div className="h-4"/>
+            <div className="h-4" />
           </form>
 
           {/* ── Carte intégrée (visible uniquement si showMap) ── */}
@@ -546,7 +632,7 @@ const FarmManager = () => {
               {/* En-tête de la zone carte */}
               <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100 flex-shrink-0">
                 <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <MapPin size={15} className="text-emerald-600"/>
+                  <MapPin size={15} className="text-emerald-600" />
                   Draw Farm Polygon
                 </div>
                 <div className="text-xs text-gray-400">
@@ -577,8 +663,8 @@ const FarmManager = () => {
             className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-center gap-2
               ${submitting ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 shadow-sm'}`}>
             {submitting
-              ? <><Loader2 size={15} className="animate-spin"/> Saving…</>
-              : <><Check size={15}/> {currentFarmId ? 'Update Farm' : 'Create Farm'}</>}
+              ? <><Loader2 size={15} className="animate-spin" /> Saving…</>
+              : <><Check size={15} /> {currentFarmId ? 'Update Farm' : 'Create Farm'}</>}
           </button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 // components/TreeManagement/TreeManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { Trees, Plus, List, Map as MapIcon, Upload, Search, Filter } from 'lucide-react';
+import { Trees, Plus, List, Map as MapIcon, Upload, Search, Filter, Download } from 'lucide-react';
 import Swal from 'sweetalert2';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -67,7 +67,7 @@ const TreeManagement = () => {
       const filteredTrees = selectedForest === 'all'
         ? allTreesForMap
         : allTreesForMap.filter(t => t.forest_id === parseInt(selectedForest));
-      
+
       updateMarkers(filteredTrees, handleTreeClick, handleEditTree, handleDeleteTree);
     }
   }, [allTreesForMap, selectedForest, viewMode, updateMarkers]);
@@ -263,6 +263,46 @@ const TreeManagement = () => {
 
     e.target.value = '';
   };
+  const handleExportTreePoints = async () => {
+    try {
+      const response = await treeService.exportTreePoints(selectedForest);
+      const { geojson, total_exported, skipped, forest_name } = response.data;
+
+      if (!total_exported) {
+        Swal.fire({
+          icon: 'info',
+          title: 'No tree points to export',
+          text: 'No tree with a valid location was found.',
+        });
+        return;
+      }
+
+      const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/geo+json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const date = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = selectedForest === 'all'
+        ? `all_tree_points_${date}.geojson`
+        : `${(forest_name || 'forest').replace(/\s+/g, '_')}_tree_points_${date}.geojson`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Export complete',
+        text: skipped?.length
+          ? `${total_exported} tree point(s) exported. ${skipped.length} skipped (missing point).`
+          : `${total_exported} tree point(s) exported.`,
+        timer: 3000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire('Error', error.response?.data?.message || 'Failed to export tree points', 'error');
+    }
+  };
 
   const downloadTemplate = () => {
     const template = `name,type,forest_id,latitude,longitude,height,diameter,date_planted,date_cut
@@ -331,6 +371,13 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
                 Search
               </button>
               <button
+                onClick={handleExportTreePoints}
+                className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition flex items-center gap-2"
+              >
+                <Download className="w-5 h-5" />
+                Export Points
+              </button>
+              <button
                 onClick={() => setShowBulkImport(true)}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
               >
@@ -364,22 +411,20 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode('map')}
-                className={`px-4 py-2 rounded-lg font-semibold transition ${
-                  viewMode === 'map'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                className={`px-4 py-2 rounded-lg font-semibold transition ${viewMode === 'map'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
               >
                 <MapIcon className="w-5 h-5 inline mr-2" />
                 Map View
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-4 py-2 rounded-lg font-semibold transition ${
-                  viewMode === 'list'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                className={`px-4 py-2 rounded-lg font-semibold transition ${viewMode === 'list'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
               >
                 <List className="w-5 h-5 inline mr-2" />
                 List View
@@ -406,15 +451,15 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
 
         {/* Main Content */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div 
-            ref={mapContainer} 
-            style={{ 
-              width: '100%', 
+          <div
+            ref={mapContainer}
+            style={{
+              width: '100%',
               height: '600px',
               display: viewMode === 'map' ? 'block' : 'none'
-            }} 
+            }}
           />
-          
+
           {viewMode === 'list' && (
             <div className="p-6">
               <TreeList

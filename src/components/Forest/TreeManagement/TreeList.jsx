@@ -1,6 +1,6 @@
 // components/TreeManagement/TreeList.jsx
 import React from 'react';
-import { Edit2, Trash2, MapPin } from 'lucide-react';
+import { Edit2, Trash2, MapPin, Download } from 'lucide-react';
 
 // Moist Tropical Forest Model (Chave et al. 2014)
 // AGB = 0.0673 * (ρ * D² * H)^0.976
@@ -9,7 +9,7 @@ const calculateAGB = (diameter, height, woodDensity = 0.5) => {
   const D = parseFloat(diameter); // DBH en cm
   const H = parseFloat(height);   // Hauteur en m
   const rho = woodDensity;        // Densité du bois en g/cm³ (0.6 par défaut)
-  
+
   const AGB = 0.0673 * Math.pow((rho * D * D * H), 0.976);
   return AGB; // Retourne en kg
 };
@@ -17,42 +17,79 @@ const calculateAGB = (diameter, height, woodDensity = 0.5) => {
 // Calcul complet du CO2 séquestré
 const calculateCO2 = (diameter, height, woodDensity = 0.6) => {
   if (!diameter || !height) return { agb: 0, co2: 0 };
-  
+
   // Étape 1: AGB (Above-Ground Biomass)
   const AGB = calculateAGB(diameter, height, woodDensity);
-  
+
   // Étape 2: BGB (Below-Ground Biomass) = 0.2 × AGB
   const BGB = 0.2 * AGB;
-  
+
   // Étape 3: Total Biomass (TB) = AGB + BGB = 1.2 × AGB
   const TB = AGB + BGB;
-  
+
   // Étape 4: Total Dry Weight (TDW) = TB × 0.725
   const TDW = TB * 0.725;
-  
+
   // Étape 5: Total Carbon (TC) = TDW × 0.5
   const TC = TDW * 0.5;
-  
+
   // Étape 6: CO2 Weight = TC × 3.67 (en kg)
   const CO2_kg = TC * 3.67;
-  
+
   // Conversion en tonnes (1 tonne = 1000 kg)
   const CO2_tonnes = CO2_kg / 1000;
-  
+
   return {
     agb: AGB.toFixed(2),
     co2: CO2_tonnes.toFixed(3) // 3 décimales pour les tonnes
   };
 };
+const handleExportTree = (tree) => {
+  if (!tree.point) {
+    return; // pas de géolocalisation, rien à exporter
+  }
 
-const TreeList = ({ 
-  trees, 
-  onEdit, 
-  onDelete, 
+  const geojson = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [parseFloat(tree.point.longitude), parseFloat(tree.point.latitude)],
+      },
+      properties: {
+        tree_id: tree.id,
+        name: tree.name,
+        type: tree.type || null,
+        forest_id: tree.forest_id,
+        forest_name: tree.forest_name || null,
+        height: tree.height,
+        diameter: tree.diameter,
+        date_planted: tree.date_planted || null,
+        date_cut: tree.date_cut || null,
+      },
+    }],
+  };
+
+  const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/geo+json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${tree.name.replace(/\s+/g, '_')}_point.geojson`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+const TreeList = ({
+  trees,
+  onEdit,
+  onDelete,
   onLocate,
   currentPage,
   totalPages,
-  onPageChange 
+  onPageChange
 }) => {
   return (
     <div>
@@ -92,7 +129,7 @@ const TreeList = ({
           <tbody className="divide-y divide-gray-200">
             {trees.map(tree => {
               const { agb, co2 } = calculateCO2(tree.diameter, tree.height);
-              
+
               return (
                 <tr key={tree.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -131,6 +168,13 @@ const TreeList = ({
                         title="Locate on map"
                       >
                         <MapPin className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => handleExportTree(tree)}
+                        className="text-cyan-600 hover:text-cyan-900"
+                        title="Export as GeoJSON"
+                      >
+                        <Download className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => onEdit(tree)}
