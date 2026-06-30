@@ -22,6 +22,16 @@ const WeatherDashboard = () => {
     const [query, setQuery] = useState('');
     const [forecastRange, setForecastRange] = useState(3);
 
+    // ✅ AJOUT : Onglets ("single" = vue ferme unique actuelle, "all" = dashboard multi-fermes)
+    const [activeTab, setActiveTab] = useState('single');
+    const [allFarmsAlerts, setAllFarmsAlerts] = useState([]);
+    const [allFarmsLoading, setAllFarmsLoading] = useState(false);
+    const [allFarmsLastChecked, setAllFarmsLastChecked] = useState(null);
+
+    // ✅ AJOUT : Ferme actuellement sélectionnée + numéro de téléphone associé
+    const selectedFarm = farms.find((farm) => String(farm.id) === String(selectedFarmId));
+    const selectedFarmPhone = selectedFarm?.phonenumber1 || selectedFarm?.phonenumber || null;
+
     // Récupération de la liste des fermes
     useEffect(() => {
         const fetchFarms = async () => {
@@ -255,15 +265,16 @@ const WeatherDashboard = () => {
         return message;
     };
 
-    // Détection des anomalies et envoi d'une alerte par EmailJS
-    const detectAnomalies = (data) => {
+    // 🔁 AJOUT : Logique pure de détection (réutilisable pour le dashboard multi-fermes)
+    // Retourne un tableau de chaînes décrivant les anomalies trouvées (vide si aucune)
+    const computeAnomalies = (data) => {
         const tempThresholdLow = 10;
         const tempThresholdHigh = 30;
         const drynessHumidityThreshold = 30;
         const heavyRainThreshold = 5;
         const strongWindThreshold = 20;
 
-        if (!data || !data.hourly || !data.hourly.time) return;
+        if (!data || !data.hourly || !data.hourly.time) return [];
 
         let anomalies = [];
         data.hourly.time.forEach((time, index) => {
@@ -271,7 +282,7 @@ const WeatherDashboard = () => {
             const temperature = data.hourly.temperature_2m[index];
             const humidity = data.hourly.relative_humidity_2m[index];
             const precipitation = data.hourly.precipitation[index];
-            const windSpeed = data.hourly.wind_speed_1000hPa[index];
+            const windSpeed = data.hourly.wind_speed_1000hPa ? data.hourly.wind_speed_1000hPa[index] : 0;
 
             let hourAnomalies = [];
             if (temperature < tempThresholdLow) {
@@ -297,6 +308,12 @@ const WeatherDashboard = () => {
                 anomalies.push(`At ${timeStr} on ${forecastDate.toLocaleDateString('en-US')}: ${hourAnomalies.join(', ')}`);
             }
         });
+        return anomalies;
+    };
+
+    // Détection des anomalies (ferme unique) et envoi d'une alerte par EmailJS
+    const detectAnomalies = (data) => {
+        const anomalies = computeAnomalies(data);
         if (anomalies.length > 0) {
             const alertMessage = `⚠️ Alert: Anomalies detected:\n${anomalies.join('\n')}`;
             setAnomalyAlert(alertMessage);
@@ -326,6 +343,55 @@ const WeatherDashboard = () => {
                 console.error('Failed to send email:', error);
             });
     };
+
+    // 🆕 AJOUT : Dashboard multi-fermes — vérifie toutes les fermes et liste celles en alerte
+    const fetchAllFarmsAlerts = async () => {
+        if (!farms.length) return;
+        setAllFarmsLoading(true);
+        try {
+            const results = [];
+
+            for (const farm of farms) {
+                if (!farm.geolocation || !farm.geolocation.includes(',')) continue;
+                const [latStr, lonStr] = farm.geolocation.split(',');
+                const lat = parseFloat(latStr);
+                const lon = parseFloat(lonStr);
+                if (isNaN(lat) || isNaN(lon)) continue;
+
+                try {
+                    const response = await fetch(
+                        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=3`
+                    );
+                    const data = await response.json();
+                    const anomalies = computeAnomalies(data);
+
+                    if (anomalies.length > 0) {
+                        results.push({
+                            farm,
+                            phone: farm.phonenumber1 || farm.phonenumber || null,
+                            lat,
+                            lon,
+                            anomalies,
+                        });
+                    }
+                } catch (err) {
+                    console.error(`Error checking farm ${farm.name}:`, err);
+                }
+            }
+
+            setAllFarmsAlerts(results);
+            setAllFarmsLastChecked(new Date());
+        } finally {
+            setAllFarmsLoading(false);
+        }
+    };
+
+    // Lance la vérification multi-fermes dès qu'on ouvre l'onglet "All Farms" (et que les fermes sont chargées)
+    useEffect(() => {
+        if (activeTab === 'all' && farms.length > 0 && allFarmsAlerts.length === 0 && !allFarmsLastChecked) {
+            fetchAllFarmsAlerts();
+        }
+    }, [activeTab, farms]);
 
     // Initialisation de la map Mapbox
     useEffect(() => {
@@ -404,6 +470,39 @@ const WeatherDashboard = () => {
                     <h1 className="text-4xl font-bold text-gray-800">Anomaly Alert Detection</h1>
                 </header>
 
+                {/* ✅ AJOUT : Onglets Single Farm / All Farms */}
+                <div className="mb-8 inline-flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
+                    <button
+                        onClick={() => setActiveTab('single')}
+                        className={`px-5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                            activeTab === 'single'
+                                ? 'bg-blue-600 text-white shadow'
+                                : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                    >
+                        Single Farm
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('all')}
+                        className={`relative px-5 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                            activeTab === 'all'
+                                ? 'bg-blue-600 text-white shadow'
+                                : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                    >
+                        All Farms Alerts
+                        {allFarmsAlerts.length > 0 && (
+                            <span className={`ml-2 inline-flex items-center justify-center text-xs font-bold rounded-full w-5 h-5 ${
+                                activeTab === 'all' ? 'bg-white text-blue-700' : 'bg-red-500 text-white'
+                            }`}>
+                                {allFarmsAlerts.length}
+                            </span>
+                        )}
+                    </button>
+                </div>
+
+                {activeTab === 'single' && (
+                <>
                 {/* Sélection de la ferme ET coordonnées manuelles */}
                 <section className="mb-8">
                     <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg p-8 border border-gray-100">
@@ -490,7 +589,7 @@ const WeatherDashboard = () => {
                             </div>
                         </div>
 
-                        {/* ✅ Indicateur visuel des coordonnées actives AVEC NOM DU LIEU */}
+                        {/* ✅ Indicateur visuel des coordonnées actives AVEC NOM DU LIEU + INFOS FARMER */}
                         {latitude && longitude && (
                             <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg">
                                 <div className="flex items-start">
@@ -498,6 +597,16 @@ const WeatherDashboard = () => {
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                     </svg>
                                     <div>
+                                        {/* ✅ AJOUT : Nom du farmer + téléphone, si une ferme est sélectionnée */}
+                                        {selectedFarm && (
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2 text-sm text-blue-900">
+                                                <span className="font-bold">👤 {selectedFarm.name}</span>
+                                                {selectedFarmPhone && (
+                                                    <span className="font-medium">📞 {selectedFarmPhone}</span>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {/* Affichage du nom du lieu */}
                                         {locationName && (
                                             <p className="text-base text-blue-900 font-bold mb-1">
@@ -612,10 +721,98 @@ const WeatherDashboard = () => {
                                     clipRule="evenodd"
                                 />
                             </svg>
-                            <div>
+                            <div className="flex-1">
                                 <h3 className="font-bold text-xl text-red-600 mb-1">Alert</h3>
                                 <p className="text-red-700 text-sm whitespace-pre-wrap">{anomalyAlert}</p>
                             </div>
+                        </div>
+                    </section>
+                )}
+                </>
+                )}
+
+                {/* ✅ AJOUT : Dashboard "All Farms Alerts" */}
+                {activeTab === 'all' && (
+                    <section className="mb-8">
+                        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800">All Farms — Active Alerts</h2>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        {allFarmsLastChecked
+                                            ? `Last checked: ${allFarmsLastChecked.toLocaleTimeString('en-US')} · ${allFarmsAlerts.length} / ${farms.length} farms in alert`
+                                            : 'Not checked yet'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={fetchAllFarmsAlerts}
+                                    disabled={allFarmsLoading}
+                                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition"
+                                >
+                                    <svg className={`w-4 h-4 ${allFarmsLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    {allFarmsLoading ? 'Checking farms…' : 'Refresh'}
+                                </button>
+                            </div>
+
+                            {allFarmsLoading ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                                    <svg className="w-8 h-8 animate-spin mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    <p className="text-sm">Checking weather for {farms.length} farms…</p>
+                                </div>
+                            ) : allFarmsAlerts.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                                    <svg className="w-10 h-10 mb-3 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                    <p className="text-sm font-medium text-gray-600">No active alerts across all farms</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {allFarmsAlerts.map((item, index) => (
+                                        <div key={`${item.farm.id}-${index}`} className="rounded-xl border-2 border-red-200 bg-red-50/50 p-5">
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div>
+                                                    <p className="font-bold text-gray-900">👤 {item.farm.name}</p>
+                                                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1 text-xs text-gray-500">
+                                                        {item.phone && <span>📞 {item.phone}</span>}
+                                                        <span>📍 {item.lat.toFixed(4)}°N, {item.lon.toFixed(4)}°E</span>
+                                                    </div>
+                                                </div>
+                                                <span className="inline-flex items-center justify-center text-xs font-bold bg-red-500 text-white rounded-full px-2.5 py-1">
+                                                    {item.anomalies.length} anomal{item.anomalies.length > 1 ? 'ies' : 'y'}
+                                                </span>
+                                            </div>
+                                            <div className="bg-white rounded-lg border border-red-100 p-3 max-h-40 overflow-y-auto">
+                                                <ul className="space-y-1 text-xs text-red-700">
+                                                    {item.anomalies.slice(0, 5).map((a, i) => (
+                                                        <li key={i}>• {a}</li>
+                                                    ))}
+                                                    {item.anomalies.length > 5 && (
+                                                        <li className="text-gray-400 italic">+ {item.anomalies.length - 5} more…</li>
+                                                    )}
+                                                </ul>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedFarmId(String(item.farm.id));
+                                                    setLatitude(item.lat);
+                                                    setLongitude(item.lon);
+                                                    setLocation({ lat: item.lat, lon: item.lon });
+                                                    fetchLocationName(item.lat, item.lon);
+                                                    setActiveTab('single');
+                                                }}
+                                                className="mt-3 text-xs font-semibold text-blue-600 hover:text-blue-800"
+                                            >
+                                                View details →
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </section>
                 )}

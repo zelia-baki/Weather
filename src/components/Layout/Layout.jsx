@@ -21,11 +21,31 @@ const ROLE_META = {
 };
 
 // ─── Nav menu definitions ─────────────────────────────────────
-const buildMenus = (isAdmin, role) => {
-  const isFarmer  = isAdmin || role === "farmer";
-  const isForest  = isAdmin || role === "forest";
-  const isWeather = isAdmin || role === "weather";
-  const isAll     = isAdmin || ["weather", "farmer", "forest"].includes(role);
+// permissions : objet JSON issu du JWT (sub.permissions), ex:
+// { farmergroup: true, store: true, weather_dashboard: true, water_advisory: false, sentinel: true, ... }
+const buildMenus = (isAdmin, role, permissions = {}) => {
+  const isFarmer = isAdmin || role === "farmer";
+  const isForest = isAdmin || role === "forest";
+  const isAll    = isAdmin || ["weather", "farmer", "forest"].includes(role);
+
+  // ── Permissions modulaires Weather ──────────────────────────
+  // Admin : tout débloqué. Sinon on regarde la permission précise dans le JWT.
+  const weatherPerms = {
+    weather_dashboard: isAdmin || !!permissions.weather_dashboard,
+    water_advisory:    isAdmin || !!permissions.water_advisory,
+  };
+
+  // Le dropdown "Weather" s'affiche si :
+  //  - rôle historique "weather" (ou admin), OU
+  //  - n'importe quel rôle (farmer/forest) avec au moins une permission weather activée
+  const isWeather =
+    isAdmin ||
+    role === "weather" ||
+    Object.values(weatherPerms).some(Boolean);
+
+  // ── Permissions modulaires Farm ─────────────────────────────
+  const hasFarmergroup = isAdmin || !!permissions.farmergroup;
+  const hasStore        = isAdmin || !!permissions.store;
 
   return [
     {
@@ -40,13 +60,13 @@ const buildMenus = (isAdmin, role) => {
       id: "farm", label: "Farm", Icon: GiFarmer,
       show: isFarmer,
       items: [
-        { label: "Farmer Group",  href: "/farmergroup",         Icon: GiFarmer },
+        ...(hasFarmergroup ? [{ label: "Farmer Group", href: "/farmergroup", Icon: GiFarmer }] : []),
         { label: "Farm Manager",  href: "/farmmanager",         Icon: RiPlantLine },
         { label: "Crop",          href: "/cropmanage",          Icon: GiWheat },
-        { label: "Categories",    href: "/categorymanager",     Icon: TbTag },          // ← nouveau
+        { label: "Categories",    href: "/categorymanager",     Icon: TbTag },
         { label: "District",      href: "/district",            Icon: TbMap2 },
         { label: "View All",      href: "/mapviewall",          Icon: RiMapPinLine, state: { owner_type: "farmer" } },
-        { label: "Store",         href: "/storeProductManager", Icon: BsShop },
+        ...(hasStore ? [{ label: "Store", href: "/storeProductManager", Icon: BsShop }] : []),
       ],
     },
     {
@@ -68,9 +88,13 @@ const buildMenus = (isAdmin, role) => {
         { label: "HDD & CDD",         href: "/onemonth",          Icon: MdOutlineWbSunny },
         { label: "GDD for Pest",      href: "/graphpest",         Icon: TbChartBar },
         { label: "Planting Date",     href: "/plantingdate",      Icon: BsCalendarDate },
-        { label: "Anomaly Alert",     href: "/weatherdas",        Icon: MdOutlineWarningAmber },
-        { label: "Alert Messaging",   href: "/alertmessage",      Icon: MdOutlineSms },
-        { label: "Water Advisory",    href: "/wateradvisory",     Icon: MdOutlineWaterDrop },
+        ...(weatherPerms.weather_dashboard ? [
+          { label: "Anomaly Alert",   href: "/weatherdas",        Icon: MdOutlineWarningAmber },
+          { label: "Alert Messaging", href: "/alertmessage",      Icon: MdOutlineSms },
+        ] : []),
+        ...(weatherPerms.water_advisory ? [
+          { label: "Water Advisory",  href: "/wateradvisory",     Icon: MdOutlineWaterDrop },
+        ] : []),
         { label: "Location Advisory", href: "/locationadvisory",  Icon: RiMapPinLine },
       ],
     },
@@ -189,6 +213,7 @@ const MobileAccordion = ({ menu, open, onToggle, onNavigate }) => {
 const Layout = ({ children }) => {
   const [userRole,       setUserRole]       = useState(null);
   const [isAdmin,        setIsAdmin]        = useState(false);
+  const [permissions,    setPermissions]    = useState({});   // ← nouveau
   const [openMenu,       setOpenMenu]       = useState(null);
   const [mobileOpen,     setMobileOpen]     = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(null);
@@ -201,13 +226,17 @@ const Layout = ({ children }) => {
         const decoded = jwtDecode(token);
         setUserRole(decoded.sub?.user_type || "");
         setIsAdmin(decoded.sub?.is_admin   || false);
+        setPermissions(decoded.sub?.permissions || {});   // ← nouveau
       } catch {
         localStorage.removeItem("token");
       }
     }
   }, []);
 
-  const menus = useMemo(() => buildMenus(isAdmin, userRole), [isAdmin, userRole]);
+  const menus = useMemo(
+    () => buildMenus(isAdmin, userRole, permissions),   // ← permissions ajouté
+    [isAdmin, userRole, permissions]
+  );
 
   const handleEnter = (id) => {
     clearTimeout(hoverTimeout.current);
