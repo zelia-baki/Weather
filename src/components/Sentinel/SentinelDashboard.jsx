@@ -687,7 +687,7 @@ const ClassificationMapsPanel = ({ entityId }) => {
 
               <div className="p-4">
                 <div className="flex justify-between text-[10px] text-slate-500 font-semibold uppercase mb-2">
-                  <span>Légende</span>
+                  <span>Legend</span>
                   <span>Surface (km²)</span>
                 </div>
                 <div className="space-y-1.5">
