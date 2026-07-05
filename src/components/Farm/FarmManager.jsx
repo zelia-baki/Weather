@@ -297,6 +297,7 @@ const FarmManager = () => {
     { icon: <BarChart2 size={12} />, label: 'EUDR Report', to: '/reportfarmer', state: { farmId: farm.id }, cls: 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200' },
     { icon: <Leaf size={12} />, label: 'Carbon Report', to: '/reportcarbon', state: { farmId: farm.id }, cls: 'bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200' },
     { icon: <Radio size={12} />, label: 'SatIndex', to: `/sentinel/farm/${farm.id}`, state: { farmId: farm.id }, cls: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200' },
+    { icon: <Radio size={12} />, label: 'Imagery', to: `/imagery/farm/${farm.id}`, state: { farmId: farm.id }, cls: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200' },
   ];
 
   return (

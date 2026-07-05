@@ -11,13 +11,14 @@ D:\project\Weather
 ├── arborescence.py
 ├── arborescence.txt
 ├── certificate.html
+├── clock.html
 ├── dist
 │   ├── assets
 │   │   ├── bg-CXlWhlXB.jpg
-│   │   ├── html2canvas-DARcDvZ4.js
-│   │   ├── index-C_38EX2U.js
-│   │   ├── index-DoQXjXDN.css
-│   │   ├── index.es-HMGz1Lw4.js
+│   │   ├── html2canvas-DXT9txwi.js
+│   │   ├── index-D9LZyBu8.js
+│   │   ├── index-NgR5vpmz.css
+│   │   ├── index.es-chiEl6xg.js
 │   │   ├── parrot-CPW7Bwmu.jpg
 │   │   └── purify.es-BFmuJLeH.js
 │   ├── gifs
@@ -210,7 +211,27 @@ D:\project\Weather
 │   │   │   └── receipt-styles.js
 │   │   ├── SendDPOPaymentModal.jsx
 │   │   ├── Sentinel
-│   │   │   └── SentinelDashboard.jsx
+│   │   │   ├── SentinelDashboard.jsx
+│   │   │   ├── config
+│   │   │   │   └── chartSetup.js
+│   │   │   ├── constants.js
+│   │   │   ├── panels
+│   │   │   │   ├── ClassificationMapsPanel.jsx
+│   │   │   │   ├── GaugeCard.jsx
+│   │   │   │   ├── IndexCard.jsx
+│   │   │   │   ├── IndexGaugePanel.jsx
+│   │   │   │   ├── LTVPanel.jsx
+│   │   │   │   ├── MiniYearMap.jsx
+│   │   │   │   ├── OutOfBoundsAlert.jsx
+│   │   │   │   ├── SeasonalNdviRainfallPanel.jsx
+│   │   │   │   ├── Spinner.jsx
+│   │   │   │   ├── TierBadge.jsx
+│   │   │   │   ├── WeeklyTrendPanel.jsx
+│   │   │   │   ├── YearlyPolygonMapGrid.jsx
+│   │   │   │   └── YieldAnalysisPanel.jsx
+│   │   │   └── utils
+│   │   │       ├── chartBuilders.js
+│   │   │       └── colorUtils.js
 │   │   ├── SimpleTest.jsx
 │   │   ├── ThemeProvider.jsx
 │   │   ├── Users
