@@ -106,35 +106,36 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
 
   console.log("ETO", coordinates);
 
+  // ─── EUDR Compliance logic ───────────────────────────────────────────────
+  // Rules (strict priority order):
+  // 1) Forest cover detected (JRC 2020)                -> Not Compliant, regardless of tree cover loss
+  // 2) No forest cover AND no tree cover loss          -> Fully Compliant
+  // 3) No forest cover AND tree cover loss detected     -> Compliant, shade trees planting recommended
   const determineComplianceStatus = (treeCoverLoss, hasForestCover) => {
     const hasTreeCoverLoss = treeCoverLoss > 0;
-    console.log(treeCoverLoss, hasForestCover);
+    console.log('[DEBUG] determineComplianceStatus →', { treeCoverLoss, hasForestCover, hasTreeCoverLoss });
 
-    if (!hasTreeCoverLoss && !hasForestCover) {
-      return {
-        status: '100% Compliant',
-        statusColor: 'text-green-600 bg-green-100',
-        description: 'No tree cover loss detected and no forest cover detected. Fully compliant with EUDR regulations.'
-      };
-    } else if ((!hasTreeCoverLoss && hasForestCover) || (hasTreeCoverLoss && !hasForestCover)) {
-      return {
-        status: 'Likely Compliant',
-        statusColor: 'text-yellow-600 bg-yellow-100',
-        description: 'No tree cover loss detected but forest cover is present. Area shows good forest conservation practices.'
-      };
-    } else if (hasTreeCoverLoss) {
+    if (hasForestCover) {
       return {
         status: 'Not Compliant',
         statusColor: 'text-red-600 bg-red-100',
-        description: 'Tree cover loss detected. This indicates potential deforestation activity that may violate EUDR regulations.'
-      };
-    } else {
-      return {
-        status: 'Assessment Pending',
-        statusColor: 'text-gray-600 bg-gray-100',
-        description: 'Insufficient data to determine compliance status.'
+        description: 'Forest cover detected on this plot (EUDR Article 2). Not compliant with EUDR regulations, regardless of tree cover loss status.'
       };
     }
+
+    if (!hasTreeCoverLoss) {
+      return {
+        status: '100% Compliant',
+        statusColor: 'text-green-600 bg-green-100',
+        description: 'No forest cover and no tree cover loss detected. Fully compliant with EUDR regulations.'
+      };
+    }
+
+    return {
+      status: 'Compliant',
+      statusColor: 'text-emerald-600 bg-emerald-100',
+      description: 'No forest cover detected, but tree cover loss was recorded since 2020. Planting shade trees is recommended.'
+    };
   };
 
   useEffect(() => {
@@ -492,7 +493,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
               EU joint Research Centre Geostore for checking existence or not of forest cover as of 2020
               <ul className="list-disc list-inside text-gray-700 mt-2">
                 <li><strong>None detected:</strong> Plot/Farm is fully compliant with EUDR Law.</li>
-                <li><strong>Forest detected:</strong> Farm requires careful assessment for EUDR compliance.</li>
+                <li><strong>Forest detected:</strong> Farm is NOT compliant with EUDR Law, regardless of other indicators.</li>
               </ul>
             </div>
           </div>
