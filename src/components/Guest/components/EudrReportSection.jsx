@@ -56,6 +56,9 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
   const [isJrcGlobalForestCover, setIsJrcGlobalForestCover] = useState(null);
   const [geoData, setGeoData] = useState({});
   const [treeCoverLossArea, setTreeCoverLossArea] = useState(0);
+  // ✅ NOUVEAU : ratio de perte de couverture arborée (plafonné à 100%, voir annotation PDF)
+  const [treeCoverLossRatio, setTreeCoverLossRatio] = useState(0);
+  const [treeCoverLossCapped, setTreeCoverLossCapped] = useState(false);
   const [wriTropicalTreeCoverAvg, setWriTropicalTreeCoverAvg] = useState(0);
   const [raddAlertsArea, setRaddAlertsArea] = useState(0);
   const [complianceStatus, setComplianceStatus] = useState({
@@ -111,6 +114,11 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
   // 1) Forest cover detected (JRC 2020)                -> Not Compliant, regardless of tree cover loss
   // 2) No forest cover AND no tree cover loss          -> Fully Compliant
   // 3) No forest cover AND tree cover loss detected     -> Compliant, shade trees planting recommended
+  //    ⚠️ NOTE (voir annotation PDF) : avant de valider ce statut, vérifier si la perte détectée
+  //    correspond à des pratiques agroforestières cycliques normales (élagage de routine,
+  //    recépage, renouvellement/coupe des arbres d'ombrage pour la lutte antiparasitaire)
+  //    plutôt qu'à une véritable déforestation. Cette vérification reste manuelle tant que
+  //    la donnée n'est pas disponible dans les couches satellites.
   const determineComplianceStatus = (treeCoverLoss, hasForestCover) => {
     const hasTreeCoverLoss = treeCoverLoss > 0;
     console.log('[DEBUG] determineComplianceStatus →', { treeCoverLoss, hasForestCover, hasTreeCoverLoss });
@@ -134,7 +142,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
     return {
       status: 'Compliant',
       statusColor: 'text-emerald-600 bg-emerald-100',
-      description: 'No forest cover detected, but tree cover loss was recorded since 2020. Planting shade trees is recommended.'
+      description: 'No forest cover detected, but tree cover loss was recorded since 2020. Before finalizing this status, verify whether the loss results from cyclical agroforestry practices (e.g. routine canopy pruning, tree stumping, or shade-tree rejuvenation/cutting for pest mitigation) rather than deforestation. Planting shade trees is recommended.'
     };
   };
 
@@ -238,12 +246,60 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
       setTscDriverDriver(calculatedDriverData);
     }
 
+    // ✅ Calcul de la superficie (déplacé AVANT le calcul de la perte de couverture,
+    // car ce dernier a désormais besoin de la surface totale pour se valider — voir annotation PDF)
+    let calculatedAreaSqM = 0;
+    let calculatedAreaHa = 0;
+
+    if (coordinates && Array.isArray(coordinates) && coordinates.length >= 3) {
+      const first = coordinates[0];
+      const last = coordinates[coordinates.length - 1];
+      const closedCoords = (first[0] !== last[0] || first[1] !== last[1])
+        ? [...coordinates, first]
+        : coordinates;
+
+      try {
+        const polygon = turf.polygon([closedCoords]);
+        calculatedAreaSqM = turf.area(polygon);
+        calculatedAreaHa = calculatedAreaSqM / 10000;
+        setAreaInSquareMeters(calculatedAreaSqM);
+        setAreaInHectares(calculatedAreaHa);
+      } catch (e) {
+        console.error("Turf error on polygon:", e);
+      }
+    }
+
     // ✅ Calcul de la perte de couverture forestière
+    // ⚠️ FIX (annotation PDF) : la surface de perte ne peut jamais dépasser la surface totale
+    // de la parcelle. On plafonne la valeur et on calcule le ratio (%) une seule fois, ici,
+    // pour qu'il soit affiché sur la ligne "Tree Cover Loss" plutôt que sur "Country Deforestation Risk".
     let calculatedTreeCoverLoss = 0;
+    let calculatedTreeCoverLossRatio = 0;
+    let wasCapped = false;
+
     const coverLossArray = results["tree cover loss"];
     if (Array.isArray(coverLossArray) && coverLossArray.length > 0) {
-      calculatedTreeCoverLoss = coverLossArray[0]?.data_fields?.area__ha || 0;
+      const rawLoss = coverLossArray[0]?.data_fields?.area__ha || 0;
+      calculatedTreeCoverLoss = rawLoss;
+
+      if (calculatedAreaHa > 0) {
+        if (rawLoss > calculatedAreaHa) {
+          console.warn(
+            `⚠️ Tree cover loss (${rawLoss} ha) exceeds farm area (${calculatedAreaHa} ha). ` +
+            `Capping to farm area — source data/computation should be reviewed upstream.`
+          );
+          calculatedTreeCoverLoss = calculatedAreaHa;
+          wasCapped = true;
+        }
+        calculatedTreeCoverLossRatio = Math.min(
+          (calculatedTreeCoverLoss / calculatedAreaHa) * 100,
+          100
+        );
+      }
+
       setTreeCoverLossArea(calculatedTreeCoverLoss);
+      setTreeCoverLossRatio(calculatedTreeCoverLossRatio);
+      setTreeCoverLossCapped(wasCapped);
     }
 
     // ✅ Calcul du statut des zones protégées
@@ -311,28 +367,6 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
       }));
     }
 
-    // ✅ Calcul de la superficie
-    let calculatedAreaSqM = 0;
-    let calculatedAreaHa = 0;
-
-    if (coordinates && Array.isArray(coordinates) && coordinates.length >= 3) {
-      const first = coordinates[0];
-      const last = coordinates[coordinates.length - 1];
-      const closedCoords = (first[0] !== last[0] || first[1] !== last[1])
-        ? [...coordinates, first]
-        : coordinates;
-
-      try {
-        const polygon = turf.polygon([closedCoords]);
-        calculatedAreaSqM = turf.area(polygon);
-        calculatedAreaHa = calculatedAreaSqM / 10000;
-        setAreaInSquareMeters(calculatedAreaSqM);
-        setAreaInHectares(calculatedAreaHa);
-      } catch (e) {
-        console.error("Turf error on polygon:", e);
-      }
-    }
-
     // ✅ Vérification de la couverture forestière JRC
     let hasForestCover = false;
     let forestCoverText = "No forest cover detected";
@@ -379,6 +413,8 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
       deforestationRiskLevel: 'STANDARD',
       raddAlertsArea: raddArea,
       treeCoverLossArea: calculatedTreeCoverLoss,
+      treeCoverLossRatio: calculatedTreeCoverLossRatio, // ✅ à afficher sur la ligne "Tree Cover Loss" dans renderEudrTable
+      treeCoverLossCapped: wasCapped, // ✅ flag pour signaler une valeur source incohérente
       isJrcGlobalForestCover: forestCoverText,
       complianceStatus: compliance,
       protectedStatus: calculatedProtectedStatus,
@@ -482,7 +518,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
               Area in which Tree loss was identified since Dec 2020:
               <ul className="list-disc list-inside text-gray-700 mt-2">
                 <li><strong>Zero:</strong> Plot/Farm is fully compliant with EUDR Law.</li>
-                <li><strong>Non-Zero:</strong> Plot/Farm likely non compliant with EUDR Law.</li>
+                <li><strong>Non-Zero:</strong> Plot/Farm likely non compliant with EUDR Law — subject to review for cyclical agroforestry practices (pruning, stumping, shade-tree renewal).</li>
               </ul>
             </div>
           </div>
@@ -533,6 +569,8 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
               tscDriverDriver,
               isJrcGlobalForestCover,
               treeCoverLossArea,
+              treeCoverLossRatio,      // ✅ NOUVEAU : à afficher sur la ligne "Tree Cover Loss" (pas "Country Deforestation Risk")
+              treeCoverLossCapped,     // ✅ NOUVEAU : flag d'incohérence source à signaler dans le tableau si true
               wriTropicalTreeCoverAvg,
               raddAlertsArea,
               complianceStatus
@@ -547,7 +585,10 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
               <p>Analysis shows:</p>
               <ul className="list-disc list-inside ml-4 space-y-1">
                 <li>Area: {areaInHectares?.toFixed(2)} hectares</li>
-                <li>Tree cover loss: {treeCoverLossArea} hectares</li>
+                <li>
+                  Tree cover loss: {treeCoverLossArea?.toFixed ? treeCoverLossArea.toFixed(5) : treeCoverLossArea} hectares
+                  {' '}({treeCoverLossRatio.toFixed(2)}% of plot area{treeCoverLossCapped ? ' — capped, source value exceeded plot area, please verify upstream data' : ''})
+                </li>
                 <li>Average tree cover: {wriTropicalTreeCoverAvg.toFixed(1)}%</li>
                 <li>Primary deforestation driver: {tscDriverDriver?.mostCommonValue || "Unknown"}</li>
                 <li>RADD alerts: {raddAlertsArea} hectares</li>
