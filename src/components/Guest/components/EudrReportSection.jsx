@@ -496,7 +496,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
           ) : (
             <span> no specific crops mentioned.</span>
           )}
-          This report outlines the {reportTexts.entityType.toLowerCase()}'s activities, challenges, and opportunities to support its continued growth and sustainability.
+          This report outlines the {reportTexts.entityType.toLowerCase()}'s activities, challenges,natural disaster and opportunities to support its continued growth and sustainability.
         </p>
       )}
 
