@@ -154,9 +154,10 @@ export default function ImageryDashboard({ entityType = "farm" }) {
         </div>
 
         {/* Farm Boundary — NDVI by Year */}
-        {type === "farm" && (
+        {(type === "farm" || type === "forest") && (
           <YearlyPolygonMapGrid
             entityId={entityId}
+            entityType={type}
             history={history}
             activeIndex={active}
           />
@@ -168,8 +169,8 @@ export default function ImageryDashboard({ entityType = "farm" }) {
         )}
 
         {/* Plant Health Classification Maps */}
-        {type === "farm" && (
-          <ClassificationMapsPanel entityId={entityId} />
+        {(type === "farm" || type === "forest") && (
+          <ClassificationMapsPanel entityId={entityId} entityType={type} />
         )}
 
         <p className="text-center text-xs text-slate-600 pb-4">

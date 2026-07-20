@@ -35,6 +35,14 @@ const CARDS = [
     border:  'border-purple-400',
     bg:      'bg-purple-50 hover:bg-purple-100',
   },
+  {
+    to:      '/hscodemanager',
+    icon:    <ClipboardList size={32} className="text-purple-600"/>,
+    title:   'HScode Manager',
+    desc:    'Define HScode from EUDR for crops and quality control.',
+    border:  'border-purple-400',
+    bg:      'bg-purple-50 hover:bg-purple-100',
+  },
 ];
 
 const CreateCrop = () => (

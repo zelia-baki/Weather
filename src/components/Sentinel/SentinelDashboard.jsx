@@ -23,22 +23,18 @@ import WeeklyTrendPanel from "./panels/WeeklyTrendPanel";
 import IndexGaugePanel from "./panels/IndexGaugePanel";
 import SeasonalNdviRainfallPanel from "./panels/SeasonalNdviRainfallPanel";
 
-export default function SentinelDashboard({ entityType = 'farm' }) {
+export default function SentinelDashboard({ entityType = 'farm', mode = 'account', geojson = null, phone = null, initialData = null }) {
   const params = useParams();
   const location = useLocation();
+  const isGuest = mode === 'guest';
 
-  const rawId = params.farmId || params.forestId
-    || location.state?.farmId || location.state?.forestId || null;
-  const entityId = (rawId && rawId !== 'undefined' && rawId !== 'null')
-    ? String(rawId).trim() : null;
-  const type = entityType || (params.forestId ? 'forest' : 'farm');
+  const rawId = params.farmId || params.forestId || location.state?.farmId || location.state?.forestId || null;
+  const entityId = (rawId && rawId !== 'undefined' && rawId !== 'null') ? String(rawId).trim() : null;
+  const type = isGuest ? 'farm' : (entityType || (params.forestId ? 'forest' : 'farm'));
 
-  useEffect(() => {
-    console.log('[Sentinel] entityId:', entityId, 'type:', type);
-  }, []);
 
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(isGuest && initialData ? initialData : null);
+  const [loading, setLoading] = useState(!(isGuest && initialData));
   const [error, setError] = useState(null);
   const [active, setActive] = useState('ndvi');
   const [exporting, setExporting] = useState(false);
@@ -47,24 +43,40 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
   const ltvParamsRef = useRef({});
 
   const fetchData = useCallback(async (extraParams = {}) => {
+
+    if (isGuest) {
+      if (!geojson || !phone) { setError('Missing polygon or phone'); setLoading(false); return; }
+      setLoading(true); setError(null);
+      try {
+        const resp = await axiosInstance.post('/api/sentinel/guest/sat-index', {
+          geojson, phone, ...ltvParamsRef.current, ...extraParams,
+        });
+        setData(resp.data);
+      } catch (err) {
+        setError(err.response?.data?.error || 'Failed to load satellite data');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     if (!entityId) { setError('No entity ID'); setLoading(false); return; }
     setLoading(true); setError(null);
     try {
-      const url = type === 'forest'
-        ? `/api/sentinel/forest/${entityId}/sat-index`
-        : `/api/sentinel/farm/${entityId}/sat-index`;
-      const resp = await axiosInstance.get(url, {
-        params: { ...ltvParamsRef.current, ...extraParams },
-      });
+      const url = type === 'forest' ? `/api/sentinel/forest/${entityId}/sat-index` : `/api/sentinel/farm/${entityId}/sat-index`;
+      const resp = await axiosInstance.get(url, { params: { ...ltvParamsRef.current, ...extraParams } });
       setData(resp.data);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load satellite data');
     } finally {
       setLoading(false);
     }
-  }, [entityId, type]);
+  }, [entityId, type, isGuest, geojson, phone]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    if (isGuest && initialData) return; // déjà chargé par useReports, pas de double appel
+    fetchData();
+  }, [fetchData]);
 
   const handleLTVUpdate = useCallback((p) => {
     const apiParams = {
@@ -75,15 +87,20 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
       ...(p.hist_yield_2 != null ? { hist_yield_2: p.hist_yield_2 } : {}),
     };
     ltvParamsRef.current = apiParams;
-    const url = type === 'forest'
-      ? `/api/sentinel/forest/${entityId}/sat-index`
-      : `/api/sentinel/farm/${entityId}/sat-index`;
     setLtvLoading(true);
+    if (isGuest) {
+      axiosInstance.post('/api/sentinel/guest/sat-index', { geojson, phone, ...apiParams })
+        .then(r => setData(r.data))
+        .catch(e => setError(e.response?.data?.error || 'LTV calculation failed'))
+        .finally(() => setLtvLoading(false));
+      return;
+    }
+    const url = type === 'forest' ? `/api/sentinel/forest/${entityId}/sat-index` : `/api/sentinel/farm/${entityId}/sat-index`;
     axiosInstance.get(url, { params: apiParams })
       .then(r => setData(r.data))
       .catch(e => setError(e.response?.data?.error || 'LTV calculation failed'))
       .finally(() => setLtvLoading(false));
-  }, [entityId, type]);
+  }, [entityId, type, isGuest, geojson, phone]);
 
   const handleExportPdf = async () => {
     setExporting(true);
@@ -169,7 +186,7 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
                          text-sm px-3 py-1.5 rounded-lg transition-colors">
               <Zap size={13} /> Cache
             </button>
-            {type === 'farm' && (
+            {type === 'farm' && !isGuest && (
               <button
                 onClick={handleExportPdf}
                 disabled={exporting}
@@ -203,10 +220,10 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
           </div>
         ))}
         <IndexGaugePanel data={data} />
-        {type === 'farm' && (
+        {type === 'farm' && !isGuest &&  (
           <WeeklyTrendPanel entityId={entityId} entityType={type} />
         )}
-        {type === 'farm' && (
+        {type === 'farm' && !isGuest && (
           <SeasonalNdviRainfallPanel entityId={entityId} entityType={type} />
         )}
 
@@ -342,7 +359,7 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
           </div>
         </div>
 
-        {type === 'farm' && (
+        {type === 'farm' && !isGuest && (
           <LTVPanel
             ltv={data.ltv}
             onUpdate={handleLTVUpdate}
@@ -351,7 +368,7 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
           />
         )}
 
-        {type === 'farm' && (
+        {type === 'farm' && !isGuest && (
           <YieldAnalysisPanel
             history={history}
             forecast={forecast}
@@ -366,16 +383,17 @@ export default function SentinelDashboard({ entityType = 'farm' }) {
           />
         )}
 
-        {type === 'farm' && (
+        {(type === 'farm' || type === 'forest') && !isGuest && (
           <YearlyPolygonMapGrid
             entityId={entityId}
+            entityType={type}
             history={history}
             activeIndex={active}
           />
         )}
 
-        {type === 'farm' && (
-          <ClassificationMapsPanel entityId={entityId} />
+        {(type === 'farm' || type === 'forest') && !isGuest && (
+          <ClassificationMapsPanel entityId={entityId} entityType={type} />
         )}
 
         <p className="text-center text-xs text-slate-600 pb-4">

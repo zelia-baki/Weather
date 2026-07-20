@@ -3,7 +3,7 @@ import { Satellite, RefreshCw, Loader2 } from "lucide-react";
 import axiosInstance from "../../../axiosInstance";
 import { CLASS_INDICES, CLASS_LABELS } from "../constants";
 
-export default function ClassificationMapsPanel({ entityId }) {
+export default function ClassificationMapsPanel({ entityId, entityType = "farm" }) {
   const [results, setResults] = useState({});
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
@@ -16,7 +16,7 @@ export default function ClassificationMapsPanel({ entityId }) {
     for (const idx of CLASS_INDICES) {
       try {
         const { data } = await axiosInstance.get(
-          `/api/sentinel/farm/${entityId}/classification/${idx}`
+          `/api/sentinel/${entityType}/${entityId}/classification/${idx}`
         );
         next[idx] = data;
       } catch (e) {
@@ -26,7 +26,7 @@ export default function ClassificationMapsPanel({ entityId }) {
     setResults(next);
     setErrors(nextErr);
     setLoading(false);
-  }, [entityId]);
+  }, [entityId, entityType]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 

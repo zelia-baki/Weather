@@ -7,18 +7,21 @@ import { META } from "../constants";
 import { valueToColor } from "../utils/colorUtils";
 import MiniYearMap from "./MiniYearMap";
 
-export default function YearlyPolygonMapGrid({ entityId, history, activeIndex }) {
+export default function YearlyPolygonMapGrid({ entityId, entityType = "farm", history, activeIndex }) {
   const [polygon, setPolygon] = useState(null);
   const [center, setCenter] = useState(null);
   const [bounds, setBounds] = useState(null);
   const [pointsError, setPointsError] = useState(null);
   const [pointsLoading, setPointsLoading] = useState(true);
 
+  const ownerType = entityType === "forest" ? "forest" : "farmer";
+  const boundaryLabel = entityType === "forest" ? "forest" : "farm";
+
   useEffect(() => {
     if (!entityId) return;
     let cancelled = false;
     setPointsLoading(true);
-    axiosInstance.get(`/api/points/getbyownerid/farmer/${entityId}`)
+    axiosInstance.get(`/api/points/getbyownerid/${ownerType}/${entityId}`)
       .then(({ data }) => {
         if (cancelled) return;
         const points = data.points || [];
@@ -46,12 +49,12 @@ export default function YearlyPolygonMapGrid({ entityId, history, activeIndex })
       })
       .catch(() => {
         if (!cancelled) {
-          setPointsError('Failed to load farm boundary.');
+          setPointsError(`Failed to load ${boundaryLabel} boundary.`);
           setPointsLoading(false);
         }
       });
     return () => { cancelled = true; };
-  }, [entityId]);
+  }, [entityId, ownerType]);
 
   const yearlyValues = useMemo(() => {
     const sums = {};
@@ -74,7 +77,7 @@ export default function YearlyPolygonMapGrid({ entityId, history, activeIndex })
     return (
       <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 flex items-center gap-3">
         <Loader2 size={18} className="animate-spin text-emerald-400" />
-        <p className="text-sm text-slate-400">Loading farm boundary…</p>
+        <p className="text-sm text-slate-400">Loading {boundaryLabel} boundary…</p>
       </div>
     );
   }
@@ -95,7 +98,7 @@ export default function YearlyPolygonMapGrid({ entityId, history, activeIndex })
         <div>
           <h3 className="font-bold text-white text-base flex items-center gap-2">
             <Satellite size={16} style={{ color: meta?.color }} />
-            Farm Boundary — {meta?.label} by Year
+            {boundaryLabel === "forest" ? "Forest" : "Farm"} Boundary — {meta?.label} by Year
           </h3>
           <p className="text-xs text-slate-500 mt-1">
             Same parcel boundary, colored by the {meta?.label} annual average. Click an index card above to switch.
