@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Download, FileText, X, Printer } from 'lucide-react';
 
-const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeolocation, chartRef }) => {
+const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeolocation, farmProps, chartRef }) => {
 
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteText, setNoteText] = useState('');
@@ -71,6 +71,20 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
         ]);
       }, 600);
     }
+
+    if (farmProps && farmProps.length > 0) {
+      setTimeout(() => {
+        downloadCSV(`WBII_${farmName}_crops_${safeDate}.csv`, [
+          ['Crop', 'Season', 'Land Size', 'Land Type', 'Expected Yield', 'Actual Yield', 'Planting Date', 'Harvest Date'],
+          ...farmProps.map(p => [
+            p.crop_name || '', p.season || '', p.tilled_land_size || '', p.land_type || '',
+            p.expected_yield || '', p.actual_yield || '',
+            p.planting_date ? new Date(p.planting_date).toLocaleDateString() : '',
+            p.harvest_date ? new Date(p.harvest_date).toLocaleDateString() : ''
+          ])
+        ]);
+      }, 900);
+    }
   };
 
   const captureChart = async () => {
@@ -102,6 +116,27 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
         <div class="stat-card"><div class="stat-label">High risk days</div><div class="stat-value" style="color:#e65100;">${stats.highRiskDays}</div></div>
         <div class="stat-card critical"><div class="stat-label">Critical days</div><div class="stat-value" style="color:#c62828;">${stats.criticalDays}</div></div>
       </div>` : '';
+
+    // ── Crop & Land Details ──
+    const cropsBlock = (farmProps && farmProps.length > 0) ? `
+      <h2 class="section-title">Crop &amp; Land Details</h2>
+      <table class="mini-table" style="width:100%;margin-bottom:20px;">
+        <tr>
+          <th>Crop</th><th>Season</th><th>Land Size</th><th>Land Type</th>
+          <th>Expected Yield</th><th>Actual Yield</th><th>Planting Date</th><th>Harvest Date</th>
+        </tr>
+        ${farmProps.map(p => `
+          <tr>
+            <td>${p.crop_name || '—'}</td>
+            <td>${p.season || '—'}</td>
+            <td>${p.tilled_land_size || '—'}${p.land_type ? ` (${p.land_type})` : ''}</td>
+            <td>${p.land_type || '—'}</td>
+            <td>${p.expected_yield || '—'}</td>
+            <td>${p.actual_yield || '—'}</td>
+            <td>${p.planting_date ? new Date(p.planting_date).toLocaleDateString() : '—'}</td>
+            <td>${p.harvest_date ? new Date(p.harvest_date).toLocaleDateString() : '—'}</td>
+          </tr>`).join('')}
+      </table>` : '';
 
     const chartBlock = chartImageBase64 ? `
       <h2 class="section-title">WBII Time Series Chart</h2>
@@ -322,7 +357,7 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
 
   .dws-summary-bar { display: flex; justify-content: space-between; padding: 8px 14px; border-radius: 8px; font-size: 11px; color: #444; margin-bottom: 4px; }
 
-  /* ── Weather Event Summary ── */
+  /* ── Weather Event Summary / Crop table ── */
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
   .sub-title { font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
   .mini-table { width: 100%; border-collapse: collapse; font-size: 11px; }
@@ -358,6 +393,8 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
     <h2>${farmName}</h2>
     ${farmGeolocation ? `<p>Coordinates: ${farmGeolocation}</p>` : ''}
   </div>
+
+  ${cropsBlock}
 
   <div class="section-title">Summary statistics</div>
   ${statsBlock}
@@ -475,7 +512,7 @@ const ExportButtons = ({ farmName, timeSeries, stats, detailedStats, farmGeoloca
             </p>
 
             <div style={{ background: '#f5f3ff', borderRadius: 8, padding: '10px 14px', margin: '14px 0', fontSize: 11, color: '#534AB7' }}>
-              <strong>PDF will include:</strong> farm name & coordinates · summary stats · <strong>WBII chart</strong> · detailed weather stats · weather events · notes
+              <strong>PDF will include:</strong> farm name & coordinates · crop & land details · summary stats · <strong>WBII chart</strong> · detailed weather stats · weather events · notes
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>

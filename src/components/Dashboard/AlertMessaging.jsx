@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
 import {
   AlertTriangle, Cloud, Wind, Droplets, ThermometerSun,
-  Bug, MapPin, Phone, Calendar, Send, RefreshCw, CheckCircle, XCircle, Leaf
+  Bug, MapPin, Phone, Calendar, Send, RefreshCw, CheckCircle, XCircle, Leaf, Sun
 } from 'lucide-react';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -29,6 +29,20 @@ const PEST_GDD_THRESHOLDS = {
   "Coffee Leaf Miner":  150,
 };
 
+// Pest-specific scouting/treatment advice, used in place of a generic
+// "Inspect fields now" line so farmers get something actionable for the
+// specific pest that triggered the alert.
+const PEST_ACTIONS = {
+  "Fall Armyworm":     "Scout leaves for larvae, apply Bt if found",
+  "Aphids":            "Check leaf undersides, monitor 3 days",
+  "Stem Borers":       "Inspect stems for entry holes",
+  "Corn Earworm":      "Check ear tips, spray at silking if needed",
+  "Black Cutworm":     "Check seedling base at soil line",
+  "Peach Twig Borer":  "Inspect shoot tips for wilting",
+  "Coffee Berry Borer": "Check berries for holes, harvest ripe fruit",
+  "Coffee Leaf Miner":  "Inspect leaves for mines, remove affected ones",
+};
+
 const WEATHER_SHORT = {
   "Heavy Rain":    "RAIN",
   "Extreme Heat":  "HEAT",
@@ -51,6 +65,18 @@ const WEATHER_COLORS = {
   "Extreme Cold":  { bg: "bg-cyan-50",   badge: "bg-cyan-100 text-cyan-800 border-cyan-200" },
   "Strong Wind":   { bg: "bg-purple-50", badge: "bg-purple-100 text-purple-800 border-purple-200" },
   "Dryness Alert": { bg: "bg-orange-50", badge: "bg-orange-100 text-orange-800 border-orange-200" },
+};
+
+// Daily total precipitation (mm) above which a day counts as "rain expected"
+// for the 10-day outlook notification. This is intentionally lower than the
+// Heavy Rain alert threshold (10mm) — it's meant to catch any day worth
+// planning around, not just anomalies. >1mm filters out trace/dew noise.
+const OUTLOOK_RAIN_THRESHOLD = 1;
+
+const TAB_COLORS = {
+  weather: { active: 'border-blue-500 text-blue-700 bg-blue-50',   badge: 'bg-blue-200 text-blue-800',   button: 'bg-blue-600 hover:bg-blue-700' },
+  pest:    { active: 'border-orange-500 text-orange-700 bg-orange-50', badge: 'bg-orange-200 text-orange-800', button: 'bg-orange-600 hover:bg-orange-700' },
+  outlook: { active: 'border-sky-500 text-sky-700 bg-sky-50',      badge: 'bg-sky-200 text-sky-800',     button: 'bg-sky-600 hover:bg-sky-700' },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -167,23 +193,52 @@ const detectPestAlerts = (data) => {
   return alerts;
 };
 
-// ─── SMS message builders ─────────────────────────────────────────────────────
+// ─── Daily outlook (notification, not alert) ─────────────────────────────────
+// Unlike detectWeatherAnomalies, this always returns all 10 days, regardless
+// of whether any threshold was crossed. Used to tell farmers in advance which
+// days to expect rain vs. dry weather, even when nothing is "alert-worthy".
+
+const buildDailyOutlook = (data) => {
+  const hours = data.hourly || {};
+  const time = hours.time || [];
+  const precipitation = hours.precipitation || [];
+
+  const dailyData = {};
+
+  for (let i = 0; i < time.length; i++) {
+    const dateKey = new Date(time[i]).toISOString().split('T')[0];
+    if (!dailyData[dateKey]) {
+      dailyData[dateKey] = {
+        date: dateKey,
+        dayName: getDayName(time[i]),
+        formattedDate: formatDate(time[i]),
+        totalPrecipitation: 0,
+      };
+    }
+    dailyData[dateKey].totalPrecipitation += precipitation[i] || 0;
+  }
+
+  return Object.values(dailyData).map(day => {
+    const totalPrecipitation = Math.round(day.totalPrecipitation * 10) / 10;
+    return {
+      ...day,
+      totalPrecipitation,
+      hasRain: totalPrecipitation > OUTLOOK_RAIN_THRESHOLD,
+    };
+  });
+};
 
 // ─── Group consecutive alert days into ranges ─────────────────────────────────
-// e.g. [Mon6/23, Tue6/24, Wed6/25] → "Mon23-Wed25"
-// e.g. [Mon6/23, Thu6/26] → "Mon23, Thu26"
 const groupConsecutiveDays = (days) => {
   if (!days.length) return '';
 
-  // Parse days into date objects for consecutive detection
-  // days = array of { dayName, formattedDate, value } where formattedDate = "M/D"
   const ranges = [];
   let rangeStart = days[0];
   let rangePrev  = days[0];
 
   const toMonthDay = (fd) => {
     const [m, d] = fd.split('/').map(Number);
-    return m * 100 + d; // simple comparable int
+    return m * 100 + d;
   };
 
   for (let i = 1; i < days.length; i++) {
@@ -228,8 +283,6 @@ const buildWeatherLines = (weatherAlerts) => {
     if (type === 'Extreme Heat') detail = `up to ${Math.round(data.maxTemp)}C`;
     if (type === 'Extreme Cold') detail = `down to ${Math.round(data.maxTemp)}C`;
 
-    // Summary mode (<=5 days): show ranges + detail
-    // Extended mode (>5 days): show count + peak only
     const summaryLine = count <= 5
       ? `${short}: ${rangeStr}${detail ? ` (${detail})` : ''}`
       : `${short}: ${count}/10 days (peak ${detail || rangeStr.split(',')[0]})`;
@@ -241,7 +294,6 @@ const buildWeatherLines = (weatherAlerts) => {
 // ─── Determine dominant alert type for action advice ─────────────────────────
 const getDominantAction = (lines) => {
   if (!lines.length) return null;
-  // Priority: Rain > Heat > Cold > Wind > Dry
   const priority = ["Heavy Rain", "Extreme Heat", "Extreme Cold", "Strong Wind", "Dryness Alert"];
   const sorted = [...lines].sort(
     (a, b) => priority.indexOf(a.type) - priority.indexOf(b.type)
@@ -249,9 +301,38 @@ const getDominantAction = (lines) => {
   return sorted[0].action;
 };
 
+// ─── Generic SMS splitter ──────────────────────────────────────────────────────
+// Packs body lines into 160-char segments, prefixing each with
+// "(n/total)" once more than one segment is needed. Used so pest/outlook
+// SMS can carry full detail instead of being silently truncated.
+const splitIntoSmsParts = (header, bodyLines, maxLen = 153) => {
+  const full = cleanText([header, ...bodyLines].join('\n'));
+  if (full.length <= 160) return [full];
+
+  const parts = [];
+  let current = [];
+  let currentLen = header.length;
+
+  for (const line of bodyLines) {
+    const addedLen = line.length + 1;
+    if (currentLen + addedLen > maxLen && current.length > 0) {
+      parts.push(current);
+      current = [line];
+      currentLen = header.length + line.length;
+    } else {
+      current.push(line);
+      currentLen += addedLen;
+    }
+  }
+  if (current.length) parts.push(current);
+
+  return parts.map((linesGroup, i) =>
+    cleanText(`${header} (${i + 1}/${parts.length})\n${linesGroup.join('\n')}`).substring(0, 160)
+  );
+};
+
 // ─── SMS builders ─────────────────────────────────────────────────────────────
 
-// Returns array of SMS strings (1 SMS if fits, 2 if critical extended period)
 const buildWeatherSMS = (farmName, weatherAlerts) => {
   if (!weatherAlerts.length) return [];
 
@@ -265,11 +346,9 @@ const buildWeatherSMS = (farmName, weatherAlerts) => {
   const actionLine = `Action: ${action}`;
 
   if (!isExtended) {
-    // Option 2: single summary SMS
     const msg = cleanText([header, ...bodyLines, actionLine].join('\n'));
     return [msg.substring(0, 160)];
   } else {
-    // Option 1: multi-part — split week 1 / week 2
     const week1Alerts = weatherAlerts.slice(0, 5);
     const week2Alerts = weatherAlerts.slice(5);
 
@@ -288,14 +367,69 @@ const buildWeatherSMS = (farmName, weatherAlerts) => {
   }
 };
 
+// Richer pest SMS: full pest list (not capped at 3), GDD context, crops at
+// risk, and a pest-specific action instead of a generic one. Falls back to
+// multi-part splitting if content doesn't fit in one 160-char message.
 const buildPestSMS = (farmName, pestAlerts, farmCrops) => {
   if (!pestAlerts.length) return [];
-  const allPests   = [...new Set(pestAlerts.flatMap(pa => pa.alerts))].slice(0, 3);
-  const cropsLine  = farmCrops?.length ? `Crops at risk: ${farmCrops.slice(0, 3).join(', ')}` : '';
-  const msg = cleanText(
-    [`[PEST] ${farmName}`, `Risk: ${allPests.join(', ')}`, cropsLine, 'Action: Inspect fields now'].filter(Boolean).join('\n')
-  );
-  return [msg.substring(0, 160)];
+
+  const allPests  = [...new Set(pestAlerts.flatMap(pa => pa.alerts))];
+  const topPest   = allPests[0];
+  const latest    = pestAlerts[pestAlerts.length - 1];
+
+  const header    = `[PEST] ${farmName}`;
+  const riskLine  = `Risk: ${allPests.join(', ')}`;
+  const gddLine   = `Since ${latest.dayName}${latest.formattedDate.split('/')[1]} (GDD ${latest.gdd}, ${latest.temperature}C)`;
+  const cropsLine = farmCrops?.length ? `Crops: ${farmCrops.join(', ')}` : '';
+  const actionLine = `Action: ${PEST_ACTIONS[topPest] || 'Inspect fields now'}`;
+
+  const bodyLines = [riskLine, gddLine, cropsLine, actionLine].filter(Boolean);
+
+  return splitIntoSmsParts(header, bodyLines);
+};
+
+// Richer outlook SMS than the original (rain range + dry range + a
+// suggestion, instead of just a range + total) but ALWAYS a single
+// 160-char SMS — never splits into multiple parts. Lines are added in
+// priority order and dropped from the end if the message runs long, so it
+// degrades gracefully instead of getting cut off mid-word.
+const buildOutlookSMS = (farmName, outlookDays) => {
+  if (!outlookDays.length) return [];
+
+  const rainDays = outlookDays.filter(d => d.hasRain);
+  const dryDays  = outlookDays.filter(d => !d.hasRain);
+  const totalMm  = Math.round(outlookDays.reduce((s, d) => s + d.totalPrecipitation, 0) * 10) / 10;
+  const header   = `[FORECAST] ${farmName} - 10day`;
+
+  let candidateLines;
+  if (rainDays.length === 0) {
+    candidateLines = [
+      'Dry: all 10 days, no rain expected',
+      'Suggest: plan irrigation',
+    ];
+  } else if (rainDays.length === outlookDays.length) {
+    candidateLines = [
+      `Rain: all 10 days (${totalMm}mm total)`,
+    ];
+  } else {
+    const dryStretchLonger = dryDays.length > rainDays.length;
+    candidateLines = [
+      `Rain: ${groupConsecutiveDays(rainDays)} (${totalMm}mm)`,
+      `Dry: ${groupConsecutiveDays(dryDays)}`,
+      `Suggest: ${dryStretchLonger ? 'irrigate dry stretch' : 'plan around rain days'}`,
+    ];
+  }
+
+  // Add lines one at a time, in priority order, stopping before 160 chars.
+  // Guarantees a single SMS: no multi-part splitting, no mid-word cutoff.
+  const kept = [];
+  for (const line of candidateLines) {
+    const attempt = cleanText([header, ...kept, line].join('\n'));
+    if (attempt.length > 160) break;
+    kept.push(line);
+  }
+
+  return [cleanText([header, ...kept].join('\n')).substring(0, 160)];
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -309,11 +443,15 @@ const WeatherBadge = ({ type }) => (
 const FarmCard = ({ alert, index, selected, onToggle, mode }) => {
   const smsParts = mode === 'weather'
     ? buildWeatherSMS(alert.farm.name, alert.weather_alerts || [])
-    : buildPestSMS(alert.farm.name, alert.pest_alerts || [], alert.farm.crops);
+    : mode === 'pest'
+    ? buildPestSMS(alert.farm.name, alert.pest_alerts || [], alert.farm.crops)
+    : buildOutlookSMS(alert.farm.name, alert.outlook || []);
 
   const hasData = mode === 'weather'
     ? (alert.weather_alerts?.length > 0)
-    : (alert.pest_alerts?.length > 0);
+    : mode === 'pest'
+    ? (alert.pest_alerts?.length > 0)
+    : (alert.outlook?.length > 0);
 
   if (!hasData) return null;
 
@@ -394,6 +532,31 @@ const FarmCard = ({ alert, index, selected, onToggle, mode }) => {
         </div>
       )}
 
+      {/* 10-day outlook (rain / dry, informational) */}
+      {mode === 'outlook' && alert.outlook?.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {alert.outlook.map((day, i) => (
+            <div
+              key={i}
+              className={`flex flex-col items-center justify-center rounded-lg px-2 py-2 w-14 border text-center ${
+                day.hasRain ? 'bg-sky-50 border-sky-200' : 'bg-gray-50 border-gray-100'
+              }`}
+            >
+              <span className="text-[10px] font-medium text-gray-500">
+                {day.dayName}{day.formattedDate.split('/')[1]}
+              </span>
+              {day.hasRain
+                ? <Droplets className="w-4 h-4 text-sky-600 my-1" />
+                : <Sun className="w-4 h-4 text-amber-400 my-1" />
+              }
+              <span className="text-[10px] text-gray-500">
+                {day.hasRain ? `${day.totalPrecipitation}mm` : 'dry'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* SMS preview */}
       {smsParts.length > 0 && (
         <div className="mt-3 space-y-2">
@@ -422,22 +585,28 @@ const FarmCard = ({ alert, index, selected, onToggle, mode }) => {
 const AlertMessaging = () => {
   const [alerts, setAlerts]           = useState([]);
   const [loading, setLoading]         = useState(false);
-  const [tab, setTab]                 = useState('weather'); // 'weather' | 'pest'
+  const [tab, setTab]                 = useState('weather'); // 'weather' | 'pest' | 'outlook'
   const [selectedWeather, setSelectedWeather] = useState([]);
   const [selectedPest, setSelectedPest]       = useState([]);
+  const [selectedOutlook, setSelectedOutlook] = useState([]);
   const [sendToFarmers, setSendToFarmers]     = useState(true);
   const [sendToAdmin, setSendToAdmin]         = useState(true);
   const [sendStatus, setSendStatus]           = useState(null); // null | {sending} | {done, success, total}
+  const [skippedFarms, setSkippedFarms]       = useState([]); // farms excluded from results + why
 
   // ── Data fetching ───────────────────────────────────────────────────────────
 
   const fetchFarms = async () => {
     try {
-      const res = await axiosInstance.get('/api/farm/');
+      const res = await axiosInstance.get('/api/farm/all');
       const d = res.data;
+      // NOTE: if your backend paginates (e.g. returns { farms, page, total_pages }),
+      // this only grabs the first page. Log the raw response shape below to check.
+      console.log('[fetchFarms] raw response:', d);
       if (Array.isArray(d)) return d;
       return d?.farms || d?.data || d?.items || [];
-    } catch {
+    } catch (err) {
+      console.error('[fetchFarms] request failed:', err);
       return [];
     }
   };
@@ -455,15 +624,27 @@ const AlertMessaging = () => {
     setLoading(true);
     setSelectedWeather([]);
     setSelectedPest([]);
+    setSelectedOutlook([]);
+    const skipped = [];
     try {
       const farms = await fetchFarms();
-      if (!farms.length) { setAlerts([]); return; }
+      console.log(`[fetchAlerts] total farms returned by API: ${farms.length}`);
+
+      if (!farms.length) { setAlerts([]); setSkippedFarms([]); return; }
 
       const results = [];
       for (const farm of farms) {
-        if (!farm.geolocation) continue;
+        if (!farm.geolocation) {
+          console.warn(`[fetchAlerts] SKIPPED farm "${farm.name}" (id=${farm.id}): no geolocation field`);
+          skipped.push({ id: farm.id, name: farm.name, reason: 'missing geolocation' });
+          continue;
+        }
         const [lat, lon] = farm.geolocation.split(',').map(c => parseFloat(c.trim()));
-        if (isNaN(lat) || isNaN(lon)) continue;
+        if (isNaN(lat) || isNaN(lon)) {
+          console.warn(`[fetchAlerts] SKIPPED farm "${farm.name}" (id=${farm.id}): invalid geolocation "${farm.geolocation}"`);
+          skipped.push({ id: farm.id, name: farm.name, reason: `invalid geolocation "${farm.geolocation}"` });
+          continue;
+        }
 
         // Fetch crops
         let farmCrops = [];
@@ -474,13 +655,20 @@ const AlertMessaging = () => {
             const cr = await axiosInstance.get(`/api/crop/${id}`);
             if (cr.data?.name) farmCrops.push(cr.data.name);
           }
-        } catch {}
+        } catch (err) {
+          console.warn(`[fetchAlerts] crop fetch failed for farm "${farm.name}" (id=${farm.id}):`, err);
+        }
 
         const weatherData = await fetchWeatherData(lat, lon);
-        if (!weatherData) continue;
+        if (!weatherData) {
+          console.warn(`[fetchAlerts] SKIPPED farm "${farm.name}" (id=${farm.id}): weather fetch failed`);
+          skipped.push({ id: farm.id, name: farm.name, reason: 'weather fetch failed' });
+          continue;
+        }
 
         const weather_alerts = detectWeatherAnomalies(weatherData);
         let pest_alerts = detectPestAlerts(weatherData);
+        const outlook = buildDailyOutlook(weatherData);
 
         if (farmCrops.length > 0) {
           pest_alerts = pest_alerts
@@ -493,23 +681,31 @@ const AlertMessaging = () => {
             .filter(pa => pa.alerts.length > 0);
         }
 
-        if (weather_alerts.length > 0 || pest_alerts.length > 0) {
-          results.push({
-            farm: {
-              id: farm.id,
-              name: farm.name,
-              geolocation: farm.geolocation,
-              phonenumber: farm.phonenumber1 || farm.phonenumber,
-              crops: farmCrops,
-            },
-            weather_alerts,
-            pest_alerts,
-          });
-        }
+        // Note: unlike weather/pest alerts, the outlook is always included —
+        // it's a routine notification, not conditional on anomalies existing.
+        results.push({
+          farm: {
+            id: farm.id,
+            name: farm.name,
+            geolocation: farm.geolocation,
+            phonenumber: farm.phonenumber1 || farm.phonenumber,
+            crops: farmCrops,
+          },
+          weather_alerts,
+          pest_alerts,
+          outlook,
+        });
       }
+
+      console.log(`[fetchAlerts] farms included in results: ${results.length} / ${farms.length}`);
+      if (skipped.length) {
+        console.warn('[fetchAlerts] skipped farms summary:', skipped);
+      }
+
       setAlerts(results);
+      setSkippedFarms(skipped);
     } catch (err) {
-      console.error(err);
+      console.error('[fetchAlerts] unexpected error:', err);
     } finally {
       setLoading(false);
     }
@@ -525,13 +721,19 @@ const AlertMessaging = () => {
 
   const visibleIndexes = (mode) =>
     alerts.reduce((acc, a, i) => {
-      const has = mode === 'weather' ? a.weather_alerts?.length > 0 : a.pest_alerts?.length > 0;
+      const has = mode === 'weather' ? a.weather_alerts?.length > 0
+        : mode === 'pest' ? a.pest_alerts?.length > 0
+        : a.outlook?.length > 0;
       if (has) acc.push(i);
       return acc;
     }, []);
 
-  const selected    = tab === 'weather' ? selectedWeather : selectedPest;
-  const setSelected = tab === 'weather' ? setSelectedWeather : setSelectedPest;
+  const selected = tab === 'weather' ? selectedWeather
+    : tab === 'pest' ? selectedPest
+    : selectedOutlook;
+  const setSelected = tab === 'weather' ? setSelectedWeather
+    : tab === 'pest' ? setSelectedPest
+    : setSelectedOutlook;
 
   const toggle = (index) =>
     setSelected(prev => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
@@ -564,7 +766,9 @@ const AlertMessaging = () => {
 
       const msgs = tab === 'weather'
         ? buildWeatherSMS(a.farm.name, a.weather_alerts || [])
-        : buildPestSMS(a.farm.name, a.pest_alerts || [], a.farm.crops);
+        : tab === 'pest'
+        ? buildPestSMS(a.farm.name, a.pest_alerts || [], a.farm.crops)
+        : buildOutlookSMS(a.farm.name, a.outlook || []);
 
       if (!msgs.length) continue;
 
@@ -589,6 +793,7 @@ const AlertMessaging = () => {
 
   const weatherCount = alerts.filter(a => a.weather_alerts?.length > 0).length;
   const pestCount    = alerts.filter(a => a.pest_alerts?.length > 0).length;
+  const outlookCount = alerts.filter(a => a.outlook?.length > 0).length;
   const visCount     = visibleIndexes(tab).length;
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -601,7 +806,7 @@ const AlertMessaging = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Farm Alert System</h1>
-            <p className="text-sm text-gray-500 mt-0.5">10-day forecast · weather & pest risks</p>
+            <p className="text-sm text-gray-500 mt-0.5">10-day forecast · weather, pest & outlook</p>
           </div>
           <button
             onClick={fetchAlerts}
@@ -612,6 +817,21 @@ const AlertMessaging = () => {
             {loading ? 'Loading…' : 'Refresh'}
           </button>
         </div>
+
+        {/* ── Skipped farms warning (diagnostic) ── */}
+        {skippedFarms.length > 0 && (
+          <div className="flex flex-col gap-1.5 rounded-xl p-4 border bg-amber-50 border-amber-200 text-amber-800 text-sm">
+            <div className="flex items-center gap-2 font-medium">
+              <AlertTriangle className="w-4 h-4" />
+              {skippedFarms.length} farm(s) excluded — see console for details
+            </div>
+            <ul className="list-disc list-inside text-xs space-y-0.5">
+              {skippedFarms.map((s, i) => (
+                <li key={i}>{s.name || `Farm #${s.id}`}: {s.reason}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* ── Recipients row ── */}
         <div className="bg-white border border-gray-200 rounded-xl px-5 py-3 flex flex-wrap items-center gap-4">
@@ -647,15 +867,14 @@ const AlertMessaging = () => {
             {[
               { key: 'weather', label: 'Weather Alerts', count: weatherCount, icon: <Cloud className="w-4 h-4" /> },
               { key: 'pest',    label: 'Pest Risks',     count: pestCount,    icon: <Bug className="w-4 h-4" /> },
+              { key: 'outlook', label: '10-Day Outlook', count: outlookCount, icon: <Sun className="w-4 h-4" /> },
             ].map(t => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-medium transition border-b-2 ${
                   tab === t.key
-                    ? t.key === 'weather'
-                      ? 'border-blue-500 text-blue-700 bg-blue-50'
-                      : 'border-orange-500 text-orange-700 bg-orange-50'
+                    ? TAB_COLORS[t.key].active
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 }`}
               >
@@ -663,9 +882,7 @@ const AlertMessaging = () => {
                 {t.label}
                 {t.count > 0 && (
                   <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                    tab === t.key
-                      ? t.key === 'weather' ? 'bg-blue-200 text-blue-800' : 'bg-orange-200 text-orange-800'
-                      : 'bg-gray-200 text-gray-600'
+                    tab === t.key ? TAB_COLORS[t.key].badge : 'bg-gray-200 text-gray-600'
                   }`}>
                     {t.count}
                   </span>
@@ -689,9 +906,7 @@ const AlertMessaging = () => {
             <button
               onClick={sendSelected}
               disabled={!selected.length || sendStatus?.sending || (!sendToAdmin && !sendToFarmers)}
-              className={`inline-flex items-center gap-1.5 text-white text-sm px-4 py-2 rounded-lg font-medium shadow-sm transition disabled:opacity-40 ${
-                tab === 'weather' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'
-              }`}
+              className={`inline-flex items-center gap-1.5 text-white text-sm px-4 py-2 rounded-lg font-medium shadow-sm transition disabled:opacity-40 ${TAB_COLORS[tab].button}`}
             >
               {sendStatus?.sending
                 ? <><RefreshCw className="w-4 h-4 animate-spin" /> Sending…</>

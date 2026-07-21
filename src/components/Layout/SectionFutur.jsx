@@ -5,6 +5,8 @@ import {
   FaChartLine,
   FaBell,
   FaUserShield,
+  FaGlobeAmericas,
+  FaExchangeAlt,
 } from "react-icons/fa";
 
 const servicesList = [
@@ -43,6 +45,18 @@ const servicesList = [
     title: "Secure Access",
     description: "Separate roles for admin and farmers to keep everything secure.",
     color: "bg-pink-50",
+  },
+  {
+    icon: <FaGlobeAmericas className="text-4xl mb-4 text-teal-600" />,
+    title: "EUDR & Carbon Assessments",
+    description: "Ensure compliance with EU deforestation regulations and track carbon footprint across your supply chain.",
+    color: "bg-teal-50",
+  },
+  {
+    icon: <FaExchangeAlt className="text-4xl mb-4 text-orange-500" />,
+    title: "Sustainable Commodity Trade",
+    description: "Connect with responsible buyers and sellers through traceable, sustainable commodity trading channels.",
+    color: "bg-orange-50",
   },
 ];
 
