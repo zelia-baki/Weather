@@ -1,0 +1,457 @@
+    <!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neo Industrial Gauge</title>
+
+<style>
+:root{
+    --gauge-color:#00d4ff;
+}
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:
+        radial-gradient(circle at center,#12203f 0%,#08111f 35%,#03060d 100%);
+    font-family:Inter,Segoe UI,sans-serif;
+    overflow:hidden;
+}
+
+.gauge-container{
+    position:relative;
+    width:650px;
+    height:650px;
+}
+
+.gauge{
+    width:100%;
+    height:100%;
+}
+
+.value{
+    position:absolute;
+    left:50%;
+    top:48%;
+    transform:translate(-50%,-50%);
+    color:white;
+    font-size:72px;
+    font-weight:200;
+    letter-spacing:2px;
+    transition:.4s;
+}
+
+.label{
+    position:absolute;
+    left:50%;
+    top:58%;
+    transform:translateX(-50%);
+    color:#7c95c5;
+    letter-spacing:8px;
+    font-size:14px;
+}
+
+.status{
+    position:absolute;
+    left:50%;
+    top:65%;
+    transform:translateX(-50%);
+    color:var(--gauge-color);
+    font-size:13px;
+    letter-spacing:4px;
+    transition:.4s;
+}
+
+.needle{
+    transform-origin:325px 325px;
+    transition:1s cubic-bezier(.18,.9,.15,1);
+}
+
+.progress{
+    transition:1s ease;
+}
+
+.glow{
+    transition:.5s ease;
+}
+
+.rotor{
+    transform-origin:325px 325px;
+    animation:spin 14s linear infinite;
+}
+
+.rotor2{
+    transform-origin:325px 325px;
+    animation:spinReverse 20s linear infinite;
+}
+
+@keyframes spin{
+    from{transform:rotate(0deg);}
+    to{transform:rotate(360deg);}
+}
+
+@keyframes spinReverse{
+    from{transform:rotate(360deg);}
+    to{transform:rotate(0deg);}
+}
+
+.critical{
+    animation:critical .35s infinite;
+}
+
+@keyframes critical{
+    50%{
+        opacity:.4;
+    }
+}
+
+.pulse{
+    animation:pulse 3s infinite;
+}
+
+@keyframes pulse{
+    50%{
+        transform:scale(1.03);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="gauge-container pulse">
+
+<div class="value" id="value">0.00</div>
+<div class="label">NDVI SENSOR</div>
+<div class="status" id="status">NORMAL</div>
+
+<svg class="gauge" viewBox="0 0 650 650">
+
+<defs>
+
+<linearGradient id="gradientArc">
+    <stop offset="0%" stop-color="#00d4ff"/>
+    <stop offset="40%" stop-color="#5a6cff"/>
+    <stop offset="70%" stop-color="#ff9f00"/>
+    <stop offset="100%" stop-color="#ff2020"/>
+</linearGradient>
+
+<filter id="blur">
+    <feGaussianBlur stdDeviation="8"/>
+</filter>
+
+</defs>
+
+<!-- cercle externe -->
+<circle
+cx="325"
+cy="325"
+r="270"
+fill="none"
+stroke="rgba(255,255,255,.06)"
+stroke-width="2"
+/>
+
+<!-- anneau décoratif -->
+<g class="rotor">
+    <circle
+    cx="325"
+    cy="325"
+    r="250"
+    fill="none"
+    stroke="rgba(0,212,255,.15)"
+    stroke-width="1"
+    stroke-dasharray="15 12"/>
+</g>
+
+<g class="rotor2">
+    <circle
+    cx="325"
+    cy="325"
+    r="230"
+    fill="none"
+    stroke="rgba(255,255,255,.08)"
+    stroke-width="1"
+    stroke-dasharray="8 20"/>
+</g>
+
+<!-- glow -->
+<circle
+id="glow"
+class="glow"
+cx="325"
+cy="325"
+r="210"
+fill="none"
+stroke="#00d4ff"
+stroke-width="6"
+/>
+
+<!-- fond jauge -->
+<circle
+cx="325"
+cy="325"
+r="210"
+fill="none"
+stroke="rgba(255,255,255,.08)"
+stroke-width="20"
+transform="rotate(-220 325 325)"
+stroke-dasharray="950 1319"
+/>
+
+<!-- progression -->
+<circle
+id="progress"
+class="progress"
+cx="325"
+cy="325"
+r="210"
+fill="none"
+stroke="url(#gradientArc)"
+stroke-width="20"
+stroke-linecap="round"
+transform="rotate(-220 325 325)"
+stroke-dasharray="0 1319"
+/>
+
+<!-- graduations -->
+<g id="ticks"></g>
+
+<!-- scanner -->
+<g class="rotor">
+    <line
+    x1="325"
+    y1="325"
+    x2="325"
+    y2="100"
+    stroke="cyan"
+    opacity=".15"/>
+</g>
+
+<!-- aiguille glow -->
+<g id="needleGlow" class="needle">
+    <line
+    x1="325"
+    y1="325"
+    x2="325"
+    y2="135"
+    stroke="white"
+    stroke-width="10"
+    opacity=".4"
+    filter="url(#blur)"
+    stroke-linecap="round"/>
+</g>
+
+<!-- aiguille -->
+<g id="needle" class="needle">
+
+    <polygon
+    points="318,325 325,120 332,325"
+    fill="white"/>
+
+</g>
+
+<!-- centre -->
+<circle
+cx="325"
+cy="325"
+r="32"
+fill="#101827"
+stroke="rgba(255,255,255,.4)"
+stroke-width="2"
+/>
+
+<circle
+cx="325"
+cy="325"
+r="10"
+fill="white"
+/>
+
+</svg>
+
+</div>
+
+<script>
+
+const ticks=document.getElementById("ticks");
+
+for(let i=0;i<=80;i++){
+
+    const angle=(-130 + (260*i/80))*Math.PI/180;
+
+    const r1=235;
+    const r2=i%10===0 ? 205 : 220;
+
+    const x1=325+r1*Math.cos(angle);
+    const y1=325+r1*Math.sin(angle);
+
+    const x2=325+r2*Math.cos(angle);
+    const y2=325+r2*Math.sin(angle);
+
+    const width=i%10===0 ? 3 : 1;
+
+    ticks.innerHTML += `
+        <line
+        x1="${x1}"
+        y1="${y1}"
+        x2="${x2}"
+        y2="${y2}"
+        stroke="white"
+        opacity=".6"
+        stroke-width="${width}"
+        />
+    `;
+
+    if(i%20===0){
+
+        const value=-1+(i/80)*2;
+
+        const tx=325+180*Math.cos(angle);
+        const ty=325+180*Math.sin(angle);
+
+        ticks.innerHTML += `
+        <text
+        x="${tx}"
+        y="${ty}"
+        fill="#9db5ff"
+        font-size="18"
+        text-anchor="middle"
+        dominant-baseline="middle">
+        ${value.toFixed(1)}
+        </text>
+        `;
+    }
+}
+
+function interpolateColor(v){
+
+    const t=(v+1)/2;
+
+    const colors=[
+        [0,212,255],
+        [90,108,255],
+        [255,159,0],
+        [255,32,32]
+    ];
+
+    let r,g,b;
+
+    if(t<0.33){
+
+        let k=t/0.33;
+
+        r=colors[0][0]+(colors[1][0]-colors[0][0])*k;
+        g=colors[0][1]+(colors[1][1]-colors[0][1])*k;
+        b=colors[0][2]+(colors[1][2]-colors[0][2])*k;
+
+    }else if(t<0.66){
+
+        let k=(t-0.33)/0.33;
+
+        r=colors[1][0]+(colors[2][0]-colors[1][0])*k;
+        g=colors[1][1]+(colors[2][1]-colors[1][1])*k;
+        b=colors[1][2]+(colors[2][2]-colors[1][2])*k;
+
+    }else{
+
+        let k=(t-0.66)/0.34;
+
+        r=colors[2][0]+(colors[3][0]-colors[2][0])*k;
+        g=colors[2][1]+(colors[3][1]-colors[2][1])*k;
+        b=colors[2][2]+(colors[3][2]-colors[2][2])*k;
+    }
+
+    return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+}
+
+function setGauge(v){
+
+    v=Math.max(-1,Math.min(1,v));
+
+    const valueEl=document.getElementById("value");
+    const statusEl=document.getElementById("status");
+    const glow=document.getElementById("glow");
+
+    valueEl.textContent=v.toFixed(2);
+
+    const angle=-130+((v+1)/2)*260;
+
+    document.getElementById("needle").style.transform=
+        `rotate(${angle}deg)`;
+
+    document.getElementById("needleGlow").style.transform=
+        `rotate(${angle}deg)`;
+
+    const percentage=(v+1)/2;
+
+    const maxArc=950;
+
+    document.getElementById("progress")
+        .setAttribute(
+            "stroke-dasharray",
+            `${maxArc*percentage} 1319`
+        );
+
+    const color=interpolateColor(v);
+
+    document.documentElement.style
+        .setProperty('--gauge-color',color);
+
+    const glowPower=15+(percentage*120);
+
+    glow.style.stroke=color;
+
+    glow.style.filter=
+        `drop-shadow(0 0 ${glowPower}px ${color})
+         drop-shadow(0 0 ${glowPower*2}px ${color})`;
+
+    valueEl.style.textShadow=
+        `0 0 ${glowPower}px ${color}`;
+
+    if(v < -0.5){
+        statusEl.textContent="LOW";
+    }
+    else if(v < 0.7){
+        statusEl.textContent="NORMAL";
+    }
+    else if(v < 0.9){
+        statusEl.textContent="HIGH";
+    }
+    else{
+        statusEl.textContent="CRITICAL";
+    }
+
+    if(v > 0.9){
+        glow.classList.add("critical");
+    }else{
+        glow.classList.remove("critical");
+    }
+}
+
+/* Démo */
+let t=0;
+
+setInterval(()=>{
+    t += 0.02;
+    setGauge(Math.sin(t));
+},30);
+
+/* Exemple réel :
+setGauge(-1);
+setGauge(0);
+setGauge(1);
+*/
+
+</script>
+
+</body>
+</html>

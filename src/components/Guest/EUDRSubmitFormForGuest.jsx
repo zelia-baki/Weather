@@ -16,11 +16,11 @@ import TutorialFloatingButton from "./components/TutorialFloatingButton";
 
 // ── Step config ──────────────────────────────────────────────────────────────
 const STEPS = [
-  { id: 1, label: "Location",  icon: "🛰️" },
-  { id: 2, label: "Report",    icon: "📊" },
-  { id: 3, label: "Info",      icon: "👤" },
-  { id: 4, label: "Payment",   icon: "💳" },
-  { id: 5, label: "Results",   icon: "✅" },
+  { id: 1, label: "Location", icon: "🛰️" },
+  { id: 2, label: "Report", icon: "📊" },
+  { id: 3, label: "Info", icon: "👤" },
+  { id: 4, label: "Payment", icon: "💳" },
+  { id: 5, label: "Results", icon: "✅" },
 ];
 
 // ── Progress bar (hidden on step 1 so map is full-screen) ────────────────────
@@ -166,7 +166,7 @@ const EUDRSubmitFormForGuest = () => {
   const [geojson, setGeojson] = useState(null);
   const [tutorialError, setTutorialError] = useState(null);
 
-  const reportRefs = { eudr: useRef(), carbon: useRef() };
+  const reportRefs = { eudr: useRef(), carbon: useRef(), sentinel: useRef() };
   const { files, handleFileChange } = useFileUpload();
   const { userInfo, setUserInfo, handleUserInfoSubmit, loading: userLoading, isUserInfoValid } = useUserInfo(setStep);
   const { reports, loading, showPaymentModal, handleReportReady, setShowPaymentModal } = useReports({ files, geojson, userInfo, setStep, reportRefs });
@@ -401,6 +401,8 @@ const EUDRSubmitFormForGuest = () => {
                 <StepReports
                   reports={reports}
                   reportRefs={reportRefs}
+                  geojson={geojson}
+                  phone={userInfo.phone}
                   highlightReports={getHighlightClass("reports")}
                 />
                 {isTutorialActive && currentTutorial?.highlight === "reports" && (
@@ -435,6 +437,16 @@ const EUDRSubmitFormForGuest = () => {
           phone={userInfo.phone}
           agent_id={userInfo.agent_id}
           onPaymentSuccess={() => { handleReportReady("reportcarbonguest"); setShowPaymentModal((p) => ({ ...p, carbon: false })); }}
+        />
+      )}
+      {showPaymentModal.sentinel && (
+        <SendPaymentModal
+          isOpen={showPaymentModal.sentinel}
+          onClose={() => setShowPaymentModal((p) => ({ ...p, sentinel: false }))}
+          featureName="reportndviguest"
+          phone={userInfo.phone}
+          agent_id={userInfo.agent_id}
+          onPaymentSuccess={() => { handleReportReady("reportndviguest"); setShowPaymentModal((p) => ({ ...p, sentinel: false })); }}
         />
       )}
 

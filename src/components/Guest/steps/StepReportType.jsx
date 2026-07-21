@@ -1,5 +1,5 @@
 import React from "react";
-import { FileText, Leaf } from "lucide-react";
+import { FileText, Leaf, Satellite } from "lucide-react"; // ajouter Satellite
 
 const StepReportType = ({ onSelect, highlightReportType = "" }) => {
   const options = [
@@ -19,6 +19,13 @@ const StepReportType = ({ onSelect, highlightReportType = "" }) => {
       color: "green",
       icon: <Leaf className="w-8 h-8 text-green-600" />,
     },
+     {
+    id: "reportndviguest",
+    title: "Sentinel / Vegetation Report",
+    description: "Analyze vegetation health, moisture and yield indicators via satellite (Sentinel-2).",
+    color: "emerald",
+    icon: <Satellite className="w-8 h-8 text-emerald-600" />,
+  },
   ];
 
   return (

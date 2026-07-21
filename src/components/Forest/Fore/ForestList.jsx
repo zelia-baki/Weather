@@ -4,7 +4,7 @@ import axiosInstance from '../../../axiosInstance';
 import { Link } from 'react-router-dom';
 import {
   TreePine, Map, PenLine, BarChart2, Leaf, Edit2, Trash2,
-  Check, ChevronLeft, ChevronRight, Download,
+  Check, ChevronLeft, ChevronRight, Download, Radio,
 } from 'lucide-react';
 
 const ForestList = () => {
@@ -109,6 +109,8 @@ const ForestList = () => {
     { icon: <PenLine size={12}/>,label: 'Draw',    to: '/mapbox',  state: { owner_id: forest.id, owner_type: 'forest' }, cls: 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200' },
     { icon: <BarChart2 size={12}/>, label: 'Report', to: '/reportforest', state: { forestId: forest.id }, cls: 'bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200' },
     { icon: <Leaf size={12}/>,   label: 'Carbon',  to: '/reportcarbonforest', state: { forestId: forest.id }, cls: 'bg-teal-50 text-teal-700 hover:bg-teal-100 border-teal-200' },
+    { icon: <Radio size={12}/>,  label: 'SatIndex', to: `/sentinel/forest/${forest.id}`, state: { forestId: forest.id }, cls: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200' },
+    { icon: <Radio size={12}/>,  label: 'Imagery', to: `/imagery/forest/${forest.id}`, state: { forestId: forest.id }, cls: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200' },
   ];
 
   return (

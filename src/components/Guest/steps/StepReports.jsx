@@ -1,9 +1,11 @@
 import CarbonReportSection from "../components/CarbonReportSection";
+import SentinelDashboard from "../../Sentinel/SentinelDashboard"; // ← réutilisé tel quel
+
 import EudrReportSection from "../components/EudrReportSection";
 import { generatePdfBlob } from "../utils/pdfUtils";
 
-const StepReports = ({ reports, reportRefs, highlightReports = "" }) => {
-  return (
+const StepReports = ({ reports, reportRefs, geojson, phone, highlightReports = "" }) => {
+    return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-gray-800 text-center">
         Your Reports
@@ -50,6 +52,17 @@ const StepReports = ({ reports, reportRefs, highlightReports = "" }) => {
             >
               🌳 Download the Carbon PDF
             </button>
+          </div>
+        )}
+        {reports.sentinel && (
+          <div className="w-full">
+            <SentinelDashboard
+              entityType="farm"
+              mode="guest"
+              geojson={geojson}
+              phone={phone}
+              initialData={reports.sentinel}
+            />
           </div>
         )}
       </div>

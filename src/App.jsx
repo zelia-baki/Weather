@@ -76,6 +76,7 @@ import IrrigationManager from './components/crop/IrrigationManager.jsx';
 import CropCoefficientManager from './components/crop/CropCoefficientManager.jsx';
 import GradeManager from './components/crop/GradeManager.jsx';
 import StoreProductManager from './components/store/StoreProductManager.jsx';
+import HSCodeManager from './components/crop/HSCodeManager.jsx';
 
 // ─── Forest ───────────────────────────────────────────────────────────────────
 import ForestPage from './components/Forest/Fore/ForestPage.jsx';
@@ -91,6 +92,7 @@ import CarbonReport from './components/gfw/CarbonReport.jsx';
 
 // ─── Sentinel Hub ─────────────────────────────────────────────────────────────
 import SentinelDashboard from './components/Sentinel/SentinelDashboard.jsx';
+import ImageryDashboard from './components/Sentinel/ImageryDashboard.jsx'
 
 // ─── Districts ────────────────────────────────────────────────────────────────
 import CreateDistrict from './components/District/CreateDistrict.jsx';
@@ -302,6 +304,7 @@ const layoutRoutes = [
   { path: '/irrigationmanager',      component: <IrrigationManager />,      roles: ROLES.FARM },
   { path: '/cropcoefficientmanager', component: <CropCoefficientManager />, roles: ROLES.FARM },
   { path: '/grademanager',           component: <GradeManager />,           roles: ROLES.FARM },
+  { path: '/hscodemanager',           component: <HSCodeManager />,           roles: ROLES.FARM },
   { path: '/storeProductManager',    component: <StoreProductManager />,    roles: ROLES.FARM, permission: 'store' },
 
   // ── Forest ───────────────────────────────────────────────────────────────
@@ -345,6 +348,8 @@ const layoutRoutes = [
   // Sentinel
   { path: '/sentinel/farm/:farmId',     component: <SentinelDashboard entityType="farm" />,   roles: ROLES.FARM,   permission: 'sentinel' },
   { path: '/sentinel/forest/:forestId', component: <SentinelDashboard entityType="forest" />, roles: ROLES.FOREST, permission: 'sentinel' },
+  { path: '/imagery/farm/:farmId',     component: <ImageryDashboard entityType="farm" />,   roles: ROLES.FARM,   permission: 'sentinel' },
+  { path: '/imagery/forest/:forestId', component: <ImageryDashboard entityType="forest" />, roles: ROLES.FOREST, permission: 'sentinel' },
 
   // Users
   { path: '/createUsers', component: <CreateUsers />,    roles: ROLES.ALL },
