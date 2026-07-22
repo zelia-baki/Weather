@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { GiWheat, GiForestCamp } from "react-icons/gi";
 import { FaFileExport, FaFlask } from "react-icons/fa";
-import { TbQrcode } from "react-icons/tb";
+import { TbQrcode, TbReportAnalytics } from "react-icons/tb";
 import { FiArrowRight } from "react-icons/fi";
 
 const CARDS = [
@@ -49,6 +49,17 @@ const CARDS = [
     iconBg:      "bg-amber-100",
     iconColor:   "text-amber-700",
     Icon:        FaFlask,   // ← FaFlask (valide) au lieu de MdOutlineFertilizer (inexistant)
+  },
+  {
+    title:       "QR Dashboard",
+    description: "Track all generated stamps: breakdown by type, lot lookup, and recent activity across your account.",
+    link:        "/qrdashboard",
+    button:      "View Dashboard",
+    bg:          "from-violet-50 to-purple-50",
+    border:      "border-violet-200",
+    iconBg:      "bg-violet-100",
+    iconColor:   "text-violet-700",
+    Icon:        TbReportAnalytics,
   },
 ];
 
