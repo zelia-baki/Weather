@@ -203,8 +203,49 @@ const FarmManager = () => {
     setDrawnPolygon(null);
   };
 
+  // ── Bulk upload : détecte CSV (lignes seules) vs GeoJSON (lignes + polygone) ──
   const handleBulkUpload = () => {
-    if (!csvFile) { Swal.fire('Error!', 'Select a CSV file first.', 'error'); return; }
+    if (!csvFile) { Swal.fire('Error!', 'Select a file first.', 'error'); return; }
+
+    const isGeojson = /\.(geojson|json)$/i.test(csvFile.name);
+
+    if (isGeojson) {
+      const formData = new FormData();
+      formData.append('file', csvFile);
+
+      Swal.fire({
+        title: 'Importing Farms...',
+        html: 'Processing your GeoJSON file (farms + boundaries)...',
+        allowOutsideClick: false,
+        customClass: { popup: 'rounded-2xl' },
+        didOpen: () => Swal.showLoading(),
+      });
+
+      axiosInstance.post('/api/farm/bulk-create-geojson', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+        .then((r) => {
+          const { success, errors, skipped } = r.data;
+          Swal.fire({
+            icon: success > 0 ? 'success' : (skipped > 0 ? 'info' : 'error'),
+            title: 'Import complete',
+            text: `${success} created, ${skipped} skipped, ${errors} error(s).`,
+            customClass: { popup: 'rounded-2xl' },
+          });
+          setCsvFile(null);
+          fetchFarms(currentPage, search);
+        })
+        .catch((err) => {
+          Swal.fire({
+            icon: 'error', title: 'Error',
+            text: err.response?.data?.msg || 'Upload failed.',
+            customClass: { popup: 'rounded-2xl' },
+          });
+        });
+      return;
+    }
+
+    // ── Chemin CSV existant (pas de polygone), inchangé ──
     Papa.parse(csvFile, {
       header: true, skipEmptyLines: true,
       complete: async (result) => {
@@ -212,11 +253,13 @@ const FarmManager = () => {
         try {
           await axiosInstance.post('/api/farm/bulk_create', result.data);
           Swal.fire('Success!', 'Farms uploaded!', 'success');
+          setCsvFile(null);
           fetchFarms(currentPage, search);
         } catch (err) { Swal.fire('Error!', err.response?.data?.message || 'Upload failed.', 'error'); }
       },
     });
   };
+
   const handleExportPolygons = async () => {
     try {
       const r = await axiosInstance.get('/api/farm/export/polygons');
@@ -350,7 +393,7 @@ const FarmManager = () => {
         </div>
       </div>
 
-      {/* Search + CSV */}
+      {/* Search + Bulk upload */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -368,11 +411,12 @@ const FarmManager = () => {
           )}
         </div>
         <div className="flex gap-2">
-          <input type="file" accept=".csv" onChange={e => setCsvFile(e.target.files[0])} className="hidden" id="csvUpload" />
+          {/* accept étendu : .csv (lignes seules) ou .geojson/.json (lignes + polygone) */}
+          <input type="file" accept=".csv,.geojson,.json" onChange={e => setCsvFile(e.target.files[0])} className="hidden" id="csvUpload" />
           <label htmlFor="csvUpload"
             className="cursor-pointer inline-flex items-center gap-1.5 border border-gray-200 bg-white
                        hover:bg-gray-50 text-gray-600 text-sm px-4 py-2.5 rounded-xl transition-colors">
-            <FolderOpen size={15} /> {csvFile ? csvFile.name.substring(0, 12) + '…' : 'CSV'}
+            <FolderOpen size={15} /> {csvFile ? csvFile.name.substring(0, 12) + '…' : 'CSV / GeoJSON'}
           </label>
           <button onClick={handleBulkUpload}
             className="inline-flex items-center gap-1.5 bg-gray-700 hover:bg-gray-800 text-white text-sm px-4 py-2.5 rounded-xl font-medium transition-colors">

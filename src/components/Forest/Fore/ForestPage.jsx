@@ -53,9 +53,58 @@ Isalo Forest,Baobab`;
     window.URL.revokeObjectURL(url);
   };
 
+  // ── NOUVEAU : template GeoJSON — crée la forêt ET son polygone (points) ──
+  const downloadGeoJSONTemplate = () => {
+    const template = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[
+              [47.50, -18.87],
+              [47.51, -18.87],
+              [47.51, -18.88],
+              [47.50, -18.88],
+              [47.50, -18.87],
+            ]],
+          },
+          properties: { name: 'Ambohimanga Forest', tree_type: 'Eucalyptus' },
+        },
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[
+              [47.60, -18.90],
+              [47.61, -18.90],
+              [47.61, -18.91],
+              [47.60, -18.91],
+              [47.60, -18.90],
+            ]],
+          },
+          properties: { name: 'Ranomafana Forest', tree_type: 'Pine' },
+        },
+      ],
+    };
+
+    const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/geo+json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'forest_import_template.geojson';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleBulkImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // ── Détection CSV vs GeoJSON → choix de la route backend ──
+    const isGeojson = /\.(geojson|json)$/i.test(file.name);
+    const endpoint = isGeojson ? '/api/forest/bulk-create-geojson' : '/api/forest/bulk-create';
 
     const formData = new FormData();
     formData.append('file', file);
@@ -63,13 +112,15 @@ Isalo Forest,Baobab`;
     try {
       Swal.fire({
         title: 'Importing Forests...',
-        html: 'Processing your CSV file...',
+        html: isGeojson
+          ? 'Processing your GeoJSON file (forests + boundaries)...'
+          : 'Processing your CSV file...',
         allowOutsideClick: false,
         customClass: { popup: 'rounded-2xl' },
         didOpen: () => Swal.showLoading(),
       });
 
-      const response = await axiosInstance.post('/api/forest/bulk-create', formData, {
+      const response = await axiosInstance.post(endpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -83,8 +134,9 @@ Isalo Forest,Baobab`;
           if (detail.status === 'created') {
             detailsHtml += `<p style="color: #059669; margin: 5px 0; padding: 8px; background: #d1fae5; border-radius: 8px; border-left: 3px solid #059669;">
               <strong>Row ${detail.row}:</strong> ${detail.name}
-              <span style="color: #047857;">(${detail.tree_type})</span>
+              ${detail.tree_type ? `<span style="color: #047857;">(${detail.tree_type})</span>` : ''}
               - <span style="font-size: 11px; color: #065f46;">ID: ${detail.forest_id}</span>
+              ${detail.points_created ? `<span style="font-size: 11px; color: #065f46;"> · ${detail.points_created} points</span>` : ''}
             </p>`;
           }
         });
@@ -163,6 +215,7 @@ Isalo Forest,Baobab`;
 
     e.target.value = null;
   };
+
   const handleExportAllPolygons = async () => {
     try {
       const r = await axiosInstance.get('/api/forest/export/polygons');
@@ -310,7 +363,7 @@ Isalo Forest,Baobab`;
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h3 className="font-semibold text-blue-800 mb-2 text-sm">CSV Format</h3>
+                <h3 className="font-semibold text-blue-800 mb-2 text-sm">CSV Format (rows only, no boundary)</h3>
                 <p className="text-sm text-gray-600 mb-2">Your file needs these columns:</p>
                 <ul className="text-sm text-gray-600 space-y-1 ml-1">
                   <li><strong className="text-blue-700">name</strong> — e.g. "Ambohimanga Forest"</li>
@@ -318,19 +371,36 @@ Isalo Forest,Baobab`;
                 </ul>
               </div>
 
-              <button onClick={downloadCSVTemplate}
-                className="w-full inline-flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-800 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
-                <Download size={15} /> Download CSV Template
-              </button>
+              <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4">
+                <h3 className="font-semibold text-cyan-800 mb-2 text-sm">GeoJSON Format (rows + boundary)</h3>
+                <p className="text-sm text-gray-600">
+                  A <code className="bg-white px-1 rounded">FeatureCollection</code> where each feature's
+                  <code className="bg-white px-1 rounded mx-1">geometry</code> is the forest polygon and
+                  <code className="bg-white px-1 rounded mx-1">properties</code> has
+                  <strong className="text-cyan-700"> name</strong> and <strong className="text-cyan-700">tree_type</strong>.
+                  This also creates the boundary points automatically.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={downloadCSVTemplate}
+                  className="inline-flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-800 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+                  <Download size={15} /> Template CSV
+                </button>
+                <button onClick={downloadGeoJSONTemplate}
+                  className="inline-flex items-center justify-center gap-2 bg-cyan-700 hover:bg-cyan-800 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+                  <Download size={15} /> Template GeoJSON
+                </button>
+              </div>
 
               <div className="border-2 border-dashed border-emerald-200 rounded-xl p-8 text-center bg-emerald-50/50 hover:bg-emerald-50 transition-colors">
                 <Upload size={36} className="mx-auto text-emerald-300 mb-3" />
-                <p className="text-gray-700 text-sm font-semibold mb-1">Choose your CSV file</p>
+                <p className="text-gray-700 text-sm font-semibold mb-1">Choose your CSV or GeoJSON file</p>
                 <p className="text-xs text-gray-400 mb-3">Maximum file size: 5MB</p>
-                <input type="file" accept=".csv" onChange={handleBulkImport} className="hidden" id="csv-upload-forest" />
+                <input type="file" accept=".csv,.geojson,.json" onChange={handleBulkImport} className="hidden" id="csv-upload-forest" />
                 <label htmlFor="csv-upload-forest"
                   className="inline-block cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors">
-                  Select CSV File
+                  Select File
                 </label>
               </div>
             </div>
