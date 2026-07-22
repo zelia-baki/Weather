@@ -106,7 +106,7 @@ import Produce from './components/Qr/Page/ProduceQrPage.jsx';
 import Conservation from './components/Qr/Page/Conservation.jsx';
 import Export from './components/Qr/Page/ExportDigitalStamps.jsx';
 import Fertilizer from './components/Qr/Page/Fertilizer.jsx';
-
+import QrDashboard from './components/Qr/Page/QrDashboard.jsx';
 // ─── Users ────────────────────────────────────────────────────────────────────
 import CreateUsers from './components/Users/CreateUsers.jsx';
 import UserManagement from './components/Users/UserManagement.jsx';
@@ -340,6 +340,7 @@ const layoutRoutes = [
   { path: '/qrconservation', component: <Conservation />, roles: ROLES.ALL, permission: 'qr' },
   { path: '/qrfertilizer',   component: <Fertilizer />,   roles: ROLES.ALL, permission: 'qr' },
   { path: '/qrexport',       component: <Export />,       roles: ROLES.ALL, permission: 'qr' },
+  { path: '/qrdashboard', component: <QrDashboard />, roles: ROLES.ALL, permission: 'qr' },
 
   // Reports
   { path: '/reportfarmer', component: <FarmReport />,   roles: ROLES.ALL, permission: 'reports' },

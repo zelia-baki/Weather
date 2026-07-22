@@ -15,10 +15,10 @@ D:\project\Weather
 ├── dist
 │   ├── assets
 │   │   ├── bg-CXlWhlXB.jpg
-│   │   ├── html2canvas-DXT9txwi.js
-│   │   ├── index-D9LZyBu8.js
-│   │   ├── index-NgR5vpmz.css
-│   │   ├── index.es-chiEl6xg.js
+│   │   ├── html2canvas-Ca4mAtwU.js
+│   │   ├── index-DEa0GWrF.css
+│   │   ├── index-DMlOhcTI.js
+│   │   ├── index.es-CmSfUBrG.js
 │   │   ├── parrot-CPW7Bwmu.jpg
 │   │   └── purify.es-BFmuJLeH.js
 │   ├── gifs
@@ -87,6 +87,8 @@ D:\project\Weather
 │   │   │   ├── DistrictManager.jsx
 │   │   │   ├── DistrictView.jsx
 │   │   │   └── Modal.jsx
+│   │   ├── Ecommerce
+│   │   │   └── EcoProductManager.jsx
 │   │   ├── Eudr
 │   │   │   ├── DueDiligenceStatement.jsx
 │   │   │   ├── EUDRSubmitForm.jsx
@@ -183,7 +185,10 @@ D:\project\Weather
 │   │   │   ├── PaymentError.jsx
 │   │   │   ├── PaymentSuccess.jsx
 │   │   │   ├── SendPaymentModal.jsx
-│   │   │   └── SendSmsModal.jsx
+│   │   │   ├── SendSmsModal.jsx
+│   │   │   ├── ShopPayementSuccess.jsx
+│   │   │   ├── ShopPaymentCancelled.jsx
+│   │   │   └── ShopPaymentError.jsx
 │   │   ├── Qr
 │   │   │   ├── Component
 │   │   │   │   ├── FarmBlock.jsx
@@ -211,6 +216,7 @@ D:\project\Weather
 │   │   │   └── receipt-styles.js
 │   │   ├── SendDPOPaymentModal.jsx
 │   │   ├── Sentinel
+│   │   │   ├── ImageryDashboard.jsx
 │   │   │   ├── SentinelDashboard.jsx
 │   │   │   ├── config
 │   │   │   │   └── chartSetup.js
@@ -232,6 +238,13 @@ D:\project\Weather
 │   │   │   └── utils
 │   │   │       ├── chartBuilders.js
 │   │   │       └── colorUtils.js
+│   │   ├── Shop
+│   │   │   ├── CheckoutPage.jsx
+│   │   │   ├── OurStory.jsx
+│   │   │   ├── ProductDetail.jsx
+│   │   │   ├── ShopLayout.jsx
+│   │   │   ├── ShopPage.jsx
+│   │   │   └── VerifiedStamp.jsx
 │   │   ├── SimpleTest.jsx
 │   │   ├── ThemeProvider.jsx
 │   │   ├── Users
@@ -249,18 +262,17 @@ D:\project\Weather
 │   │   │   ├── CropManger1.jsx
 │   │   │   ├── CropModal.jsx
 │   │   │   ├── GradeManager.jsx
+│   │   │   ├── HSCodeManager.jsx
 │   │   │   ├── IrrigationManager.jsx
 │   │   │   └── tabcrop.jsx
 │   │   ├── gfw
 │   │   │   ├── CarbonReport.jsx
 │   │   │   ├── CarbonReportForest.jsx
 │   │   │   ├── FarmReport.jsx
-│   │   │   ├── FarmReportSection.jsx
 │   │   │   ├── ForestReport.jsx
 │   │   │   ├── Gfwreportforest.jsx
 │   │   │   ├── ReportTest - Copie.txt
 │   │   │   ├── Reportgen2Forest.jsx
-│   │   │   ├── fullReport.jsx
 │   │   │   └── pdf
 │   │   │       ├── CarbonFarmPDF.jsx
 │   │   │       ├── CarbonForestPDF.jsx
@@ -303,6 +315,8 @@ D:\project\Weather
 │   │   │   └── StoreProductManager.jsx
 │   │   ├── test.jsx
 │   │   └── test.txt
+│   ├── context
+│   │   └── CartContext.jsx
 │   ├── hooks
 │   │   ├── pay.txt
 │   │   ├── useConsumeOnce.jsx
