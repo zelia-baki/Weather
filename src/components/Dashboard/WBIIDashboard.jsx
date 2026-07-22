@@ -3,7 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { 
   TrendingUp, BarChart3, RefreshCw, AlertTriangle, ThermometerSun,
   Droplets, Calendar, MapPin, ChevronDown, ChevronUp, Info, Cloud,
-  CloudRain, Sun, Thermometer, Activity
+  CloudRain, Sun, Thermometer, Activity, Sprout
 } from 'lucide-react';
 import axiosInstance from '../../axiosInstance';
 import ExportButtons from './Exportbuttons';
@@ -16,51 +16,88 @@ const WBIIDashboard = () => {
   const [expandedInfo, setExpandedInfo] = useState(false);
   const [error, setError] = useState(null);
 
+  // ─── Crop / Land / Yield data (from /api/farm/<farm_id>/allprop) ───────
+  const [farmProps, setFarmProps] = useState([]);
+  const [farmPropsLoading, setFarmPropsLoading] = useState(false);
+
+  // ─── Liste des cultures (pour le formulaire d'ajout) ────────────────────
+  const [cropsList, setCropsList] = useState([]);
+  const [newCropData, setNewCropData] = useState({
+    crop_id: '', tilled_land_size: '', expected_yield: '', season: ''
+  });
+  const [addingCropData, setAddingCropData] = useState(false);
+  const [addCropError, setAddCropError] = useState(null);
+
   // ─── Ref sur le conteneur du graphique ───────────────────────
   const chartRef = useRef(null);
 
+  // ─── Liste des fermes : /api/farm/all (pas de pagination nécessaire) ───
   const fetchFarms = async () => {
     try {
-      let allFarms = [];
-      let page = 1;
-      let totalPages = 1;
-      
-      while (page <= totalPages) {
-        const response = await axiosInstance.get(`/api/farm/?page=${page}&page_size=100`);
-        
-        let farms = [];
-        if (Array.isArray(response.data)) {
-          farms = response.data;
-          totalPages = 1;
-        } else if (response.data?.results) {
-          farms = response.data.results;
-          totalPages = Math.ceil(response.data.count / 100);
-        } else if (response.data?.farms) {
-          farms = response.data.farms;
-          totalPages = response.data.total_pages || 1;
-        } else if (response.data?.data) {
-          farms = response.data.data;
-          totalPages = response.data.total_pages || 1;
-        } else if (response.data?.items) {
-          farms = response.data.items;
-          totalPages = response.data.total_pages || 1;
-        }
-        
-        allFarms = [...allFarms, ...farms];
-        page++;
-        
-        if (page > 50) {
-          console.warn('Stopped after 50 pages to prevent infinite loop');
-          break;
-        }
-      }
-      
-      console.log(`Total farms loaded: ${allFarms.length} from ${page - 1} page(s)`);
-      return allFarms;
+      const response = await axiosInstance.get('/api/farm/all');
+      const farmsList = response.data?.farms || [];
+      console.log(`Total farms loaded: ${farmsList.length}`);
+      return farmsList;
     } catch (error) {
       console.error('Error fetching farms:', error);
       setError('Failed to load farms. Please try again.');
       return [];
+    }
+  };
+
+  // ─── Crop / land size / yield target, pour toutes les saisons de la ferme ───
+  const fetchFarmProperties = async (farmId) => {
+    try {
+      const response = await axiosInstance.get(`/api/farm/${farmId}/allprop`);
+      if (response.data?.status === 'success') {
+        return response.data.data || [];
+      }
+      return [];
+    } catch (error) {
+      // 404 si aucune donnée FarmData pour cette ferme -> pas une vraie erreur bloquante
+      console.warn('No farm properties found for', farmId, error?.response?.status);
+      return [];
+    }
+  };
+
+  // ─── Liste des cultures disponibles, pour le formulaire d'ajout ───────
+  const fetchCropsList = async () => {
+    try {
+      const response = await axiosInstance.get('/api/crop/');
+      setCropsList(response.data?.crops || []);
+    } catch (error) {
+      console.error('Error fetching crops list:', error);
+    }
+  };
+
+  // ─── Créer une entrée FarmData (crop/land/yield) pour la ferme sélectionnée ───
+  const handleAddCropData = async () => {
+    if (!selectedFarm) return;
+    if (!newCropData.crop_id) {
+      setAddCropError('Please select a crop.');
+      return;
+    }
+
+    setAddingCropData(true);
+    setAddCropError(null);
+    try {
+      await axiosInstance.post('/api/farmdata/create', {
+        farm_id: selectedFarm.id,
+        crop_id: newCropData.crop_id,
+        tilled_land_size: newCropData.tilled_land_size || null,
+        expected_yield: newCropData.expected_yield || null,
+        season: newCropData.season || null,
+      });
+      // Recharger les données crop/land pour cette ferme
+      const updatedProps = await fetchFarmProperties(selectedFarm.id);
+      setFarmProps(updatedProps);
+      setNewCropData({ crop_id: '', tilled_land_size: '', expected_yield: '', season: '' });
+    } catch (error) {
+      console.error('Error creating farm data:', error);
+      const serverMsg = error?.response?.data?.msg || error?.response?.data?.message;
+      setAddCropError(serverMsg || 'Failed to save crop data. A required field may be missing.');
+    } finally {
+      setAddingCropData(false);
     }
   };
 
@@ -179,6 +216,7 @@ const WBIIDashboard = () => {
     }
 
     setLoading(true);
+    setFarmPropsLoading(true);
     setSelectedFarm(farm);
     setError(null);
     
@@ -189,8 +227,13 @@ const WBIIDashboard = () => {
         throw new Error('Invalid geolocation format');
       }
 
-      const historicalData = await fetchHistoricalWeatherData(lat, lon);
-      
+      const [historicalData, propsData] = await Promise.all([
+        fetchHistoricalWeatherData(lat, lon),
+        fetchFarmProperties(farm.id)
+      ]);
+
+      setFarmProps(propsData);
+
       if (historicalData) {
         const wbiiTimeSeries = calculateWBII(historicalData);
         setWbiiData({
@@ -205,6 +248,7 @@ const WBIIDashboard = () => {
       setError('Error loading WBII data: ' + error.message);
     } finally {
       setLoading(false);
+      setFarmPropsLoading(false);
     }
   };
 
@@ -228,6 +272,7 @@ const WBIIDashboard = () => {
       }
     };
     loadFarms();
+    fetchCropsList();
   }, []);
 
   const formatChartDate = (dateString) => {
@@ -414,10 +459,11 @@ const WBIIDashboard = () => {
             </div>
             
             <div className="flex items-center gap-3 flex-wrap">
-              {/* ─── On passe chartRef à ExportButtons ─── */}
+              {/* ─── On passe chartRef + farmProps à ExportButtons ─── */}
               <ExportButtons
                 farmName={selectedFarm?.name}
                 farmGeolocation={selectedFarm?.geolocation}  
+                farmProps={farmProps}
                 timeSeries={wbiiData?.timeSeries}
                 stats={stats}
                 detailedStats={detailedStats}
@@ -559,6 +605,122 @@ const WBIIDashboard = () => {
             ))}
           </select>
         </div>
+
+        {/* Crop & Land Details */}
+        {selectedFarm && (
+          <div className="bg-white rounded-3xl shadow-lg border border-purple-100 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Sprout className="w-5 h-5 text-green-600" />
+              Crop &amp; Land Details
+              {farmProps.length > 0 && ` (${farmProps.length} season${farmProps.length > 1 ? 's' : ''})`}
+            </h3>
+
+            {farmPropsLoading ? (
+              <p className="text-sm text-gray-400">Loading crop data...</p>
+            ) : (
+              <>
+                {farmProps.length === 0 ? (
+                  <p className="text-sm text-gray-400 mb-4">No crop/land data recorded for this farm yet. Add it below.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+                    {farmProps.map((p, idx) => (
+                      <div key={idx} className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-2xl border-2 border-green-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="font-bold text-gray-900">{p.crop_name || 'Unknown crop'}</span>
+                          {p.season && (
+                            <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-semibold">
+                              Season {p.season}
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-1.5 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Land Size</span>
+                            <span className="font-medium text-gray-900">
+                              {p.tilled_land_size ?? '—'} {p.land_type ? `(${p.land_type})` : ''}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Expected Yield</span>
+                            <span className="font-medium text-gray-900">{p.expected_yield ?? '—'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Actual Yield</span>
+                            <span className="font-medium text-gray-900">{p.actual_yield ?? '—'}</span>
+                          </div>
+                          {p.planting_date && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Planting Date</span>
+                              <span className="font-medium text-gray-900">
+                                {new Date(p.planting_date).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                          {p.harvest_date && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Harvest Date</span>
+                              <span className="font-medium text-gray-900">
+                                {new Date(p.harvest_date).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Mini formulaire d'ajout crop/land/yield ── */}
+                <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Add crop / season data</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <select
+                      value={newCropData.crop_id}
+                      onChange={(e) => setNewCropData({ ...newCropData, crop_id: e.target.value })}
+                      className="px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-purple-500"
+                    >
+                      <option value="">Select crop *</option>
+                      {cropsList.map((crop) => (
+                        <option key={crop.id} value={crop.id}>{crop.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      placeholder="Land size (ha)"
+                      value={newCropData.tilled_land_size}
+                      onChange={(e) => setNewCropData({ ...newCropData, tilled_land_size: e.target.value })}
+                      className="px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-purple-500"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Expected yield"
+                      value={newCropData.expected_yield}
+                      onChange={(e) => setNewCropData({ ...newCropData, expected_yield: e.target.value })}
+                      className="px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-purple-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Season"
+                      value={newCropData.season}
+                      onChange={(e) => setNewCropData({ ...newCropData, season: e.target.value })}
+                      className="px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  {addCropError && (
+                    <p className="text-xs text-red-600 mt-2">{addCropError}</p>
+                  )}
+                  <button
+                    onClick={handleAddCropData}
+                    disabled={addingCropData}
+                    className="mt-3 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors"
+                  >
+                    {addingCropData ? 'Saving...' : 'Save crop data'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Statistics */}
         {stats && (
