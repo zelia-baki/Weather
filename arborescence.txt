@@ -15,10 +15,10 @@ D:\project\Weather
 ├── dist
 │   ├── assets
 │   │   ├── bg-CXlWhlXB.jpg
-│   │   ├── html2canvas-Ca4mAtwU.js
-│   │   ├── index-DEa0GWrF.css
-│   │   ├── index-DMlOhcTI.js
-│   │   ├── index.es-CmSfUBrG.js
+│   │   ├── html2canvas-BunDIeCu.js
+│   │   ├── index-C350urNX.js
+│   │   ├── index-CS30zEEn.css
+│   │   ├── index.es-CaIFjAYq.js
 │   │   ├── parrot-CPW7Bwmu.jpg
 │   │   └── purify.es-BFmuJLeH.js
 │   ├── gifs
@@ -209,7 +209,8 @@ D:\project\Weather
 │   │   │   │   ├── Conservation.jsx
 │   │   │   │   ├── ExportDigitalStamps.jsx
 │   │   │   │   ├── Fertilizer.jsx
-│   │   │   │   └── ProduceQrPage.jsx
+│   │   │   │   ├── ProduceQrPage.jsx
+│   │   │   │   └── QrDashboard.jsx
 │   │   │   ├── Produce
 │   │   │   │   └── useFetchData.jsx
 │   │   │   ├── qr.jsx
@@ -223,6 +224,7 @@ D:\project\Weather
 │   │   │   ├── constants.js
 │   │   │   ├── panels
 │   │   │   │   ├── ClassificationMapsPanel.jsx
+│   │   │   │   ├── CropPredictionPanel.jsx
 │   │   │   │   ├── GaugeCard.jsx
 │   │   │   │   ├── IndexCard.jsx
 │   │   │   │   ├── IndexGaugePanel.jsx
@@ -230,6 +232,7 @@ D:\project\Weather
 │   │   │   │   ├── MiniYearMap.jsx
 │   │   │   │   ├── OutOfBoundsAlert.jsx
 │   │   │   │   ├── SeasonalNdviRainfallPanel.jsx
+│   │   │   │   ├── SoilCarbonPanel.jsx
 │   │   │   │   ├── Spinner.jsx
 │   │   │   │   ├── TierBadge.jsx
 │   │   │   │   ├── WeeklyTrendPanel.jsx

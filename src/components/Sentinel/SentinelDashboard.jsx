@@ -22,6 +22,10 @@ import YieldAnalysisPanel from "./panels/YieldAnalysisPanel";
 import WeeklyTrendPanel from "./panels/WeeklyTrendPanel";
 import IndexGaugePanel from "./panels/IndexGaugePanel";
 import SeasonalNdviRainfallPanel from "./panels/SeasonalNdviRainfallPanel";
+import CropPredictionPanel from "./panels/CropPredictionPanel";
+import SoilCarbonPanel from "./panels/SoilCarbonPanel";
+
+
 
 export default function SentinelDashboard({ entityType = 'farm', mode = 'account', geojson = null, phone = null, initialData = null }) {
   const params = useParams();
@@ -395,6 +399,10 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
         {(type === 'farm' || type === 'forest') && !isGuest && (
           <ClassificationMapsPanel entityId={entityId} entityType={type} />
         )}
+        {type === 'farm' && !isGuest && <SoilCarbonPanel entityId={entityId} entityType={type} />}
+        {type === 'farm' && !isGuest && (
+  <CropPredictionPanel entityId={entityId} entityType={type} isAdmin={/* ton flag user.is_admin */ true} />
+)}
 
         <p className="text-center text-xs text-slate-600 pb-4">
           Sentinel-2 L2A · Statistical API · Max cloud cover 30% · Quarterly aggregation ·
