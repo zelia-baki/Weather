@@ -332,8 +332,7 @@ const UserManagement = () => {
                 <div className="space-y-1.5 p-3 bg-gray-50 border border-gray-200 rounded-xl">
                   {PERMISSIONS_CONFIG.map(({ key, label, Icon, description }) => (
                     <div key={key}
-                      onClick={() => handlePermissionToggle(key)}
-                      className={`flex items-center justify-between p-2.5 rounded-lg border transition-colors cursor-pointer select-none ${
+                      className={`flex items-center justify-between p-2.5 rounded-lg border transition-colors select-none ${
                         userForm.permissions[key] ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200 hover:bg-gray-50'
                       }`}
                     >

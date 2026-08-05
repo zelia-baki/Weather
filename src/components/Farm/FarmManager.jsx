@@ -16,6 +16,7 @@ import PolygonDrawer from '../mapbox/PolygonDrawer.jsx';
 const EMPTY_FORM = {
   name: '', subcounty: '', district_id: '', farmergroup_id: '',
   geolocation: '', phonenumber1: '', phonenumber2: '', gender: '', cin: '',
+  government_id: '', // ★ NOUVEAU — identifiant officiel délivré par une autorité, optionnel
 };
 
 const inputCls = (err) =>
@@ -132,6 +133,7 @@ const FarmManager = () => {
     }
     if (!formData.gender) e.gender = 'Gender is required';
     if (!formData.cin.trim()) e.cin = 'National ID is required';
+    // government_id est optionnel : aucune validation requise
     return e;
   };
 
@@ -165,6 +167,7 @@ const FarmManager = () => {
       farmergroup_id: farm.farmergroup_id ?? '', geolocation: farm.geolocation ?? '',
       phonenumber1: farm.phonenumber1 ?? farm.phonenumber ?? '', phonenumber2: farm.phonenumber2 ?? '',
       gender: farm.gender ?? '', cin: farm.cin ?? '',
+      government_id: farm.government_id ?? '', // ★ NOUVEAU
     });
     setCurrentFarmId(farm.id);
     setFormErrors({});
@@ -466,6 +469,12 @@ const FarmManager = () => {
                   {farm.subcounty && <span className="text-xs text-gray-500">{farm.subcounty}</span>}
                   {farm.phonenumber && <span className="text-xs text-gray-500">{farm.phonenumber}</span>}
                   {farm.gender && <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{farm.gender}</span>}
+                  {/* ★ NOUVEAU — badge affichant le Government ID si présent */}
+                  {farm.government_id && (
+                    <span className="text-xs bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5 rounded-full font-mono">
+                      Gov ID: {farm.government_id}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5 sm:justify-end">
@@ -567,6 +576,21 @@ const FarmManager = () => {
                   <input type="text" placeholder="e.g. CM1234567890" value={formData.cin}
                     onChange={e => setFormData({ ...formData, cin: e.target.value })} className={inputCls(formErrors.cin)} />
                 </Field>
+
+                {/* ★ NOUVEAU — Government-issued ID (optionnel, distinct du farm_id interne et du CIN) */}
+                <Field label="Government-issued ID (optional)">
+                  <input
+                    type="text"
+                    placeholder="e.g. GOV-2026-000123"
+                    value={formData.government_id}
+                    onChange={e => setFormData({ ...formData, government_id: e.target.value })}
+                    className={inputCls(false)}
+                  />
+                  <p className="text-xs text-gray-400">
+                    Official ID assigned by the relevant authority — used for external system integration.
+                  </p>
+                </Field>
+
                 <Field label="Gender" required error={formErrors.gender}>
                   <select value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })} className={selectCls(formErrors.gender)}>
                     <option value="">Select gender</option>

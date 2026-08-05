@@ -44,6 +44,12 @@ export const PERMISSIONS_CONFIG = [
     description: 'Imagerie satellite via Sentinel Hub',
   },
   {
+    key: 'imagery',
+    label: 'Imagery sentinel ',
+    Icon: FaSatelliteDish,
+    description: 'Imagerie satellite via Sentinel Hub',
+  },
+  {
     key: 'reports',
     label: 'Rapports (Farm / Carbon / Forest)',
     Icon: FaChartBar,
