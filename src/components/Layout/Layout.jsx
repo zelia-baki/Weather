@@ -2,10 +2,11 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { MdManageAccounts, MdDashboard, MdHistory, MdOutlineWaterDrop,
-         MdOutlineWbSunny, MdOutlineWarningAmber, MdOutlineSms } from "react-icons/md";
+         MdOutlineWbSunny, MdOutlineWarningAmber, MdOutlineSms,
+         MdOutlineShoppingCart, MdOutlineGavel } from "react-icons/md";  // ← MdOutlineShoppingCart added
 import { FiLogOut, FiMenu, FiX, FiChevronDown } from "react-icons/fi";
 import { FaTree, FaCloudSun, FaQrcode, FaFileContract, FaCrown, FaUser } from "react-icons/fa";
-import { TbPlant2, TbMap2, TbChartBar, TbTag } from "react-icons/tb";   // ← TbTag ajouté
+import { TbPlant2, TbMap2, TbChartBar, TbTag } from "react-icons/tb";
 import { RiPlantLine, RiMapPinLine } from "react-icons/ri";
 import { BsCalendarDate, BsShop } from "react-icons/bs";
 import { GiFarmer, GiForestCamp, GiWheat } from "react-icons/gi";
@@ -21,29 +22,25 @@ const ROLE_META = {
 };
 
 // ─── Nav menu definitions ─────────────────────────────────────
-// permissions : objet JSON issu du JWT (sub.permissions), ex:
+// permissions: JSON object from JWT (sub.permissions), e.g.:
 // { farmergroup: true, store: true, weather_dashboard: true, water_advisory: false, sentinel: true, ... }
 const buildMenus = (isAdmin, role, permissions = {}) => {
   const isFarmer = isAdmin || role === "farmer";
   const isForest = isAdmin || role === "forest";
   const isAll    = isAdmin || ["weather", "farmer", "forest"].includes(role);
 
-  // ── Permissions modulaires Weather ──────────────────────────
-  // Admin : tout débloqué. Sinon on regarde la permission précise dans le JWT.
+  // ── Weather modular permissions ─────────────────────────────
   const weatherPerms = {
     weather_dashboard: isAdmin || !!permissions.weather_dashboard,
     water_advisory:    isAdmin || !!permissions.water_advisory,
   };
 
-  // Le dropdown "Weather" s'affiche si :
-  //  - rôle historique "weather" (ou admin), OU
-  //  - n'importe quel rôle (farmer/forest) avec au moins une permission weather activée
   const isWeather =
     isAdmin ||
     role === "weather" ||
     Object.values(weatherPerms).some(Boolean);
 
-  // ── Permissions modulaires Farm ─────────────────────────────
+  // ── Farm modular permissions ────────────────────────────────
   const hasFarmergroup = isAdmin || !!permissions.farmergroup;
   const hasStore        = isAdmin || !!permissions.store;
 
@@ -79,6 +76,16 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "Fertilizer Stamps",          href: "/qrfertilizer",   Icon: TbPlant2 },
       ],
     },
+ {
+  id: "ecommerce", label: "E-commerce", Icon: BsShop,
+  show: isAdmin,
+  items: [
+    { label: "Shop (customer view)", href: "/shop",           Icon: BsShop },
+    { label: "Product Manager",      href: "/ecoshopmanager", Icon: MdOutlineShoppingCart },
+    { label: "Auctions (public)",    href: "/auctions",       Icon: MdOutlineGavel },
+    { label: "Auction Manager",      href: "/auctionmanager", Icon: MdOutlineGavel },
+  ],
+},
     {
       id: "weather", label: "Weather", Icon: FaCloudSun,
       show: isWeather,
@@ -213,7 +220,7 @@ const MobileAccordion = ({ menu, open, onToggle, onNavigate }) => {
 const Layout = ({ children }) => {
   const [userRole,       setUserRole]       = useState(null);
   const [isAdmin,        setIsAdmin]        = useState(false);
-  const [permissions,    setPermissions]    = useState({});   // ← nouveau
+  const [permissions,    setPermissions]    = useState({});
   const [openMenu,       setOpenMenu]       = useState(null);
   const [mobileOpen,     setMobileOpen]     = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(null);
@@ -226,7 +233,7 @@ const Layout = ({ children }) => {
         const decoded = jwtDecode(token);
         setUserRole(decoded.sub?.user_type || "");
         setIsAdmin(decoded.sub?.is_admin   || false);
-        setPermissions(decoded.sub?.permissions || {});   // ← nouveau
+        setPermissions(decoded.sub?.permissions || {});
       } catch {
         localStorage.removeItem("token");
       }
@@ -234,7 +241,7 @@ const Layout = ({ children }) => {
   }, []);
 
   const menus = useMemo(
-    () => buildMenus(isAdmin, userRole, permissions),   // ← permissions ajouté
+    () => buildMenus(isAdmin, userRole, permissions),
     [isAdmin, userRole, permissions]
   );
 

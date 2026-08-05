@@ -122,16 +122,20 @@ import BlogAdmin from './components/Blog/BlogAdmin.jsx';
 import BlogPublic from './components/Blog/BlogPublic.jsx';
 
 // ─── Shop ─────────────────────────────────────────────────────────────────────
-import ShopLayout from './components/Shop/ShopLayout.jsx';
-import ShopPage from './components/Shop/ShopPage.jsx';
-import ProductDetail from './components/Shop/ProductDetail.jsx';
-import OurStory from './components/Shop/OurStory.jsx';
+import AuctionsIndex from './components/Auction/AuctionsIndex.jsx';
+import AuctionPage from './components/Auction/AuctionPage.jsx';
+import AuctionManager from './components/Auction/AuctionManager.jsx';
+import LotDetail from './components/Auction/LotDetail.jsx';
 
 
 // ─── Ecommerce ─────────────────────────────────────────────────────────────────────
 
 import EcoProductManager from './components/Ecommerce/EcoProductManager.jsx';
 import CheckoutPage from './components/Shop/CheckoutPage.jsx';
+import ShopLayout from './components/Shop/ShopLayout.jsx';
+import ShopPage from './components/Shop/ShopPage.jsx';
+import ProductDetail from './components/Shop/ProductDetail.jsx';
+import OurStory from './components/Shop/OurStory.jsx';
 // =============================================================================
 // GUARD : AccessDeniedScreen — composant partagé pour tous les refus d'accès
 // =============================================================================
@@ -379,6 +383,8 @@ const layoutRoutes = [
   { path: '/wbiidashboard', component: <WBIIDashboard />, roles: ROLES.ALL, requireWbii: true },
   //Ecommerce
   { path: '/ecoshopmanager', component: <EcoProductManager />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/auctionmanager', component: <AuctionManager />, roles: ROLES.ADMIN, adminOnly: true },
+  
 
 ];
 
@@ -401,22 +407,32 @@ function App() {
         <Route path="/EUDRSubmissionForGuest"  element={<EUDRSubmitFormForGuest />} />
         <Route path="/sectionfutur"            element={<SectionFutur />} />
         <Route path="/test"                    element={<TestMap />} />
-
-        {/* ── Payment callbacks ── */}
+{/* ── Payment callbacks ── */}
         <Route path="/payment/success"   element={<PaymentSuccess />} />
         <Route path="/payment/cancelled" element={<PaymentCancelled />} />
         <Route path="/payment/error"     element={<PaymentError />} />
 
-        {/* ── Shop E-commerces ── */}
-<Route path="/shop/" element={<ShopLayout />}>
-  <Route index element={<ShopPage />} />
-  <Route path=":id" element={<ProductDetail />} />
-  <Route path="checkout" element={<CheckoutPage />} />
-  <Route path="ourstory" element={<OurStory />} />
-  <Route path="payment/success" element={<PaymentSuccess />} />
-  <Route path="payment/cancelled" element={<PaymentCancelled />} />
-  <Route path="payment/error" element={<PaymentError />} />
-</Route>
+        {/* ── Boutique et enchères : même coquille ── */}
+        <Route path="/shop" element={<ShopLayout />}>
+          <Route index element={<ShopPage />} />
+          <Route path=":id" element={<ProductDetail />} />
+          <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="ourstory" element={<OurStory />} />
+          <Route path="payment/success"   element={<PaymentSuccess />} />
+          <Route path="payment/cancelled" element={<PaymentCancelled />} />
+          <Route path="payment/error"     element={<PaymentError />} />
+        </Route>
+
+        <Route element={<ShopLayout />}>
+          <Route path="/auctions"        element={<AuctionsIndex />} />
+          <Route path="/auction/lot/:id" element={<LotDetail />} />
+          <Route path="/auction/:slug"   element={<AuctionPage />} />
+        </Route>
+
+        {/* Retours DPO de caution : pages de transit, sans navigation */}
+        <Route path="/auction/deposit/success"   element={<PaymentSuccess />} />
+        <Route path="/auction/deposit/cancelled" element={<PaymentCancelled />} />
+        <Route path="/auction/deposit/error"     element={<PaymentError />} />
 
         {/* ── Home protégé ── */}
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
