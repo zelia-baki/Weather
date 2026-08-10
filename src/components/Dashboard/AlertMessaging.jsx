@@ -649,7 +649,7 @@ const AlertMessaging = () => {
         // Fetch crops
         let farmCrops = [];
         try {
-          const fdRes = await axiosInstance.get(`/api/farmdata/?farm_id=${farm.id}`);
+          const fdRes = await axiosInstance.get(`/api/farmdata/?farm_id=${farm.farm_id}`);
           const cropIds = [...new Set((fdRes.data?.farmdata_list || []).map(fd => fd.crop_id))];
           for (const id of cropIds) {
             const cr = await axiosInstance.get(`/api/crop/${id}`);
