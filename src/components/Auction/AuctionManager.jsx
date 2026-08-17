@@ -1,24 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axiosInstance from '../../axiosInstance';
 import Swal from 'sweetalert2';
+import BiddersTab from './BiddersTab';
 import {
   Gavel, Plus, X, Check, Loader2, AlertTriangle, ArrowLeft, Play, Lock,
-  Users, Package, ShieldCheck, ShieldAlert, Clock, TrendingUp, Coffee,
+  Users, Package, ShieldCheck, Clock, TrendingUp, Coffee,
   RefreshCw, Ban, Wallet,
 } from 'lucide-react';
 
-// =============================================================================
-//  src/components/Auction/AuctionManager.jsx — nouveau fichier
-//
-//  Route : /auctionmanager (adminOnly)
-//
-//  Le cycle de vie d'une vente, dans l'ordre :
-//    draft → on ajoute des lots → open → les enchères courent → close
-//    → les gagnants paient → les défaillants sont déclarés
-//
-//  L'écran suit exactement cet ordre : ce qu'on peut faire à un instant donné
-//  dépend du statut, et le reste est masqué plutôt que grisé.
-// =============================================================================
 
 const inputCls = (err) =>
   `w-full border rounded-xl px-3.5 py-2.5 text-sm transition-all outline-none
@@ -260,50 +249,6 @@ const AuctionManager = () => {
           : `Deposit forfeited: ${fmt(res.data.deposit_forfeited)}.<br/>No eligible underbidder — lot marked unsold.`,
         customClass: { popup: 'rounded-2xl' },
       });
-    } catch (err) { fail(err); }
-  };
-
-  // ── Inscriptions ────────────────────────────────────────────────────────────
-  const approveReg = async (reg) => {
-    const r = await Swal.fire({
-      title: `Approve ${reg.company_name || reg.username}?`,
-      input: 'number', inputLabel: `Bidding limit (${selected.currency}) — leave blank for no limit`,
-      inputValue: reg.bid_limit ?? '',
-      showCancelButton: true, confirmButtonColor: '#16803c', confirmButtonText: 'Approve',
-      customClass: { popup: 'rounded-2xl' } });
-    if (!r.isConfirmed) return;
-    try {
-      await axiosInstance.post(`/api/auction/registrations/${reg.id}/approve`,
-        r.value ? { bid_limit: parseFloat(r.value) } : {});
-      await openAuction(selected.id);
-      ok('Registration approved');
-    } catch (err) { fail(err); }
-  };
-
-  const rejectReg = async (reg) => {
-    const r = await Swal.fire({
-      title: 'Reject this registration?', input: 'text', inputPlaceholder: 'Reason (internal)',
-      showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Reject',
-      customClass: { popup: 'rounded-2xl' } });
-    if (!r.isConfirmed) return;
-    try {
-      await axiosInstance.post(`/api/auction/registrations/${reg.id}/reject`, { note: r.value });
-      await openAuction(selected.id);
-      ok('Registration rejected');
-    } catch (err) { fail(err); }
-  };
-
-  const refundReg = async (reg) => {
-    const r = await Swal.fire({
-      title: 'Mark deposit as refunded?', icon: 'question',
-      text: 'This records the decision and frees the bidding limit. The transfer itself is done outside the app.',
-      showCancelButton: true, confirmButtonColor: '#16803c', confirmButtonText: 'Mark refunded',
-      customClass: { popup: 'rounded-2xl' } });
-    if (!r.isConfirmed) return;
-    try {
-      await axiosInstance.post(`/api/auction/registrations/${reg.id}/refund-deposit`);
-      await openAuction(selected.id);
-      ok('Deposit marked refunded');
     } catch (err) { fail(err); }
   };
 
@@ -642,69 +587,9 @@ const AuctionManager = () => {
       )}
 
       {/* ── BIDDERS ──────────────────────────────────────────────────── */}
-      {tab === 'bidders' && (
-        <div className="space-y-3">
-          {regs.length === 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-              <Users size={36} className="mx-auto mb-2 text-gray-300"/>
-              <p className="text-sm text-gray-400">No registration yet.</p>
-            </div>
-          )}
-          {regs.map(reg => (
-            <div key={reg.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-bold text-gray-800 flex items-center gap-2 flex-wrap">
-                    {reg.company_name || reg.username || `User #${reg.user_id}`}
-                    <Badge status={reg.status}/>
-                    {reg.deposit_status === 'held' && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Deposit held
-                      </span>
-                    )}
-                    {reg.deposit_status === 'forfeited' && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
-                        Deposit forfeited
-                      </span>
-                    )}
-                  </h3>
-                  <div className="flex flex-wrap gap-3 mt-1 text-xs text-gray-500">
-                    {reg.contact_phone && <span>{reg.contact_phone}</span>}
-                    {reg.contact_email && <span>{reg.contact_email}</span>}
-                    {reg.shipping_country && <span>{reg.shipping_country}</span>}
-                    {reg.bid_limit != null && (
-                      <span className="font-semibold text-gray-700">
-                        {fmt(reg.committed_exposure)} / {fmt(reg.bid_limit)} committed
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-2 flex-shrink-0">
-                  {(reg.status === 'pending' || reg.status === 'approved') && (
-                    <button onClick={() => approveReg(reg)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200">
-                      <ShieldCheck size={12}/> {reg.status === 'pending' ? 'Approve' : 'Set limit'}
-                    </button>
-                  )}
-                  {reg.status !== 'rejected' && reg.status !== 'defaulted' && (
-                    <button onClick={() => rejectReg(reg)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border bg-red-50 text-red-700 hover:bg-red-100 border-red-200">
-                      <ShieldAlert size={12}/> Reject
-                    </button>
-                  )}
-                  {reg.deposit_status === 'held' && selected.status === 'closed' && (
-                    <button onClick={() => refundReg(reg)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200">
-                      <Wallet size={12}/> Refund
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+    {tab === 'bidders' && (
+  <BiddersTab auction={selected} onRefresh={() => openAuction(selected.id)} />
+)}
 
       {/* ── PAYMENTS ─────────────────────────────────────────────────── */}
       {tab === 'payments' && (
