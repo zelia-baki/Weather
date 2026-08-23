@@ -9,7 +9,6 @@ const StepUserInfo = ({
   isValid = false, 
   highlightUserInfo = "" 
 }) => {
-  // ✅ Individual field validation
   const isPhoneValid = userInfo.phone && userInfo.phone.trim() !== '';
   const isEmailValid = userInfo.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInfo.email);
 
@@ -22,7 +21,6 @@ const StepUserInfo = ({
         Please provide your phone number (starting with 256) and email address.
       </p>
 
-      {/* Form with highlight */}
       <form
         onSubmit={onSubmit}
         className={`bg-white p-6 rounded-2xl shadow-md max-w-md mx-auto space-y-4 ${highlightUserInfo}`}
@@ -39,7 +37,7 @@ const StepUserInfo = ({
               setUserInfo((prev) => ({ ...prev, agent_id: e.target.value }))
             }
             placeholder="e.g. 123XXXXXXXXX"
-            className="block w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            className="block w-full p-2 rounded-lg border border-gray-600 bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         </div>
 
@@ -51,9 +49,9 @@ const StepUserInfo = ({
             </span>
             {userInfo.phone && (
               isPhoneValid ? (
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-red-500" />
+                <AlertCircle className="w-4 h-4 text-red-400" />
               )
             )}
           </label>
@@ -64,17 +62,17 @@ const StepUserInfo = ({
               setUserInfo((prev) => ({ ...prev, phone: e.target.value }))
             }
             placeholder="e.g. 256XXXXXXXXX"
-            className={`block w-full p-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+            className={`block w-full p-2 rounded-lg border text-white placeholder-gray-400 focus:ring-2 focus:outline-none transition-colors ${
               !userInfo.phone
-                ? 'border-gray-300 focus:ring-blue-500'
+                ? 'border-gray-600 bg-gray-800 focus:ring-blue-500'
                 : isPhoneValid
-                ? 'border-green-300 focus:ring-green-500 bg-green-50/30'
-                : 'border-red-300 focus:ring-red-500 bg-red-50/30'
+                ? 'border-green-500 bg-gray-800 focus:ring-green-500'
+                : 'border-red-500 bg-gray-800 focus:ring-red-500'
             }`}
             required
           />
           {userInfo.phone && !isPhoneValid && (
-            <p className="text-xs text-red-600 mt-1">Phone number is required</p>
+            <p className="text-xs text-red-400 mt-1">Phone number is required</p>
           )}
         </div>
 
@@ -86,9 +84,9 @@ const StepUserInfo = ({
             </span>
             {userInfo.email && (
               isEmailValid ? (
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-red-500" />
+                <AlertCircle className="w-4 h-4 text-red-400" />
               )
             )}
           </label>
@@ -99,21 +97,20 @@ const StepUserInfo = ({
               setUserInfo((prev) => ({ ...prev, email: e.target.value }))
             }
             placeholder="example@email.com"
-            className={`block w-full p-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+            className={`block w-full p-2 rounded-lg border text-white placeholder-gray-400 focus:ring-2 focus:outline-none transition-colors ${
               !userInfo.email
-                ? 'border-gray-300 focus:ring-blue-500'
+                ? 'border-gray-600 bg-gray-800 focus:ring-blue-500'
                 : isEmailValid
-                ? 'border-green-300 focus:ring-green-500 bg-green-50/30'
-                : 'border-red-300 focus:ring-red-500 bg-red-50/30'
+                ? 'border-green-500 bg-gray-800 focus:ring-green-500'
+                : 'border-red-500 bg-gray-800 focus:ring-red-500'
             }`}
             required
           />
           {userInfo.email && !isEmailValid && (
-            <p className="text-xs text-red-600 mt-1">Please enter a valid email address</p>
+            <p className="text-xs text-red-400 mt-1">Please enter a valid email address</p>
           )}
         </div>
 
-        {/* Submit button with validation */}
         <button
           type="submit"
           disabled={loading || !isValid}

@@ -43,7 +43,7 @@ const ThemeProvider = () => (
     .light-panel input,
     .light-panel select,
     .light-panel textarea {
-      background-color: #ffffff !important;
+      background-color: #1b1a1a !important;
       color: #111827 !important;
     }
 

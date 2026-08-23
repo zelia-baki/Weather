@@ -1,18 +1,20 @@
 // components/TreeManagement/TreeManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { Trees, Plus, List, Map as MapIcon, Upload, Search, Filter, Download } from 'lucide-react';
+import { Trees, Plus, List, Map as MapIcon, Upload, Search, Filter, Download, Leaf } from 'lucide-react';
 import Swal from 'sweetalert2';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 import { useTreeData } from './hooks/useTreeData';
 import { useMapbox } from './hooks/useMapbox';
 import { treeService } from './services/treeService';
+import { calculateCO2 } from './utils/treeCO2Calc';
 
 import TreeForm from './TreeForm';
 import TreeList from './TreeList';
 import BulkImportModal from './BulkImportModal';
 import TreeStats from './TreeStats';
 import SearchModal from './SearchModal';
+import CO2ReportModal from './CO2ReportModal';
 
 const TreeManagement = () => {
   const [selectedForest, setSelectedForest] = useState('all');
@@ -22,6 +24,7 @@ const TreeManagement = () => {
   const [editingTree, setEditingTree] = useState(null);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showCO2Report, setShowCO2Report] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -87,30 +90,6 @@ const TreeManagement = () => {
   };
 
   const handleTreeClick = (tree) => {
-    const calculateAGB = (diameter, height, woodDensity = 0.6) => {
-      if (!diameter || !height) return 0;
-      const D = parseFloat(diameter);
-      const H = parseFloat(height);
-      const rho = woodDensity;
-      const AGB = 0.0673 * Math.pow((rho * D * D * H), 0.976);
-      return AGB;
-    };
-
-    const calculateCO2 = (diameter, height, woodDensity = 0.6) => {
-      if (!diameter || !height) return { agb: 0, co2: 0 };
-      const AGB = calculateAGB(diameter, height, woodDensity);
-      const BGB = 0.2 * AGB;
-      const TB = AGB + BGB;
-      const TDW = TB * 0.725;
-      const TC = TDW * 0.5;
-      const CO2_kg = TC * 3.67;
-      const CO2_tonnes = CO2_kg / 1000;
-      return {
-        agb: AGB.toFixed(2),
-        co2: CO2_tonnes.toFixed(3)
-      };
-    };
-
     const { agb, co2 } = calculateCO2(tree.diameter, tree.height);
 
     Swal.fire({
@@ -378,6 +357,16 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
                 Export Points
               </button>
               <button
+                onClick={() => setShowCO2Report(true)}
+                disabled={selectedForest === 'all'}
+                title={selectedForest === 'all' ? 'Select a specific forest first' : ''}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700
+                           disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center gap-2"
+              >
+                <Leaf className="w-5 h-5" />
+                CO2 Report
+              </button>
+              <button
                 onClick={() => setShowBulkImport(true)}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2"
               >
@@ -504,6 +493,14 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
           onClose={() => setShowBulkImport(false)}
           onImport={handleBulkImport}
           onDownloadTemplate={downloadTemplate}
+        />
+      )}
+
+      {showCO2Report && (
+        <CO2ReportModal
+          forestId={selectedForest}
+          forestName={forests.find(f => f.id === parseInt(selectedForest))?.name}
+          onClose={() => setShowCO2Report(false)}
         />
       )}
     </div>

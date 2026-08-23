@@ -103,9 +103,56 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
 
   const TOKEN = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
 
-  const coordinates = results["jrc global forest cover"]?.[0]?.coordinates?.[0] ||
-    results["tree cover loss"]?.[0]?.coordinates?.[0] ||
-    results["soil carbon"]?.[0]?.coordinates?.[0];
+  // ✅ FIX (Project Area "Not available" en mode invité) : l'ancien code faisait
+  // `.coordinates?.[0]`, ce qui suppose une géométrie Polygon (coordinates =
+  // [anneau_extérieur, trous...] → [0] = l'anneau). Pour une géométrie
+  // MultiPolygon (coordinates = [[anneau, trous...], [anneau, trous...], ...],
+  // un tableau DE POLYGONES), [0] renvoyait le premier polygone entier — un
+  // tableau imbriqué d'un seul élément — pas un anneau de points. La condition
+  // `coordinates.length >= 3` échouait alors silencieusement (length === 1),
+  // le calcul de surface ne se déclenchait jamais, et areaInSquareMeters /
+  // areaInHectares restaient à null → "Not available" + ratio à 0%.
+  const rawCoordinates = results["jrc global forest cover"]?.[0]?.coordinates ||
+    results["tree cover loss"]?.[0]?.coordinates ||
+    results["soil carbon"]?.[0]?.coordinates;
+
+  const getArrayDepth = (arr) => {
+    let depth = 0;
+    let cur = arr;
+    while (Array.isArray(cur)) {
+      depth++;
+      cur = cur[0];
+    }
+    return depth;
+  };
+
+  // Renvoie la liste des anneaux extérieurs (un par polygone), que la
+  // géométrie source soit un Polygon (1 anneau) ou un MultiPolygon
+  // (N anneaux, un par sous-polygone). Les trous internes sont ignorés,
+  // comme dans le comportement d'origine.
+  const getOuterRings = (coords) => {
+    if (!Array.isArray(coords) || coords.length === 0) return [];
+    const depth = getArrayDepth(coords);
+    if (depth === 4) {
+      // MultiPolygon.coordinates : [[anneau, trous...], [anneau, trous...], ...]
+      return coords.map(poly => poly?.[0]).filter(Array.isArray);
+    }
+    if (depth === 3) {
+      // Polygon.coordinates : [anneau_extérieur, trous...]
+      return [coords[0]];
+    }
+    if (depth === 2) {
+      // Déjà un anneau brut (cas défensif)
+      return [coords];
+    }
+    return [];
+  };
+
+  const outerRings = getOuterRings(rawCoordinates);
+  // Anneau utilisé pour la carte statique / l'aperçu Mapbox (le premier
+  // polygone suffit pour l'affichage visuel, même si la surface totale
+  // ci-dessous, elle, prend en compte tous les polygones).
+  const coordinates = outerRings[0] || null;
 
   console.log("ETO", coordinates);
 
@@ -251,22 +298,31 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
     let calculatedAreaSqM = 0;
     let calculatedAreaHa = 0;
 
-    if (coordinates && Array.isArray(coordinates) && coordinates.length >= 3) {
-      const first = coordinates[0];
-      const last = coordinates[coordinates.length - 1];
-      const closedCoords = (first[0] !== last[0] || first[1] !== last[1])
-        ? [...coordinates, first]
-        : coordinates;
+    // ✅ FIX : on somme la surface de CHAQUE anneau extérieur (outerRings),
+    // qu'il y en ait un seul (Polygon) ou plusieurs (MultiPolygon), au lieu
+    // de se fier à une unique variable `coordinates` qui pouvait être mal
+    // formée pour un MultiPolygon (voir commentaire plus haut).
+    outerRings.forEach((ring) => {
+      if (!Array.isArray(ring) || ring.length < 3) return;
+
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      const closedRing = (first[0] !== last[0] || first[1] !== last[1])
+        ? [...ring, first]
+        : ring;
 
       try {
-        const polygon = turf.polygon([closedCoords]);
-        calculatedAreaSqM = turf.area(polygon);
-        calculatedAreaHa = calculatedAreaSqM / 10000;
-        setAreaInSquareMeters(calculatedAreaSqM);
-        setAreaInHectares(calculatedAreaHa);
+        const polygon = turf.polygon([closedRing]);
+        calculatedAreaSqM += turf.area(polygon);
       } catch (e) {
         console.error("Turf error on polygon:", e);
       }
+    });
+
+    if (calculatedAreaSqM > 0) {
+      calculatedAreaHa = calculatedAreaSqM / 10000;
+      setAreaInSquareMeters(calculatedAreaSqM);
+      setAreaInHectares(calculatedAreaHa);
     }
 
     // ✅ Calcul de la perte de couverture forestière

@@ -24,6 +24,8 @@ import IndexGaugePanel from "./panels/IndexGaugePanel";
 import SeasonalNdviRainfallPanel from "./panels/SeasonalNdviRainfallPanel";
 import CropPredictionPanel from "./panels/CropPredictionPanel";
 import SoilCarbonPanel from "./panels/SoilCarbonPanel";
+import TreeCO2Panel from "./panels/TreeCO2Panel";
+
 
 
 
@@ -224,7 +226,7 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
           </div>
         ))}
         <IndexGaugePanel data={data} />
-        {type === 'farm' && !isGuest &&  (
+        {type === 'farm' && !isGuest && (
           <WeeklyTrendPanel entityId={entityId} entityType={type} />
         )}
         {type === 'farm' && !isGuest && (
@@ -387,22 +389,31 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
           />
         )}
 
-        {(type === 'farm' || type === 'forest') && !isGuest && (
+        {/* {(type === 'farm' || type === 'forest') && !isGuest && (
           <YearlyPolygonMapGrid
             entityId={entityId}
             entityType={type}
             history={history}
             activeIndex={active}
           />
-        )}
+        )} */}
 
-        {(type === 'farm' || type === 'forest') && !isGuest && (
-          <ClassificationMapsPanel entityId={entityId} entityType={type} />
+        {(type === 'farm' || type === 'forest') && (
+          <ClassificationMapsPanel
+            entityId={entityId}
+            entityType={type}
+            isGuest={isGuest}
+            geojson={geojson}
+            phone={phone}
+          />
         )}
         {type === 'farm' && !isGuest && <SoilCarbonPanel entityId={entityId} entityType={type} />}
         {type === 'farm' && !isGuest && (
-  <CropPredictionPanel entityId={entityId} entityType={type} isAdmin={/* ton flag user.is_admin */ true} />
-)}
+          <CropPredictionPanel entityId={entityId} entityType={type} isAdmin={/* ton flag user.is_admin */ true} />
+        )}
+        {type === 'forest' && !isGuest && (
+          <TreeCO2Panel entityId={entityId} entityType={type} />
+        )}
 
         <p className="text-center text-xs text-slate-600 pb-4">
           Sentinel-2 L2A · Statistical API · Max cloud cover 30% · Quarterly aggregation ·

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
 import axiosInstance from "../../axiosInstance";
@@ -22,18 +22,44 @@ export function SendPaymentModal({
   const [phoneInput, setPhoneInput] = useState("");
   const [priceInfo, setPriceInfo] = useState(null);
 
-  const [currency, setCurrency] = useState("UGX");
+  const [currency, setCurrency] = useState("");
   const [emailInput, setEmailInput] = useState(passedEmail || "");
 
   const navigate = useNavigate();
   const effectivePhone = passedPhone || phoneInput;
 
+  // Devises réellement configurées pour cette feature (jamais une liste
+  // statique arbitraire — on ne propose que ce qui a un prix en base).
+  const availableCurrencies = useMemo(() => {
+    if (!priceInfo?.prices) return [];
+    return Object.keys(priceInfo.prices);
+  }, [priceInfo]);
+
+  // Prix correspondant à la devise actuellement sélectionnée.
+  // undefined si cette devise n'a pas de prix configuré pour cette feature.
+  const currentAmount = priceInfo?.prices?.[currency];
+
+  const CURRENCY_LABELS = {
+    UGX: "🇺🇬 UGX - Ugandan Shilling",
+    USD: "🇺🇸 USD - US Dollar",
+    KES: "🇰🇪 KES - Kenyan Shilling",
+    TZS: "🇹🇿 TZS - Tanzanian Shilling",
+    ZAR: "🇿🇦 ZAR - South African Rand",
+  };
+
   useEffect(() => {
     const fetchPrice = async () => {
       try {
         const res = await axiosInstance.get("/api/feature/price/");
-        const priceData = res.data.find((f) => f.feature_name === featureName);
-        setPriceInfo(priceData);
+        const data = res.data.find((f) => f.feature_name === featureName);
+        setPriceInfo(data || null);
+
+        // Bascule automatiquement sur la devise par défaut de la feature
+        // dès que les prix sont chargés — c'est la devise qui est "présente"
+        // pour ce report, donc celle qu'on doit proposer en premier.
+        if (data?.default_currency) {
+          setCurrency(data.default_currency);
+        }
       } catch (err) {
         console.error("Failed to fetch price info:", err);
       }
@@ -45,6 +71,13 @@ export function SendPaymentModal({
       setResponse("");
     }
   }, [isOpen, featureName]);
+
+  // Si l'utilisateur change la devise dans le select, le prix affiché et
+  // envoyé au backend suit automatiquement — currentAmount est recalculé
+  // à chaque render à partir de `currency`, donc rien d'autre à faire ici.
+  const handleCurrencyChange = (e) => {
+    setCurrency(e.target.value);
+  };
 
   // ============ MOBILE MONEY LOGIC ============
   const handleMobileMoneyPayment = async (e) => {
@@ -133,9 +166,9 @@ export function SendPaymentModal({
     setLoading(true);
     setResponse("");
 
-    console.log("\n" + "=".repeat(60));
-    console.log("🔵 FRONTEND: Initiating DPO Payment");
-    console.log("=".repeat(60));
+    if (passedPhone) {
+      localStorage.removeItem("token");
+    }
 
     try {
       const res = await axiosInstance.post("/api/payments/dpo/initiate", {
@@ -145,13 +178,7 @@ export function SendPaymentModal({
         currency: currency,
       });
 
-      console.log("🟢 FRONTEND: Response received!");
-      console.log("Response data:", res.data);
-
       if (res.data.success) {
-        console.log("✅ Opening DPO in new tab and starting polling...");
-
-        // Ouvrir DPO dans un nouvel onglet
         const dpoTab = window.open(res.data.payment_url, '_blank');
 
         if (!dpoTab) {
@@ -160,16 +187,13 @@ export function SendPaymentModal({
           return;
         }
 
-        // Démarrer le polling comme pour mobile money
         setPolling(true);
         startDPOPolling(res.data.trans_token, dpoTab);
       } else {
-        console.error("❌ FRONTEND: Success = false");
         setResponse("Error: " + res.data.error);
         setLoading(false);
       }
     } catch (err) {
-      console.error("❌ FRONTEND: Exception caught!", err);
       setResponse("Error: " + (err.response?.data?.error || err.message));
       setLoading(false);
     }
@@ -178,7 +202,7 @@ export function SendPaymentModal({
   const startDPOPolling = (transToken) => {
     const startTime = Date.now();
     const MAX_DURATION = 5 * 60 * 60 * 1000; // 5 heures
-    const INTERVAL = 8000; // ⚠️ minimum 8s (anti-429)
+    const INTERVAL = 8000; // minimum 8s (anti-429)
 
     setResponse("⏳ Waiting for payment confirmation...");
 
@@ -186,13 +210,9 @@ export function SendPaymentModal({
       const elapsed = Date.now() - startTime;
 
       try {
-        const res = await axiosInstance.get(
-          `/api/payments/dpo/verify/${transToken}`
-        );
-
+        const res = await axiosInstance.get(`/api/payments/dpo/verify/${transToken}`);
         const status = res.data.status;
 
-        // ✅ PAYÉ
         if (status === "paid") {
           clearInterval(interval);
           setPolling(false);
@@ -206,27 +226,19 @@ export function SendPaymentModal({
           return;
         }
 
-        // ⏳ TOUJOURS EN ATTENTE (CAS NORMAL)
         setResponse("⏳ Waiting for payment confirmation...");
-
       } catch (err) {
-        // 🚨 erreur réseau / 429 → on ignore
         console.warn("DPO polling error, retrying...");
       }
 
-      // ⏱️ timeout UX uniquement (PAS un échec)
       if (elapsed >= MAX_DURATION) {
         clearInterval(interval);
         setPolling(false);
         setLoading(false);
-        setResponse(
-          "⏳ Payment is still processing. You will be notified once confirmed."
-        );
+        setResponse("⏳ Payment is still processing. You will be notified once confirmed.");
       }
-
     }, INTERVAL);
   };
-
 
   // ============ RENDER ============
   return (
@@ -258,19 +270,25 @@ export function SendPaymentModal({
                 Select how you'd like to pay for <span className="font-semibold text-green-600">{featureName}</span>
               </p>
 
-              {priceInfo && (
+              {priceInfo && currentAmount != null && (
                 <div className="mb-6 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-sm font-medium text-gray-700">
-                    Amount to pay:
-                  </p>
+                  <p className="text-sm font-medium text-gray-700">Amount to pay:</p>
                   <p className="text-2xl font-bold text-green-600 mt-1">
-                    {priceInfo.price} UGX
+                    {currentAmount} {currency}
                   </p>
                   {priceInfo.duration_days && (
                     <p className="text-xs text-gray-600 mt-1">
                       Access duration: {priceInfo.duration_days} days
                     </p>
                   )}
+                </div>
+              )}
+
+              {priceInfo && currentAmount == null && (
+                <div className="mb-6 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-sm text-yellow-800">
+                    Pricing is not yet configured for this report. Please contact support.
+                  </p>
                 </div>
               )}
 
@@ -298,7 +316,7 @@ export function SendPaymentModal({
             </>
           )}
 
-          {/* ÉTAPE 2: Formulaire Mobile Money */}
+          {/* ÉTAPE 2: Formulaire Mobile Money (devise par défaut de la feature uniquement) */}
           {paymentMethod === 'mobile' && (
             <>
               <button
@@ -315,12 +333,20 @@ export function SendPaymentModal({
                 Mobile Money Payment
               </Dialog.Title>
 
-              {priceInfo && (
+              {priceInfo?.default_currency && priceInfo.prices?.[priceInfo.default_currency] != null ? (
                 <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                  <p className="font-medium text-gray-700">Price: {priceInfo.price} UGX</p>
+                  <p className="font-medium text-gray-700">
+                    Price: {priceInfo.prices[priceInfo.default_currency]} {priceInfo.default_currency}
+                  </p>
                   {priceInfo.duration_days && (
                     <p className="text-sm text-gray-600">Access duration: {priceInfo.duration_days} days</p>
                   )}
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-sm text-yellow-800">
+                    Pricing is not configured for this report yet.
+                  </p>
                 </div>
               )}
 
@@ -370,7 +396,7 @@ export function SendPaymentModal({
             </>
           )}
 
-          {/* ÉTAPE 3: Formulaire DPO Pay */}
+          {/* ÉTAPE 3: Formulaire DPO Pay (multi-devises) */}
           {paymentMethod === 'dpo' && (
             <>
               <button
@@ -403,16 +429,22 @@ export function SendPaymentModal({
                 </div>
               </div>
 
-              {priceInfo && (
+              {currentAmount != null ? (
                 <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
                   <p className="text-2xl font-bold text-green-600">
-                    {priceInfo.price} {currency}
+                    {currentAmount} {currency}
                   </p>
-                  {priceInfo.duration_days && (
+                  {priceInfo?.duration_days && (
                     <p className="text-xs text-gray-600 mt-1">
                       Access duration: {priceInfo.duration_days} days
                     </p>
                   )}
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-sm text-yellow-800">
+                    No price configured for this currency on this report.
+                  </p>
                 </div>
               )}
 
@@ -452,24 +484,30 @@ export function SendPaymentModal({
                   <label className="block text-sm font-medium mb-1 text-gray-700">
                     Currency *
                   </label>
+                  {/* Ne propose que les devises réellement configurées pour cette
+                      feature — dès qu'on en choisit une, le prix affiché ci-dessus
+                      et envoyé au backend bascule automatiquement dessus. */}
                   <select
                     className="w-full p-2.5 border rounded-lg"
                     value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                    disabled={loading || polling}
+                    onChange={handleCurrencyChange}
+                    disabled={loading || polling || availableCurrencies.length === 0}
                   >
-                    <option value="UGX">🇺🇬 UGX - Ugandan Shilling</option>
-                    <option value="USD">🇺🇸 USD - US Dollar</option>
-                    <option value="KES">🇰🇪 KES - Kenyan Shilling</option>
-                    <option value="TZS">🇹🇿 TZS - Tanzanian Shilling</option>
-                    <option value="ZAR">🇿🇦 ZAR - South African Rand</option>
+                    {availableCurrencies.length === 0 && (
+                      <option value="">No currency available</option>
+                    )}
+                    {availableCurrencies.map((c) => (
+                      <option key={c} value={c}>
+                        {CURRENCY_LABELS[c] || c}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <button
                   type="submit"
                   className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-medium disabled:bg-gray-400 flex items-center justify-center"
-                  disabled={loading || polling}
+                  disabled={loading || polling || currentAmount == null}
                 >
                   {loading ? (
                     <>

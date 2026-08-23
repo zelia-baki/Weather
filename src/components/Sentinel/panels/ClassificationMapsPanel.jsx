@@ -3,21 +3,40 @@ import { Satellite, RefreshCw, Loader2 } from "lucide-react";
 import axiosInstance from "../../../axiosInstance";
 import { CLASS_INDICES, CLASS_LABELS } from "../constants";
 
-export default function ClassificationMapsPanel({ entityId, entityType = "farm" }) {
+export default function ClassificationMapsPanel({
+  entityId, entityType = "farm",
+  isGuest = false, geojson = null, phone = null,
+}) {
   const [results, setResults] = useState({});
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
 
   const fetchAll = useCallback(async () => {
-    if (!entityId) return;
+    if (isGuest) {
+      if (!geojson || !phone) return;
+    } else if (!entityId) {
+      return;
+    }
+
     setLoading(true);
     const next = {};
     const nextErr = {};
+
     for (const idx of CLASS_INDICES) {
       try {
-        const { data } = await axiosInstance.get(
-          `/api/sentinel/${entityType}/${entityId}/classification/${idx}`
-        );
+        let data;
+        if (isGuest) {
+          const resp = await axiosInstance.post(
+            `/api/sentinel/guest/classification/${idx}`,
+            { geojson, phone }
+          );
+          data = resp.data;
+        } else {
+          const resp = await axiosInstance.get(
+            `/api/sentinel/${entityType}/${entityId}/classification/${idx}`
+          );
+          data = resp.data;
+        }
         next[idx] = data;
       } catch (e) {
         nextErr[idx] = e.response?.data?.error || 'Erreur de classification';
@@ -26,7 +45,7 @@ export default function ClassificationMapsPanel({ entityId, entityType = "farm" 
     setResults(next);
     setErrors(nextErr);
     setLoading(false);
-  }, [entityId, entityType]);
+  }, [entityId, entityType, isGuest, geojson, phone]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 

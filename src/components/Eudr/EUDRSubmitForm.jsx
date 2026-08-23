@@ -30,8 +30,8 @@ const IDENTIFIER_TYPES = [
 ];
 
 // ── Reusable field components ─────────────────────────────────────────────────
-const iCls = "w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all hover:border-gray-300";
-const sCls = "w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all";
+const iCls = "w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all hover:border-gray-300 [color-scheme:light]";
+const sCls = "w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all [color-scheme:light]";
 
 const Field = ({ label, required, children, hint }) => (
   <div className="flex flex-col gap-1.5">
@@ -213,7 +213,29 @@ const EUDRManager = () => {
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/20 p-4 sm:p-6 light-panel">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/20 p-4 sm:p-6 light-panel eudr-form [color-scheme:light]" style={{ colorScheme: 'light' }}>
+      <style>{`
+        .eudr-form input,
+        .eudr-form select,
+        .eudr-form textarea {
+          background-color: #ffffff !important;
+          color: #1f2937 !important;
+          -webkit-text-fill-color: #1f2937 !important;
+          color-scheme: light !important;
+        }
+        .eudr-form input::placeholder,
+        .eudr-form textarea::placeholder {
+          color: #9ca3af !important;
+          -webkit-text-fill-color: #9ca3af !important;
+          opacity: 1 !important;
+        }
+        .eudr-form input:-webkit-autofill,
+        .eudr-form input:-webkit-autofill:hover,
+        .eudr-form input:-webkit-autofill:focus {
+          -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+          -webkit-text-fill-color: #1f2937 !important;
+        }
+      `}</style>
 
       {/* Page header */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
@@ -273,7 +295,7 @@ const EUDRManager = () => {
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input type="checkbox" checked={formData.geoLocationConfidential}
                   onChange={() => setFormData(p => ({ ...p, geoLocationConfidential: !p.geoLocationConfidential }))}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600"/>
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 [color-scheme:light]"/>
                 <span className="text-sm text-gray-700">Geo Location Confidential</span>
               </label>
             </div>
@@ -418,7 +440,7 @@ const EUDRManager = () => {
                 value={geojson}
                 onChange={(e) => { setGeojson(e.target.value); setGeojsonError(''); }}
                 className={`w-full border rounded-xl px-3.5 py-2.5 text-xs font-mono resize-y
-                            bg-white text-gray-800 placeholder-gray-400
+                            bg-white text-gray-800 placeholder-gray-400 [color-scheme:light]
                             focus:outline-none focus:ring-2 focus:border-transparent transition-all
                             ${geojsonError ? 'border-red-300 focus:ring-red-300' : 'border-gray-200 focus:ring-blue-400'}`}
               />

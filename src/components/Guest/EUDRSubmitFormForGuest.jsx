@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useUserInfo } from "./hooks/useUserInfo";
 import { useFileUpload } from "./hooks/useFileUpload";
 import { useReports } from "./hooks/useReports";
@@ -13,6 +13,12 @@ import { SendPaymentModal } from "../Payment/SendPaymentModal";
 import TutorialTooltip from "./components/TutorialTooltip";
 import TutorialInvitation from "./components/TutorialInvitation";
 import TutorialFloatingButton from "./components/TutorialFloatingButton";
+import EudrHiddenCapture from "./components/EudrHiddenCapture"; // ✅ nouveau import
+
+// 🚧 DEV ONLY — mettre à false avant de déployer en prod
+// Quand true, un bouton "Skip payment (DEV)" apparaît à l'étape 4
+// pour générer le rapport directement, sans passer par SendPaymentModal.
+const BYPASS_PAYMENT = true;
 
 // ── Step config ──────────────────────────────────────────────────────────────
 const STEPS = [
@@ -161,21 +167,83 @@ const StepProgressBar = ({ current, onBack }) => (
 
 // ── Main component ────────────────────────────────────────────────────────────
 const EUDRSubmitFormForGuest = () => {
-  const [step, setStep] = useState(1);
-  const [selectedFeature, setSelectedFeature] = useState(null);
-  const [geojson, setGeojson] = useState(null);
+  // ✅ Init depuis localStorage pour survivre à un refresh (step, feature, geojson)
+  const [step, setStep] = useState(() => {
+    const saved = Number(localStorage.getItem("guest_step"));
+    return saved >= 1 && saved <= 5 ? saved : 1;
+  });
+  const [selectedFeature, setSelectedFeature] = useState(
+    () => localStorage.getItem("guest_selected_feature") || null
+  );
+  const [geojson, setGeojson] = useState(() => {
+    try {
+      const saved = localStorage.getItem("polygon_geojson");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [tutorialError, setTutorialError] = useState(null);
+  const [stateError, setStateError] = useState(null); // ✅ erreur de vérification d'état
 
-  const reportRefs = { eudr: useRef(), carbon: useRef(), sentinel: useRef() };
   const { files, handleFileChange } = useFileUpload();
   const { userInfo, setUserInfo, handleUserInfoSubmit, loading: userLoading, isUserInfoValid } = useUserInfo(setStep);
-  const { reports, loading, showPaymentModal, handleReportReady, setShowPaymentModal } = useReports({ files, geojson, userInfo, setStep, reportRefs });
+  // ✅ reportRefs supprimé : StepReports gère désormais ses propres refs (nécessaire
+  // pour supporter plusieurs rapports par type — voir useReports.jsx / StepReports.jsx)
+  const { reports, loading, showPaymentModal, handleReportReady, setShowPaymentModal,
+    pendingEudrCapture, generateEudrPdf } = useReports({ files, geojson, userInfo, setStep }); // ✅ + 2 valeurs
   const { isActive: isTutorialActive, currentStep: tutorialStep, showTutorial, startTutorial, nextStep: nextTutorialStep, prevStep: prevTutorialStep, skipTutorial } = useTutorial();
 
   const currentTutorial = tutorialSteps[tutorialStep];
   const isFirstTutorialStep = tutorialStep === 0;
   const isLastTutorialStep = tutorialStep === tutorialSteps.length - 1;
   const canProceedToStep2 = files.geojson || geojson;
+
+  // ✅ Persistance : step + feature sélectionnée
+  useEffect(() => {
+    localStorage.setItem("guest_step", String(step));
+  }, [step]);
+
+  useEffect(() => {
+    if (selectedFeature) localStorage.setItem("guest_selected_feature", selectedFeature);
+  }, [selectedFeature]);
+
+  // ✅ Vérification de cohérence de l'état à chaque changement de step
+  // (ex: refresh qui a fait perdre le fichier uploadé, le geojson, etc.)
+  // Notamment utilisé "avant paiement" : step 4 nécessite geojson + feature + userInfo valides.
+  const canGenerateReport = !!(geojson || files.geojson) && !!selectedFeature && isUserInfoValid();
+
+  useEffect(() => {
+    if (isTutorialActive) return; // ne pas interférer avec le tutoriel
+
+    if (step >= 2 && !geojson && !files.geojson) {
+      setStateError("⚠️ Location data was lost (probably after a refresh). Please re-upload your file or redraw your polygon.");
+      setStep(1);
+      return;
+    }
+    if (step >= 3 && !selectedFeature) {
+      setStateError("⚠️ No report type selected. Please choose one.");
+      setStep(2);
+      return;
+    }
+    if (step >= 4 && !isUserInfoValid()) {
+      setStateError("⚠️ Contact information missing or invalid. Please fill it in again.");
+      setStep(3);
+      return;
+    }
+    // ✅ reports.<type> est maintenant un tableau (plusieurs rapports possibles, TTL 5 min)
+    const hasAnyReport =
+      (reports.eudr?.length ?? 0) > 0 ||
+      (reports.carbon?.length ?? 0) > 0 ||
+      (reports.sentinel?.length ?? 0) > 0;
+    if (step === 5 && !hasAnyReport) {
+      setStateError("⚠️ No report available (they expire 5 minutes after generation). Please restart the payment.");
+      setStep(4);
+      return;
+    }
+    setStateError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, geojson, files.geojson, selectedFeature, isTutorialActive, reports]);
 
   useEffect(() => {
     if (tutorialError) {
@@ -248,6 +316,15 @@ const EUDRSubmitFormForGuest = () => {
       {!isTutorialActive && showTutorial && (
         <div className="max-w-3xl mx-auto px-6 pt-6">
           <TutorialInvitation onStart={startTutorial} onDismiss={skipTutorial} />
+        </div>
+      )}
+
+      {/* ✅ Bandeau d'erreur d'état (ex: données perdues après refresh) */}
+      {stateError && (
+        <div className="max-w-3xl mx-auto px-6 pt-4">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800" style={{ fontFamily: "'DM Sans',sans-serif" }}>
+            {stateError}
+          </div>
         </div>
       )}
 
@@ -324,83 +401,110 @@ const EUDRSubmitFormForGuest = () => {
           )}
         </div>
       )}
+      {pendingEudrCapture && (
+        <EudrHiddenCapture
+          data={pendingEudrCapture.data}
+          onCaptured={(base64) =>
+            generateEudrPdf(pendingEudrCapture.sourceKey, pendingEudrCapture.geojson, pendingEudrCapture.data, base64)
+          }
+        />
+      )}
 
-      {/* ── STEPS 2–5: progress bar + constrained content ── */}
+      {/* ── STEPS 2–5: progress bar toujours visible ── */}
       {step > 1 && (
         <>
           <StepProgressBar current={step} onBack={() => setStep(step - 1)} />
 
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+          {/* STEPS 2–4 : contenu contraint (formulaires) */}
+          {step < 5 && (
+            <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
-            {/* STEP 2 */}
-            {step === 2 && (
-              <div className="relative">
-                <StepReportType
-                  onSelect={(feature) => {
-                    setSelectedFeature(feature);
-                    setStep(3);
-                    if (isTutorialActive && currentTutorial?.highlight === "report-type") nextTutorialStep();
-                  }}
-                  highlightReportType={getHighlightClass("report-type")}
-                />
-                {tutorialError && <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">{tutorialError}</div>}
-                {isTutorialActive && currentTutorial?.highlight === "report-type" && (
-                  <div className="relative"><div className="absolute top-0 left-0 w-full pointer-events-none z-[10000]" style={{ marginTop: 20 }}><TutorialTooltip step={currentTutorial} {...sharedTip} position="bottom" /></div></div>
-                )}
-              </div>
-            )}
+              {/* STEP 2 */}
+              {step === 2 && (
+                <div className="relative">
+                  <StepReportType
+                    onSelect={(feature) => {
+                      setSelectedFeature(feature);
+                      setStep(3);
+                      if (isTutorialActive && currentTutorial?.highlight === "report-type") nextTutorialStep();
+                    }}
+                    highlightReportType={getHighlightClass("report-type")}
+                  />
+                  {tutorialError && <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">{tutorialError}</div>}
+                  {isTutorialActive && currentTutorial?.highlight === "report-type" && (
+                    <div className="relative"><div className="absolute top-0 left-0 w-full pointer-events-none z-[10000]" style={{ marginTop: 20 }}><TutorialTooltip step={currentTutorial} {...sharedTip} position="bottom" /></div></div>
+                  )}
+                </div>
+              )}
 
-            {/* STEP 3 */}
-            {step === 3 && (
-              <div className="relative">
-                <StepUserInfo
-                  userInfo={userInfo}
-                  setUserInfo={setUserInfo}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (isUserInfoValid()) {
-                      handleUserInfoSubmit(e);
-                      if (isTutorialActive && currentTutorial?.highlight === "user-info") nextTutorialStep();
-                    }
-                  }}
-                  loading={userLoading}
-                  isValid={isUserInfoValid()}
-                  highlightUserInfo={getHighlightClass("user-info")}
-                />
-                {!isUserInfoValid() && (
-                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
-                    ⚠️ Please fill in all required fields with valid information (phone, email).
-                  </div>
-                )}
-                {tutorialError && <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">{tutorialError}</div>}
-                {isTutorialActive && currentTutorial?.highlight === "user-info" && (
-                  <div className="relative"><div className="absolute top-0 left-0 w-full pointer-events-none z-[10000]" style={{ marginTop: 20 }}><TutorialTooltip step={currentTutorial} {...sharedTip} position="bottom" /></div></div>
-                )}
-              </div>
-            )}
+              {/* STEP 3 */}
+              {step === 3 && (
+                <div className="relative">
+                  <StepUserInfo
+                    userInfo={userInfo}
+                    setUserInfo={setUserInfo}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (isUserInfoValid()) {
+                        handleUserInfoSubmit(e);
+                        if (isTutorialActive && currentTutorial?.highlight === "user-info") nextTutorialStep();
+                      }
+                    }}
+                    loading={userLoading}
+                    isValid={isUserInfoValid()}
+                    highlightUserInfo={getHighlightClass("user-info")}
+                  />
+                  {!isUserInfoValid() && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                      ⚠️ Please fill in all required fields with valid information (phone, email).
+                    </div>
+                  )}
+                  {tutorialError && <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">{tutorialError}</div>}
+                  {isTutorialActive && currentTutorial?.highlight === "user-info" && (
+                    <div className="relative"><div className="absolute top-0 left-0 w-full pointer-events-none z-[10000]" style={{ marginTop: 20 }}><TutorialTooltip step={currentTutorial} {...sharedTip} position="bottom" /></div></div>
+                  )}
+                </div>
+              )}
 
-            {/* STEP 4 */}
-            {step === 4 && (
-              <div className="relative">
-                <StepPayment
-                  selectedFeature={selectedFeature}
-                  phone={userInfo.phone}
-                  setShowPaymentModal={setShowPaymentModal}
-                  loading={loading}
-                  highlightPayment={getHighlightClass("payment")}
-                />
-                {isTutorialActive && currentTutorial?.highlight === "payment" && (
-                  <div className="relative"><div className="absolute top-0 left-0 w-full pointer-events-none z-[10000]" style={{ marginTop: 20 }}><TutorialTooltip step={currentTutorial} {...sharedTip} position="bottom" /></div></div>
-                )}
-              </div>
-            )}
+              {/* STEP 4 */}
+              {step === 4 && (
+                <div className="relative">
+                  <StepPayment
+                    selectedFeature={selectedFeature}
+                    phone={userInfo.phone}
+                    setShowPaymentModal={setShowPaymentModal}
+                    loading={loading}
+                    highlightPayment={getHighlightClass("payment")}
+                    canGenerateReport={canGenerateReport} // ✅ vérification avant paiement
+                  />
+                  {BYPASS_PAYMENT && (
+                    <div className="max-w-md mx-auto mt-3 text-center">
+                      <button
+                        type="button"
+                        disabled={!canGenerateReport || loading}
+                        onClick={() => handleReportReady(selectedFeature)}
+                        className="text-xs px-4 py-2 rounded-lg border border-dashed border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🚧 Skip payment (DEV) — generate report directly
+                      </button>
+                    </div>
+                  )}
+                  {isTutorialActive && currentTutorial?.highlight === "payment" && (
+                    <div className="relative"><div className="absolute top-0 left-0 w-full pointer-events-none z-[10000]" style={{ marginTop: 20 }}><TutorialTooltip step={currentTutorial} {...sharedTip} position="bottom" /></div></div>
+                  )}
+                </div>
+              )}
 
-            {/* STEP 5 */}
-            {step === 5 && (
+            </div>
+          )}
+
+          {/* STEP 5 : résultats — pleine largeur, hors du max-w-3xl,
+              pour laisser SentinelDashboard (max-w-7xl interne) respirer */}
+          {step === 5 && (
+            <div className="w-full px-4 sm:px-6 py-8">
               <div className="relative">
                 <StepReports
                   reports={reports}
-                  reportRefs={reportRefs}
                   geojson={geojson}
                   phone={userInfo.phone}
                   highlightReports={getHighlightClass("reports")}
@@ -409,9 +513,8 @@ const EUDRSubmitFormForGuest = () => {
                   <div className="relative"><div className="absolute top-0 left-0 w-full pointer-events-none z-[10000]" style={{ marginTop: 20 }}><TutorialTooltip step={currentTutorial} {...sharedTip} position="bottom" /></div></div>
                 )}
               </div>
-            )}
-
-          </div>
+            </div>
+          )}
         </>
       )}
 

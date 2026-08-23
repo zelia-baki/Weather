@@ -21,7 +21,7 @@ const StepReportType = ({ onSelect, highlightReportType = "" }) => {
     },
      {
     id: "reportndviguest",
-    title: "Sentinel / Vegetation Report",
+    title: "Area Performance Index",
     description: "Analyze vegetation health, moisture and yield indicators via satellite (Sentinel-2).",
     color: "emerald",
     icon: <Satellite className="w-8 h-8 text-emerald-600" />,

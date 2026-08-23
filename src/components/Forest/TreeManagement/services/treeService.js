@@ -46,5 +46,12 @@ export const treeService = {
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxToken}`
     );
     return response.json();
-  }
+  },
+
+  // CO2 Report
+  getCO2Report: (forestId) => axiosInstance.get(`/api/tree-co2/forest/${forestId}/report`),
+
+  exportCO2Pdf: (forestId) => axiosInstance.get(`/api/tree-co2/forest/${forestId}/co2-pdf`, {
+    responseType: 'blob',
+  }),
 };
