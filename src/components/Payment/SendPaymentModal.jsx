@@ -3,6 +3,7 @@ import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
 import axiosInstance from "../../axiosInstance";
 import { useNavigate } from "react-router-dom";
+import GooglePayButton from "./GooglePayButton";
 
 export function SendPaymentModal({
   isOpen,
@@ -39,12 +40,19 @@ export function SendPaymentModal({
   // undefined si cette devise n'a pas de prix configuré pour cette feature.
   const currentAmount = priceInfo?.prices?.[currency];
 
+  // ✅ Le sélecteur ne propose déjà que les devises présentes dans
+  // `priceInfo.prices` (voir availableCurrencies) — configurées côté backend
+  // pour cette feature. Ajouter une devise ici ne fait qu'améliorer son
+  // libellé (drapeau + nom) ; il faut aussi que le backend expose un prix
+  // pour elle dans /api/feature/price/ pour qu'elle apparaisse réellement.
   const CURRENCY_LABELS = {
     UGX: "🇺🇬 UGX - Ugandan Shilling",
     USD: "🇺🇸 USD - US Dollar",
     KES: "🇰🇪 KES - Kenyan Shilling",
     TZS: "🇹🇿 TZS - Tanzanian Shilling",
     ZAR: "🇿🇦 ZAR - South African Rand",
+    GBP: "🇬🇧 GBP - British Pound",
+    EUR: "🇪🇺 EUR - Euro",
   };
 
   useEffect(() => {
@@ -312,6 +320,16 @@ export function SendPaymentModal({
                   </svg>
                   Pay with Card / Mobile Money (DPO)
                 </button>
+
+                <button
+                  onClick={() => setPaymentMethod('googlepay')}
+                  className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-black font-medium flex items-center justify-center"
+                >
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+                  </svg>
+                  Pay with Google Pay
+                </button>
               </div>
             </>
           )}
@@ -574,6 +592,64 @@ export function SendPaymentModal({
                   Secure payment powered by DPO Pay
                 </p>
               </div>
+            </>
+          )}
+
+          {/* ÉTAPE 4: Google Pay — TEST MODE (voir note dans GooglePayButton.jsx) */}
+          {paymentMethod === 'googlepay' && (
+            <>
+              <button
+                onClick={() => setPaymentMethod(null)}
+                className="mb-4 text-sm text-gray-600 hover:text-gray-800 flex items-center"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to payment methods
+              </button>
+
+              <Dialog.Title className="text-xl font-bold mb-2">
+                Pay with Google Pay
+              </Dialog.Title>
+
+              <div className="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-sm text-yellow-800">
+                  🧪 <strong>Test mode.</strong> Google Pay is not yet live — it needs a Google Pay
+                  Business Console merchant account and a confirmed payment gateway before it can
+                  process real payments. This button uses Google&apos;s official sandbox and won&apos;t charge anyone.
+                </p>
+              </div>
+
+              {priceInfo?.default_currency && priceInfo.prices?.[priceInfo.default_currency] != null ? (
+                <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="font-medium text-gray-700">
+                    Price: {priceInfo.prices[priceInfo.default_currency]} {priceInfo.default_currency}
+                  </p>
+                </div>
+              ) : (
+                <div className="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-sm text-yellow-800">Pricing is not configured for this report yet.</p>
+                </div>
+              )}
+
+              <GooglePayButton
+                amount={priceInfo?.prices?.[priceInfo?.default_currency]}
+                currency={priceInfo?.default_currency}
+                disabled={!priceInfo?.default_currency}
+                onTestToken={(paymentData) => {
+                  console.log('[GooglePay TEST] paymentData', paymentData);
+                  setResponse(
+                    '🧪 Google Pay test token received — no real payment was processed. ' +
+                    'Ask an admin to finish the production setup (merchant account + gateway) to enable real charges.'
+                  );
+                }}
+              />
+
+              {response && (
+                <div className="mt-4 p-3 rounded-lg border bg-yellow-50 border-yellow-200">
+                  <p className="text-sm text-yellow-800">{response}</p>
+                </div>
+              )}
             </>
           )}
         </Dialog.Panel>

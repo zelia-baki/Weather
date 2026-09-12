@@ -64,7 +64,7 @@ const SearchModal = ({ onClose, onSearch }) => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               placeholder={searchType === 'coordinates' ? '-18.8792, 47.5079' : 'Antananarivo, Madagascar'}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-orange-500"
             />
             <p className="text-xs text-gray-500 mt-1">
               {searchType === 'coordinates'

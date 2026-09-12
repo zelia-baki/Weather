@@ -1,37 +1,19 @@
 import SentinelDashboard from "../../Sentinel/SentinelDashboard";
+import PdfViewer from "../components/PdfViewer";
+import { downloadPdfFile } from "../utils/pdfDownload";
 
 const formatTime = (ts) => new Date(ts).toLocaleTimeString();
 
-const downloadPdf = (pdfUrl, filename) => {
-  if (!pdfUrl) return;
-  const link = document.createElement("a");
-  link.href = pdfUrl;
-  link.download = filename;
-  link.click();
-};
-
-const PdfReportBlock = ({ entry, filename, label, colorClass }) => (
+const PdfReportBlock = ({ entry, filename, label, colorClass, accent, viewerTitle }) => (
   <div className="w-full">
     <p className="text-xs text-gray-400 text-center mb-1">
       Generated at {formatTime(entry.timestamp)}
     </p>
     {entry.pdfUrl ? (
       <>
-        <object
-          data={entry.pdfUrl}
-          type="application/pdf"
-          className="w-full rounded-lg shadow-md border border-gray-200"
-          style={{ height: "80vh" }}
-        >
-          <p className="text-center text-sm text-gray-500 py-6">
-            Preview unavailable —{" "}
-            <a href={entry.pdfUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline">
-              open the PDF
-            </a>
-          </p>
-        </object>
+        <PdfViewer url={entry.pdfUrl} filename={filename} title={viewerTitle} accent={accent} />
         <button
-          onClick={() => downloadPdf(entry.pdfUrl, filename)}
+          onClick={() => downloadPdfFile(entry.pdfUrl, filename)}
           className={`${colorClass} text-white px-6 py-3 rounded-md mt-4 transition duration-300 w-full`}
         >
           {label}
@@ -69,6 +51,8 @@ const StepReports = ({ reports, geojson, phone, highlightReports = "" }) => {
             filename={`EUDR_Report_${entry.id}.pdf`}
             label="📄 Download the EUDR PDF"
             colorClass="bg-blue-500 hover:bg-blue-700"
+            accent="blue"
+            viewerTitle="EUDR Compliance Report"
           />
         ))}
 
@@ -79,6 +63,8 @@ const StepReports = ({ reports, geojson, phone, highlightReports = "" }) => {
             filename={`Carbon_Report_${entry.id}.pdf`}
             label="🌳 Download the Carbon PDF"
             colorClass="bg-green-500 hover:bg-green-700"
+            accent="emerald"
+            viewerTitle="Carbon Emissions Report"
           />
         ))}
 

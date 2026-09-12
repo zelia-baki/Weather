@@ -130,7 +130,8 @@ export const useReports = ({ files, geojson, userInfo, setStep }) => {
         "/api/gfw/guest/eudr-pdf",
         {
           report: data, forest_map_image: forestMapBase64 || undefined,
-          guest_id: localStorage.getItem("guest_id") || sourceKey
+          guest_id: localStorage.getItem("guest_id") || sourceKey,
+          agent_id: userInfo.agent_id || undefined,
         },
         { responseType: "blob" }
       );
@@ -152,10 +153,15 @@ export const useReports = ({ files, geojson, userInfo, setStep }) => {
   const generateCarbonPdf = async (sourceKey, entryGeojson, data) => {
     try {
       const res = await axiosInstance.post(
-        "/api/gfw/guest/eudr-pdf",
+        // ⚠ FIX : ceci pointait vers l'endpoint EUDR et référençait une
+        // variable `forestMapBase64` inexistante ici (ReferenceError) — le
+        // rapport Carbon guest ne générait donc jamais de vrai PDF, il
+        // retombait systématiquement sur le catch ci-dessous.
+        "/api/gfw/guest/carbon-pdf",
         {
-          report: data, forest_map_image: forestMapBase64 || undefined,
-          guest_id: localStorage.getItem("guest_id") || sourceKey
+          report: data,
+          guest_id: localStorage.getItem("guest_id") || sourceKey,
+          agent_id: userInfo.agent_id || undefined,
         },
         { responseType: "blob" }
       );

@@ -1,6 +1,9 @@
 // components/TreeManagement/TreeList.jsx
-import React from 'react';
-import { Edit2, Trash2, MapPin, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Edit2, Trash2, MapPin, Download, TrendingUp } from 'lucide-react';
+import { treeService } from './services/treeService';
+import { calculateAgeYears } from './utils/treeCO2Calc';
+import TreeSigmoidChart from './TreeSigmoidChart';
 
 // Moist Tropical Forest Model (Chave et al. 2014)
 // AGB = 0.0673 * (ρ * D² * H)^0.976
@@ -91,8 +94,35 @@ const TreeList = ({
   totalPages,
   onPageChange
 }) => {
+  const [growthParamsBySpecies, setGrowthParamsBySpecies] = useState({});
+  const [defaultGrowthParams, setDefaultGrowthParams] = useState(null);
+  const [selectedTree, setSelectedTree] = useState(null);
+
+  useEffect(() => {
+    treeService.getSpeciesGrowthParams()
+      .then(({ data }) => {
+        setGrowthParamsBySpecies(data.species || {});
+        setDefaultGrowthParams(data.default || null);
+      })
+      .catch(() => {}); // sigmoid reste indisponible si l'appel échoue, pas bloquant
+  }, []);
+
+  const handleShowSigmoid = (tree) => {
+    const growthParams = growthParamsBySpecies[tree.type] || defaultGrowthParams;
+    setSelectedTree({
+      tree_id: tree.id,
+      name: tree.name,
+      species: tree.type,
+      age_years: calculateAgeYears(tree.date_planted),
+      growth_params: growthParams,
+    });
+  };
+
   return (
     <div>
+      {selectedTree && (
+        <TreeSigmoidChart tree={selectedTree} onClose={() => setSelectedTree(null)} />
+      )}
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-200 rounded-lg">
           <thead className="bg-gray-50">
@@ -133,7 +163,14 @@ const TreeList = ({
               return (
                 <tr key={tree.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {tree.name}
+                    <button
+                      onClick={() => handleShowSigmoid(tree)}
+                      title="Click to see this tree's sigmoid growth curve"
+                      className="flex items-center gap-1.5 hover:text-orange-600 transition-colors"
+                    >
+                      <TrendingUp className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                      {tree.name}
+                    </button>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {tree.type || 'N/A'}
@@ -205,7 +242,7 @@ const TreeList = ({
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Previous
           </button>
@@ -215,7 +252,7 @@ const TreeList = ({
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
           </button>

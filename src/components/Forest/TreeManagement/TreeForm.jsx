@@ -32,7 +32,7 @@ const TreeForm = ({ formData, setFormData, onSubmit, onCancel, forests, isEditin
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-green-500"
               />
             </div>
 
@@ -45,7 +45,7 @@ const TreeForm = ({ formData, setFormData, onSubmit, onCancel, forests, isEditin
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
@@ -59,7 +59,7 @@ const TreeForm = ({ formData, setFormData, onSubmit, onCancel, forests, isEditin
               value={formData.forest_id}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-green-500"
             >
               <option value="">Select a forest</option>
               {forests.map(forest => (
@@ -82,7 +82,7 @@ const TreeForm = ({ formData, setFormData, onSubmit, onCancel, forests, isEditin
                 value={formData.height}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-green-500"
               />
             </div>
 
@@ -97,7 +97,7 @@ const TreeForm = ({ formData, setFormData, onSubmit, onCancel, forests, isEditin
                 value={formData.diameter}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
@@ -113,7 +113,7 @@ const TreeForm = ({ formData, setFormData, onSubmit, onCancel, forests, isEditin
                 value={formData.date_planted}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-green-500"
               />
             </div>
 
@@ -126,7 +126,7 @@ const TreeForm = ({ formData, setFormData, onSubmit, onCancel, forests, isEditin
                 name="date_cut"
                 value={formData.date_cut}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
@@ -143,7 +143,7 @@ const TreeForm = ({ formData, setFormData, onSubmit, onCancel, forests, isEditin
                 value={formData.latitude}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-green-500"
               />
             </div>
 
@@ -158,7 +158,7 @@ const TreeForm = ({ formData, setFormData, onSubmit, onCancel, forests, isEditin
                 value={formData.longitude}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
@@ -173,7 +173,7 @@ const TreeForm = ({ formData, setFormData, onSubmit, onCancel, forests, isEditin
             <button
               type="button"
               onClick={onCancel}
-              className="px-6 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition"
+              className="px-6 py-3 border border-gray-300 rounded-lg font-semibold bg-white text-gray-700 hover:bg-gray-50 transition"
             >
               Cancel
             </button>

@@ -425,7 +425,7 @@ Example Tree 3,Eucalyptus,2,-18.8750,47.5050,18.2,52.1,2022-11-30,`;
               <select
                 value={selectedForest}
                 onChange={(e) => setSelectedForest(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-green-500"
               >
                 <option value="all">All Forests</option>
                 {forests.map(forest => (

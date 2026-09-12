@@ -1,16 +1,18 @@
 // components/TreeManagement/CO2ReportModal.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Leaf, Download, Loader2 } from 'lucide-react';
+import { X, Leaf, Download, Loader2, TrendingUp } from 'lucide-react';
 import { treeService } from './services/treeService';
+import TreeSigmoidChart from './TreeSigmoidChart';
 
 const CO2ReportModal = ({ forestId, forestName, onClose }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [selectedTree, setSelectedTree] = useState(null);
 
   const fetchReport = useCallback(async () => {
-    setLoading(true); setError(null);
+    setLoading(true); setError(null); setSelectedTree(null);
     try {
       const { data } = await treeService.getCO2Report(forestId);
       setReport(data);
@@ -98,6 +100,10 @@ const CO2ReportModal = ({ forestId, forestName, onClose }) => {
                 </div>
               </div>
 
+              {selectedTree && (
+                <TreeSigmoidChart tree={selectedTree} onClose={() => setSelectedTree(null)} />
+              )}
+
               {/* Détail */}
               {trees.length > 0 ? (
                 <div className="overflow-x-auto border border-gray-200 rounded-lg">
@@ -114,8 +120,16 @@ const CO2ReportModal = ({ forestId, forestName, onClose }) => {
                     </thead>
                     <tbody>
                       {trees.map((t) => (
-                        <tr key={t.tree_id} className="border-t border-gray-100 hover:bg-gray-50">
-                          <td className="px-4 py-2 text-gray-800">{t.name || `#${t.tree_id}`}</td>
+                        <tr
+                          key={t.tree_id}
+                          onClick={() => setSelectedTree(t)}
+                          title="Click to see this tree's sigmoid growth curve"
+                          className={`border-t border-gray-100 hover:bg-orange-50 cursor-pointer ${selectedTree?.tree_id === t.tree_id ? 'bg-orange-50' : ''}`}
+                        >
+                          <td className="px-4 py-2 text-gray-800 flex items-center gap-1.5">
+                            <TrendingUp className="w-3.5 h-3.5 text-orange-400" />
+                            {t.name || `#${t.tree_id}`}
+                          </td>
                           <td className="px-4 py-2 text-gray-600">{t.species || '—'}</td>
                           <td className="px-4 py-2 text-center text-gray-600">{t.age_years?.toFixed(1)}</td>
                           <td className="px-4 py-2 text-center font-semibold text-green-700">

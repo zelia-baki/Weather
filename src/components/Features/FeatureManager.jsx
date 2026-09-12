@@ -15,6 +15,37 @@ const INPUT_CLASSES =
 
 const LABEL_CLASSES = 'block text-xs font-medium text-gray-700 mb-1';
 
+const PAGE_SIZE = 10;
+
+function Pagination({ page, totalPages, onPageChange, totalItems }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
+      <p className="text-xs text-gray-500">
+        Page {page} of {totalPages} · {totalItems} total
+      </p>
+      <div className="flex gap-2">
+        <button
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 text-gray-600
+                     hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= totalPages}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 text-gray-600
+                     hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const emptyFeatureForm = {
   feature_name: '',
   duration_days: '',
@@ -92,6 +123,9 @@ const FeatureManager = () => {
 
   const [accessSearch, setAccessSearch] = useState('');
   const [accessStatusFilter, setAccessStatusFilter] = useState('all');
+
+  const [featurePage, setFeaturePage] = useState(1);
+  const [accessPage, setAccessPage] = useState(1);
 
   const [toast, setToast] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -333,6 +367,27 @@ const FeatureManager = () => {
     });
   }, [accessRecords, accessSearch, accessStatusFilter]);
 
+  // Revenir en page 1 dès que la recherche/le filtre change la liste sous-jacente.
+  useEffect(() => { setAccessPage(1); }, [accessSearch, accessStatusFilter]);
+
+  const featureTotalPages = Math.max(1, Math.ceil(featurePrices.length / PAGE_SIZE));
+  const paginatedFeatures = useMemo(
+    () => featurePrices.slice((featurePage - 1) * PAGE_SIZE, featurePage * PAGE_SIZE),
+    [featurePrices, featurePage]
+  );
+  useEffect(() => {
+    if (featurePage > featureTotalPages) setFeaturePage(featureTotalPages);
+  }, [featurePage, featureTotalPages]);
+
+  const accessTotalPages = Math.max(1, Math.ceil(filteredAccess.length / PAGE_SIZE));
+  const paginatedAccess = useMemo(
+    () => filteredAccess.slice((accessPage - 1) * PAGE_SIZE, accessPage * PAGE_SIZE),
+    [filteredAccess, accessPage]
+  );
+  useEffect(() => {
+    if (accessPage > accessTotalPages) setAccessPage(accessTotalPages);
+  }, [accessPage, accessTotalPages]);
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
       <Toast toast={toast} />
@@ -538,7 +593,7 @@ const FeatureManager = () => {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {featurePrices.map((item) => {
+                {paginatedFeatures.map((item) => {
                   const priceEntries = Object.entries(item.prices || {});
                   return (
                     <tr key={item.id} className="hover:bg-gray-50">
@@ -595,6 +650,12 @@ const FeatureManager = () => {
             </table>
           </div>
         )}
+        <Pagination
+          page={featurePage}
+          totalPages={featureTotalPages}
+          totalItems={featurePrices.length}
+          onPageChange={setFeaturePage}
+        />
       </div>
 
       {/* ── Access Records ───────────────────────────────────────────────── */}
@@ -742,7 +803,7 @@ const FeatureManager = () => {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {filteredAccess.map((item) => (
+                {paginatedAccess.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-800">{item.feature_name}</td>
                     <td className="px-4 py-3 text-gray-600">
@@ -786,6 +847,12 @@ const FeatureManager = () => {
             </table>
           </div>
         )}
+        <Pagination
+          page={accessPage}
+          totalPages={accessTotalPages}
+          totalItems={filteredAccess.length}
+          onPageChange={setAccessPage}
+        />
       </div>
     </div>
   );

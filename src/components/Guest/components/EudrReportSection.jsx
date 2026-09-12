@@ -569,18 +569,7 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
           </div>
 
           <div className="report-section border-l-4 border-green-700 pl-5 space-y-2">
-            <h4 className="text-xl font-semibold text-green-700">2. Tree Cover Loss (EUDR, Article 2):</h4>
-            <div className="text-gray-700">
-              Area in which Tree loss was identified since Dec 2020:
-              <ul className="list-disc list-inside text-gray-700 mt-2">
-                <li><strong>Zero:</strong> Plot/Farm is fully compliant with EUDR Law.</li>
-                <li><strong>Non-Zero:</strong> Plot/Farm likely non compliant with EUDR Law — subject to review for cyclical agroforestry practices (pruning, stumping, shade-tree renewal).</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="report-section border-l-4 border-green-700 pl-5 space-y-2">
-            <h4 className="text-xl font-semibold text-green-700">3. Forest Cover (EUDR, Article 2):</h4>
+            <h4 className="text-xl font-semibold text-green-700">2. Forest Cover (EUDR, Article 2):</h4>
             <div className="text-gray-700">
               EU joint Research Centre Geostore for checking existence or not of forest cover as of 2020
               <ul className="list-disc list-inside text-gray-700 mt-2">
@@ -591,24 +580,24 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
           </div>
 
           <div className="report-section border-l-4 border-green-700 pl-5 space-y-2">
-            <h4 className="text-xl font-semibold text-green-700">4. Tree Cover Extent (EUDR, Article 2):</h4>
+            <h4 className="text-xl font-semibold text-green-700">3. Tree Cover Extent (EUDR, Article 2):</h4>
             <p className="text-gray-700">
               Analysis of tree cover, expressed in deciles (ranging from <strong>0-100</strong>), to evaluate forest coverage.
             </p>
           </div>
 
           <div className="report-section border-l-4 border-green-700 pl-5 space-y-2">
-            <h4 className="text-xl font-semibold text-green-700">5. Tree Cover Loss Drivers (EUDR Article 10):</h4>
+            <h4 className="text-xl font-semibold text-green-700">4. Tree Cover Loss Drivers (EUDR Article 10):</h4>
             <p>Identifies the primary causes of deforestation or degradation.</p>
           </div>
 
           <div className="report-section border-l-4 border-green-700 pl-5 space-y-2">
-            <h4 className="text-xl font-semibold text-green-700">6. Protected Area (EUDR Article 10):</h4>
+            <h4 className="text-xl font-semibold text-green-700">5. Protected Area (EUDR Article 10):</h4>
             <p>Indicates if the plot is located in a gazetted protected area (national park, wetland, etc.).</p>
           </div>
 
           <div className="report-section border-l-4 border-green-700 pl-5 space-y-2">
-            <h4 className="text-xl font-semibold text-green-700">7. indigenous and community lands (EUDR Article 10):</h4>
+            <h4 className="text-xl font-semibold text-green-700">6. indigenous and community lands (EUDR Article 10):</h4>
             <p>Determines whether the land overlaps with recognized indigenous or community land.</p>
           </div>
 
@@ -641,10 +630,6 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
               <p>Analysis shows:</p>
               <ul className="list-disc list-inside ml-4 space-y-1">
                 <li>Area: {areaInHectares?.toFixed(2)} hectares</li>
-                <li>
-                  Tree cover loss: {treeCoverLossArea?.toFixed ? treeCoverLossArea.toFixed(5) : treeCoverLossArea} hectares
-                  {' '}({treeCoverLossRatio.toFixed(2)}% of plot area{treeCoverLossCapped ? ' — capped, source value exceeded plot area, please verify upstream data' : ''})
-                </li>
                 <li>Average tree cover: {wriTropicalTreeCoverAvg.toFixed(1)}%</li>
                 <li>Primary deforestation driver: {tscDriverDriver?.mostCommonValue || "Unknown"}</li>
                 <li>RADD alerts: {raddAlertsArea} hectares</li>
