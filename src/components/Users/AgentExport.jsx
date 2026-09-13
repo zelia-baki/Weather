@@ -7,6 +7,7 @@ const AgentExport = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingRevenue, setExportingRevenue] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const fetchSummary = useCallback(async () => {
@@ -27,27 +28,43 @@ const AgentExport = () => {
 
   useEffect(() => { fetchSummary(); }, [fetchSummary]);
 
+  const downloadCsv = async (endpoint, filename) => {
+    const params = {};
+    if (dateFrom) params.date_from = dateFrom;
+    if (dateTo) params.date_to = dateTo;
+    const res = await axiosInstance.get(endpoint, { params, responseType: "blob" });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: "text/csv" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleExport = async () => {
     setExporting(true);
     try {
-      const params = {};
-      if (dateFrom) params.date_from = dateFrom;
-      if (dateTo) params.date_to = dateTo;
-      const res = await axiosInstance.get("/api/gfw/admin/agents/export", {
-        params, responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: "text/csv" }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "agent_submissions.csv";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      await downloadCsv("/api/gfw/admin/agents/export", "agent_submissions.csv");
     } catch {
       alert("Export CSV échoué.");
     } finally {
       setExporting(false);
+    }
+  };
+
+  // ✅ NOUVEAU : export séparé des paiements réussis par agent (montant figé
+  // au moment du paiement) — le nombre de rapports seul ne suffit pas pour
+  // la comptabilité puisque le prix des features peut varier dans le temps.
+  const handleExportRevenue = async () => {
+    setExportingRevenue(true);
+    try {
+      await downloadCsv("/api/gfw/admin/agents/export-revenue", "agent_revenue.csv");
+    } catch {
+      alert("Export CSV échoué.");
+    } finally {
+      setExportingRevenue(false);
     }
   };
 
@@ -63,7 +80,7 @@ const AgentExport = () => {
               Agent Submissions
             </h1>
             <p className="text-gray-500 mt-1">
-              Soumissions guest (EUDR / Carbon) regroupées par agent_id, pour suivi terrain et commissions.
+              Soumissions guest (EUDR / Carbon / NDVI) et montants facturés, regroupés par agent_id, pour suivi terrain et commissions.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -83,6 +100,16 @@ const AgentExport = () => {
             >
               <Download size={16} />
               {exporting ? "Export en cours…" : "Export CSV"}
+            </button>
+            <button
+              onClick={handleExportRevenue}
+              disabled={exportingRevenue || agents.length === 0}
+              title="Paiements réussis par agent, montant figé au moment du paiement"
+              className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50
+                         text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
+            >
+              <Download size={16} />
+              {exportingRevenue ? "Export en cours…" : "Export Revenue CSV"}
             </button>
           </div>
         </div>
@@ -127,7 +154,9 @@ const AgentExport = () => {
                   <th className="px-5 py-3">Agent ID</th>
                   <th className="px-5 py-3 text-center">EUDR</th>
                   <th className="px-5 py-3 text-center">Carbon</th>
+                  <th className="px-5 py-3 text-center">NDVI</th>
                   <th className="px-5 py-3 text-center">Total</th>
+                  <th className="px-5 py-3 text-right">Montant facturé</th>
                   <th className="px-5 py-3">Dernière soumission</th>
                 </tr>
               </thead>
@@ -137,7 +166,15 @@ const AgentExport = () => {
                     <td className="px-5 py-3 font-medium text-gray-800">{a.agent_id}</td>
                     <td className="px-5 py-3 text-center text-gray-600">{a.by_action?.guest_eudr_pdf || 0}</td>
                     <td className="px-5 py-3 text-center text-gray-600">{a.by_action?.guest_carbon_pdf || 0}</td>
+                    <td className="px-5 py-3 text-center text-gray-600">{a.by_action?.guest_sentinel_report || 0}</td>
                     <td className="px-5 py-3 text-center font-semibold text-teal-700">{a.total}</td>
+                    <td className="px-5 py-3 text-right font-semibold text-amber-700">
+                      {a.amount_by_currency && Object.keys(a.amount_by_currency).length > 0
+                        ? Object.entries(a.amount_by_currency)
+                            .map(([cur, amt]) => `${amt.toLocaleString()} ${cur}`)
+                            .join(" · ")
+                        : "—"}
+                    </td>
                     <td className="px-5 py-3 text-gray-600">
                       {a.last_submission ? new Date(a.last_submission).toLocaleString() : "—"}
                     </td>

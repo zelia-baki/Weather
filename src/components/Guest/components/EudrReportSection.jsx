@@ -377,7 +377,11 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
           const category = field?.wdpa_protected_areas__iucn_cat ?? "Unknown";
           const count = field?.count || 1;
 
-          protectedCounts[category] = count;
+          // ✅ FIX : accumulation au lieu d'écrasement — nécessaire depuis que le
+          // backend (map.py) renvoie les pixels bruts (un par pixel, sans
+          // GROUP BY côté API GFW qui renvoyait systématiquement 0 résultat)
+          // au lieu de lignes déjà agrégées par catégorie.
+          protectedCounts[category] = (protectedCounts[category] || 0) + count;
           totalProtected += count;
         });
       }

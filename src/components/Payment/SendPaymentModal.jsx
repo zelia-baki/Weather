@@ -102,6 +102,10 @@ export function SendPaymentModal({
         phone_number: effectivePhone,
         feature_name: featureName,
         txn_id: txnId,
+        // ✅ FIX : passedAgent était reçu (utilisé pour seed txnId) mais jamais
+        // envoyé au backend — le paiement n'était donc jamais rattaché à
+        // l'agent pour la comptabilité (montant facturé par agent/période).
+        agent_id: passedAgent || undefined,
       });
 
       setResponse(res.data.msg || "Payment initiated. Please confirm on your phone.");
@@ -184,6 +188,7 @@ export function SendPaymentModal({
         phone_number: effectivePhone,
         email: emailInput,
         currency: currency,
+        agent_id: passedAgent || undefined,
       });
 
       if (res.data.success) {

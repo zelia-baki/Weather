@@ -6,6 +6,7 @@ import { useTutorial } from "./hooks/useTutorial";
 import { tutorialSteps } from "./config/tutorialSteps";
 import StepLocation from "./steps/StepLocation";
 import StepReportType from "./steps/StepReportType";
+import StepPropertyType from "./steps/StepPropertyType";
 import StepUserInfo from "./steps/StepUserInfo";
 import StepPayment from "./steps/StepPayment";
 import StepReports from "./steps/StepReports";
@@ -175,6 +176,12 @@ const EUDRSubmitFormForGuest = () => {
   const [selectedFeature, setSelectedFeature] = useState(
     () => localStorage.getItem("guest_selected_feature") || null
   );
+  // ✅ NOUVEAU — uniquement pour reportcarbonguest : détermine si le
+  // complément carbone utilise NDVI (forest) ou SOC SoilGrids (farm).
+  const [propertyType, setPropertyType] = useState(
+    () => localStorage.getItem("guest_property_type") || null
+  );
+  const [askingPropertyType, setAskingPropertyType] = useState(false);
   const [geojson, setGeojson] = useState(() => {
     try {
       const saved = localStorage.getItem("polygon_geojson");
@@ -191,7 +198,7 @@ const EUDRSubmitFormForGuest = () => {
   // ✅ reportRefs supprimé : StepReports gère désormais ses propres refs (nécessaire
   // pour supporter plusieurs rapports par type — voir useReports.jsx / StepReports.jsx)
   const { reports, loading, showPaymentModal, handleReportReady, setShowPaymentModal,
-    pendingEudrCapture, generateEudrPdf } = useReports({ files, geojson, userInfo, setStep }); // ✅ + 2 valeurs
+    pendingEudrCapture, generateEudrPdf } = useReports({ files, geojson, userInfo, setStep, propertyType }); // ✅ + 2 valeurs
   const { isActive: isTutorialActive, currentStep: tutorialStep, showTutorial, startTutorial, nextStep: nextTutorialStep, prevStep: prevTutorialStep, skipTutorial } = useTutorial();
 
   const currentTutorial = tutorialSteps[tutorialStep];
@@ -207,6 +214,10 @@ const EUDRSubmitFormForGuest = () => {
   useEffect(() => {
     if (selectedFeature) localStorage.setItem("guest_selected_feature", selectedFeature);
   }, [selectedFeature]);
+
+  useEffect(() => {
+    if (propertyType) localStorage.setItem("guest_property_type", propertyType);
+  }, [propertyType]);
 
   // ✅ Vérification de cohérence de l'état à chaque changement de step
   // (ex: refresh qui a fait perdre le fichier uploadé, le geojson, etc.)
@@ -420,12 +431,19 @@ const EUDRSubmitFormForGuest = () => {
             <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
               {/* STEP 2 */}
-              {step === 2 && (
+              {step === 2 && !askingPropertyType && (
                 <div className="relative">
                   <StepReportType
                     onSelect={(feature) => {
                       setSelectedFeature(feature);
-                      setStep(3);
+                      // ✅ NOUVEAU : pour le Carbon Report, on demande d'abord
+                      // Forest/Farm (détermine NDVI vs SOC pour le complément
+                      // carbone) avant de passer à l'étape 3.
+                      if (feature === "reportcarbonguest") {
+                        setAskingPropertyType(true);
+                      } else {
+                        setStep(3);
+                      }
                       if (isTutorialActive && currentTutorial?.highlight === "report-type") nextTutorialStep();
                     }}
                     highlightReportType={getHighlightClass("report-type")}
@@ -435,6 +453,17 @@ const EUDRSubmitFormForGuest = () => {
                     <div className="relative"><div className="absolute top-0 left-0 w-full pointer-events-none z-[10000]" style={{ marginTop: 20 }}><TutorialTooltip step={currentTutorial} {...sharedTip} position="bottom" /></div></div>
                   )}
                 </div>
+              )}
+
+              {/* STEP 2b — Forest/Farm (Carbon Report uniquement) */}
+              {step === 2 && askingPropertyType && (
+                <StepPropertyType
+                  onSelect={(type) => {
+                    setPropertyType(type);
+                    setAskingPropertyType(false);
+                    setStep(3);
+                  }}
+                />
               )}
 
               {/* STEP 3 */}
