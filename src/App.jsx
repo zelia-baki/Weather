@@ -136,6 +136,8 @@ import ShopLayout from './components/Shop/ShopLayout.jsx';
 import ShopPage from './components/Shop/ShopPage.jsx';
 import ProductDetail from './components/Shop/ProductDetail.jsx';
 import OurStory from './components/Shop/OurStory.jsx';
+import SalesDashboard from './components/Ecommerce/SalesDashboard.jsx';
+import SoldProductsDashboard from './components/Ecommerce/SoldProductsDashboard.jsx';
 // =============================================================================
 // GUARD : AccessDeniedScreen — composant partagé pour tous les refus d'accès
 // =============================================================================
@@ -384,6 +386,8 @@ const layoutRoutes = [
   //Ecommerce
   { path: '/ecoshopmanager', component: <EcoProductManager />, roles: ROLES.ADMIN, adminOnly: true },
   { path: '/auctionmanager', component: <AuctionManager />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/salesdashboard', component: <SalesDashboard />,        roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/soldproducts',   component: <SoldProductsDashboard />, roles: ROLES.ADMIN, adminOnly: true },
   
 
 ];

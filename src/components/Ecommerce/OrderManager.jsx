@@ -2,317 +2,573 @@ import React, { useEffect, useState, useCallback } from 'react';
 import axiosInstance from '../../axiosInstance';
 import Swal from 'sweetalert2';
 import {
-  X, Search, Loader2, AlertTriangle, ClipboardList, Truck, CheckCircle2,
-  XCircle, Undo2, MapPin, User as UserIcon, Image as ImageIcon,
+  ClipboardList, Search, X, Loader2, AlertTriangle, Package, Truck,
+  CheckCircle2, XCircle, RotateCcw, Clock, CreditCard, Download,
+  ChevronLeft, ChevronRight, Gavel, MapPin, Phone, Mail, User as UserIcon,
 } from 'lucide-react';
+import {
+  C, sans, mono, serif, card, sectionLabel, statusMeta,
+  OVERLAY, ON_INK, SHADOW_LIFT, PANEL_CSS,
+} from './theme';
 
-// ── Order status meta ────────────────────────────────────────────────────────
-// Mirrors ORDER_STATUS_TRANSITIONS from ecommerce.py — keeps the action
-// buttons in sync with what the backend will actually allow.
-const ORDER_STATUS_TRANSITIONS = {
-  paid:      ['shipped', 'cancelled', 'refunded'],
-  shipped:   ['delivered', 'cancelled', 'refunded'],
-  delivered: ['refunded'],
-  cancelled: [],
-  refunded:  [],
+// =============================================================================
+//  src/components/Ecommerce/OrderManager.jsx
+//
+//  Monté dans l'onglet « Orders » d'EcoProductManager, et utilisable seul.
+//
+//  Dépend du backend patché :
+//    - GET /api/ecommerce/orders/admin renvoie { items, total, pages, … }
+//    - GET /api/ecommerce/orders/admin/counts
+//    - le serveur publie les transitions autorisées ; le front n'affiche que
+//      les boutons correspondants, il ne devine rien.
+// =============================================================================
+
+const STATUS_ICONS = {
+  pending:        <Clock size={11}/>,
+  payment_failed: <XCircle size={11}/>,
+  paid:           <CreditCard size={11}/>,
+  shipped:        <Truck size={11}/>,
+  delivered:      <CheckCircle2 size={11}/>,
+  cancelled:      <XCircle size={11}/>,
+  refunded:       <RotateCcw size={11}/>,
 };
 
-const ORDER_STATUS_META = {
-  pending:        { label: 'Pending payment', color: 'bg-gray-100 text-gray-600 border-gray-200' },
-  paid:           { label: 'Paid',            color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  shipped:        { label: 'Shipped',         color: 'bg-amber-50 text-amber-700 border-amber-200' },
-  delivered:      { label: 'Delivered',       color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  cancelled:      { label: 'Cancelled',       color: 'bg-red-50 text-red-700 border-red-200' },
-  refunded:       { label: 'Refunded',        color: 'bg-purple-50 text-purple-700 border-purple-200' },
-  payment_failed: { label: 'Payment failed',  color: 'bg-red-50 text-red-700 border-red-200' },
+// Onglets ordonnés par urgence pour l'admin, pas par ordre du cycle de vie :
+// « à expédier » est ce qu'on vient regarder chaque matin.
+const TABS = [
+  { id: 'all',       label: 'All' },
+  { id: 'paid',      label: 'To ship' },
+  { id: 'shipped',   label: 'Shipped' },
+  { id: 'delivered', label: 'Delivered' },
+  { id: 'pending',   label: 'Unpaid' },
+  { id: 'cancelled', label: 'Cancelled' },
+  { id: 'refunded',  label: 'Refunded' },
+];
+
+const ACTIONS = {
+  shipped:   { label: 'Mark as shipped',   bg: C.teal,   icon: <Truck size={13}/> },
+  delivered: { label: 'Mark as delivered', bg: C.accent, icon: <CheckCircle2 size={13}/> },
+  cancelled: { label: 'Cancel order',      bg: C.stone,     icon: <XCircle size={13}/> },
+  refunded:  { label: 'Mark as refunded',  bg: C.amber,  icon: <RotateCcw size={13}/> },
 };
 
-const STATUS_ACTION_META = {
-  shipped:   { label: 'Mark as shipped',   icon: <Truck size={13}/>,        cls: 'bg-amber-600 hover:bg-amber-700' },
-  delivered: { label: 'Mark as delivered', icon: <CheckCircle2 size={13}/>, cls: 'bg-emerald-600 hover:bg-emerald-700' },
-  cancelled: { label: 'Cancel order',      icon: <XCircle size={13}/>,      cls: 'bg-red-600 hover:bg-red-700' },
-  refunded:  { label: 'Refund order',      icon: <Undo2 size={13}/>,        cls: 'bg-purple-600 hover:bg-purple-700' },
-};
+const fmtMoney = (n, currency) =>
+  `${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency || ''}`.trim();
 
-const formatDate = (iso) => {
+const fmtQty = (n) => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 3 });
+
+const fmtDate = (iso, withTime = true) => {
   if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString('en-US', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+  });
 };
 
-const OrderStatusBadge = ({ status }) => {
-  const meta = ORDER_STATUS_META[status] || { label: status, color: 'bg-gray-100 text-gray-600 border-gray-200' };
+const StatusPill = ({ status }) => {
+  const m = statusMeta(status);
   return (
-    <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full border ${meta.color}`}>
-      {meta.label}
+    <span style={{
+      ...sans, fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center',
+      gap: 4, padding: '3px 9px', borderRadius: 999,
+      color: m.fg, background: m.bg, border: `1px solid ${m.bd}`,
+    }}>
+      {STATUS_ICONS[status]} {m.label}
     </span>
   );
 };
 
-// ── Order detail drawer ──────────────────────────────────────────────────────
-const OrderDetailDrawer = ({ order, open, onClose, onStatusChanged }) => {
-  const [updating, setUpdating] = useState(false);
+const swalTheme = {
+  customClass: { popup: 'rounded-2xl' },
+  confirmButtonColor: C.accent,
+  cancelButtonColor: C.stone,
+};
 
+// ── Tiroir de détail ─────────────────────────────────────────────────────────
+const OrderDrawer = ({ order, transitions, open, onClose, onChanged }) => {
+  const [busy, setBusy] = useState(false);
   if (!order) return null;
 
-  const availableActions = ORDER_STATUS_TRANSITIONS[order.status] || [];
+  const allowed = transitions[order.status] || [];
+  const isAuction = order.items?.some(i => i.auction_lot_id);
 
-  const handleStatusChange = async (newStatus) => {
-    const actionMeta = STATUS_ACTION_META[newStatus];
-    const isDestructive = newStatus === 'cancelled' || newStatus === 'refunded';
+  const changeStatus = async (next) => {
+    const meta = ACTIONS[next];
+    const undoesStock = next === 'cancelled' || next === 'refunded';
 
-    const confirm = await Swal.fire({
-      title: `${actionMeta.label}?`,
-      text: isDestructive
-        ? 'This will restore the stock for every item in this order.'
-        : `Order #${order.id} will be marked as ${newStatus}.`,
-      icon: isDestructive ? 'warning' : 'question',
+    const result = await Swal.fire({
+      ...swalTheme,
+      title: `${meta.label}?`,
+      text: undoesStock
+        ? 'If this order was already paid, its stock goes back to the catalogue.'
+        : `Order #${order.id} moves to "${statusMeta(next).label}".`,
+      icon: undoesStock ? 'warning' : 'question',
+      input: undoesStock ? 'text' : undefined,
+      inputPlaceholder: undoesStock ? 'Reason (optional, kept in stock history)' : undefined,
       showCancelButton: true,
-      confirmButtonColor: isDestructive ? '#dc2626' : '#16a34a',
-      confirmButtonText: actionMeta.label,
-      customClass: { popup: 'rounded-2xl' },
+      confirmButtonText: meta.label,
+      confirmButtonColor: meta.bg,
     });
-    if (!confirm.isConfirmed) return;
+    if (!result.isConfirmed) return;
 
-    setUpdating(true);
+    setBusy(true);
     try {
-      const res = await axiosInstance.put(`/api/ecommerce/orders/${order.id}/status`, { status: newStatus });
-      onStatusChanged(res.data.order);
-      Swal.fire({
-        icon: 'success', title: 'Order updated', timer: 1500, showConfirmButton: false,
-        customClass: { popup: 'rounded-2xl' },
-      });
+      const { data } = await axiosInstance.put(
+        `/api/ecommerce/orders/${order.id}/status`,
+        { status: next, note: result.value || null },
+      );
+      onChanged(data.order);
+      Swal.fire({ ...swalTheme, icon: 'success', title: data.msg, timer: 1800, showConfirmButton: false });
     } catch (err) {
-      Swal.fire({
-        icon: 'error', title: 'Could not update order',
-        text: err.response?.data?.msg || err.message,
-        customClass: { popup: 'rounded-2xl' },
-      });
+      Swal.fire({ ...swalTheme, icon: 'error', title: 'The order could not be updated',
+        text: err.response?.data?.msg || err.message });
     } finally {
-      setUpdating(false);
+      setBusy(false);
     }
   };
 
+  const Row = ({ icon, children }) => (
+    <p style={{ ...sans, fontSize: 13, color: C.inkSoft, display: 'flex', alignItems: 'flex-start', gap: 9 }}>
+      <span style={{ color: C.faint, marginTop: 2, flexShrink: 0 }}>{icon}</span>
+      <span>{children}</span>
+    </p>
+  );
+
   return (
     <>
-      {open && <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose}/>}
-      <div className={`fixed top-0 right-0 h-full z-50 w-full max-w-md bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out light-panel ${open ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 flex-shrink-0">
+      {open && (
+        <div onClick={onClose} style={{
+          position: 'fixed', inset: 0, zIndex: 40,
+          background: OVERLAY, backdropFilter: 'blur(2px)',
+        }}/>
+      )}
+      <div className="nk-panel" style={{
+        position: 'fixed', top: 0, right: 0, height: '100%', zIndex: 50,
+        width: '100%', maxWidth: 480, background: C.card,
+        boxShadow: SHADOW_LIFT,
+        display: 'flex', flexDirection: 'column',
+        transition: 'transform .3s cubic-bezier(.4,0,.2,1)',
+        transform: open ? 'translateX(0)' : 'translateX(100%)',
+      }}>
+        <style>{PANEL_CSS}</style>
+
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+          padding: '22px 24px', borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
           <div>
-            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <ClipboardList size={18} className="text-gray-500"/> Order #{order.id}
+            <span style={sectionLabel}>Order</span>
+            <h2 style={{ ...serif, fontSize: 28, fontWeight: 500, color: C.ink, marginTop: 2,
+              display: 'flex', alignItems: 'center', gap: 8 }}>
+              #{order.id}
+              {isAuction && <Gavel size={16} style={{ color: C.amber }} title="Contains an auction lot"/>}
             </h2>
-            <div className="mt-1"><OrderStatusBadge status={order.status}/></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 9 }}>
+              <StatusPill status={order.status}/>
+              <span style={{ ...sans, fontSize: 11.5, color: C.faint }}>{fmtDate(order.date_created)}</span>
+            </div>
           </div>
-          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"><X size={18}/></button>
+          <button onClick={onClose} className="nk-btn"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.faint, padding: 6 }}>
+            <X size={18}/>
+          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {/* Customer info */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <UserIcon size={12}/> Customer
-            </p>
-            <div className="bg-gray-50 rounded-xl p-3.5 text-sm text-gray-700 space-y-1">
-              <p className="font-semibold">{order.customer_name || 'Unknown'}</p>
-              {order.customer_email && <p className="text-gray-500">{order.customer_email}</p>}
-              {order.guest_phone && <p className="text-gray-500">{order.guest_phone}</p>}
+            <p style={{ ...sectionLabel, marginBottom: 11 }}>Customer</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <Row icon={<UserIcon size={13}/>}>
+                {order.customer_name || 'No name given'}
+                {order.user_id && <span style={{ color: C.faint }}> · account #{order.user_id}</span>}
+              </Row>
+              {order.customer_email && (
+                <Row icon={<Mail size={13}/>}>
+                  <a href={`mailto:${order.customer_email}`} style={{ color: C.accent, textDecoration: 'none' }}>
+                    {order.customer_email}
+                  </a>
+                </Row>
+              )}
+              {order.guest_phone && (
+                <Row icon={<Phone size={13}/>}>
+                  <a href={`tel:${order.guest_phone}`} style={{ color: C.accent, textDecoration: 'none' }}>
+                    {order.guest_phone}
+                  </a>
+                </Row>
+              )}
+              {order.shipping_address && (
+                <Row icon={<MapPin size={13}/>}>
+                  <span style={{ whiteSpace: 'pre-line' }}>{order.shipping_address}</span>
+                </Row>
+              )}
             </div>
           </div>
 
-          {/* Shipping address */}
-          {order.shipping_address && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <MapPin size={12}/> Shipping address
-              </p>
-              <p className="bg-gray-50 rounded-xl p-3.5 text-sm text-gray-700">{order.shipping_address}</p>
-            </div>
-          )}
-
-          {/* Items */}
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Items ({order.item_count})
-            </p>
-            <div className="border border-gray-100 rounded-xl overflow-hidden">
-              {order.items.map((item, i) => (
-                <div key={item.id} className={`flex gap-3 p-3 ${i > 0 ? 'border-t border-gray-100' : ''}`}>
-                  <div className="w-11 h-11 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden flex items-center justify-center">
+            <p style={{ ...sectionLabel, marginBottom: 11 }}>Items · {order.items?.length || 0}</p>
+            <div style={{ border: `1px solid ${C.line}`, borderRadius: 12, overflow: 'hidden' }}>
+              {order.items?.map((item, i) => (
+                <div key={item.id} style={{ display: 'flex', gap: 12, padding: 14,
+                  borderTop: i > 0 ? `1px solid ${C.lineSoft}` : 'none' }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 8, background: C.paperAlt,
+                    flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {item.product_image
-                      ? <img src={item.product_image} alt="" className="w-full h-full object-cover"/>
-                      : <ImageIcon size={14} className="text-gray-300"/>}
+                      ? <img src={item.product_image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+                      : <Package size={15} style={{ color: C.faint }}/>}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{item.product_name}</p>
-                    <p className="text-xs text-gray-400">{item.quantity} × {item.unit_price.toLocaleString()} {order.currency}</p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ ...sans, fontSize: 13.5, fontWeight: 600, color: C.ink,
+                      display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {item.product_name}
+                      {item.auction_lot_id && <Gavel size={12} style={{ color: C.amber }}/>}
+                    </p>
+                    <p style={{ ...mono, fontSize: 11.5, color: C.muted, marginTop: 3 }}>
+                      {fmtQty(item.quantity)} {item.unit} × {fmtMoney(item.unit_price, order.currency)}
+                    </p>
                   </div>
-                  <p className="text-sm font-semibold text-gray-700 flex-shrink-0">
-                    {item.line_total.toLocaleString()} {order.currency}
+                  <p style={{ ...mono, fontSize: 13, color: C.ink, whiteSpace: 'nowrap' }}>
+                    {fmtMoney(item.line_total)}
                   </p>
                 </div>
               ))}
-              <div className="flex justify-between items-center p-3 bg-gray-50 border-t border-gray-100">
-                <span className="text-sm text-gray-500">Total</span>
-                <span className="text-base font-bold text-gray-800">{order.total_amount.toLocaleString()} {order.currency}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                padding: '14px 16px', borderTop: `1px solid ${C.line}`, background: C.paperAlt }}>
+                <span style={{ ...sans, fontSize: 12.5, color: C.inkSoft }}>Total</span>
+                <span style={{ ...serif, fontSize: 24, fontWeight: 600, color: C.ink }}>
+                  {Number(order.total_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  <span style={{ ...mono, fontSize: 11, color: C.amber, marginLeft: 6 }}>{order.currency}</span>
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Meta */}
-          <div className="text-xs text-gray-400 space-y-1">
-            <p>Placed: {formatDate(order.date_created)}</p>
-            {order.date_updated && <p>Last updated: {formatDate(order.date_updated)}</p>}
-            {order.dpo_trans_ref && <p>Payment ref: {order.dpo_trans_ref}</p>}
+          <div>
+            <p style={{ ...sectionLabel, marginBottom: 11 }}>Payment</p>
+            {[
+              ['Method', (order.payment_method || '—').toUpperCase()],
+              ['Reference', order.dpo_trans_ref || '—'],
+              ['Last update', fmtDate(order.date_updated)],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between',
+                padding: '6px 0', ...sans, fontSize: 12.5 }}>
+                <span style={{ color: C.muted }}>{k}</span>
+                <span style={{ ...mono, fontSize: 11.5, color: C.ink }}>{v}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Actions */}
-        {availableActions.length > 0 && (
-          <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-white space-y-2">
-            {availableActions.map(status => {
-              const meta = STATUS_ACTION_META[status];
-              return (
-                <button
-                  key={status}
-                  onClick={() => handleStatusChange(status)}
-                  disabled={updating}
-                  className={`w-full inline-flex items-center justify-center gap-2 text-sm font-semibold text-white px-4 py-2.5 rounded-xl transition-colors ${meta.cls} ${updating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {updating ? <Loader2 size={14} className="animate-spin"/> : meta.icon}
-                  {meta.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Actions : seulement celles que le serveur autorise pour ce statut */}
+        <div style={{ flexShrink: 0, padding: '16px 24px', borderTop: `1px solid ${C.line}`, background: C.card }}>
+          {allowed.length === 0 ? (
+            <p style={{ ...sans, fontSize: 12, color: C.faint, textAlign: 'center', padding: '6px 0' }}>
+              This order has reached a final state.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {allowed.map(next => {
+                const meta = ACTIONS[next];
+                if (!meta) return null;
+                return (
+                  <button key={next} onClick={() => changeStatus(next)} disabled={busy} className="nk-btn"
+                    style={{
+                      ...sans, flex: '1 1 150px', padding: '11px 14px', borderRadius: 10, border: 'none',
+                      background: meta.bg, color: '#fff', fontSize: 13, fontWeight: 600,
+                      cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? 0.55 : 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                    }}>
+                    {busy ? <Loader2 size={14} className="animate-spin"/> : meta.icon}
+                    {meta.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
 };
 
 // =============================================================================
-// OrderManager — fully self-contained: fetches its own data, owns its own
-// search/filter state, and renders its own detail drawer. Drop it into any
-// tab/page with <OrderManager /> — no props required.
-// =============================================================================
 const OrderManager = () => {
-  const [orders,         setOrders]         = useState([]);
-  const [loading,        setLoading]        = useState(false);
-  const [error,          setError]          = useState('');
-  const [statusFilter,   setStatusFilter]   = useState('all');
-  const [search,         setSearch]         = useState('');
-  const [selectedOrder,  setSelectedOrder]  = useState(null);
+  const [orders,      setOrders]      = useState([]);
+  const [counts,      setCounts]      = useState({});
+  const [transitions, setTransitions] = useState({});
+  const [revenue,     setRevenue]     = useState([]);
+  const [total,       setTotal]       = useState(0);
+  const [pages,       setPages]       = useState(1);
+  const [page,        setPage]        = useState(1);
+  const [status,      setStatus]      = useState('all');
+  const [source,      setSource]      = useState('all');
+  const [search,      setSearch]      = useState('');
+  const [query,       setQuery]       = useState('');
+  const [dates,       setDates]       = useState({ from: '', to: '' });
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState('');
+  const [selected,    setSelected]    = useState(null);
 
-  const fetchOrders = useCallback(async (filter) => {
-    setLoading(true);
-    setError('');
+  // Recherche déclenchée 400 ms après la dernière frappe : sans ça, taper
+  // « marie » lance cinq requêtes dont quatre arrivent trop tard.
+  useEffect(() => {
+    const t = setTimeout(() => { setQuery(search); setPage(1); }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const fetchOrders = useCallback(async () => {
+    setLoading(true); setError('');
     try {
-      const params = filter && filter !== 'all' ? { status: filter } : {};
-      const r = await axiosInstance.get('/api/ecommerce/orders/admin', { params });
-      setOrders(r.data ?? []);
-    } catch {
-      setError('Error fetching orders.');
+      const { data } = await axiosInstance.get('/api/ecommerce/orders/admin', {
+        params: {
+          page, per_page: 20, status, source,
+          q: query || undefined,
+          from: dates.from || undefined,
+          to: dates.to || undefined,
+        },
+      });
+      setOrders(data.items ?? []);
+      setTotal(data.total ?? 0);
+      setPages(data.pages ?? 1);
+      setTransitions(data.transitions ?? {});
+      setRevenue(data.selection_revenue ?? []);
+    } catch (err) {
+      setError(err.response?.data?.msg || 'Orders could not be loaded. Check that you are signed in as an admin.');
     } finally {
       setLoading(false);
     }
+  }, [page, status, source, query, dates.from, dates.to]);
+
+  const fetchCounts = useCallback(async () => {
+    try {
+      const { data } = await axiosInstance.get('/api/ecommerce/orders/admin/counts');
+      setCounts(data ?? {});
+    } catch { /* les pastilles sont un confort, pas une dépendance */ }
   }, []);
 
-  useEffect(() => { fetchOrders(statusFilter); }, [fetchOrders, statusFilter]);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { fetchCounts(); }, [fetchCounts]);
 
-  const filteredOrders = orders.filter(o => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return String(o.id).includes(q) || o.customer_name?.toLowerCase().includes(q);
-  });
-
-  const handleStatusChanged = (updatedOrder) => {
-    setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
-    setSelectedOrder(updatedOrder);
+  // Après un changement de statut, on remplace la ligne en place : recharger
+  // toute la liste ferait perdre à l'admin sa position de lecture.
+  const handleChanged = (updated) => {
+    setOrders(list => list.map(o => (o.id === updated.id ? updated : o)));
+    setSelected(updated);
+    fetchCounts();
   };
 
+  const exportCsv = () => {
+    const params = new URLSearchParams({
+      ...(dates.from ? { from: dates.from } : {}),
+      ...(dates.to ? { to: dates.to } : {}),
+      ...(status !== 'all' ? { status } : {}),
+      ...(source !== 'all' ? { source } : {}),
+    });
+    // Via axios pour porter le jeton JWT : une balise <a> nue partirait sans
+    // en-tête d'authentification et recevrait un 401.
+    axiosInstance.get(`/api/ecommerce/stats/export/orders.csv?${params}`, { responseType: 'blob' })
+      .then(res => {
+        const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nkusu-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => Swal.fire({ ...swalTheme, icon: 'error', title: 'Export failed',
+        text: 'The file could not be generated.' }));
+  };
+
+  const resetFilters = () => {
+    setStatus('all'); setSource('all'); setSearch(''); setDates({ from: '', to: '' }); setPage(1);
+  };
+
+  const hasFilters = status !== 'all' || source !== 'all' || search || dates.from || dates.to;
+
   return (
-    <div>
-      {/* Search */}
-      <div className="relative mb-3">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><Search size={16}/></span>
-        <input
-          type="text"
-          placeholder="Search by order # or customer name…"
-          value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
-        {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={16}/></button>}
+    <div className="nk-panel" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <style>{PANEL_CSS}</style>
+
+      {/* Onglets */}
+      <div style={{ display: 'flex', gap: 3, overflowX: 'auto', background: C.paperAlt,
+        borderRadius: 12, padding: 4 }}>
+        {TABS.map(t => {
+          const active = status === t.id;
+          return (
+            <button key={t.id} onClick={() => { setStatus(t.id); setPage(1); }} className="nk-btn"
+              style={{
+                ...sans, fontSize: 12.5, fontWeight: 600, padding: '7px 13px', borderRadius: 8,
+                border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                background: active ? C.ink : 'transparent',
+                color: active ? C.paper : C.muted,
+              }}>
+              {t.label}
+              {counts[t.id] > 0 && (
+                <span style={{
+                  ...mono, fontSize: 10.5, padding: '1px 6px', borderRadius: 999,
+                  background: active ? ON_INK : C.card,
+                  color: active ? C.paper : C.inkSoft,
+                  border: active ? 'none' : `1px solid ${C.line}`,
+                }}>
+                  {counts[t.id]}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Status filter */}
-      <div className="flex gap-2 mb-5 flex-wrap">
-        {['all', 'pending', 'paid', 'shipped', 'delivered', 'cancelled', 'refunded'].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors capitalize ${
-              statusFilter === s
-                ? 'bg-gray-800 text-white border-gray-800'
-                : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>
-            {s === 'all' ? 'All' : (ORDER_STATUS_META[s]?.label || s)}
+      {/* Filtres */}
+      <div style={{ ...card({ padding: 12 }), display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: '1 1 230px' }}>
+          <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: C.faint }}>
+            <Search size={14}/>
+          </span>
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Name, email, phone, order number, DPO reference…"
+            style={{ width: '100%', paddingLeft: 33, paddingRight: 33 }}/>
+          {search && (
+            <button onClick={() => setSearch('')}
+              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', color: C.faint, padding: 0 }}>
+              <X size={14}/>
+            </button>
+          )}
+        </div>
+
+        <input type="date" value={dates.from}
+          onChange={e => { setDates({ ...dates, from: e.target.value }); setPage(1); }}/>
+        <span style={{ ...sans, fontSize: 12, color: C.faint }}>to</span>
+        <input type="date" value={dates.to}
+          onChange={e => { setDates({ ...dates, to: e.target.value }); setPage(1); }}/>
+
+        <select value={source} onChange={e => { setSource(e.target.value); setPage(1); }}
+          style={{ cursor: 'pointer' }}>
+          <option value="all">Shop and auctions</option>
+          <option value="shop">Shop only</option>
+          <option value="auction">Auctions only</option>
+        </select>
+
+        {hasFilters && (
+          <button onClick={resetFilters} className="nk-btn"
+            style={{ ...sans, fontSize: 12.5, padding: '9px 13px', borderRadius: 10,
+              border: `1px solid ${C.line}`, background: C.card, color: C.muted, cursor: 'pointer' }}>
+            Clear
           </button>
-        ))}
+        )}
+
+        <button onClick={exportCsv} className="nk-btn"
+          style={{ ...sans, fontSize: 12.5, fontWeight: 600, padding: '9px 14px', borderRadius: 10,
+            border: 'none', background: C.ink, color: C.paper, cursor: 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+          <Download size={14}/> Export CSV
+        </button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-2">
-          <AlertTriangle size={15}/> {error}
-          <button onClick={() => setError('')} className="ml-auto"><X size={15}/></button>
+      {/* Total encaissé sur la sélection */}
+      {revenue.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 14,
+          background: C.mossSoft, border: `1px solid ${C.moss}2E`, borderRadius: 12, padding: '11px 18px' }}>
+          <span style={{ ...sectionLabel, color: C.moss }}>Paid in this selection</span>
+          {revenue.map(r => (
+            <span key={r.currency} style={{ ...serif, fontSize: 20, fontWeight: 600, color: C.ink }}>
+              {Number(r.amount).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+              <span style={{ ...mono, fontSize: 11, color: C.muted, marginLeft: 5 }}>{r.currency}</span>
+            </span>
+          ))}
+          <span style={{ ...sans, fontSize: 11.5, color: C.muted, marginLeft: 'auto' }}>
+            {total} orders match
+          </span>
         </div>
       )}
 
-      {/* List */}
-      <div className="space-y-3">
-        {loading && (
-          <div className="flex items-center justify-center py-12 text-gray-400">
-            <Loader2 size={20} className="animate-spin"/>
-          </div>
-        )}
-        {!loading && filteredOrders.length === 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-            <ClipboardList size={40} className="mx-auto mb-3 text-gray-300"/>
-            <p className="text-gray-500 font-medium">No orders found</p>
-          </div>
-        )}
-        {!loading && filteredOrders.map(order => (
-          <button
-            key={order.id}
-            onClick={() => setSelectedOrder(order)}
-            className="w-full text-left bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all p-4 sm:p-5"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3 flex-1 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold flex-shrink-0">
-                  #{order.id}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-bold text-gray-800 flex items-center gap-2 flex-wrap">
-                    {order.customer_name || 'Unknown customer'}
-                    <OrderStatusBadge status={order.status}/>
-                  </h3>
-                  <div className="flex flex-wrap gap-3 mt-1">
-                    <span className="text-xs text-gray-500">{order.item_count} item{order.item_count > 1 ? 's' : ''}</span>
-                    <span className="text-xs text-gray-500">{formatDate(order.date_created)}</span>
+      {error && (
+        <div style={{ ...sans, background: C.brickSoft, border: `1px solid ${C.brick}33`,
+          borderLeft: `3px solid ${C.brick}`, borderRadius: 10, padding: '13px 16px',
+          fontSize: 13, color: C.brick, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <AlertTriangle size={15}/> {error}
+        </div>
+      )}
+
+      {/* Liste */}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
+          <Loader2 size={22} className="animate-spin" style={{ color: C.accent }}/>
+        </div>
+      ) : orders.length === 0 ? (
+        <div style={card({ padding: '64px 24px', textAlign: 'center' })}>
+          <ClipboardList size={36} style={{ color: C.line, margin: '0 auto 14px' }}/>
+          <p style={{ ...serif, fontSize: 21, color: C.inkSoft }}>No orders match these filters</p>
+          {hasFilters && (
+            <button onClick={resetFilters}
+              style={{ ...sans, fontSize: 13, fontWeight: 600, color: C.accent, background: 'none',
+                border: 'none', cursor: 'pointer', marginTop: 10 }}>
+              Clear the filters
+            </button>
+          )}
+        </div>
+      ) : (
+        <div style={card({ overflow: 'hidden' })}>
+          {orders.map((order, i) => {
+            const isAuction = order.items?.some(it => it.auction_lot_id);
+            return (
+              <button key={order.id} onClick={() => setSelected(order)} className="nk-row"
+                style={{
+                  width: '100%', textAlign: 'left', background: 'none', cursor: 'pointer',
+                  border: 'none', borderTop: i > 0 ? `1px solid ${C.lineSoft}` : 'none',
+                  padding: '15px 18px', display: 'flex', alignItems: 'flex-start',
+                  justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
+                }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 13, minWidth: 0 }}>
+                  <span style={{
+                    ...mono, fontSize: 11, color: C.amber, background: C.amberSoft,
+                    borderRadius: 8, padding: '7px 9px', flexShrink: 0, letterSpacing: 0.2,
+                  }}>
+                    {String(order.id).padStart(3, '0')}
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ ...sans, fontSize: 14, fontWeight: 600, color: C.ink,
+                      display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
+                      {order.customer_name || 'Guest'}
+                      {isAuction && <Gavel size={12} style={{ color: C.amber }} title="Auction lot"/>}
+                      <StatusPill status={order.status}/>
+                    </p>
+                    <p style={{ ...sans, fontSize: 11.5, color: C.faint, marginTop: 4 }}>
+                      {fmtDate(order.date_created, false)} · {order.items?.length || 0} items ·{' '}
+                      {fmtQty(order.item_count)} units
+                      {order.customer_email && ` · ${order.customer_email}`}
+                    </p>
                   </div>
                 </div>
-              </div>
-              <span className="text-sm font-bold text-gray-800 flex-shrink-0">
-                {order.total_amount.toLocaleString()} {order.currency}
-              </span>
-            </div>
-          </button>
-        ))}
-      </div>
+                <span style={{ ...mono, fontSize: 14, color: C.ink, whiteSpace: 'nowrap' }}>
+                  {fmtMoney(order.total_amount, order.currency)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-      <OrderDetailDrawer
-        order={selectedOrder}
-        open={selectedOrder !== null}
-        onClose={() => setSelectedOrder(null)}
-        onStatusChanged={handleStatusChanged}
-      />
+      {/* Pagination */}
+      {pages > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, paddingTop: 4 }}>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="nk-btn"
+            style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 9, padding: 8,
+              color: C.muted, cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.35 : 1 }}>
+            <ChevronLeft size={16}/>
+          </button>
+          <span style={{ ...sans, fontSize: 12.5, color: C.muted }}>
+            Page <span style={mono}>{page}</span> of <span style={mono}>{pages}</span>
+          </span>
+          <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="nk-btn"
+            style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 9, padding: 8,
+              color: C.muted, cursor: page === pages ? 'not-allowed' : 'pointer', opacity: page === pages ? 0.35 : 1 }}>
+            <ChevronRight size={16}/>
+          </button>
+        </div>
+      )}
+
+      <OrderDrawer order={selected} transitions={transitions} open={selected !== null}
+        onClose={() => setSelected(null)} onChanged={handleChanged}/>
     </div>
   );
 };

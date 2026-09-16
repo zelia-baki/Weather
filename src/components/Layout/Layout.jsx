@@ -6,7 +6,7 @@ import { MdManageAccounts, MdDashboard, MdHistory, MdOutlineWaterDrop,
          MdOutlineShoppingCart, MdOutlineGavel } from "react-icons/md";  // ← MdOutlineShoppingCart added
 import { FiLogOut, FiMenu, FiX, FiChevronDown } from "react-icons/fi";
 import { FaTree, FaCloudSun, FaQrcode, FaFileContract, FaCrown, FaUser } from "react-icons/fa";
-import { TbPlant2, TbMap2, TbChartBar, TbTag } from "react-icons/tb";
+import { TbPlant2, TbMap2, TbChartBar, TbTag, TbPackages } from "react-icons/tb";
 import { RiPlantLine, RiMapPinLine } from "react-icons/ri";
 import { BsCalendarDate, BsShop } from "react-icons/bs";
 import { GiFarmer, GiForestCamp, GiWheat } from "react-icons/gi";
@@ -76,16 +76,18 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "Fertilizer Stamps",          href: "/qrfertilizer",   Icon: TbPlant2 },
       ],
     },
- {
-  id: "ecommerce", label: "E-commerce", Icon: BsShop,
-  show: isAdmin,
-  items: [
-    { label: "Shop (customer view)", href: "/shop",           Icon: BsShop },
-    { label: "Product Manager",      href: "/ecoshopmanager", Icon: MdOutlineShoppingCart },
-    { label: "Auctions (public)",    href: "/auctions",       Icon: MdOutlineGavel },
-    { label: "Auction Manager",      href: "/auctionmanager", Icon: MdOutlineGavel },
-  ],
-},
+    {
+      id: "ecommerce", label: "E-commerce", Icon: BsShop,
+      show: isAdmin,
+      items: [
+        { label: "Sales",                href: "/salesdashboard", Icon: TbChartBar },
+        { label: "Products sold",        href: "/soldproducts",   Icon: TbPackages },
+        { label: "Product Manager",      href: "/ecoshopmanager", Icon: MdOutlineShoppingCart },
+        { label: "Shop (customer view)", href: "/shop",           Icon: BsShop },
+        { label: "Auctions (public)",    href: "/auctions",       Icon: MdOutlineGavel },
+        { label: "Auction Manager",      href: "/auctionmanager", Icon: MdOutlineGavel },
+      ],
+    },
     {
       id: "weather", label: "Weather", Icon: FaCloudSun,
       show: isWeather,
