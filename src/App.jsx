@@ -110,6 +110,7 @@ import QrDashboard from './components/Qr/Page/QrDashboard.jsx';
 // ─── Users ────────────────────────────────────────────────────────────────────
 import CreateUsers from './components/Users/CreateUsers.jsx';
 import UserManagement from './components/Users/UserManagement.jsx';
+import AgentExport from './components/Users/AgentExport.jsx';
 
 // ─── Misc ─────────────────────────────────────────────────────────────────────
 import Card from './components/Card/Card.jsx';
@@ -361,6 +362,7 @@ const layoutRoutes = [
   // Users
   { path: '/createUsers', component: <CreateUsers />, roles: ROLES.ALL },
   { path: '/usermanager', component: <UserManagement />, roles: ROLES.ALL },
+  { path: '/agentexport', component: <AgentExport />, roles: ROLES.ADMIN },
 
   // Blog
   { path: '/blogadmin', component: <BlogAdmin />, roles: ROLES.ALL },

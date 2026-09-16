@@ -19,7 +19,6 @@ import LTVPanel from "./panels/LTVPanel";
 import YearlyPolygonMapGrid from "./panels/YearlyPolygonMapGrid";
 import ClassificationMapsPanel from "./panels/ClassificationMapsPanel";
 import YieldAnalysisPanel from "./panels/YieldAnalysisPanel";
-import WeeklyTrendPanel from "./panels/WeeklyTrendPanel";
 import IndexGaugePanel from "./panels/IndexGaugePanel";
 import SeasonalNdviRainfallPanel from "./panels/SeasonalNdviRainfallPanel";
 import CropPredictionPanel from "./panels/CropPredictionPanel";
@@ -226,9 +225,6 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
           </div>
         ))}
         <IndexGaugePanel data={data} />
-        {type === 'farm' && !isGuest && (
-          <WeeklyTrendPanel entityId={entityId} entityType={type} />
-        )}
         {type === 'farm' && !isGuest && (
           <SeasonalNdviRainfallPanel entityId={entityId} entityType={type} />
         )}

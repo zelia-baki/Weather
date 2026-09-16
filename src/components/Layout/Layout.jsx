@@ -318,6 +318,12 @@ const Layout = ({ children }) => {
                   <MdManageAccounts className="text-base" />
                   <span>Features</span>
                 </Link>
+                <Link to="/agentexport"
+                  className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm
+                             px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition-all">
+                  <MdManageAccounts className="text-base" />
+                  <span>Agents</span>
+                </Link>
               </>
             )}
             <button
@@ -381,6 +387,10 @@ const Layout = ({ children }) => {
                 <Link to="/featuresManager" onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-2 text-white/80 hover:text-white text-sm py-2">
                   <MdManageAccounts className="text-base" /> Feature Manager
+                </Link>
+                <Link to="/agentexport" onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2 text-white/80 hover:text-white text-sm py-2">
+                  <MdManageAccounts className="text-base" /> Agent Export
                 </Link>
               </div>
             )}

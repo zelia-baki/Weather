@@ -51,6 +51,8 @@ export const treeService = {
   // CO2 Report
   getCO2Report: (forestId) => axiosInstance.get(`/api/tree-co2/forest/${forestId}/report`),
 
+  getSpeciesGrowthParams: () => axiosInstance.get('/api/tree-co2/species-params'),
+
   exportCO2Pdf: (forestId) => axiosInstance.get(`/api/tree-co2/forest/${forestId}/co2-pdf`, {
     responseType: 'blob',
   }),

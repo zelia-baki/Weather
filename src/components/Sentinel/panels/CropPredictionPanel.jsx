@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { Sprout, Loader2, RefreshCw, Brain, AlertTriangle } from "lucide-react";
+import { Sprout, Loader2, RefreshCw, Brain, AlertTriangle, CheckCircle2, Pencil } from "lucide-react";
 import axiosInstance from "../../../axiosInstance";
 
 export default function CropPredictionPanel({ entityId, entityType = "farm", isAdmin = false }) {
@@ -8,6 +8,37 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
   const [loading, setLoading] = useState(true);
   const [training, setTraining] = useState(false);
   const [error, setError] = useState(null);
+
+  // ── Confirmation (banque d'entraînement) ──────────────────────────────────
+  const [crops, setCrops] = useState([]);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [showCorrection, setShowCorrection] = useState(false);
+  const [correctedCropId, setCorrectedCropId] = useState("");
+
+  useEffect(() => {
+    axiosInstance.get('/api/crop/')
+      .then(({ data }) => setCrops(data.crops || []))
+      .catch(() => {});
+  }, []);
+
+  const submitConfirmation = async (cropId) => {
+    if (!cropId) return;
+    setConfirming(true); setError(null);
+    try {
+      await axiosInstance.post(`/api/sentinel/farm/${entityId}/confirm-crop`, {
+        crop_id: cropId,
+        predicted_crop: prediction?.predicted_crop,
+        confidence: prediction?.confidence,
+      });
+      setConfirmed(true);
+      setShowCorrection(false);
+    } catch (e) {
+      setError(e.response?.data?.error || 'Confirmation failed');
+    } finally {
+      setConfirming(false);
+    }
+  };
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -19,6 +50,7 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
   const fetchPrediction = useCallback(async () => {
     if (!entityId || entityType !== 'farm') { setLoading(false); return; }
     setLoading(true); setError(null);
+    setConfirmed(false); setShowCorrection(false); setCorrectedCropId("");
     try {
       const { data } = await axiosInstance.get(`/api/sentinel/farm/${entityId}/predict-crop`);
       setPrediction(data);
@@ -126,6 +158,64 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
                 </div>
               ))}
             </div>
+
+            {/* ── Confirmation humaine → banque d'entraînement ── */}
+            {confirmed ? (
+              <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 p-3 flex items-center gap-2">
+                <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+                <p className="text-xs text-emerald-300">
+                  Confirmé — cette ferme sera utilisée dans le prochain entraînement du modèle.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 space-y-3">
+                <p className="text-xs text-slate-500">
+                  Cette culture est-elle correcte ? La confirmer l'ajoute à la banque de données
+                  utilisée pour entraîner le modèle.
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => submitConfirmation(prediction.predicted_crop_id)}
+                    disabled={confirming || !prediction.predicted_crop_id}
+                    className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50
+                               text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
+                  >
+                    {confirming ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                    Confirmer "{prediction.predicted_crop}"
+                  </button>
+                  <button
+                    onClick={() => setShowCorrection((v) => !v)}
+                    className="flex items-center gap-1.5 text-slate-400 hover:text-white text-xs transition-colors"
+                  >
+                    <Pencil size={11} /> Ce n'est pas la bonne culture
+                  </button>
+                </div>
+
+                {showCorrection && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <select
+                      value={correctedCropId}
+                      onChange={(e) => setCorrectedCropId(e.target.value)}
+                      className="bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-2.5 py-1.5"
+                    >
+                      <option value="">Choisir la culture réelle…</option>
+                      {crops.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => submitConfirmation(correctedCropId)}
+                      disabled={confirming || !correctedCropId}
+                      className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50
+                                 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
+                    >
+                      {confirming ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                      Confirmer cette culture
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <button
               onClick={fetchPrediction}

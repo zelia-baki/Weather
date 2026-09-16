@@ -1,6 +1,10 @@
 /**
- * CarbonReportForest.jsx  (FOREST)  —  v4 ReportLab
- * PDF généré 100 % backend via GET /api/gfw/forest/<id>/carbon-pdf (ReportLab).
+ * CarbonReportForest.jsx  (FOREST)  —  v5 Satellite Index (AGB/BGB)
+ * PDF généré 100 % backend via GET /api/tree-co2/forest/<id>/biomass-index-pdf (ReportLab).
+ * Remplace les valeurs pré-calculées GFW (gross emissions/removals/net flux)
+ * par un calcul AGB/BGB dérivé du NDVI Sentinel-2 (mêmes conversions
+ * biomasse -> CO2 que le rapport CO2 par arbre) — voir
+ * GET /api/tree-co2/forest/<id>/biomass-index.
  * Vue écran : parrotlogo | titre | logo, tables, pie chart, map.
  * Fix couleurs : IsolatedLight neutralise le dark theme du Layout global.
  */
@@ -8,7 +12,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
 import { useLocation } from 'react-router-dom';
-import * as turf from '@turf/turf';
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import Loading from '../main/Loading.jsx';
@@ -64,13 +67,13 @@ const Section = ({ title, children }) => (
 
 // ═════════════════════════════════════════════════════════════════════════════
 const CarbonReportForest = () => {
-  const [forestInfo,         setForestInfo]         = useState(null);
-  const [geoData,            setGeoData]            = useState(null);
-  const [loading,            setLoading]            = useState(true);
-  const [error,              setError]              = useState(null);
-  const [isDownloading,      setIsDownloading]      = useState(false);
-  const [areaInSquareMeters, setAreaInSquareMeters] = useState(null);
-  const [areaInHectares,     setAreaInHectares]     = useState(null);
+  const [forestName,   setForestName]   = useState(null);
+  const [areaHa,       setAreaHa]       = useState(null);
+  const [biomass,      setBiomass]      = useState(null);
+  const [coordinates,  setCoordinates]  = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [isDownloading,setIsDownloading]= useState(false);
 
   const location = useLocation();
   const forestId = location.state?.forestId || 1;
@@ -78,45 +81,40 @@ const CarbonReportForest = () => {
   useEffect(() => {
     const go = async () => {
       try {
-        const res = await axiosInstance.get(`/api/gfw/forest/${forestId}/CarbonReport`);
+        const res = await axiosInstance.get(`/api/tree-co2/forest/${forestId}/biomass-index`);
         if (res.data.error) { setError(res.data.error); return; }
-        setForestInfo(res.data.forest_info);
-        const report = res.data.report || [];
-        setGeoData(report);
-        if (report[0]?.coordinates?.[0]) {
-          const m2 = turf.area({ type:'Feature',
-            geometry:{ type:'Polygon', coordinates:[report[0].coordinates[0]] }});
-          setAreaInSquareMeters(m2);
-          setAreaInHectares(m2 / 10000);
-        }
-      } catch { setError('Failed to fetch forest carbon report.'); }
-      finally  { setLoading(false); }
+        setForestName(res.data.forest_name);
+        setAreaHa(res.data.area_ha);
+        setBiomass(res.data.biomass);
+        setCoordinates(res.data.coordinates || null);
+      } catch (e) {
+        setError(e.response?.data?.error || 'Failed to fetch forest biomass report.');
+      } finally {
+        setLoading(false);
+      }
     };
     go();
   }, [forestId]);
 
-  const grossEmissions = geoData?.[0]?.data_fields?.gfw_forest_carbon_gross_emissions__Mg_CO2e ?? 0;
-  const grossRemovals  = geoData?.[1]?.data_fields?.gfw_forest_carbon_gross_removals__Mg_CO2e  ?? 0;
-  const netFlux        = geoData?.[2]?.data_fields?.gfw_forest_carbon_net_flux__Mg_CO2e        ?? 0;
-  const seqBelow       = geoData?.[3]?.data_fields?.gfw_reforestable_extent_belowground_carbon_potential_sequestration__Mg_C ?? 0;
-  const seqAbove       = geoData?.[4]?.data_fields?.gfw_reforestable_extent_aboveground_carbon_potential_sequestration__Mg_C ?? 0;
-  const netPositive    = parseFloat(netFlux) >= 0;
+  const agbMg   = (biomass?.agb_kg   ?? 0) / 1000;
+  const bgbMg   = (biomass?.bgb_kg   ?? 0) / 1000;
+  const carbonMg= (biomass?.total_carbon_kg ?? 0) / 1000;
+  const co2Mg   = (biomass?.co2_sequestered_kg ?? 0) / 1000;
 
   const pieData = {
-    labels:['Gross Emissions','Gross Removals','Net Flux','Sequestration'],
-    datasets:[{ data:[Math.abs(grossEmissions),Math.abs(grossRemovals),Math.abs(netFlux),Math.abs(seqBelow)],
-      backgroundColor:['#e53935','#43a047','#fb8c00','#00acc1'], borderWidth:2, borderColor:'#fff' }],
+    labels:['Above-Ground Biomass (AGB)','Below-Ground Biomass (BGB)','Total Carbon','CO2 Equivalent'],
+    datasets:[{ data:[agbMg, bgbMg, carbonMg, co2Mg],
+      backgroundColor:['#43a047','#8d6e63','#00acc1','#fb8c00'], borderWidth:2, borderColor:'#fff' }],
   };
 
-  const coordinates = geoData?.[0]?.coordinates?.[0];
-  const mapUrl      = coordinates ? buildMapboxUrl(coordinates) : null;
+  const mapUrl = coordinates ? buildMapboxUrl(coordinates) : null;
 
   // ── Download PDF — backend ReportLab ─────────────────────────────────────
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
       const res = await axiosInstance.get(
-        `/api/gfw/forest/${forestId}/carbon-pdf`,
+        `/api/tree-co2/forest/${forestId}/biomass-index-pdf`,
         { responseType:'blob' }
       );
       const url  = window.URL.createObjectURL(new Blob([res.data], { type:'application/pdf' }));
@@ -155,10 +153,10 @@ const CarbonReportForest = () => {
           <div style={{ textAlign:'center',flex:1,padding:'0 16px' }}>
             <h1 style={{ fontSize:22,fontWeight:800,textTransform:'uppercase',
               letterSpacing:'0.05em',color:'#111827',margin:0 }}>
-              Carbon Emissions Assessment
+              Carbon Assessment — Satellite Index Model
             </h1>
             <p style={{ fontSize:12,color:'#6b7280',marginTop:4 }}>
-              Regulation (EU) 2023/1115 — Forest
+              Regulation (EU) 2023/1115 — Forest · AGB/BGB estimated from Sentinel-2 NDVI
             </p>
           </div>
           <img src="/logo.jpg" alt="Agriyields"
@@ -166,17 +164,15 @@ const CarbonReportForest = () => {
         </div>
 
         {/* Forest info */}
-        {forestInfo && (
+        {forestName && (
           <Section title="Forest Information">
             <table style={{ width:'100%',borderCollapse:'collapse' }}>
               <tbody>
                 {[
-                  ['Forest Name',  forestInfo.name],
-                  ['Tree Type',    forestInfo.tree_type    ?? 'N/A'],
-                  ['Date Created', forestInfo.date_created ?? 'N/A'],
-                  ['Last Updated', forestInfo.date_updated ?? 'N/A'],
-                  ...(areaInHectares ? [['Project Area',
-                    `${areaInSquareMeters?.toFixed(2)} m²  (${areaInHectares?.toFixed(2)} ha)`]] : []),
+                  ['Forest Name', forestName],
+                  ...(areaHa ? [['Project Area', `${areaHa.toFixed(2)} ha`]] : []),
+                  ['NDVI Used',   biomass?.ndvi_used ?? 'N/A'],
+                  ['NDVI Date',   biomass?.ndvi_date ?? 'N/A'],
                 ].map(([l,v],i) => (
                   <tr key={i}><td style={td0}>{l}</td><td style={td1}>{v}</td></tr>
                 ))}
@@ -185,55 +181,49 @@ const CarbonReportForest = () => {
           </Section>
         )}
 
-        {/* Carbon table */}
-        <Section title="Carbon Assessment Summary">
+        {/* Biomass & carbon table */}
+        <Section title="Biomass & Carbon Summary">
           <table style={{ width:'100%',borderCollapse:'collapse',fontSize:13 }}>
             <thead>
               <tr style={{ background:G }}>
                 <th style={{ textAlign:'left',padding:'8px 16px',color:'#fff',fontWeight:600 }}>Category</th>
-                <th style={{ textAlign:'left',padding:'8px 16px',color:'#fff',fontWeight:600 }}>Value (Mg CO₂e)</th>
+                <th style={{ textAlign:'left',padding:'8px 16px',color:'#fff',fontWeight:600 }}>Value</th>
               </tr>
             </thead>
             <tbody>
               {[
-                ['Carbon Gross Emissions',             grossEmissions,'#e53935'],
-                ['Carbon Gross Absorption (Removals)', grossRemovals, '#43a047'],
-                ['Carbon Net Emissions',               netFlux,       netPositive?'#e53935':'#43a047'],
+                ['Above-Ground Biomass (AGB)', `${agbMg.toFixed(2)} Mg  (${(biomass?.agb_per_ha_mg ?? 0).toFixed(2)} Mg/ha)`, '#43a047'],
+                ['Below-Ground Biomass (BGB)', `${bgbMg.toFixed(2)} Mg`, '#8d6e63'],
+                ['Total Biomass',              `${((biomass?.total_biomass_kg ?? 0)/1000).toFixed(2)} Mg`, '#3949ab'],
+                ['Total Carbon',               `${carbonMg.toFixed(2)} Mg C`, '#00acc1'],
+                ['CO2 Equivalent',             `${co2Mg.toFixed(2)} Mg CO2e`, '#fb8c00'],
               ].map(([label,val,color],i) => (
                 <tr key={i} style={{ background:i%2===0?LGRAY:'#fff' }}>
                   <td style={{ padding:'8px 16px',borderBottom:`1px solid ${BORDER}`,color:'#1a1a1a' }}>{label}</td>
                   <td style={{ padding:'8px 16px',borderBottom:`1px solid ${BORDER}` }}>
                     <span className="badge-w" style={{ background:color,color:'#fff',
                       padding:'2px 8px',borderRadius:12,fontWeight:700,fontSize:12 }}>
-                      {Number(val).toFixed(4)}
+                      {val}
                     </span>
                   </td>
-                </tr>
-              ))}
-              {[
-                ['Carbon Sequestration Potential (Belowground)',`${Number(seqBelow).toFixed(4)} Mg C`],
-                ['Carbon Sequestration Potential (Aboveground)',`${Number(seqAbove).toFixed(4)} Mg C`],
-              ].map(([label,val],i) => (
-                <tr key={i} style={{ background:i%2===0?LGRAY:'#fff' }}>
-                  <td style={{ padding:'8px 16px',borderBottom:`1px solid ${BORDER}`,color:'#1a1a1a' }}>{label}</td>
-                  <td style={{ padding:'8px 16px',borderBottom:`1px solid ${BORDER}`,color:'#1a1a1a' }}>{val}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </Section>
 
-        {/* Net status */}
-        <div style={{ borderLeft:`4px solid ${netPositive?'#ef4444':G}`,
-          background:netPositive?'#fef2f2':'#f0fdf4',
+        {/* Methodology disclaimer */}
+        <div style={{ borderLeft:`4px solid ${G}`, background:'#f0fdf4',
           padding:'10px 16px',borderRadius:'0 8px 8px 0',marginBottom:24 }}>
-          <p style={{ fontWeight:700,fontSize:13,color:netPositive?'#b91c1c':G,margin:0 }}>
-            {netPositive?'⚠ This forest is a net carbon source.':'✓ This forest is a net carbon sink.'}
+          <p style={{ fontSize:12,color:'#166534',margin:0,lineHeight:1.5 }}>
+            {biomass?.model || 'AGB estimated from NDVI (generic model).'} This satellite-index
+            estimate is a generic approximation for forests without a full tree inventory —
+            it requires local field calibration before use in regulatory submissions.
           </p>
         </div>
 
         {/* Pie */}
-        <Section title="Carbon Emissions and Sequestration">
+        <Section title="Biomass & Carbon Breakdown">
           <div style={{ display:'flex',justifyContent:'center' }}>
             <div style={{ width:256,height:256 }}>
               <Pie data={pieData} options={{ responsive:true, plugins:{ legend:{ position:'bottom' } } }}/>

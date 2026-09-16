@@ -115,6 +115,7 @@ const EUDRManager = () => {
   const [showPreview,      setShowPreview]      = useState(false);
   const [loading,          setLoading]          = useState('');  // action key being loaded
   const [allCountries,     setAllCountries]     = useState([]);
+  const [allHscodes,       setAllHscodes]       = useState([]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [geojsonError,     setGeojsonError]     = useState('');
   const [resultOpen,       setResultOpen]       = useState(true);
@@ -122,6 +123,9 @@ const EUDRManager = () => {
   useEffect(() => {
     axiosInstance.get('/api/pays/')
       .then(r => setAllCountries(r.data.pays || []))
+      .catch(() => {});
+    axiosInstance.get('/api/hscode/')
+      .then(r => setAllHscodes(r.data.hscodes || []))
       .catch(() => {});
   }, []);
 
@@ -307,9 +311,16 @@ const EUDRManager = () => {
               <input name="descriptionOfGoods" value={formData.descriptionOfGoods}
                 onChange={handleChange} placeholder="e.g. Cocoa beans" className={iCls}/>
             </Field>
-            <Field label="HS Heading (2–8 digits)" required>
-              <input name="hsHeading" value={formData.hsHeading} pattern="[0-9]{2,8}"
-                onChange={handleChange} placeholder="e.g. 1801" className={iCls}/>
+            <Field label="HS Heading" required>
+              <select name="hsHeading" value={formData.hsHeading}
+                onChange={handleChange} className={sCls}>
+                <option value="">Select HS code</option>
+                {allHscodes.map(h => (
+                  <option key={h.id} value={h.code}>
+                    {h.code} — {h.description}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label="Volume" required>
               <input type="number" step="any" min="0" name="goodsMeasure.volume"

@@ -48,7 +48,6 @@ export const renderEudrTable = (data) => {
     // brute non plafonnée (`geoData['tree cover loss']`), qui pouvait dépasser 100%.
     treeCoverLossArea = 0,
     treeCoverLossRatio = 0,
-    treeCoverLossCapped = false,
     complianceStatus = {}
   } = data;
 
@@ -102,27 +101,6 @@ export const renderEudrTable = (data) => {
               <p>0 ha (no RADD alert)</p>
             ) : (
               <p>{geoData['wur radd alerts']?.[0]?.data_fields?.area__ha || 0} ha (Alert)</p>
-            )}
-          </td>
-        </tr>
-
-        <tr>
-          <td className="border border-gray-400 px-4 py-2">Tree Cover Loss</td>
-          <td className="border border-gray-400 px-4 py-2">
-            {treeCoverLossArea === 0 ? (
-              <p className="text-green-600 font-semibold">0 ha (no tree loss since 2020)</p>
-            ) : (
-              <>
-                <p className="text-red-600 font-semibold">
-                  {treeCoverLossArea.toFixed ? treeCoverLossArea.toFixed(5) : treeCoverLossArea} ha of tree cover loss
-                  {' '}— Tree loss ratio: {treeCoverLossRatio.toFixed(2)}% of plot area
-                </p>
-                {treeCoverLossCapped && (
-                  <p className="text-orange-600 text-xs mt-1">
-                    ⚠ Source value exceeded plot area and was capped to 100% of plot area. Please verify upstream computation.
-                  </p>
-                )}
-              </>
             )}
           </td>
         </tr>
