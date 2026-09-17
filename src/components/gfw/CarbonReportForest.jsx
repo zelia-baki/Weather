@@ -68,6 +68,7 @@ const Section = ({ title, children }) => (
 // ═════════════════════════════════════════════════════════════════════════════
 const CarbonReportForest = () => {
   const [forestName,   setForestName]   = useState(null);
+  const [treeType,     setTreeType]     = useState(null);
   const [areaHa,       setAreaHa]       = useState(null);
   const [biomass,      setBiomass]      = useState(null);
   const [coordinates,  setCoordinates]  = useState(null);
@@ -84,6 +85,7 @@ const CarbonReportForest = () => {
         const res = await axiosInstance.get(`/api/tree-co2/forest/${forestId}/biomass-index`);
         if (res.data.error) { setError(res.data.error); return; }
         setForestName(res.data.forest_name);
+        setTreeType(res.data.tree_type);
         setAreaHa(res.data.area_ha);
         setBiomass(res.data.biomass);
         setCoordinates(res.data.coordinates || null);
@@ -170,6 +172,7 @@ const CarbonReportForest = () => {
               <tbody>
                 {[
                   ['Forest Name', forestName],
+                  ['Tree Type',   treeType || 'N/A'],
                   ...(areaHa ? [['Project Area', `${areaHa.toFixed(2)} ha`]] : []),
                   ['NDVI Used',   biomass?.ndvi_used ?? 'N/A'],
                   ['NDVI Date',   biomass?.ndvi_date ?? 'N/A'],

@@ -43,11 +43,9 @@ export const renderEudrTable = (data) => {
     coverExtentDecileData = {},
     tscDriverDriver = {},
     isJrcGlobalForestCover,
-    // ✅ FIX (annotation PDF) : on utilise désormais les valeurs déjà calculées/plafonnées
-    // dans EudrReportSection.jsx plutôt que de recalculer un ratio à partir de la donnée
-    // brute non plafonnée (`geoData['tree cover loss']`), qui pouvait dépasser 100%.
-    treeCoverLossArea = 0,
-    treeCoverLossRatio = 0,
+    // ✅ Tree Cover Loss n'est plus affiché ici (demande utilisateur) — la valeur
+    // reste calculée et utilisée dans EudrReportSection.jsx (logique de conformité)
+    // et dans le PDF backend (pdf_reports.py), inchangés.
     complianceStatus = {}
   } = data;
 
@@ -128,7 +126,6 @@ export const renderEudrTable = (data) => {
                 </span>
               </div>
               <div className="text-xs space-y-1">
-                <p><strong>Tree Cover Loss:</strong> {treeCoverLossArea.toFixed ? treeCoverLossArea.toFixed(5) : treeCoverLossArea} ha ({treeCoverLossRatio.toFixed(2)}%)</p>
                 <p><strong>Forest Cover:</strong> {isJrcGlobalForestCover && isJrcGlobalForestCover.includes('Forest cover detected') ? 'Detected' : 'Not detected'}</p>
               </div>
             </div>
@@ -147,7 +144,12 @@ export const renderEudrTable = (data) => {
                         key === '2' ? 'In IUCN vulnerable area' :
                           key === 'No Data' ? 'No data available' :
                             'Unknown';
-                  return <li key={key}>{statusText}: {percentage}</li>;
+                  const isProtected = key === '1' || key === '2';
+                  return (
+                    <li key={key} className={isProtected ? 'text-red-600 font-semibold' : undefined}>
+                      {statusText}: {percentage}
+                    </li>
+                  );
                 })}
               </ul>
             ) : (

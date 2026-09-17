@@ -20,7 +20,7 @@ const AgentExport = () => {
       const { data } = await axiosInstance.get("/api/gfw/admin/agents/summary", { params });
       setAgents(data.agents || []);
     } catch (err) {
-      setError(err.response?.data?.error || "Impossible de charger les statistiques agents.");
+      setError(err.response?.data?.error || "Failed to load agent statistics.");
     } finally {
       setLoading(false);
     }
@@ -48,21 +48,21 @@ const AgentExport = () => {
     try {
       await downloadCsv("/api/gfw/admin/agents/export", "agent_submissions.csv");
     } catch {
-      alert("Export CSV échoué.");
+      alert("CSV export failed.");
     } finally {
       setExporting(false);
     }
   };
 
-  // ✅ NOUVEAU : export séparé des paiements réussis par agent (montant figé
-  // au moment du paiement) — le nombre de rapports seul ne suffit pas pour
-  // la comptabilité puisque le prix des features peut varier dans le temps.
+  // ✅ Separate export of successful payments per agent (amount locked at
+  // payment time) — report counts alone aren't enough for accounting since
+  // feature prices can change over time.
   const handleExportRevenue = async () => {
     setExportingRevenue(true);
     try {
       await downloadCsv("/api/gfw/admin/agents/export-revenue", "agent_revenue.csv");
     } catch {
-      alert("Export CSV échoué.");
+      alert("CSV export failed.");
     } finally {
       setExportingRevenue(false);
     }
@@ -80,7 +80,7 @@ const AgentExport = () => {
               Agent Submissions
             </h1>
             <p className="text-gray-500 mt-1">
-              Soumissions guest (EUDR / Carbon / NDVI) et montants facturés, regroupés par agent_id, pour suivi terrain et commissions.
+              Guest submissions (EUDR / Carbon / NDVI) and billed amounts, grouped by agent_id, for field tracking and commissions.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ const AgentExport = () => {
               onClick={fetchSummary}
               disabled={loading}
               className="bg-white shadow rounded-lg p-2.5 text-teal-600 hover:bg-teal-50 disabled:opacity-50 transition-colors"
-              title="Rafraîchir"
+              title="Refresh"
             >
               <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
             </button>
@@ -99,35 +99,35 @@ const AgentExport = () => {
                          text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
             >
               <Download size={16} />
-              {exporting ? "Export en cours…" : "Export CSV"}
+              {exporting ? "Exporting…" : "Export CSV"}
             </button>
             <button
               onClick={handleExportRevenue}
               disabled={exportingRevenue || agents.length === 0}
-              title="Paiements réussis par agent, montant figé au moment du paiement"
+              title="Successful payments per agent, amount locked at payment time"
               className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50
                          text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
             >
               <Download size={16} />
-              {exportingRevenue ? "Export en cours…" : "Export Revenue CSV"}
+              {exportingRevenue ? "Exporting…" : "Export Revenue CSV"}
             </button>
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow p-4 mb-6 flex flex-wrap items-end gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Du</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-              className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+              className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-800 [color-scheme:light] focus:outline-none focus:ring-2 focus:ring-teal-400" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Au</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-              className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+              className="border-2 border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-800 [color-scheme:light] focus:outline-none focus:ring-2 focus:ring-teal-400" />
           </div>
           <div className="ml-auto text-sm text-gray-500">
             <span className="font-semibold text-gray-800">{agents.length}</span> agents ·{" "}
-            <span className="font-semibold text-gray-800">{totalSubmissions}</span> soumissions
+            <span className="font-semibold text-gray-800">{totalSubmissions}</span> submissions
           </div>
         </div>
 
@@ -144,7 +144,7 @@ const AgentExport = () => {
         ) : agents.length === 0 ? (
           <div className="bg-white rounded-xl shadow p-12 text-center text-gray-400">
             <FileText size={32} className="mx-auto mb-2" />
-            Aucune soumission avec agent_id sur cette période.
+            No submission with an agent_id for this period.
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow overflow-hidden">
@@ -156,8 +156,8 @@ const AgentExport = () => {
                   <th className="px-5 py-3 text-center">Carbon</th>
                   <th className="px-5 py-3 text-center">NDVI</th>
                   <th className="px-5 py-3 text-center">Total</th>
-                  <th className="px-5 py-3 text-right">Montant facturé</th>
-                  <th className="px-5 py-3">Dernière soumission</th>
+                  <th className="px-5 py-3 text-right">Billed Amount</th>
+                  <th className="px-5 py-3">Last Submission</th>
                 </tr>
               </thead>
               <tbody>

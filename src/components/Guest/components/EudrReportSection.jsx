@@ -158,17 +158,19 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
 
   // ─── EUDR Compliance logic ───────────────────────────────────────────────
   // Rules (strict priority order):
-  // 1) Forest cover detected (JRC 2020)                -> Not Compliant, regardless of tree cover loss
-  // 2) No forest cover AND no tree cover loss          -> Fully Compliant
-  // 3) No forest cover AND tree cover loss detected     -> Compliant, shade trees planting recommended
+  // 1) Forest cover detected (JRC 2020)                     -> Not Compliant, regardless of anything else
+  // 2) No forest cover BUT plot is in a protected/          -> Not Compliant (EUDR Article 10 — protected
+  //    conservation area (WDPA/IUCN category 1 or 2)           area status)
+  // 3) No forest cover, not protected, no tree cover loss   -> Fully Compliant
+  // 4) No forest cover, not protected, tree cover loss      -> Compliant, shade trees planting recommended
   //    ⚠️ NOTE (voir annotation PDF) : avant de valider ce statut, vérifier si la perte détectée
   //    correspond à des pratiques agroforestières cycliques normales (élagage de routine,
   //    recépage, renouvellement/coupe des arbres d'ombrage pour la lutte antiparasitaire)
   //    plutôt qu'à une véritable déforestation. Cette vérification reste manuelle tant que
   //    la donnée n'est pas disponible dans les couches satellites.
-  const determineComplianceStatus = (treeCoverLoss, hasForestCover) => {
+  const determineComplianceStatus = (treeCoverLoss, hasForestCover, isInProtectedArea) => {
     const hasTreeCoverLoss = treeCoverLoss > 0;
-    console.log('[DEBUG] determineComplianceStatus →', { treeCoverLoss, hasForestCover, hasTreeCoverLoss });
+    console.log('[DEBUG] determineComplianceStatus →', { treeCoverLoss, hasForestCover, hasTreeCoverLoss, isInProtectedArea });
 
     if (hasForestCover) {
       return {
@@ -178,11 +180,19 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
       };
     }
 
+    if (isInProtectedArea) {
+      return {
+        status: 'Not Compliant',
+        statusColor: 'text-red-600 bg-red-100',
+        description: 'No forest cover detected, but this plot overlaps a gazetted protected/conservation area (WDPA/IUCN category). Not compliant with EUDR regulations (Article 10 — Protected Area status), regardless of forest cover or tree cover loss status.'
+      };
+    }
+
     if (!hasTreeCoverLoss) {
       return {
         status: '100% Compliant',
         statusColor: 'text-green-600 bg-green-100',
-        description: 'No forest cover and no tree cover loss detected. Fully compliant with EUDR regulations.'
+        description: 'No forest cover, no protected area overlap, and no tree cover loss detected. Fully compliant with EUDR regulations.'
       };
     }
 
@@ -462,8 +472,15 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
       setRaddAlertsArea(raddArea);
     }
 
+    // ✅ Zone protégée (WDPA/IUCN cat. 1 ou 2) — même source que le tableau
+    // "Protected Area Status" ci-dessus (calculatedProtectedStatus), utilisée
+    // ici pour la règle de conformité EUDR Article 10.
+    const isInProtectedArea = Object.entries(calculatedProtectedStatus.counts || {}).some(
+      ([category, count]) => (category === '1' || category === '2') && count > 0
+    );
+
     // ✅ Détermination du statut de conformité
-    const compliance = determineComplianceStatus(calculatedTreeCoverLoss, hasForestCover);
+    const compliance = determineComplianceStatus(calculatedTreeCoverLoss, hasForestCover, isInProtectedArea);
     setComplianceStatus(compliance);
 
     // ✅ NOUVELLE LOGIQUE : Appeler le callback parent avec toutes les données calculées
@@ -541,6 +558,9 @@ const EudrReportSection = ({ results, reportRef, farmInfo, onReportCalculated, o
           )}
           {reportType === 'forest' && (
             <>
+              {farmInfo.tree_type && (
+                <> (tree type: <strong>{farmInfo.tree_type}</strong>)</>
+              )}
               . This forest area is monitored for compliance with EUDR regulations.
             </>
           )}

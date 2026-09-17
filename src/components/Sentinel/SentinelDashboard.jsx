@@ -225,8 +225,11 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
           </div>
         ))}
         <IndexGaugePanel data={data} />
-        {type === 'farm' && !isGuest && (
-          <SeasonalNdviRainfallPanel entityId={entityId} entityType={type} />
+        {type === 'farm' && (
+          <SeasonalNdviRainfallPanel
+            entityId={entityId} entityType={type}
+            isGuest={isGuest} geojson={geojson} phone={phone}
+          />
         )}
 
         <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5">
@@ -361,7 +364,9 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
           </div>
         </div>
 
-        {type === 'farm' && !isGuest && (
+        {/* ✅ LTV and Yield Analysis work for guest polygons too — handleLTVUpdate
+            already has a guest branch (POST /api/sentinel/guest/sat-index). */}
+        {type === 'farm' && (
           <LTVPanel
             ltv={data.ltv}
             onUpdate={handleLTVUpdate}
@@ -370,7 +375,7 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
           />
         )}
 
-        {type === 'farm' && !isGuest && (
+        {type === 'farm' && (
           <YieldAnalysisPanel
             history={history}
             forecast={forecast}
@@ -403,9 +408,18 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
             phone={phone}
           />
         )}
-        {type === 'farm' && !isGuest && <SoilCarbonPanel entityId={entityId} entityType={type} />}
-        {type === 'farm' && !isGuest && (
-          <CropPredictionPanel entityId={entityId} entityType={type} isAdmin={/* ton flag user.is_admin */ true} />
+        {type === 'farm' && (
+          <SoilCarbonPanel
+            entityId={entityId} entityType={type}
+            isGuest={isGuest} geojson={geojson} phone={phone}
+          />
+        )}
+        {type === 'farm' && (
+          <CropPredictionPanel
+            entityId={entityId} entityType={type}
+            isAdmin={!isGuest /* ton flag user.is_admin */}
+            isGuest={isGuest} geojson={geojson} phone={phone}
+          />
         )}
         {type === 'forest' && !isGuest && (
           <TreeCO2Panel entityId={entityId} entityType={type} />

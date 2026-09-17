@@ -26,7 +26,10 @@ async function fetchMonthlyRainfall(lat, lon, dateFrom, dateTo) {
   return byMonth;
 }
 
-export default function SeasonalNdviRainfallPanel({ entityId, entityType = "farm" }) {
+export default function SeasonalNdviRainfallPanel({
+  entityId, entityType = "farm",
+  isGuest = false, geojson = null, phone = null,
+}) {
   const [months, setMonths] = useState(12);
   const [indexKey, setIndexKey] = useState("ndvi");
   const [chartRows, setChartRows] = useState(null);
@@ -34,14 +37,25 @@ export default function SeasonalNdviRainfallPanel({ entityId, entityType = "farm
   const [error, setError] = useState(null);
 
   const load = useCallback(async (m) => {
-    if (!entityId) return;
+    if (isGuest) {
+      if (!geojson || !phone) return;
+    } else if (!entityId) {
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const url = entityType === "forest"
-        ? `/api/sentinel/forest/${entityId}/monthly-trend`
-        : `/api/sentinel/farm/${entityId}/monthly-trend`;
-      const { data } = await axiosInstance.get(url, { params: { months: m } });
+      let data;
+      if (isGuest) {
+        const resp = await axiosInstance.post("/api/sentinel/guest/monthly-trend", { geojson, phone, months: m });
+        data = resp.data;
+      } else {
+        const url = entityType === "forest"
+          ? `/api/sentinel/forest/${entityId}/monthly-trend`
+          : `/api/sentinel/farm/${entityId}/monthly-trend`;
+        const resp = await axiosInstance.get(url, { params: { months: m } });
+        data = resp.data;
+      }
 
       let rainByMonth = {};
       if (data.geolocation) {
@@ -68,7 +82,7 @@ export default function SeasonalNdviRainfallPanel({ entityId, entityType = "farm
     } finally {
       setLoading(false);
     }
-  }, [entityId, entityType]);
+  }, [entityId, entityType, isGuest, geojson, phone]);
 
   useEffect(() => { load(months); }, [load, months]);
 

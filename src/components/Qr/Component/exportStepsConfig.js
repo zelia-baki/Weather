@@ -1,7 +1,7 @@
 // Export form steps configuration
 export const createExportFormSteps = (
   farmBlocks, farmerGroups, districts, categorys,
-  filteredCrops, cropGrades, stores, countries, coffeeType
+  filteredCrops, cropGrades, stores, countries, coffeeType, hscodes = []
 ) => [
     // Step 1 : Farm & Group — seul farm_id est requis
     {
@@ -56,12 +56,10 @@ export const createExportFormSteps = (
           ],
         },
         ...(coffeeType ? [{
+          // ✅ HS Code — fetché depuis /api/hscode/ (même backend que la
+          // soumission EUDR/DDS), à la place de la liste codée en dur.
           type: "select", name: "hscode", label: "HS Code", required: true,
-          options: coffeeType === "Robusta"
-            ? [{ value: "0901.11", label: "0901.11" }, { value: "0901.21", label: "0901.21" }]
-            : coffeeType === "Arabica"
-              ? [{ value: "0901.12", label: "0901.12" }, { value: "0901.22", label: "0901.22" }]
-              : [{ value: "0901.90", label: "0901.90" }],
+          options: hscodes.map((h) => ({ value: h.code, label: `${h.code} — ${h.description}` })),
         }] : []),
       ],
     },

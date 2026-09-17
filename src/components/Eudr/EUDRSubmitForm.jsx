@@ -24,10 +24,6 @@ const QUALIFIERS = [
   "MTQ","MTQC","MTR","MWH","NAR","NARB","NCL","NPR","TJO","TNE",
   "TNEE","TNEI","TNEJ","TNEK","TNEM","TNER","TNEZ","WAT",
 ];
-const IDENTIFIER_TYPES = [
-  "eori","vat","cin","duns","comp_reg","comp_num",
-  "cbr","ship_man_comp_imo","ship_reg_owner_imo","remos","gln","tin",
-];
 
 // ── Reusable field components ─────────────────────────────────────────────────
 const iCls = "w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all hover:border-gray-300 [color-scheme:light]";
@@ -96,9 +92,14 @@ const EMPTY_FORM = {
   goodsMeasure: { volume: '', netWeight: '', supplementaryUnit: '', supplementaryUnitQualifier: '' },
   speciesInfo:  { scientificName: '', commonName: '' },
   producers:    [{ country: '', name: '' }],
+  // ✅ Operator Info figé — c'est toujours le même opérateur (Agriyields),
+  // affiché en lecture seule dans le formulaire (voir Section "Operator Info"
+  // plus bas) plutôt que ressaisi à chaque soumission.
   operator: {
-    identifierType: '', identifierValue: '', name: '',
-    country: '', address: '', email: '', phone: '',
+    identifierType: 'eori', identifierValue: 'HRUG000004679',
+    name: 'AGRIYIELDS ENTERPRISES UG SMC LTD',
+    country: 'UG', address: 'T2 Building, Papaya Rise',
+    email: 'lwetutb@agriyields.com', phone: '0783130358',
   },
   countryOfActivity: '',
 };
@@ -372,42 +373,23 @@ const EUDRManager = () => {
             </Field>
           </Section>
 
-          {/* 4 — Operator */}
-          <Section title="Operator Info" icon={<Eye size={16}/>}>
-            <Field label="Identifier Type">
-              <select name="operator.identifierType" value={formData.operator.identifierType}
-                onChange={handleChange} className={sCls}>
-                <option value="">Select type</option>
-                {IDENTIFIER_TYPES.map(t => <option key={t} value={t}>{t.toUpperCase()}</option>)}
-              </select>
-            </Field>
-            <Field label="Identifier Value">
-              <input name="operator.identifierValue" value={formData.operator.identifierValue}
-                onChange={handleChange} placeholder="e.g. HRUG000004679" className={iCls}/>
-            </Field>
-            <Field label="Operator Name">
-              <input name="operator.name" value={formData.operator.name}
-                onChange={handleChange} placeholder="Company name" className={iCls}/>
-            </Field>
-            <Field label="Country">
-              <select name="operator.country" value={formData.operator.country}
-                onChange={handleChange} className={sCls}>
-                <option value="">Select country</option>
-                {allCountries.map(c => <option key={c.id} value={c.alpha2}>{c.nom_en_gb}</option>)}
-              </select>
-            </Field>
-            <Field label="Address">
-              <input name="operator.address" value={formData.operator.address}
-                onChange={handleChange} placeholder="Full address" className={iCls}/>
-            </Field>
-            <Field label="Email">
-              <input type="email" name="operator.email" value={formData.operator.email}
-                onChange={handleChange} placeholder="operator@example.com" className={iCls}/>
-            </Field>
-            <Field label="Phone" hint="Format: +256 123 456 789">
-              <input type="tel" name="operator.phone" value={formData.operator.phone}
-                onChange={handleChange} placeholder="+256..." className={iCls}/>
-            </Field>
+          {/* 4 — Operator (figé — toujours le même opérateur, non modifiable) */}
+          <Section title="Operator Info" icon={<Eye size={16}/>} badge="Fixed">
+            {[
+              ['Identifier Type',  formData.operator.identifierType.toUpperCase()],
+              ['Identifier Value', formData.operator.identifierValue],
+              ['Operator Name',    formData.operator.name],
+              ['Country',          formData.operator.country],
+              ['Address',          formData.operator.address],
+              ['Email',            formData.operator.email],
+              ['Phone',            formData.operator.phone],
+            ].map(([label, value]) => (
+              <Field label={label} key={label}>
+                <p className="text-sm text-gray-800 px-3.5 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                  {value}
+                </p>
+              </Field>
+            ))}
           </Section>
 
           {/* 5 — GeoJSON */}

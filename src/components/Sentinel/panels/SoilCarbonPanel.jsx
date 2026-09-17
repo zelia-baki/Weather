@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { Loader2, RefreshCw, Layers } from "lucide-react";
 import axiosInstance from "../../../axiosInstance";
 
-export default function SoilCarbonPanel({ entityId, entityType = "farm" }) {
+export default function SoilCarbonPanel({
+  entityId, entityType = "farm",
+  isGuest = false, geojson = null, phone = null,
+}) {
   const [soc, setSoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,32 +15,44 @@ export default function SoilCarbonPanel({ entityId, entityType = "farm" }) {
   const [socSeqError, setSocSeqError] = useState(null);
 
   const fetchSoc = useCallback(async () => {
-    if (!entityId || entityType !== "farm") { setLoading(false); return; }
+    if (isGuest) {
+      if (!geojson || !phone) { setLoading(false); return; }
+    } else if (!entityId || entityType !== "farm") {
+      setLoading(false); return;
+    }
     setLoading(true); setError(null);
     try {
-      const { data } = await axiosInstance.get(`/api/sentinel/farm/${entityId}/soc`);
+      const { data } = isGuest
+        ? await axiosInstance.post("/api/sentinel/guest/soc", { geojson, phone })
+        : await axiosInstance.get(`/api/sentinel/farm/${entityId}/soc`);
       setSoc(data.soc);
     } catch (e) {
       setError(e.response?.data?.error || "SOC data unavailable");
     } finally { setLoading(false); }
-  }, [entityId, entityType]);
+  }, [entityId, entityType, isGuest, geojson, phone]);
 
   // FAO GSOCseq SSM3 — statistique zonale sur tout le polygone (vs. /soc qui
   // n'interroge que le centroïde), plus le potentiel de séquestration.
   const fetchSocSeq = useCallback(async () => {
-    if (!entityId || entityType !== "farm") { setSocSeqLoading(false); return; }
+    if (isGuest) {
+      if (!geojson || !phone) { setSocSeqLoading(false); return; }
+    } else if (!entityId || entityType !== "farm") {
+      setSocSeqLoading(false); return;
+    }
     setSocSeqLoading(true); setSocSeqError(null);
     try {
-      const { data } = await axiosInstance.get(`/api/sentinel/farm/${entityId}/soc-seq`);
+      const { data } = isGuest
+        ? await axiosInstance.post("/api/sentinel/guest/soc-seq", { geojson, phone })
+        : await axiosInstance.get(`/api/sentinel/farm/${entityId}/soc-seq`);
       setSocSeq(data);
     } catch (e) {
       setSocSeqError(e.response?.data?.error || "GSOCseq data unavailable");
     } finally { setSocSeqLoading(false); }
-  }, [entityId, entityType]);
+  }, [entityId, entityType, isGuest, geojson, phone]);
 
   useEffect(() => { fetchSoc(); fetchSocSeq(); }, [fetchSoc, fetchSocSeq]);
 
-  if (entityType !== "farm") return null;
+  if (!isGuest && entityType !== "farm") return null;
 
   const ocs = soc?.["ocs_0-30cm"];
 
@@ -50,7 +65,7 @@ export default function SoilCarbonPanel({ entityId, entityType = "farm" }) {
             Soil Organic Carbon (SoilGrids ISRIC)
           </h3>
           <p className="text-xs text-slate-500 mt-1">
-            Stock de carbone organique du sol, résolution 250m, indépendant du satellite.
+            Soil organic carbon stock, 250m resolution, independent of satellite imagery.
           </p>
         </div>
         <button onClick={() => { fetchSoc(); fetchSocSeq(); }} disabled={loading || socSeqLoading}
@@ -62,7 +77,7 @@ export default function SoilCarbonPanel({ entityId, entityType = "farm" }) {
 
       <div className="p-6 space-y-6">
         <div>
-          {loading && <p className="text-slate-500 text-sm">Chargement…</p>}
+          {loading && <p className="text-slate-500 text-sm">Loading…</p>}
           {error && <p className="text-orange-400 text-sm">{error}</p>}
           {soc && !error && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -89,7 +104,7 @@ export default function SoilCarbonPanel({ entityId, entityType = "farm" }) {
           <p className="text-xs text-slate-500 mb-3">
             Zonal average over the whole farm polygon (not just the centroid) · Sustainable Soil Management scenario, 0-30cm.
           </p>
-          {socSeqLoading && <p className="text-slate-500 text-sm">Chargement…</p>}
+          {socSeqLoading && <p className="text-slate-500 text-sm">Loading…</p>}
           {socSeqError && <p className="text-orange-400 text-sm">{socSeqError}</p>}
           {socSeq && !socSeqError && (
             <div className="grid grid-cols-2 gap-4">

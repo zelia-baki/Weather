@@ -2,14 +2,18 @@ import { useState, useCallback, useEffect } from "react";
 import { Sprout, Loader2, RefreshCw, Brain, AlertTriangle, CheckCircle2, Pencil } from "lucide-react";
 import axiosInstance from "../../../axiosInstance";
 
-export default function CropPredictionPanel({ entityId, entityType = "farm", isAdmin = false }) {
+export default function CropPredictionPanel({
+  entityId, entityType = "farm", isAdmin = false,
+  isGuest = false, geojson = null, phone = null,
+}) {
   const [prediction, setPrediction] = useState(null);
   const [modelStatus, setModelStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [training, setTraining] = useState(false);
   const [error, setError] = useState(null);
 
-  // ── Confirmation (banque d'entraînement) ──────────────────────────────────
+  // ── Confirmation (training bank) — not available for guests: there's no
+  // permanent farm_id to attach the confirmation to. ───────────────────────
   const [crops, setCrops] = useState([]);
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -17,10 +21,11 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
   const [correctedCropId, setCorrectedCropId] = useState("");
 
   useEffect(() => {
+    if (isGuest) return;
     axiosInstance.get('/api/crop/')
       .then(({ data }) => setCrops(data.crops || []))
       .catch(() => {});
-  }, []);
+  }, [isGuest]);
 
   const submitConfirmation = async (cropId) => {
     if (!cropId) return;
@@ -44,22 +49,28 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
     try {
       const { data } = await axiosInstance.get('/api/sentinel/crop-model/status');
       setModelStatus(data);
-    } catch { /* silencieux */ }
+    } catch { /* silent */ }
   }, []);
 
   const fetchPrediction = useCallback(async () => {
-    if (!entityId || entityType !== 'farm') { setLoading(false); return; }
+    if (isGuest) {
+      if (!geojson || !phone) { setLoading(false); return; }
+    } else if (!entityId || entityType !== 'farm') {
+      setLoading(false); return;
+    }
     setLoading(true); setError(null);
     setConfirmed(false); setShowCorrection(false); setCorrectedCropId("");
     try {
-      const { data } = await axiosInstance.get(`/api/sentinel/farm/${entityId}/predict-crop`);
+      const { data } = isGuest
+        ? await axiosInstance.post('/api/sentinel/guest/predict-crop', { geojson, phone })
+        : await axiosInstance.get(`/api/sentinel/farm/${entityId}/predict-crop`);
       setPrediction(data);
     } catch (e) {
       setError(e.response?.data?.error || 'Prediction failed');
     } finally {
       setLoading(false);
     }
-  }, [entityId, entityType]);
+  }, [entityId, entityType, isGuest, geojson, phone]);
 
   useEffect(() => { fetchStatus(); fetchPrediction(); }, [fetchStatus, fetchPrediction]);
 
@@ -76,7 +87,7 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
     }
   };
 
-  if (entityType !== 'farm') return null;
+  if (!isGuest && entityType !== 'farm') return null;
 
   return (
     <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
@@ -87,10 +98,10 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
             Crop Type Prediction (Random Forest — 100% NKUSU)
           </h3>
           <p className="text-xs text-slate-500 mt-1">
-            Signature spectrale (NDVI/EVI/NDMI/...) comparée aux fermes déjà labellisées.
+            Spectral signature (NDVI/EVI/NDMI/...) compared against already-labeled farms.
             {modelStatus?.trained && (
               <span className="ml-1 text-slate-600">
-                · modèle entraîné sur {modelStatus.metrics?.n_samples} fermes, {modelStatus.metrics?.n_classes} cultures
+                · model trained on {modelStatus.metrics?.n_samples} farms, {modelStatus.metrics?.n_classes} crops
                 {modelStatus.metrics?.oob_score != null && ` · OOB ${(modelStatus.metrics.oob_score * 100).toFixed(1)}%`}
               </span>
             )}
@@ -104,7 +115,7 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
                        text-white text-sm px-3 py-1.5 rounded-lg transition-colors font-medium"
           >
             {training ? <Loader2 size={13} className="animate-spin" /> : <Brain size={13} />}
-            {training ? 'Entraînement…' : 'Entraîner le modèle'}
+            {training ? 'Training…' : 'Train Model'}
           </button>
         )}
       </div>
@@ -112,7 +123,7 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
       <div className="p-6">
         {loading && (
           <div className="flex items-center gap-2 text-slate-500 text-sm">
-            <Loader2 size={16} className="animate-spin" /> Analyse de la signature spectrale…
+            <Loader2 size={16} className="animate-spin" /> Analyzing spectral signature…
           </div>
         )}
 
@@ -123,7 +134,7 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
               <p className="text-orange-400 text-sm">{error}</p>
               {isAdmin && error.toLowerCase().includes('not trained') && (
                 <button onClick={handleTrain} className="text-xs text-orange-300 underline mt-1">
-                  Entraîner maintenant
+                  Train now
                 </button>
               )}
             </div>
@@ -134,17 +145,17 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-xl border border-emerald-700/30 bg-emerald-950/20 p-5">
               <div>
-                <p className="text-xs text-emerald-400 uppercase tracking-wide font-bold">Culture prédite</p>
+                <p className="text-xs text-emerald-400 uppercase tracking-wide font-bold">Predicted Crop</p>
                 <p className="text-2xl font-black text-white mt-1">{prediction.predicted_crop || '—'}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-slate-500 uppercase tracking-wide">Confiance</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wide">Confidence</p>
                 <p className="text-3xl font-black text-emerald-400">{prediction.confidence}%</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Top 3 candidats</p>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold">Top 3 Candidates</p>
               {prediction.top_predictions?.map((p, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <span className="text-xs text-slate-400 w-24 truncate">{p.crop}</span>
@@ -159,19 +170,20 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
               ))}
             </div>
 
-            {/* ── Confirmation humaine → banque d'entraînement ── */}
-            {confirmed ? (
+            {/* ── Human confirmation → training bank — account users only:
+                guests have no permanent farm_id to attach a confirmation to. ── */}
+            {!isGuest && (confirmed ? (
               <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 p-3 flex items-center gap-2">
                 <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
                 <p className="text-xs text-emerald-300">
-                  Confirmé — cette ferme sera utilisée dans le prochain entraînement du modèle.
+                  Confirmed — this farm will be used in the next model training run.
                 </p>
               </div>
             ) : (
               <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 space-y-3">
                 <p className="text-xs text-slate-500">
-                  Cette culture est-elle correcte ? La confirmer l'ajoute à la banque de données
-                  utilisée pour entraîner le modèle.
+                  Is this crop correct? Confirming it adds this farm to the data bank
+                  used to train the model.
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
@@ -181,13 +193,13 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
                                text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
                   >
                     {confirming ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-                    Confirmer "{prediction.predicted_crop}"
+                    Confirm "{prediction.predicted_crop}"
                   </button>
                   <button
                     onClick={() => setShowCorrection((v) => !v)}
                     className="flex items-center gap-1.5 text-slate-400 hover:text-white text-xs transition-colors"
                   >
-                    <Pencil size={11} /> Ce n'est pas la bonne culture
+                    <Pencil size={11} /> This isn't the right crop
                   </button>
                 </div>
 
@@ -198,7 +210,7 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
                       onChange={(e) => setCorrectedCropId(e.target.value)}
                       className="bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-2.5 py-1.5"
                     >
-                      <option value="">Choisir la culture réelle…</option>
+                      <option value="">Choose the actual crop…</option>
                       {crops.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
@@ -210,18 +222,18 @@ export default function CropPredictionPanel({ entityId, entityType = "farm", isA
                                  text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
                     >
                       {confirming ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-                      Confirmer cette culture
+                      Confirm this crop
                     </button>
                   </div>
                 )}
               </div>
-            )}
+            ))}
 
             <button
               onClick={fetchPrediction}
               className="flex items-center gap-1.5 text-slate-500 hover:text-white text-xs transition-colors"
             >
-              <RefreshCw size={11} /> Recalculer
+              <RefreshCw size={11} /> Recalculate
             </button>
           </div>
         )}

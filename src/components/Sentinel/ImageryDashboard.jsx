@@ -1,28 +1,31 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import {
-  Satellite, RefreshCw, Zap, Database, AlertTriangle, Leaf,
+  Satellite, RefreshCw, Zap, Database, AlertTriangle,
 } from "lucide-react";
 import axiosInstance from "../../axiosInstance";
 
-import "./config/chartSetup"; // effets de bord : mapboxgl.accessToken + ChartJS.register
-import { META } from "./constants";
+import "./config/chartSetup"; // side effects: mapboxgl.accessToken + ChartJS.register
 
 import Spinner from "./panels/Spinner";
 import OutOfBoundsAlert from "./panels/OutOfBoundsAlert";
 import IndexGaugePanel from "./panels/IndexGaugePanel";
-import YearlyPolygonMapGrid from "./panels/YearlyPolygonMapGrid";
 import ClassificationMapsPanel from "./panels/ClassificationMapsPanel";
 import SeasonalNdviRainfallPanel from "./panels/SeasonalNdviRainfallPanel";
+import LTVPanel from "./panels/LTVPanel";
+import YieldAnalysisPanel from "./panels/YieldAnalysisPanel";
+import WeeklyTrendPanel from "./panels/WeeklyTrendPanel";
 
 /**
  * ImageryDashboard
- * Version allégée de SentinelDashboard : uniquement l'imagerie satellite.
- * Panels affichés :
+ * Lightweight version of SentinelDashboard: satellite imagery only.
+ * Panels shown:
  *  - Index Gauges — Latest Reading
  *  - Plant Health Classification Maps
- *  - Farm Boundary — NDVI by Year
  *  - Seasonal NDVI vs Rainfall
+ *  - LTV (farm only)
+ *  - Yield Analysis / regression (farm only)
+ *  - Weekly Trend (~5-day Sentinel-2 revisit)
  */
 export default function ImageryDashboard({ entityType = "farm" }) {
   const params = useParams();
@@ -37,7 +40,9 @@ export default function ImageryDashboard({ entityType = "farm" }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [active, setActive] = useState("ndvi"); // index utilisé pour la carte annuelle NDVI
+  const [active, setActive] = useState("ndvi");
+  const [ltvLoading, setLtvLoading] = useState(false);
+  const ltvParamsRef = useRef({});
 
   const fetchData = useCallback(async (extraParams = {}) => {
     if (!entityId) { setError("No entity ID"); setLoading(false); return; }
@@ -46,7 +51,7 @@ export default function ImageryDashboard({ entityType = "farm" }) {
       const url = type === "forest"
         ? `/api/sentinel/forest/${entityId}/sat-index`
         : `/api/sentinel/farm/${entityId}/sat-index`;
-      const resp = await axiosInstance.get(url, { params: extraParams });
+      const resp = await axiosInstance.get(url, { params: { ...ltvParamsRef.current, ...extraParams } });
       setData(resp.data);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to load satellite data");
@@ -56,6 +61,25 @@ export default function ImageryDashboard({ entityType = "farm" }) {
   }, [entityId, type]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleLTVUpdate = useCallback((p) => {
+    const apiParams = {
+      loan_amount: p.loan_amount ?? undefined,
+      yield_t_per_ha: p.yield_t_per_ha ?? 1.5,
+      price_per_t: p.price_per_t ?? 500,
+      ...(p.hist_yield_1 != null ? { hist_yield_1: p.hist_yield_1 } : {}),
+      ...(p.hist_yield_2 != null ? { hist_yield_2: p.hist_yield_2 } : {}),
+    };
+    ltvParamsRef.current = apiParams;
+    setLtvLoading(true);
+    const url = type === "forest"
+      ? `/api/sentinel/forest/${entityId}/sat-index`
+      : `/api/sentinel/farm/${entityId}/sat-index`;
+    axiosInstance.get(url, { params: apiParams })
+      .then(r => setData(r.data))
+      .catch(e => setError(e.response?.data?.error || "LTV calculation failed"))
+      .finally(() => setLtvLoading(false));
+  }, [entityId, type]);
 
   if (loading) return <Spinner />;
 
@@ -74,6 +98,7 @@ export default function ImageryDashboard({ entityType = "farm" }) {
   );
 
   const history = data.history || [];
+  const forecast = data.forecast || {};
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -128,44 +153,40 @@ export default function ImageryDashboard({ entityType = "farm" }) {
         {/* Index Gauges — Latest Reading */}
         <IndexGaugePanel data={data} />
 
-        {/* Sélecteur d'indice pour la carte annuelle NDVI (par défaut NDVI) */}
-        <div className="flex items-center gap-2">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-            <Leaf size={12} /> Indice affiché sur la carte annuelle
-          </p>
-          <div className="flex gap-1.5 flex-wrap">
-            {Object.entries(META).map(([idx, m]) => (
-              <button
-                key={idx}
-                onClick={() => setActive(idx)}
-                className={`text-xs px-2.5 py-1 rounded-full font-medium border transition-colors ${
-                  active === idx
-                    ? "text-white"
-                    : "text-slate-400 border-slate-700 hover:text-slate-200"
-                }`}
-                style={active === idx
-                  ? { background: m.color + "33", borderColor: m.color, color: m.color }
-                  : {}}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Seasonal NDVI vs Rainfall */}
+        {type === "farm" && (
+          <SeasonalNdviRainfallPanel entityId={entityId} entityType={type} />
+        )}
 
-        {/* Farm Boundary — NDVI by Year */}
-        {(type === "farm" || type === "forest") && (
-          <YearlyPolygonMapGrid
-            entityId={entityId}
-            entityType={type}
-            history={history}
+        {/* LTV */}
+        {type === "farm" && (
+          <LTVPanel
+            ltv={data.ltv}
+            onUpdate={handleLTVUpdate}
+            ltvLoading={ltvLoading}
             activeIndex={active}
           />
         )}
 
-        {/* Seasonal NDVI vs Rainfall */}
+        {/* Yield Analysis — regression */}
         {type === "farm" && (
-          <SeasonalNdviRainfallPanel entityId={entityId} entityType={type} />
+          <YieldAnalysisPanel
+            history={history}
+            forecast={forecast}
+            ltv={data.ltv}
+            activeIndex={active}
+            onCalibrate={(calibParams) => handleLTVUpdate({
+              loan_amount: data.ltv?.loan_amount_usd ?? null,
+              yield_t_per_ha: data.ltv?.yield_t_per_ha ?? 1.5,
+              price_per_t: data.ltv?.price_per_t ?? 500,
+              ...calibParams,
+            })}
+          />
+        )}
+
+        {/* Weekly Trend — ~5-day Sentinel-2 revisit */}
+        {(type === "farm" || type === "forest") && (
+          <WeeklyTrendPanel entityId={entityId} entityType={type} />
         )}
 
         {/* Plant Health Classification Maps */}

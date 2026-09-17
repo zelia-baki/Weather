@@ -41,6 +41,9 @@ const ExportDigitalStamps = () => {
   const countries = useFetchData("/api/pays/", "pays");
   const stores = useFetchData("/api/store/", "stores");
   const crops = useFetchData("/api/crop/", "crops");
+  // ✅ HS Code — même backend que la soumission EUDR (DDS), plus de liste
+  // codée en dur par type de café.
+  const hscodes = useFetchData("/api/hscode/", "hscodes");
 
   // farmerGroups & categories — APIs return array/object directly, fetched separately
   const [farmerGroups, setFarmerGroups] = useState([]);
@@ -82,7 +85,8 @@ const ExportDigitalStamps = () => {
     cropGrades,
     stores,
     countries,
-    formData.coffeeType
+    formData.coffeeType,
+    hscodes
   );
 
   // Recompute on farmBlocks count change
