@@ -19,6 +19,7 @@ import OrderManager from './OrderManager.jsx';
 //    - Fiche technique café (altitude, varietal, process, score, notes)
 //    - Éditeur de story_blocks — le storytelling n'est plus un seul pavé
 //    - Images : on enregistre la CLÉ de stockage, plus l'URL
+//    - Pays d'origine : liste déroulante au lieu d'une saisie libre
 // =============================================================================
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -28,9 +29,12 @@ const inputCls = (err) =>
    focus:ring-2 focus:border-transparent
    ${err ? 'border-red-300 focus:ring-red-300' : 'border-gray-200 focus:ring-emerald-400 hover:border-gray-300'}`;
 
+// `[color-scheme:light]` force le navigateur à dessiner la liste déroulante
+// native en clair. Sans ça, un OS en mode sombre affiche les options en noir,
+// hors de portée de Tailwind.
 const selectCls = (err) =>
   `w-full border rounded-xl px-3.5 py-2.5 text-sm transition-all outline-none
-   bg-white text-gray-800
+   bg-white text-gray-800 [color-scheme:light]
    focus:ring-2 focus:border-transparent
    ${err ? 'border-red-300 focus:ring-red-300' : 'border-gray-200 focus:ring-emerald-400 hover:border-gray-300'}`;
 
@@ -303,6 +307,105 @@ const ModeBadge = ({ product }) => {
   );
 };
 
+// ── Pays d'origine ───────────────────────────────────────────────────────────
+// On stocke toujours le NOM du pays, comme la saisie libre le faisait : aucune
+// migration, aucune ligne de backend à changer.
+const COUNTRIES = [
+  'Angola', 'Bolivia', 'Brazil', 'Burundi', 'Cameroon',
+  'Central African Republic', 'Colombia', 'Comoros', 'Costa Rica',
+  "Côte d'Ivoire", 'Cuba', 'DR Congo', 'Dominican Republic', 'Ecuador',
+  'El Salvador', 'Equatorial Guinea', 'Ethiopia', 'Gabon', 'Ghana',
+  'Guatemala', 'Guinea', 'Haiti', 'Honduras', 'India', 'Indonesia',
+  'Jamaica', 'Kenya', 'Laos', 'Liberia', 'Madagascar', 'Malawi',
+  'Mauritius', 'Mexico', 'Nicaragua', 'Nigeria', 'Panama',
+  'Papua New Guinea', 'Peru', 'Philippines', 'Rwanda', 'Réunion',
+  'São Tomé and Príncipe', 'Sierra Leone', 'Solomon Islands', 'Sri Lanka',
+  'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Trinidad and Tobago',
+  'Uganda', 'Vanuatu', 'Venezuela', 'Vietnam', 'Zambia', 'Zimbabwe',
+];
+
+// Liste déroulante maison : le select natif dessine ses options avec le thème
+// de l'OS, donc en mode sombre elles ressortent en noir. Ici tout est du HTML
+// ordinaire, on garde la palette blanc / vert de la boutique en toutes
+// circonstances — et on gagne une recherche, utile à 56 pays.
+const CountrySelect = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const boxRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClickAway = (e) => { if (!boxRef.current?.contains(e.target)) setOpen(false); };
+    const onEsc = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onClickAway);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onClickAway);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
+
+  // Un produit déjà en base peut porter un pays saisi à la main qui n'est pas
+  // dans la liste : on l'ajoute pour ne pas l'effacer en silence.
+  const options = value && !COUNTRIES.includes(value) ? [value, ...COUNTRIES] : COUNTRIES;
+  const shown = options.filter(c => c.toLowerCase().includes(query.trim().toLowerCase()));
+
+  const pick = (c) => { onChange(c); setOpen(false); setQuery(''); };
+
+  return (
+    <div className="relative" ref={boxRef}>
+      <button type="button"
+        onClick={() => { setOpen(o => !o); setQuery(''); }}
+        className={`w-full border rounded-xl px-3.5 py-2.5 text-sm text-left transition-all outline-none
+          bg-white flex items-center justify-between gap-2
+          focus:ring-2 focus:ring-emerald-400 focus:border-transparent
+          ${open ? 'border-emerald-400' : 'border-gray-200 hover:border-gray-300'}`}>
+        <span className={value ? 'text-gray-800' : 'text-gray-400'}>
+          {value || 'Select a country'}
+        </span>
+        <span className="flex items-center gap-1 flex-shrink-0">
+          {value && (
+            <span role="button" tabIndex={-1} title="Clear"
+              onClick={e => { e.stopPropagation(); onChange(''); }}
+              className="text-gray-300 hover:text-gray-500 transition-colors">
+              <X size={14}/>
+            </span>
+          )}
+          <ChevronDown size={15}
+            className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}/>
+        </span>
+      </button>
+
+      {open && (
+        <div className="absolute z-10 mt-1.5 w-full bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden">
+          <div className="relative border-b border-gray-100">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300"><Search size={14}/></span>
+            <input autoFocus type="text" placeholder="Search…" value={query}
+              onChange={e => setQuery(e.target.value)}
+              style={{ colorScheme: 'light', backgroundColor: '#ffffff',
+                       color: '#1f2937', WebkitTextFillColor: '#1f2937' }}
+              className="w-full pl-8 pr-3 py-2.5 text-sm placeholder-gray-400 outline-none"/>
+          </div>
+          <div className="max-h-56 overflow-y-auto py-1">
+            {shown.length === 0 && (
+              <p className="px-3.5 py-3 text-sm text-gray-400">No country matches.</p>
+            )}
+            {shown.map(c => (
+              <button key={c} type="button" onClick={() => pick(c)}
+                className={`w-full text-left px-3.5 py-2 text-sm flex items-center justify-between gap-2 transition-colors
+                  ${c === value ? 'bg-emerald-50 text-emerald-700 font-semibold'
+                                : 'text-gray-700 hover:bg-emerald-50/60'}`}>
+                {c}
+                {c === value && <Check size={14}/>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Historique de stock ──────────────────────────────────────────────────────
 const REASON_LABELS = {
   sale:              { label: 'Sale',              color: 'text-red-600',     icon: <ArrowDownCircle size={15}/> },
@@ -396,6 +499,38 @@ const StockHistoryDrawer = ({ product, open, onClose }) => {
     </>
   );
 };
+
+// ── Thème clair forcé ────────────────────────────────────────────────────────
+// `color-scheme` ne repeint que les widgets natifs : champs, listes, barres de
+// défilement. Un OS en mode sombre les noircit sans que Tailwind puisse s'y
+// opposer, d'où le `!important`. Le style est porté par le composant pour ne
+// rien changer aux fichiers globaux.
+const PANEL_LIGHT_CSS = `
+.light-panel { color-scheme: light; }
+
+.light-panel input:not([type="checkbox"]):not([type="radio"]),
+.light-panel select,
+.light-panel textarea {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+}
+
+.light-panel input::placeholder,
+.light-panel textarea::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af !important;
+}
+
+.light-panel option { background-color: #ffffff; color: #1f2937; }
+
+.light-panel input[type="checkbox"] { accent-color: #059669; }
+
+.light-panel ::-webkit-scrollbar { width: 10px; height: 10px; }
+.light-panel ::-webkit-scrollbar-track { background: #f3f4f6; }
+.light-panel ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 9999px; }
+.light-panel ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+`;
 
 // ── FORMULAIRES VIDES ────────────────────────────────────────────────────────
 const EMPTY_CATEGORY = { name: '', description: '' };
@@ -530,6 +665,9 @@ const EcoProductManager = () => {
         origin_story: productForm.origin_story?.trim() || null,
         farmer_name:  productForm.farmer_name?.trim() || null,
         farm_id:      productForm.farm_id?.trim() || null,
+        // Le select renvoie '' quand rien n'est choisi : on normalise en null,
+        // comme les autres champs texte facultatifs.
+        origin_country: productForm.origin_country?.trim() || null,
         varietal:     productForm.varietal?.trim() || null,
         process_method: productForm.process_method?.trim() || null,
         stock_note:   productForm.stock_note?.trim() || null,
@@ -640,6 +778,7 @@ const EcoProductManager = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-emerald-50/20 p-4 sm:p-6 light-panel">
+      <style>{PANEL_LIGHT_CSS}</style>
 
       {/* Header */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
@@ -712,7 +851,7 @@ const EcoProductManager = () => {
               {[{ id: 'all', label: 'All' }, { id: 'low', label: 'Low stock' }, { id: 'out', label: 'Out of stock' }].map(f => (
                 <button key={f.id} onClick={() => setStockFilter(f.id)}
                   className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
-                    stockFilter === f.id ? 'bg-gray-800 text-white border-gray-800'
+                    stockFilter === f.id ? 'bg-emerald-600 text-white border-emerald-600'
                                          : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>
                   {f.label}
                 </button>
@@ -1002,8 +1141,8 @@ const EcoProductManager = () => {
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Origin country">
-                  <input type="text" placeholder="e.g. Uganda" value={productForm.origin_country}
-                    onChange={e => setProductForm({ ...productForm, origin_country: e.target.value })} className={inputCls(false)}/>
+                  <CountrySelect value={productForm.origin_country}
+                    onChange={c => setProductForm({ ...productForm, origin_country: c })}/>
                 </Field>
                 <Field label="SKU">
                   <input type="text" placeholder="Optional" value={productForm.sku}

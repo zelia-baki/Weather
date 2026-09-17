@@ -609,9 +609,13 @@ const LandingPage = () => {
         <nav className="desktop-nav">
           {[
             { label: "Features", to: "features", scroll: true },
+            { label: "FORGET", href: "/shop/ourstory" },
             { label: "About", href: "/sectionfutur" },
             { label: "Tools", href: "/EUDRSubmissionForGuest" },
             { label: "Contact", to: "contact", scroll: true },
+            { label: "Shop", href: "/shop" },
+            { label: "Auctions", href: "/auctions" },
+            { label: "Our Story", href: "/shop/ourstory" },
           ].map((item) =>
             item.scroll ? (
               <ScrollLink key={item.label} to={item.to} smooth duration={500} offset={-80} className="nav-link">

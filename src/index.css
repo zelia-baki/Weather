@@ -2,6 +2,10 @@
     @tailwind components;
     @tailwind utilities;
 
+    :root {
+  color-scheme: light;
+}
+
     .carbon-report-a4 {
         width: 210mm;
         min-height: 297mm;

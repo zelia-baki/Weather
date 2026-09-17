@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaPhone, FaEnvelope } from 'react-icons/fa';
+import { FaPhone, FaEnvelope, FaWhatsapp } from 'react-icons/fa';
 import emailjs from 'emailjs-com';
 import Swal from 'sweetalert2'; // Import SweetAlert2
 
@@ -85,6 +85,20 @@ const ContactUs = () => {
                             nkusu@agriyields.com
                         </a>
                     </div>
+                                 {/* WhatsApp */}
+                    {/* WhatsApp */}
+                    <div className="flex items-center space-x-4">
+                        <FaWhatsapp className="text-green-500 text-3xl" />
+                        <a
+                            href="https://wa.me/256783130358?text=Hello%20Nkusu%2C%20I%27d%20like%20to%20know%20more%20about%20your%20coffee."
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xl text-gray-700 font-semibold hover:underline"
+                            >
+                        +256783130358
+                        </a>
+                    </div>
+                    
                 </div>
 
                 {/* Contact Form */}
