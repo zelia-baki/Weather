@@ -62,7 +62,12 @@ export const createFormSteps = (farmBlocks, countries, produceCategories, crops,
     fields: [
       {
         type: "select", name: "payment_type", label: "Payment Type", required: true,
-        options: [{ value: "cash", label: "Cash" }, { value: "bank_transfer", label: "Bank Transfer" }],
+        options: [
+          { value: "cash", label: "Cash" },
+          { value: "bank_transfer", label: "Bank Transfer" },
+          { value: "credit", label: "Credit" },
+          { value: "down_payment", label: "Down Payment" },
+        ],
       },
       {
         type: "select", name: "store_id",   label: "Store ID",   required: true,
@@ -73,6 +78,8 @@ export const createFormSteps = (farmBlocks, countries, produceCategories, crops,
         options: stores.map((s) => ({ value: s.name, label: s.name })),
       },
       { type: "date", name: "transaction_date", label: "Transaction Date", required: true },
+      { type: "number", name: "balance", label: "Balance Due (UGX)", required: false,
+        placeholder: "Remaining amount owed — for Credit / Down Payment" },
     ],
   },
 ];

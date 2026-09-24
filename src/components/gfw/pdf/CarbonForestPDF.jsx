@@ -145,7 +145,7 @@ const CarbonForestPDF = ({ pdfRef, forestInfo, geoData, mapboxUrl, areaInHectare
       {/* ── HEADER ── */}
       <ReportPDFHeader
         title="Carbon Emissions Assessment"
-        subtitle={`Generated on ${today}  •  Regulation (EU) 2023/1115`}
+        subtitle={`Generated on ${today}`}
       />
 
       {/* ── INFO FORÊT ── */}

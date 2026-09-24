@@ -9,7 +9,7 @@ import {
 } from "react-icons/fa";
 import { FaSatellite, FaFileAlt, FaLock } from "react-icons/fa";
 import {
-  colors, fonts, radius, shadows,
+  colors, fonts, shadows, transitions,
   btnPrimary, btnOutline, featCard,
   sectionLabel, displayTitle, mutedText, monoLabel,
 } from "../../theme";
@@ -120,7 +120,7 @@ const LocalStyles = () => (
     .feat-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px; padding: 32px;
+      border-radius: 2px; padding: 32px;
       transition: all 0.3s;
       position: relative; overflow: hidden;
     }
@@ -142,7 +142,7 @@ const LocalStyles = () => (
       padding: 14px 28px;
       background: var(--green); color: #050c06;
       font-family: var(--body); font-size: 14px; font-weight: 700;
-      border-radius: 100px; text-decoration: none;
+      border-radius: 2px; text-decoration: none;
       border: none; cursor: pointer;
       transition: all 0.25s; letter-spacing: 0.04em;
       white-space: nowrap;
@@ -156,7 +156,7 @@ const LocalStyles = () => (
       display: inline-flex; align-items: center; gap: 8px;
       padding: 13px 28px; background: transparent; color: var(--text);
       font-family: var(--body); font-size: 14px; font-weight: 500;
-      border-radius: 100px; text-decoration: none;
+      border-radius: 2px; text-decoration: none;
       border: 1px solid var(--border); cursor: pointer;
       transition: all 0.25s; letter-spacing: 0.04em;
       white-space: nowrap;
@@ -194,7 +194,7 @@ const LocalStyles = () => (
       display: inline-flex; align-items: center; gap: 10px;
       padding: 12px 20px;
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: 100px; font-size: 13px; color: var(--muted);
+      border-radius: 2px; font-size: 13px; color: var(--muted);
       transition: all 0.25s; text-decoration: none;
     }
     .contact-chip:hover { border-color: rgba(34,197,94,0.3); color: var(--text); background: var(--green-dim); }
@@ -229,7 +229,7 @@ const LocalStyles = () => (
     /* ── EUDR HIGHLIGHT ── */
     .eudr-section {
       margin: 0 40px 120px;
-      border-radius: 24px;
+      border-radius: 2px;
       background: linear-gradient(135deg, rgba(34,197,94,0.06), rgba(96,165,250,0.04));
       border: 1px solid rgba(34,197,94,0.12);
       padding: 80px 60px;
@@ -510,10 +510,108 @@ const OrbitVisual = () => (
   </div>
 );
 
+/* ─── TOOLS POPUP ────────────────────────────────────────────────────────────── */
+const TOOLS = [
+  {
+    Icon: FaFileAlt,
+    title: "Farm (EUDR) Report",
+    desc: "Get a compliance report for your farm according to EUDR requirements.",
+    color: colors.blue,
+    bg: colors.blueDim,
+  },
+  {
+    Icon: FaLeaf,
+    title: "Carbon Report",
+    desc: "Analyze your farm's carbon footprint and environmental impact.",
+    color: colors.greenLight,
+    bg: "rgba(74,222,128,0.1)",
+  },
+  {
+    Icon: FaSatellite,
+    title: "Area Performance Index",
+    desc: "Analyze vegetation health, moisture and yield indicators via satellite (Sentinel-2).",
+    color: colors.purple,
+    bg: colors.purpleDim,
+  },
+];
+
+const ToolsPopup = ({ onClose }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    onClick={onClose}
+    style={{
+      position: "fixed", inset: 0, zIndex: 1000,
+      background: "rgba(2,6,3,0.75)", backdropFilter: "blur(6px)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 20,
+    }}
+  >
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.97 }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        width: "100%", maxWidth: 720,
+        background: colors.bg2,
+        border: `1px solid ${colors.border}`,
+        borderRadius: 2,
+        boxShadow: shadows.card,
+        padding: "clamp(20px,4vw,36px)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
+        <div>
+          <div style={{ ...monoLabel(colors.green), fontSize: 11, marginBottom: 6 }}>Free Tools</div>
+          <h3 style={{ fontFamily: fonts.display, fontSize: "clamp(22px,3vw,28px)", fontWeight: 600, color: colors.text }}>
+            What would you like to check?
+          </h3>
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{ background: "none", border: "none", color: colors.muted, fontSize: 20, cursor: "pointer", flexShrink: 0 }}
+        >
+          <FaTimes />
+        </button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16 }}>
+        {TOOLS.map(({ Icon, title, desc, color, bg }) => (
+          <a
+            key={title}
+            href="/EUDRSubmissionForGuest"
+            style={{
+              display: "flex", flexDirection: "column", gap: 10,
+              padding: 18, borderRadius: 2,
+              background: colors.surface, border: `1px solid ${colors.border}`,
+              textDecoration: "none", transition: transitions.fast,
+            }}
+          >
+            <div style={{
+              width: 40, height: 40, borderRadius: 2,
+              background: bg, display: "flex", alignItems: "center", justifyContent: "center",
+              color, fontSize: 18,
+            }}>
+              <Icon />
+            </div>
+            <div style={{ fontFamily: fonts.body, fontWeight: 600, fontSize: 14, color: colors.text }}>{title}</div>
+            <div style={{ fontFamily: fonts.body, fontSize: 12.5, color: colors.muted, lineHeight: 1.5 }}>{desc}</div>
+          </a>
+        ))}
+      </div>
+    </motion.div>
+  </motion.div>
+);
+
 /* ─── LANDING PAGE ───────────────────────────────────────────────────────────── */
 const LandingPage = () => {
   const [splashDone, setSplashDone] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef });
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
@@ -554,6 +652,11 @@ const LandingPage = () => {
         {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
       </AnimatePresence>
 
+      {/* TOOLS POPUP */}
+      <AnimatePresence>
+        {toolsOpen && <ToolsPopup onClose={() => setToolsOpen(false)} />}
+      </AnimatePresence>
+
       {/* MOBILE MENU */}
       <AnimatePresence>
         {menuOpen && (
@@ -564,9 +667,12 @@ const LandingPage = () => {
             {["Features", "About", "Tools", "Contact"].map((item, i) => (
               <motion.a
                 key={item}
-                href={item === "Features" ? "#features" : item === "Contact" ? "#contact" : "#"}
+                href={item === "Features" ? "#features" : item === "Contact" ? "#contact" : item === "Tools" ? undefined : "#"}
                 className="mobile-nav-link"
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  setMenuOpen(false);
+                  if (item === "Tools") setToolsOpen(true);
+                }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
@@ -611,7 +717,7 @@ const LandingPage = () => {
             { label: "Features", to: "features", scroll: true },
             { label: "FORGET", href: "/shop/ourstory" },
             { label: "About", href: "/sectionfutur" },
-            { label: "Tools", href: "/EUDRSubmissionForGuest" },
+            { label: "Tools", popup: true },
             { label: "Contact", to: "contact", scroll: true },
             { label: "Shop", href: "/shop" },
             { label: "Auctions", href: "/auctions" },
@@ -621,6 +727,15 @@ const LandingPage = () => {
               <ScrollLink key={item.label} to={item.to} smooth duration={500} offset={-80} className="nav-link">
                 {item.label}
               </ScrollLink>
+            ) : item.popup ? (
+              <button
+                key={item.label}
+                onClick={() => setToolsOpen(true)}
+                className="nav-link"
+                style={{ background: "none", border: "none", cursor: "pointer", font: "inherit" }}
+              >
+                {item.label}
+              </button>
             ) : (
               <a key={item.label} href={item.href} className="nav-link">{item.label}</a>
             )
@@ -658,7 +773,7 @@ const LandingPage = () => {
               transition={{ delay: 0.4, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             >
               {/* Badge */}
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: colors.greenDim, border: "1px solid rgba(34,197,94,0.25)", borderRadius: radius.full, marginBottom: 24 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: colors.greenDim, border: "1px solid rgba(34,197,94,0.25)", borderRadius: 2, marginBottom: 24 }}>
                 <span style={{ width: 6, height: 6, background: colors.green, borderRadius: "50%", boxShadow: `0 0 6px ${colors.green}`, display: "inline-block" }} />
                 <span style={{ ...monoLabel(), fontSize: "10px" }}>Live Satellite Data</span>
               </div>
@@ -759,7 +874,7 @@ const LandingPage = () => {
               <span style={{ position: "absolute", top: 24, right: 24, fontFamily: fonts.mono, fontSize: 11, color: "rgba(255,255,255,0.15)", letterSpacing: "0.1em" }}>
                 0{i + 1}
               </span>
-              <div style={{ width: 52, height: 52, borderRadius: radius.md, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, background: bg, color, fontSize: 20 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, background: bg, color, fontSize: 20 }}>
                 <Icon />
               </div>
               <div style={{ ...monoLabel(color), marginBottom: 8 }}>{label}</div>
@@ -795,7 +910,7 @@ const LandingPage = () => {
     { icon: FaFileAlt,   label: "Auto-Generated Docs",color: colors.sky    },
     { icon: FaLock,      label: "EU Certified",       color: colors.purple },
   ].map(({ icon: Icon, label, color }) => (
-    <div key={label} style={{ padding: 16, background: "rgba(255,255,255,0.03)", border: `1px solid ${colors.border}`, borderRadius: radius.md, textAlign: "center" }}>
+    <div key={label} style={{ padding: 16, background: "rgba(255,255,255,0.03)", border: `1px solid ${colors.border}`, borderRadius: 2, textAlign: "center" }}>
       <div style={{ fontSize: 22, marginBottom: 8, color, display: "flex", justifyContent: "center" }}>
         <Icon />
       </div>

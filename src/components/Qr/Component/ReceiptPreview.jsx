@@ -110,6 +110,14 @@ const ReceiptPreview = ({
                   <div className="text-right font-semibold">{formData.price_per_kg || "—"} UGX</div>
                   <div className="text-gray-500 font-semibold">Total Value</div>
                   <div className="text-right font-bold text-teal-700">{formData.total_value || "—"} UGX</div>
+                  <div className="text-gray-500">Payment Type</div>
+                  <div className="text-right font-semibold capitalize">{formData.payment_type?.replace("_", " ") || "—"}</div>
+                  {(formData.payment_type === "credit" || formData.payment_type === "down_payment") && (
+                    <>
+                      <div className="text-gray-500">Balance Due</div>
+                      <div className="text-right font-semibold text-amber-600">{formData.balance || "—"} UGX</div>
+                    </>
+                  )}
                 </>
               )}
               {formType === "fertilizer" && (

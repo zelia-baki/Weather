@@ -145,7 +145,7 @@ const CarbonFarmPDF = ({ pdfRef, farmInfo, geoData, mapboxUrl, areaInHectares, a
       {/* ── HEADER ── */}
       <ReportPDFHeader
         title="Carbon Emissions Assessment"
-        subtitle={`Generated on ${today}  •  Regulation (EU) 2023/1115`}
+        subtitle={`Generated on ${today}`}
       />
 
       {/* ── INFO FERME ── */}

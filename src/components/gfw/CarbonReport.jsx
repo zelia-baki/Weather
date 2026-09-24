@@ -158,9 +158,6 @@ const CarbonReport = () => {
               letterSpacing:'0.05em', color:'#111827', margin:0 }}>
               Carbon Emissions Assessment
             </h1>
-            <p style={{ fontSize:12, color:'#6b7280', marginTop:4 }}>
-              Regulation (EU) 2023/1115
-            </p>
           </div>
           <img src="/logo.jpg" alt="Agriyields"
             style={{ width:64, height:64, objectFit:'contain', borderRadius:8 }} />

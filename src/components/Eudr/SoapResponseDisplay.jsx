@@ -118,7 +118,7 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPrev
                                 {item.referenceNumber && <p><strong>Reference Number:</strong> {item.referenceNumber}</p>}
                                 {item.verificationNumber && <p><strong>Verification Code:</strong> {item.verificationNumber}</p>}
                                 <p><strong>Status:</strong> {item.status}</p>
-                                <p><strong>Date:</strong> {new Date(item.date).toLocaleString()}</p>
+                                <p><strong>Date:</strong> {item.date ? new Date(item.date).toLocaleString() : '—'}</p>
                                 <p><strong>Updated By:</strong> {item.updatedBy}</p>
                             </li>
                         ))}
