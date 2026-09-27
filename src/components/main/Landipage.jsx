@@ -5,9 +5,10 @@ import parrot from "../img/parrot.jpg";
 import {
   FaGlobe, FaCloudSunRain, FaLeaf, FaTree, FaTractor, FaQrcode,
   FaChartLine, FaEnvelope, FaSatelliteDish, FaBars, FaTimes,
-  FaShieldAlt, FaLink, FaMapMarkedAlt, FaBolt,
+  FaShieldAlt, FaLink, FaMapMarkedAlt, FaBolt, FaStar, FaUserPlus,
 } from "react-icons/fa";
 import { FaSatellite, FaFileAlt, FaLock } from "react-icons/fa";
+import { Coffee, Bean } from "lucide-react";
 import {
   colors, fonts, shadows, transitions,
   btnPrimary, btnOutline, featCard,
@@ -497,14 +498,14 @@ const OrbitVisual = () => (
 
     <div className="orbit-ring orbit-1">
       <div className="orbit-planet planet-1"><FaTree /></div>
-      <div className="orbit-planet planet-pill planet-coffee">☕ Coffee</div>
+      <div className="orbit-planet planet-pill planet-coffee"><Coffee size={11} strokeWidth={2.5} /> Coffee</div>
     </div>
     <div className="orbit-ring orbit-2">
       <div className="orbit-planet planet-2"><FaQrcode /></div>
     </div>
     <div className="orbit-ring orbit-3">
       <div className="orbit-planet planet-3"><FaSatelliteDish /></div>
-      <div className="orbit-planet planet-pill planet-cocoa">🍫 Cocoa</div>
+      <div className="orbit-planet planet-pill planet-cocoa"><Bean size={11} strokeWidth={2.5} /> Cocoa</div>
     </div>
 
     {[
@@ -817,7 +818,7 @@ const LandingPage = () => {
 
               {/* Social proof */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: fonts.body, fontSize: 12, color: colors.muted, flexWrap: "wrap" }}>
-                {[...Array(5)].map((_, i) => <span key={i} style={{ color: colors.amber }}>★</span>)}
+                {[...Array(5)].map((_, i) => <FaStar key={i} style={{ color: colors.amber }} />)}
                 <span>Trusted by 2,000+ Experts worldwide</span>
               </div>
             </motion.div>
@@ -954,7 +955,7 @@ const LandingPage = () => {
           </p>
           <div className="contact-chips">
             <a href="/contactus" className="contact-chip"><FaEnvelope style={{ color: colors.green }} /><span>Email Us</span></a>
-            <a href="/signup" className="contact-chip"><span>✦</span><span>Create Account</span></a>
+            <a href="/signup" className="contact-chip"><FaUserPlus style={{ color: colors.green }} /><span>Create Account</span></a>
             <a href="/EUDRSubmissionForGuest" className="contact-chip"><FaGlobe style={{ color: colors.green }} /><span>Free Tools</span></a>
           </div>
         </motion.div>
