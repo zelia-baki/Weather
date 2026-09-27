@@ -735,14 +735,15 @@ const LandingPage = () => {
         <nav className="desktop-nav">
           {[
             { label: "Features", to: "features", scroll: true },
-            { label: "FORGET", href: "/shop/ourstory" },
+            // FORGET and Auctions hidden for now — remove `hidden` to show them again
+            { label: "FORGET", href: "/shop/ourstory", hidden: true },
             { label: "About", href: "/sectionfutur" },
             { label: "Climate Tools", popup: true },
             { label: "Contact", to: "contact", scroll: true },
             { label: "Shop", href: "/shop" },
-            { label: "Auctions", href: "/auctions" },
+            { label: "Auctions", href: "/auctions", hidden: true },
             { label: "Our Story", href: "/shop/ourstory" },
-          ].map((item) =>
+          ].filter((item) => !item.hidden).map((item) =>
             item.scroll ? (
               <ScrollLink key={item.label} to={item.to} smooth duration={500} offset={-80} className="nav-link">
                 {item.label}
