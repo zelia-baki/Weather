@@ -12,9 +12,14 @@ const recompute = (data, blocks) => {
     (sum, _, i) => sum + (parseFloat(data[`farm_${i}_qty`]) || 0), 0
   );
   const price = parseFloat(data.price_per_kg) || 0;
+  const total = totalWeight * price;
+  // Balance = Amount − Down payment (only owed on Credit / Down Payment; otherwise fully paid)
+  const onCredit = data.payment_type === "credit" || data.payment_type === "down_payment";
+  const down     = parseFloat(data.down_payment_amount) || 0;
   return {
     produce_weight: totalWeight.toFixed(2),
-    total_value:    (totalWeight * price).toFixed(2),
+    total_value:    total.toFixed(2),
+    balance:        (onCredit ? total - down : 0).toFixed(2),
   };
 };
 
@@ -44,7 +49,7 @@ const GenerateQrCodeAndReceipt = () => {
     const { name, value } = e.target;
     setFormData(prev => {
       const next = { ...prev, [name]: value };
-      if (name.includes("_qty") || name === "price_per_kg")
+      if (name.includes("_qty") || ["price_per_kg", "payment_type", "down_payment_amount"].includes(name))
         return { ...next, ...recompute(next, farmBlocks) };
       return next;
     });

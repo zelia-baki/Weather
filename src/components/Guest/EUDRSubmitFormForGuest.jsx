@@ -168,6 +168,21 @@ const StepProgressBar = ({ current, onBack }) => (
 
 // ── Main component ────────────────────────────────────────────────────────────
 const EUDRSubmitFormForGuest = () => {
+  // Preselection from the landing page "Climate Tools" popup
+  // (?report=<feature>&property=<forest|farm>): the report type step is skipped.
+  const [preselected] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const report = params.get("report");
+    if (!report) return false;
+    localStorage.setItem("guest_selected_feature", report);
+    const property = params.get("property");
+    if (property) localStorage.setItem("guest_property_type", property);
+    else localStorage.removeItem("guest_property_type");
+    localStorage.setItem("guest_step", "1");
+    window.history.replaceState(null, "", window.location.pathname);
+    return true;
+  });
+
   // ✅ Init depuis localStorage pour survivre à un refresh (step, feature, geojson)
   const [step, setStep] = useState(() => {
     const saved = Number(localStorage.getItem("guest_step"));
@@ -182,6 +197,7 @@ const EUDRSubmitFormForGuest = () => {
     () => localStorage.getItem("guest_property_type") || null
   );
   const [askingPropertyType, setAskingPropertyType] = useState(false);
+
   const [geojson, setGeojson] = useState(() => {
     try {
       const saved = localStorage.getItem("polygon_geojson");
@@ -299,7 +315,7 @@ const EUDRSubmitFormForGuest = () => {
 
   const handleStepLocationNext = () => {
     if (canProceedToStep2) {
-      setStep(2);
+      setStep(preselected && selectedFeature ? 3 : 2);
       if (isTutorialActive && currentTutorial?.targetStep === 1) {
         const idx = tutorialSteps.findIndex((t) => t.highlight === "report-type");
         if (idx > tutorialStep) for (let i = tutorialStep; i < idx; i++) nextTutorialStep();
@@ -434,12 +450,14 @@ const EUDRSubmitFormForGuest = () => {
               {step === 2 && !askingPropertyType && (
                 <div className="relative">
                   <StepReportType
-                    onSelect={(feature) => {
+                    onSelect={(feature, chosenPropertyType) => {
                       setSelectedFeature(feature);
-                      // ✅ NOUVEAU : pour le Carbon Report, on demande d'abord
-                      // Forest/Farm (détermine NDVI vs SOC pour le complément
-                      // carbone) avant de passer à l'étape 3.
-                      if (feature === "reportcarbonguest") {
+                      // Forest Carbon / Farmland Carbon carry their property type;
+                      // StepPropertyType is only a fallback if it is missing.
+                      if (chosenPropertyType) {
+                        setPropertyType(chosenPropertyType);
+                        setStep(3);
+                      } else if (feature === "reportcarbonguest") {
                         setAskingPropertyType(true);
                       } else {
                         setStep(3);

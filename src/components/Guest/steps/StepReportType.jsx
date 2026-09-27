@@ -1,5 +1,5 @@
 import React from "react";
-import { FileText, Leaf, Satellite } from "lucide-react"; // ajouter Satellite
+import { FileText, Leaf, Satellite, Trees } from "lucide-react";
 
 const StepReportType = ({ onSelect, highlightReportType = "" }) => {
   const options = [
@@ -11,11 +11,25 @@ const StepReportType = ({ onSelect, highlightReportType = "" }) => {
       color: "blue",
       icon: <FileText className="w-8 h-8 text-blue-600" />,
     },
+    // Carbon is split by land type: the extra carbon analysis differs
+    // (Forest -> AGB/BGB from NDVI, Farmland -> soil organic carbon + crop).
     {
       id: "reportcarbonguest",
-      title: "Carbon Report",
+      key: "carbon-forest",
+      propertyType: "forest",
+      title: "Forest Carbon",
       description:
-        "Analyze your farm's carbon footprint and environmental impact.",
+        "Carbon stock and flux of woodland or forest — biomass (AGB/BGB) estimated from satellite NDVI.",
+      color: "emerald",
+      icon: <Trees className="w-8 h-8 text-emerald-600" />,
+    },
+    {
+      id: "reportcarbonguest",
+      key: "carbon-farm",
+      propertyType: "farm",
+      title: "Farmland Carbon",
+      description:
+        "Carbon footprint of cultivated land — soil organic carbon (SoilGrids) and predicted crop type.",
       color: "green",
       icon: <Leaf className="w-8 h-8 text-green-600" />,
     },
@@ -41,8 +55,8 @@ const StepReportType = ({ onSelect, highlightReportType = "" }) => {
       <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 ${highlightReportType}`}>
         {options.map((opt) => (
           <button
-            key={opt.id}
-            onClick={() => onSelect(opt.id)}
+            key={opt.key || opt.id}
+            onClick={() => onSelect(opt.id, opt.propertyType)}
             className={`p-6 rounded-2xl shadow-md border border-gray-200 hover:shadow-lg hover:scale-[1.02] transform transition bg-white text-left`}
           >
             <div className="flex items-center gap-3 mb-3 justify-center">

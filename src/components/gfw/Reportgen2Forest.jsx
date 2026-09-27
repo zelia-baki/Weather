@@ -5,14 +5,14 @@ import axiosInstance from '../../axiosInstance.jsx';
 import { useLocation, Link } from "react-router-dom";
 import Loading from '../main/Loading.jsx';
 import EudrReportSection from "../Guest/components/EudrReportSection.jsx";
-import { downloadPDF } from "../Guest/utils/pdfUtils.js";
+import { requestPdfFromRef } from "../Guest/utils/pdfUtils.js";
+import BackendPdfPanel from "./BackendPdfPanel.jsx";
 
 const ForestReport = () => {
   const [forestInfo, setForestInfo] = useState(null);
   const [geoData, setGeoData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isDownloading, setIsDownloading] = useState(false);
   
   const location = useLocation();
   const forestId = location.state?.forestId || 1;
@@ -79,17 +79,15 @@ const ForestReport = () => {
     }
   };
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 6000)); 
-      await downloadPDF(reportRef);
-    } catch (err) {
-      console.error("❌ PDF generation failed:", err);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
+  // Le PDF affiché est celui du backend (/api/gfw/generate-pdf, à partir du
+  // HTML rendu hors écran) — le même que celui téléchargé. On laisse 6 s au
+  // rendu des cartes avant de l'envoyer, comme l'ancien bouton Download.
+  const [htmlReady, setHtmlReady] = useState(false);
+  useEffect(() => {
+    if (!geoData) return;
+    const t = setTimeout(() => setHtmlReady(true), 6000);
+    return () => clearTimeout(t);
+  }, [geoData]);
 
   if (loading) return <Loading />;
 
@@ -113,48 +111,31 @@ const ForestReport = () => {
   if (error) return <p className="text-red-600">{error}</p>;
 
   return (
-    <div className="flex flex-col items-center text-xl">
-      <div ref={reportRef}>
-        <EudrReportSection 
-          results={geoData} 
-          reportRef={reportRef} 
-          farmInfo={forestInfo}
-          reportType="forest"
-          onReportCalculated={saveReportToDatabase}
-        />
+    <>
+      {/* HTML report kept off-screen: source of the backend PDF + DB save */}
+      <div aria-hidden style={{ position: 'fixed', top: 0, left: '-9999px', width: 800, overflow: 'hidden' }}>
+        <div ref={reportRef}>
+          <EudrReportSection
+            results={geoData}
+            reportRef={reportRef}
+            farmInfo={forestInfo}
+            reportType="forest"
+            onReportCalculated={saveReportToDatabase}
+          />
+        </div>
       </div>
 
-      <button
-        onClick={handleDownload}
-        disabled={isDownloading}
-        className={`mt-6 flex items-center gap-2 px-6 py-3 rounded-lg shadow-md text-white font-semibold transition 
-          ${isDownloading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}
-      >
-        {isDownloading && (
-          <svg
-            className="animate-spin h-5 w-5 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8v8z"
-            />
-          </svg>
-        )}
-        {isDownloading ? "Generating PDF..." : "Download PDF"}
-      </button>
-    </div>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '16px 16px 60px' }}>
+        <BackendPdfPanel
+          ready={htmlReady}
+          fetchPdf={() => requestPdfFromRef(reportRef, `EUDR_Report_Forest_${forestId}.pdf`)}
+          filename={`EUDR_Report_Forest_${forestId}.pdf`}
+          title="EUDR Compliance Report — Forest"
+          accent="blue"
+          waitingLabel="Generating your EUDR report…"
+        />
+      </div>
+    </>
   );
 };
 

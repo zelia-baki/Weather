@@ -45,12 +45,12 @@ export const generatePdfBlob = async (ref, inputName) => {
   }
 };
 
-export const downloadPDF = async (ref, filename = 'report.pdf') => {
+// Envoie le HTML rendu au backend (/api/gfw/generate-pdf) et renvoie la réponse
+// axios (blob PDF). Partagé par downloadPDF et l'affichage direct du PDF
+// (Reportgen2Forest.jsx) pour que le PDF affiché soit celui téléchargé.
+export const requestPdfFromRef = (ref, filename = 'report.pdf') => {
   const element = ref?.current;
-  if (!element) {
-    alert('❌ Élément HTML introuvable');
-    return;
-  }
+  if (!element) return Promise.reject(new Error('HTML element not found'));
 
   const htmlContent = element.outerHTML;
 
@@ -77,12 +77,20 @@ export const downloadPDF = async (ref, filename = 'report.pdf') => {
   </html>
 `;
 
+  return axiosInstance.post(
+    '/api/gfw/generate-pdf',
+    { html: htmlWithStyles, filename },
+    { responseType: 'blob' }
+  );
+};
+
+export const downloadPDF = async (ref, filename = 'report.pdf') => {
+  if (!ref?.current) {
+    alert('❌ Élément HTML introuvable');
+    return;
+  }
   try {
-    const response = await axiosInstance.post(
-      '/api/gfw/generate-pdf',
-      { html: htmlWithStyles, filename },
-      { responseType: 'blob' }
-    );
+    const response = await requestPdfFromRef(ref, filename);
     const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
     const link = document.createElement('a');
     link.href = url;

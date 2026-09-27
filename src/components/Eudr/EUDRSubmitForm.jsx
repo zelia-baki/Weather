@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const ACTIVITY_TYPES = ["DOMESTIC", "TRADE", "IMPORT", "EXPORT"];
+// EUDR V3: TRADE no longer exists (traders are excluded from DDS submission)
+const ACTIVITY_TYPES = ["DOMESTIC", "IMPORT", "EXPORT"];
 const EU_COUNTRIES   = [
   "AT","BE","BG","CY","CZ","DE","DK","EE","ES","FI","FR",
   "GR","HR","HU","IE","IT","LT","LU","LV","MT","NL","PL",
@@ -173,11 +174,40 @@ const EUDRManager = () => {
     }
   };
 
+  // Client-side check of the fields TRACES V3 rejects when missing/empty
+  const validateStatement = () => {
+    const f = formData;
+    const missing = [];
+    if (!f.internalReferenceNumber.trim()) missing.push('Internal Reference Number');
+    if (!f.activityType)                    missing.push('Activity Type');
+    if (!f.countryOfActivity)               missing.push('Country of Activity');
+    if (!f.descriptionOfGoods.trim())       missing.push('Description of Goods');
+    if (!f.hsHeading)                       missing.push('HS Heading');
+    if (!f.producers[0].country || !f.producers[0].name.trim()) missing.push('Producer (country + name)');
+    // EUDR V3 rejects 4-digit headings (e.g. 0901) — a 6-digit subheading is required
+    if (f.hsHeading && f.hsHeading.replace(/\D/g, '').length < 6) {
+      missing.push(`HS code with 6 digits (${f.hsHeading} is too short — e.g. 090111 instead of 0901)`);
+    }
+    if (missing.length) {
+      setResponseData({ error: `Missing required field(s): ${missing.join(', ')}` });
+      setShowResult(true);
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit  = () => {
+    if (!validateStatement()) return;
     const geo = parseGeoJSON(); if (!geo) return;
     run('submit',  () => axiosInstance.post('/api/eudr/submit',  { statement: formData, geojson: geo }));
   };
   const handleAmend   = () => {
+    if (!ddsIdentifier.trim()) {
+      setResponseData({ error: 'Enter the DDS Identifier of the statement to amend.' });
+      setShowResult(true);
+      return;
+    }
+    if (!validateStatement()) return;
     const geo = parseGeoJSON(); if (!geo) return;
     run('amend',   () => axiosInstance.post('/api/eudr/amend',   { statement: formData, geojson: geo, ddsIdentifier }));
   };
@@ -269,7 +299,7 @@ const EUDRManager = () => {
           <Section title="Statement Info" icon={<FileText size={16}/>}>
             <Field label="Internal Reference Number" required>
               <input name="internalReferenceNumber" value={formData.internalReferenceNumber}
-                onChange={handleChange} placeholder="e.g. REF-2024-001" className={iCls}/>
+                onChange={handleChange} maxLength={35} placeholder="e.g. REF-2024-001" className={iCls}/>
             </Field>
             <Field label="Activity Type" required>
               <select name="activityType" value={formData.activityType}
@@ -285,7 +315,7 @@ const EUDRManager = () => {
                 {EU_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </Field>
-            <Field label="Country of Activity">
+            <Field label="Country of Activity" required>
               <select name="countryOfActivity" value={formData.countryOfActivity}
                 onChange={handleChange} className={sCls}>
                 <option value="">Select country</option>
@@ -323,7 +353,7 @@ const EUDRManager = () => {
                 ))}
               </select>
             </Field>
-            <Field label="Volume" required>
+            <Field label="Volume" hint="Not transmitted to EUDR (removed in V3)">
               <input type="number" step="any" min="0" name="goodsMeasure.volume"
                 value={formData.goodsMeasure.volume}
                 onChange={handleChange} placeholder="0.00" className={iCls}/>

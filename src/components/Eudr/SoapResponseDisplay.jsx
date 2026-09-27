@@ -4,7 +4,7 @@ import { generatePdfBlob } from '../Guest/utils/pdfUtils.js';
 
 const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPreview }) => {
     const ddsRef = useRef(null);
-    console.log("🍃🍃", data.statements);
+
 
     const handleDownload = async () => {
         if (!ddsRef.current) return;
@@ -24,10 +24,22 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPrev
 
     // ✅ Gestion sûre de l'erreur
     if (data.error) {
-        const errorMessage = typeof data.error === 'string' ? data.error : JSON.stringify(data.error, null, 2);
+        // Backend errors come as { error, detail, raw } — show the message, keep raw XML folded
+        const err = data.error;
+        const errorMessage = typeof err === 'string' ? err
+            : (typeof err?.error === 'string' ? err.error : JSON.stringify(err, null, 2));
+        const detail = typeof err === 'object' ? err?.detail : null;
+        const raw = typeof err === 'object' ? err?.raw : null;
         return (
-            <div className="text-red-600 font-semibold whitespace-pre-wrap">
-                {errorMessage}
+            <div className="space-y-2">
+                <div className="text-red-600 font-semibold whitespace-pre-wrap">{errorMessage}</div>
+                {detail && <div className="text-red-500 text-sm whitespace-pre-wrap">{detail}</div>}
+                {raw && (
+                    <details>
+                        <summary className="cursor-pointer text-blue-600 underline text-sm">See raw EUDR response</summary>
+                        <pre className="bg-white p-2 mt-2 rounded border text-xs overflow-x-auto whitespace-pre-wrap">{raw}</pre>
+                    </details>
+                )}
             </div>
         );
     }

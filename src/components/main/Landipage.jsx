@@ -188,6 +188,13 @@ const LocalStyles = () => (
     .planet-1 { width: 34px; height: 34px; top: -17px; left: calc(50% - 17px); animation: counterSpin 14s linear infinite; }
     .planet-2 { width: 28px; height: 28px; top: -14px; left: calc(50% - 14px); animation: counterSpin 22s linear infinite reverse; }
     .planet-3 { width: 30px; height: 30px; top: -15px; left: calc(50% - 15px); animation: counterSpin 30s linear infinite; }
+    /* Commodity pills, opposite side of their ring; counter-spun so the text stays upright */
+    .planet-pill {
+      width: 64px; height: 24px; margin-left: -32px; left: 50%; bottom: -12px;
+      border-radius: 12px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; gap: 4px;
+    }
+    .planet-coffee { animation: counterSpin 14s linear infinite; }
+    .planet-cocoa  { animation: counterSpin 30s linear infinite; }
 
     /* ── CONTACT CHIP ── */
     .contact-chip {
@@ -490,12 +497,14 @@ const OrbitVisual = () => (
 
     <div className="orbit-ring orbit-1">
       <div className="orbit-planet planet-1"><FaTree /></div>
+      <div className="orbit-planet planet-pill planet-coffee">☕ Coffee</div>
     </div>
     <div className="orbit-ring orbit-2">
       <div className="orbit-planet planet-2"><FaQrcode /></div>
     </div>
     <div className="orbit-ring orbit-3">
       <div className="orbit-planet planet-3"><FaSatelliteDish /></div>
+      <div className="orbit-planet planet-pill planet-cocoa">🍫 Cocoa</div>
     </div>
 
     {[
@@ -516,13 +525,23 @@ const TOOLS = [
     Icon: FaFileAlt,
     title: "Farm (EUDR) Report",
     desc: "Get a compliance report for your farm according to EUDR requirements.",
+    href: "/EUDRSubmissionForGuest?report=reporteudrguest",
     color: colors.blue,
     bg: colors.blueDim,
   },
   {
+    Icon: FaTree,
+    title: "Forest Carbon",
+    desc: "Carbon stock and flux of woodland or forest — biomass (AGB/BGB) estimated from satellite NDVI.",
+    href: "/EUDRSubmissionForGuest?report=reportcarbonguest&property=forest",
+    color: colors.green,
+    bg: colors.greenDim,
+  },
+  {
     Icon: FaLeaf,
-    title: "Carbon Report",
-    desc: "Analyze your farm's carbon footprint and environmental impact.",
+    title: "Farmland Carbon",
+    desc: "Carbon footprint of cultivated land — soil organic carbon and predicted crop type.",
+    href: "/EUDRSubmissionForGuest?report=reportcarbonguest&property=farm",
     color: colors.greenLight,
     bg: "rgba(74,222,128,0.1)",
   },
@@ -530,6 +549,7 @@ const TOOLS = [
     Icon: FaSatellite,
     title: "Area Performance Index",
     desc: "Analyze vegetation health, moisture and yield indicators via satellite (Sentinel-2).",
+    href: "/EUDRSubmissionForGuest?report=reportndviguest",
     color: colors.purple,
     bg: colors.purpleDim,
   },
@@ -555,7 +575,7 @@ const ToolsPopup = ({ onClose }) => (
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       onClick={(e) => e.stopPropagation()}
       style={{
-        width: "100%", maxWidth: 720,
+        width: "100%", maxWidth: 860,
         background: colors.bg2,
         border: `1px solid ${colors.border}`,
         borderRadius: 2,
@@ -579,11 +599,11 @@ const ToolsPopup = ({ onClose }) => (
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 16 }}>
-        {TOOLS.map(({ Icon, title, desc, color, bg }) => (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 16 }}>
+        {TOOLS.map(({ Icon, title, desc, href, color, bg }) => (
           <a
             key={title}
-            href="/EUDRSubmissionForGuest"
+            href={href}
             style={{
               display: "flex", flexDirection: "column", gap: 10,
               padding: 18, borderRadius: 2,
@@ -664,14 +684,14 @@ const LandingPage = () => {
             <button onClick={() => setMenuOpen(false)} style={{ position: "absolute", top: 24, right: 24, background: "none", border: "none", color: colors.muted, fontSize: 22, cursor: "pointer" }}>
               <FaTimes />
             </button>
-            {["Features", "About", "Tools", "Contact"].map((item, i) => (
+            {["Features", "About", "Climate Tools", "Contact"].map((item, i) => (
               <motion.a
                 key={item}
-                href={item === "Features" ? "#features" : item === "Contact" ? "#contact" : item === "Tools" ? undefined : "#"}
+                href={item === "Features" ? "#features" : item === "Contact" ? "#contact" : item === "Climate Tools" ? undefined : "#"}
                 className="mobile-nav-link"
                 onClick={() => {
                   setMenuOpen(false);
-                  if (item === "Tools") setToolsOpen(true);
+                  if (item === "Climate Tools") setToolsOpen(true);
                 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -717,7 +737,7 @@ const LandingPage = () => {
             { label: "Features", to: "features", scroll: true },
             { label: "FORGET", href: "/shop/ourstory" },
             { label: "About", href: "/sectionfutur" },
-            { label: "Tools", popup: true },
+            { label: "Climate Tools", popup: true },
             { label: "Contact", to: "contact", scroll: true },
             { label: "Shop", href: "/shop" },
             { label: "Auctions", href: "/auctions" },

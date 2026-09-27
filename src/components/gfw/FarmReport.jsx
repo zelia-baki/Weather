@@ -5,7 +5,8 @@
  * Ce composant :
  *   1. Affiche le rapport EUDR à l'écran (EudrReportSection, inchangée)
  *   2. Sauvegarde les métriques en base via onReportCalculated
- *   3. Sur clic "Download" : GET /api/gfw/farm/<id>/eudr-pdf → blob → download
+ *   3. Affiche directement le PDF backend (POST /api/gfw/farm/<id>/eudr-pdf) dans
+ *      un viewer — le rapport HTML reste rendu hors écran pour 1 et 2.
  *
  * Plus de div caché, plus de html2canvas, plus de Playwright pour ce rapport.
  */
@@ -15,6 +16,7 @@ import axiosInstance from '../../axiosInstance.jsx';
 import { useLocation, Link } from 'react-router-dom';
 import Loading from '../main/Loading.jsx';
 import EudrReportSection from '../Guest/components/EudrReportSection.jsx';
+import BackendPdfPanel from './BackendPdfPanel.jsx';
 
 // ── Spinner ──────────────────────────────────────────────────────────────────
 const Spinner = () => (
@@ -45,7 +47,6 @@ const FarmReport = () => {
   const [geoData, setGeoData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState(null);
@@ -110,50 +111,26 @@ const FarmReport = () => {
     setReportReady(false);
   }, [farmId]);
 
-  // ── Download PDF — appel direct au backend ReportLab ─────────────────────
-  const handleDownload = async () => {
-    // 1. Correction : Vérifier si farmInfo et farmInfo.farm_id existent
-    if (!farmInfo || !farmInfo.farm_id) {
-      console.error("Impossible de télécharger le PDF : farm_id manquant dans farmInfo");
-      return;
-    }
+  // ── PDF backend affiché directement ───────────────────────────────────────
+  // Le PDF (ReportLab) est généré dès que la heatmap StaticForestMap est
+  // capturée — ou après 10 s sans capture (pas de points de couverture).
+  const [mapReady, setMapReady] = useState(false);
+  const handleForestMapCaptured = useCallback((img) => {
+    setForestMapImage(img);
+    setMapReady(true);
+  }, []);
+  useEffect(() => {
+    if (!farmInfo) return;
+    const t = setTimeout(() => setMapReady(true), 10000);
+    return () => clearTimeout(t);
+  }, [farmInfo]);
 
-    const farm_id = farmInfo.farm_id; // On extrait proprement l'ID (ex: "B0001")
+  const fetchPdf = () => axiosInstance.post(
+    `/api/gfw/farm/${farmInfo.farm_id}/eudr-pdf`,
+    { forest_map_image: forestMapImage },
+    { responseType: 'blob' }
+  );
 
-    try {
-      setIsDownloading(true);
-
-      const payload = {
-        forest_map_image: forestMapImage // Votre state contenant le base64
-      };
-
-      // 2. Correction : Utilisation de farm_id au lieu de id
-      const response = await axiosInstance.post(
-        `/api/gfw/farm/${farm_id}/eudr-pdf`,
-        payload,
-        { responseType: 'blob' }
-      );
-
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-
-      // 3. Correction ici aussi pour le nom du fichier
-      link.setAttribute('download', `EUDR_Report_${farm_id}.pdf`);
-
-      document.body.appendChild(link);
-      link.click();
-
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-    } catch (err) {
-      console.error("Erreur lors du téléchargement du PDF :", err);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
   // ── Guards ────────────────────────────────────────────────────────────────
   if (loading) return <Loading />;
   if (error === 'No polygon found. Please create a polygon for this forest.') {
@@ -169,8 +146,6 @@ const FarmReport = () => {
   }
   if (error) return <p className="text-red-600 p-6">{error}</p>;
 
-  const btnReady = !isDownloading;
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
@@ -178,36 +153,26 @@ const FarmReport = () => {
       {saveSuccess && <Toast bg="#16a34a">✓ Report saved!</Toast>}
       {saveError && <Toast bg="#dc2626">✗ {saveError}</Toast>}
 
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 0 60px 0' }}>
-
-        {/* Vue écran — EudrReportSection inchangée */}
+      {/* HTML report kept off-screen: it computes/saves the metrics and
+          captures the tree-cover heatmap injected into the PDF */}
+      <div aria-hidden style={{ position: 'fixed', top: 0, left: '-9999px', width: 800, overflow: 'hidden' }}>
         <EudrReportSection
           results={geoData}
           farmInfo={farmInfo}
           onReportCalculated={handleReportCalculated}
-          onForestMapCaptured={setForestMapImage} // <-- AJOUTEZ CETTE LIGNE
+          onForestMapCaptured={handleForestMapCaptured}
         />
+      </div>
 
-        {/* Bouton PDF — génération 100 % backend */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32 }}>
-          <button
-            onClick={handleDownload}
-            disabled={!btnReady}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '13px 32px', borderRadius: 10, border: 'none',
-              background: isDownloading ? '#9ca3af' : '#16a34a',
-              color: '#fff', fontWeight: 700, fontSize: 14,
-              cursor: isDownloading ? 'not-allowed' : 'pointer',
-              boxShadow: isDownloading ? 'none' : '0 4px 14px rgba(22,163,74,.4)',
-              fontFamily: 'system-ui, sans-serif',
-            }}
-          >
-            {isDownloading
-              ? <><Spinner /> Generating PDF…</>
-              : `⬇ Download EUDR_Report_${farmId}.pdf`}
-          </button>
-        </div>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '16px 16px 60px' }}>
+        <BackendPdfPanel
+          ready={mapReady}
+          fetchPdf={fetchPdf}
+          filename={`EUDR_Report_${farmInfo?.farm_id || farmId}.pdf`}
+          title="EUDR Compliance Report"
+          accent="blue"
+          waitingLabel="Generating your EUDR report…"
+        />
       </div>
     </>
   );
