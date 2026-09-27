@@ -97,7 +97,7 @@ const LocalStyles = () => (
       font-family: var(--body); font-size: 13px; font-weight: 500;
       letter-spacing: 0.08em; color: var(--muted);
       text-decoration: none; cursor: pointer;
-      transition: color 0.2s; text-transform: uppercase;
+      transition: color 0.2s; text-transform: uppercase; white-space: nowrap;
     }
     .nav-link:hover { color: var(--text); }
 
@@ -287,6 +287,10 @@ const LocalStyles = () => (
       .orbit-1 { width: 220px; height: 220px; }
       .orbit-2 { width: 268px; height: 268px; }
       .orbit-3 { width: 300px; height: 300px; }
+
+      /* Longer labels (Nkusu Commerce) must fit before the burger takes over */
+      .desktop-nav { gap: 18px; }
+      .nav-link    { font-size: 12px; letter-spacing: 0.05em; }
     }
 
     /* ══════════════════════════════════════════════
@@ -741,7 +745,7 @@ const LandingPage = () => {
             { label: "About", href: "/sectionfutur" },
             { label: "Climate Tools", popup: true },
             { label: "Contact", to: "contact", scroll: true },
-            { label: "Shop", href: "/shop" },
+            { label: "Nkusu Commerce", href: "/shop" },
             { label: "Auctions", href: "/auctions", hidden: true },
             { label: "Our Story", href: "/shop/ourstory" },
           ].filter((item) => !item.hidden).map((item) =>
@@ -754,7 +758,7 @@ const LandingPage = () => {
                 key={item.label}
                 onClick={() => setToolsOpen(true)}
                 className="nav-link"
-                style={{ background: "none", border: "none", cursor: "pointer", font: "inherit" }}
+                style={{ background: "none", border: "none", padding: 0 }}
               >
                 {item.label}
               </button>
