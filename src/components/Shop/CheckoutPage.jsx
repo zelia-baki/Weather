@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
-import axiosInstance from '../../axiosInstance';
-import Swal from 'sweetalert2';
+import PaymentModal from '../Payment/PaymentModal';
+import { shopCheckoutProvider } from '../Payment/paymentProviders';
 
 // =============================================================================
 //  src/components/Shop/CheckoutPage.jsx — remplace ton fichier actuel
@@ -135,10 +135,11 @@ const CartLine = ({ item, first }) => {
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 const CheckoutPage = () => {
-  const { items, totalAmount, currency, currencies, hasMixedCurrency } = useCart();
+  const { items, totalAmount, currency, currencies, hasMixedCurrency, clearCart } = useCart();
   const [form, setForm] = useState({ guest_name: '', email: '', phone_number: '', shipping_address: '' });
   const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [paidTotal, setPaidTotal] = useState(null);
 
   const validate = () => {
     const e = {};
@@ -148,41 +149,50 @@ const CheckoutPage = () => {
     return e;
   };
 
-  const handleSubmit = async () => {
+  // Les mêmes moyens de paiement que les rapports invités (Mobile Money,
+  // carte/DPO, Google Pay test) via le composant commun. Chaque tentative crée
+  // la commande côté serveur, au prix recalculé par lui.
+  const provider = useMemo(() => shopCheckoutProvider({
+    items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
+    guest_name: form.guest_name,
+    email: form.email,
+    shipping_address: form.shipping_address,
+  }), [items, form]);
+
+  const handleSubmit = () => {
     if (items.length === 0 || hasMixedCurrency) return;
 
     const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
 
-    setSubmitting(true);
-    try {
-      const payload = {
-        items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
-        phone_number: form.phone_number,
-        email: form.email,
-        guest_name: form.guest_name,
-        shipping_address: form.shipping_address,
-      };
-      const res = await axiosInstance.post('/api/ecommerce/checkout/initiate', payload);
-
-      if (res.data?.success && res.data?.payment_url) {
-        // Le panier reste intact jusqu'à confirmation du paiement : si
-        // l'acheteur annule chez DPO et revient, il retrouve sa commande.
-        // C'est la page de succès qui le vide.
-        window.location.href = res.data.payment_url;
-      } else {
-        throw new Error(res.data?.error || 'Payment could not be started');
-      }
-    } catch (err) {
-      Swal.fire({
-        icon: 'error', title: 'Checkout failed',
-        text: err.response?.data?.error || err.message,
-        customClass: { popup: 'rounded-2xl' },
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    setPaying(true);
   };
+
+  // Le panier n'est vidé qu'une fois le paiement confirmé : en cas d'abandon
+  // l'acheteur retrouve sa commande intacte.
+  const handlePaid = () => {
+    setPaidTotal(`${fmt(totalAmount, 2)} ${currency}`);
+    clearCart();
+  };
+
+  if (paidTotal) {
+    return (
+      <div style={{ background: BG, minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24, textAlign: 'center' }}>
+        <h1 style={{ ...serif, fontSize: 36, color: INK, fontWeight: 500, margin: 0 }}>
+          Thank you for your order
+        </h1>
+        <p style={{ ...sans, color: 'rgba(20,35,26,0.6)', maxWidth: 420, lineHeight: 1.6 }}>
+          Your payment of <strong>{paidTotal}</strong> is confirmed. We&apos;ll contact you
+          on <strong>{form.phone_number}</strong> to arrange delivery.
+        </p>
+        <Link to="/shop" style={{ ...sans, fontSize: 13, color: GREEN, fontWeight: 700 }}>
+          ← Back to shop
+        </Link>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -196,7 +206,7 @@ const CheckoutPage = () => {
     );
   }
 
-  const canPay = !submitting && !hasMixedCurrency;
+  const canPay = !hasMixedCurrency;
 
   return (
     <div style={{ background: BG, minHeight: '100vh', padding: '48px 24px' }}>
@@ -288,20 +298,30 @@ const CheckoutPage = () => {
                   fontWeight: 700, fontSize: 14,
                   cursor: canPay ? 'pointer' : 'not-allowed', marginTop: 8,
                 }}>
-                {submitting
-                  ? 'Redirecting to payment…'
-                  : hasMixedCurrency
+                {hasMixedCurrency
                     ? 'One currency per order'
-                    : `Pay ${fmt(totalAmount, 2)} ${currency}`}
+                    : `Continue to payment · ${fmt(totalAmount, 2)} ${currency}`}
               </button>
 
               <p style={{ ...sans, fontSize: 11.5, color: 'rgba(20,35,26,0.4)', textAlign: 'center' }}>
-                Secure payment via DPO. You'll be redirected to complete the transaction.
+                Pay with Mobile Money, card or Google Pay on the next step.
               </p>
             </div>
           </div>
         </div>
       </div>
+
+      <PaymentModal
+        isOpen={paying}
+        onClose={() => setPaying(false)}
+        title={`Nkusu order · ${items.length} item${items.length > 1 ? 's' : ''}`}
+        prices={{ [currency]: totalAmount }}
+        defaultCurrency={currency}
+        phone={form.phone_number}
+        email={form.email}
+        provider={provider}
+        onSuccess={handlePaid}
+      />
     </div>
   );
 };

@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../axiosInstance';
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const transToken = searchParams.get('TransactionToken');
+  // Retour DPO d'une commande boutique : la vérification se fait sur la
+  // commande, pas sur un accès à une fonctionnalité.
+  const isShop = useLocation().pathname.startsWith('/shop');
 
   const [status, setStatus] = useState('verifying'); // verifying | success | pending | error
   const [message, setMessage] = useState('');
@@ -25,7 +28,9 @@ export default function PaymentSuccess() {
     try {
       console.log('[PAYMENT SUCCESS] Verifying payment:', transToken);
       
-      const res = await axiosInstance.get(`/api/payments/dpo/verify/${transToken}`);
+      const res = await axiosInstance.get(isShop
+        ? `/api/ecommerce/checkout/verify/${transToken}`
+        : `/api/payments/dpo/verify/${transToken}`);
       
       console.log('[PAYMENT SUCCESS] Verification response:', res.data);
 
@@ -34,6 +39,12 @@ export default function PaymentSuccess() {
         setStatus('success');
         setMessage('Payment confirmed successfully!');
         
+        if (isShop) {
+          try { localStorage.removeItem('nkusu_shop_cart'); } catch { /* stockage indisponible */ }
+          setTimeout(() => navigate('/shop'), 3000);
+          return;
+        }
+
         // Fetch payment details if needed
         fetchPaymentDetails();
         

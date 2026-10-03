@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import PropTypes from 'prop-types';
 import axiosInstance from '../../axiosInstance';
 import Swal from 'sweetalert2';
 import { PERMISSIONS_CONFIG, DEFAULT_PERMISSIONS } from './permissionsConfig';
@@ -17,6 +18,11 @@ const Toggle = ({ checked, onToggle }) => (
     />
   </button>
 );
+
+Toggle.propTypes = {
+  checked: PropTypes.bool.isRequired,
+  onToggle: PropTypes.func.isRequired,
+};
 
 const CreateUser = () => {
   const [formData, setFormData] = useState({

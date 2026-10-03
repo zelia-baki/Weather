@@ -27,6 +27,51 @@ const QUALIFIERS = [
 ];
 
 // ── Reusable field components ─────────────────────────────────────────────────
+// EUDR V3 n'accepte que des sous-positions à 6 chiffres (0901 → rejeté,
+// 090111 → accepté), alors que l'Annexe I (table hscode) liste des positions à
+// 4 chiffres. Sous-positions du Système harmonisé (HS 2022) des commodités
+// principales ; pour les autres positions, l'utilisateur complète les 2
+// derniers chiffres depuis sa déclaration en douane.
+const HS_SUBHEADINGS = {
+  '0201': [['020110', 'Carcasses and half-carcasses'], ['020120', 'Other cuts with bone in'], ['020130', 'Boneless']],
+  '0202': [['020210', 'Carcasses and half-carcasses'], ['020220', 'Other cuts with bone in'], ['020230', 'Boneless']],
+  '0901': [['090111', 'Coffee, not roasted, not decaffeinated'], ['090112', 'Coffee, not roasted, decaffeinated'],
+           ['090121', 'Coffee, roasted, not decaffeinated'], ['090122', 'Coffee, roasted, decaffeinated'],
+           ['090190', 'Other (coffee husks and skins, coffee substitutes)']],
+  '1201': [['120110', 'Soya beans, seed'], ['120190', 'Soya beans, other']],
+  '1507': [['150710', 'Soya-bean oil, crude'], ['150790', 'Soya-bean oil, other']],
+  '1511': [['151110', 'Palm oil, crude'], ['151190', 'Palm oil, other']],
+  '1801': [['180100', 'Cocoa beans, whole or broken, raw or roasted']],
+  '1802': [['180200', 'Cocoa shells, husks, skins and other cocoa waste']],
+  '1803': [['180310', 'Cocoa paste, not defatted'], ['180320', 'Cocoa paste, wholly or partly defatted']],
+  '1804': [['180400', 'Cocoa butter, fat and oil']],
+  '1805': [['180500', 'Cocoa powder, not containing added sugar']],
+  '1806': [['180610', 'Cocoa powder, containing added sugar'], ['180620', 'Other preparations in blocks > 2 kg or in bulk'],
+           ['180631', 'Blocks, slabs or bars, filled'], ['180632', 'Blocks, slabs or bars, not filled'],
+           ['180690', 'Other chocolate preparations']],
+  '2304': [['230400', 'Oilcake and other solid residues of soya-bean oil']],
+  '4001': [['400110', 'Natural rubber latex'], ['400121', 'Smoked sheets'],
+           ['400122', 'Technically specified natural rubber (TSNR)'], ['400129', 'Natural rubber, other forms'],
+           ['400130', 'Balata, gutta-percha, guayule, chicle and similar natural gums']],
+};
+const hsDigits = (code) => String(code || '').replace(/\D/g, '');
+
+// Unité supplémentaire : TRACES rejette tout qualificatif qui ne correspond pas
+// à l'unité de la Nomenclature combinée du code HS (même règle que
+// _supplementary_unit() côté backend, eudr_utils.py).
+const SUPPLEMENTARY_UNIT_BY_HS = {
+  '0102': 'NAR', '4011': 'NAR', '4012': 'NAR',
+  '4403': 'MTQ', '4406': 'MTQ', '4407': 'MTQ', '4408': 'MTQ', '4412': 'MTQ',
+};
+const NO_SUPPLEMENTARY_UNIT_CHAPTERS = ['02', '09', '12', '15', '16', '18', '23'];
+// 'none' → pas d'unité supplémentaire ; 'NAR'/'MTQ' → imposée ; null → libre
+const supplementaryRule = (hs) => {
+  const d = hsDigits(hs);
+  if (d.length < 2) return null;
+  if (NO_SUPPLEMENTARY_UNIT_CHAPTERS.includes(d.slice(0, 2))) return 'none';
+  return SUPPLEMENTARY_UNIT_BY_HS[d.slice(0, 4)] || null;
+};
+
 const iCls = "w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all hover:border-gray-300 [color-scheme:light]";
 const sCls = "w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all [color-scheme:light]";
 
@@ -118,6 +163,22 @@ const EUDRManager = () => {
   const [loading,          setLoading]          = useState('');  // action key being loaded
   const [allCountries,     setAllCountries]     = useState([]);
   const [allHscodes,       setAllHscodes]       = useState([]);
+  // Code choisi dans la liste Annexe I ; formData.hsHeading = code final à 6 chiffres
+  const [hsBase,           setHsBase]           = useState('');
+  const suppRule = supplementaryRule(formData.hsHeading || hsBase);
+
+  // Aligne l'unité supplémentaire sur la règle du code HS choisi
+  useEffect(() => {
+    setFormData(p => {
+      const g = p.goodsMeasure;
+      const next = suppRule === 'none' ? { ...g, supplementaryUnit: '', supplementaryUnitQualifier: '' }
+                 : suppRule ? { ...g, supplementaryUnitQualifier: suppRule }
+                 : g;
+      return next === g || (next.supplementaryUnit === g.supplementaryUnit &&
+                            next.supplementaryUnitQualifier === g.supplementaryUnitQualifier)
+        ? p : { ...p, goodsMeasure: next };
+    });
+  }, [suppRule]);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [geojsonError,     setGeojsonError]     = useState('');
   const [resultOpen,       setResultOpen]       = useState(true);
@@ -143,6 +204,22 @@ const EUDRManager = () => {
     } else {
       setFormData(p => ({ ...p, [name]: value }));
     }
+  };
+
+  // ── HS code : position Annexe I → sous-position 6 chiffres ────────────────
+  const handleHsBaseChange = (e) => {
+    const code = e.target.value;
+    const d = hsDigits(code);
+    setHsBase(code);
+    const subs = HS_SUBHEADINGS[d];
+    // 6 chiffres déjà (ex. "1513 21") ou une seule sous-position possible → automatique
+    const auto = d.length >= 6 ? d.slice(0, 6) : (subs && subs.length === 1 ? subs[0][0] : '');
+    setFormData(p => ({ ...p, hsHeading: auto }));
+  };
+  const handleHsSuffixChange = (e) => {
+    const base = hsDigits(hsBase);
+    const suffix = e.target.value.replace(/\D/g, '').slice(0, 6 - base.length);
+    setFormData(p => ({ ...p, hsHeading: base + suffix }));
   };
 
   // ── GeoJSON validation ────────────────────────────────────────────────────
@@ -182,12 +259,16 @@ const EUDRManager = () => {
     if (!f.activityType)                    missing.push('Activity Type');
     if (!f.countryOfActivity)               missing.push('Country of Activity');
     if (!f.descriptionOfGoods.trim())       missing.push('Description of Goods');
-    if (!f.hsHeading)                       missing.push('HS Heading');
+    if (!hsBase)                            missing.push('HS Heading');
+    else if (hsDigits(f.hsHeading).length !== 6)
+      missing.push(`HS Subheading (6 digits) for heading ${hsBase}`);
     if (!f.producers[0].country || !f.producers[0].name.trim()) missing.push('Producer (country + name)');
-    // EUDR V3 rejects 4-digit headings (e.g. 0901) — a 6-digit subheading is required
-    if (f.hsHeading && f.hsHeading.replace(/\D/g, '').length < 6) {
-      missing.push(`HS code with 6 digits (${f.hsHeading} is too short — e.g. 090111 instead of 0901)`);
-    }
+    const rule = supplementaryRule(f.hsHeading);
+    const g = f.goodsMeasure;
+    if (rule && rule !== 'none' && !(Number(g.supplementaryUnit) > 0))
+      missing.push(`Supplementary Unit in ${rule} for HS ${hsDigits(f.hsHeading)}`);
+    if (!rule && g.supplementaryUnit && !g.supplementaryUnitQualifier)
+      missing.push('Unit Qualifier (required with a supplementary unit)');
     if (missing.length) {
       setResponseData({ error: `Missing required field(s): ${missing.join(', ')}` });
       setShowResult(true);
@@ -236,7 +317,7 @@ const EUDRManager = () => {
   };
 
   const resetForm = () => {
-    setFormData(EMPTY_FORM); setGeojson(''); setDdsIdentifier('');
+    setFormData(EMPTY_FORM); setHsBase(''); setGeojson(''); setDdsIdentifier('');
     setReferenceCheck(''); setVerificationCode(''); setResponseData(null);
     setShowResult(false); setGeojsonError('');
   };
@@ -343,8 +424,8 @@ const EUDRManager = () => {
                 onChange={handleChange} placeholder="e.g. Cocoa beans" className={iCls}/>
             </Field>
             <Field label="HS Heading" required>
-              <select name="hsHeading" value={formData.hsHeading}
-                onChange={handleChange} className={sCls}>
+              <select name="hsBase" value={hsBase}
+                onChange={handleHsBaseChange} className={sCls}>
                 <option value="">Select HS code</option>
                 {allHscodes.map(h => (
                   <option key={h.id} value={h.code}>
@@ -353,6 +434,31 @@ const EUDRManager = () => {
                 ))}
               </select>
             </Field>
+            {hsBase && hsDigits(hsBase).length < 6 && (
+              <Field label="HS Subheading (6 digits)" required
+                hint={`EUDR requires a 6-digit code. Selected: ${formData.hsHeading || 'none'}`}>
+                {HS_SUBHEADINGS[hsDigits(hsBase)] ? (
+                  <select name="hsHeading" value={formData.hsHeading}
+                    onChange={handleChange} className={sCls}>
+                    <option value="">Select subheading</option>
+                    {HS_SUBHEADINGS[hsDigits(hsBase)].map(([code, label]) => (
+                      <option key={code} value={code}>{code} — {label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-2.5 rounded-xl bg-gray-100 text-sm font-mono text-gray-700">
+                      {hsDigits(hsBase)}
+                    </span>
+                    <input value={formData.hsHeading.slice(hsDigits(hsBase).length)}
+                      onChange={handleHsSuffixChange} inputMode="numeric"
+                      maxLength={6 - hsDigits(hsBase).length}
+                      placeholder={'0'.repeat(6 - hsDigits(hsBase).length)}
+                      className={iCls}/>
+                  </div>
+                )}
+              </Field>
+            )}
             <Field label="Volume" hint="Not transmitted to EUDR (removed in V3)">
               <input type="number" step="any" min="0" name="goodsMeasure.volume"
                 value={formData.goodsMeasure.volume}
@@ -363,19 +469,34 @@ const EUDRManager = () => {
                 value={formData.goodsMeasure.netWeight}
                 onChange={handleChange} placeholder="0.00" className={iCls}/>
             </Field>
-            <Field label="Supplementary Unit">
-              <input type="number" step="1" min="0" name="goodsMeasure.supplementaryUnit"
-                value={formData.goodsMeasure.supplementaryUnit}
-                onChange={handleChange} placeholder="0" className={iCls}/>
-            </Field>
-            <Field label="Unit Qualifier">
-              <select name="goodsMeasure.supplementaryUnitQualifier"
-                value={formData.goodsMeasure.supplementaryUnitQualifier}
-                onChange={handleChange} className={sCls}>
-                <option value="">Select qualifier</option>
-                {QUALIFIERS.map(q => <option key={q} value={q}>{q}</option>)}
-              </select>
-            </Field>
+            {suppRule === 'none' ? (
+              <Field label="Supplementary Unit"
+                hint="Not applicable for this HS code: only the net weight (kg) is declared">
+                <input disabled value="Not applicable" className={`${iCls} opacity-60`}/>
+              </Field>
+            ) : (
+              <>
+                <Field label="Supplementary Unit" required={!!suppRule}
+                  hint={suppRule === 'MTQ' ? 'Volume in cubic metres (m³)'
+                      : suppRule === 'NAR' ? 'Number of items / heads' : undefined}>
+                  <input type="number" step="any" min="0" name="goodsMeasure.supplementaryUnit"
+                    value={formData.goodsMeasure.supplementaryUnit}
+                    onChange={handleChange} placeholder="0" className={iCls}/>
+                </Field>
+                <Field label="Unit Qualifier" hint={suppRule ? 'Imposed by the EU Combined Nomenclature' : undefined}>
+                  {suppRule ? (
+                    <input disabled value={suppRule} className={`${iCls} opacity-60`}/>
+                  ) : (
+                    <select name="goodsMeasure.supplementaryUnitQualifier"
+                      value={formData.goodsMeasure.supplementaryUnitQualifier}
+                      onChange={handleChange} className={sCls}>
+                      <option value="">Select qualifier</option>
+                      {QUALIFIERS.map(q => <option key={q} value={q}>{q}</option>)}
+                    </select>
+                  )}
+                </Field>
+              </>
+            )}
             <Field label="Scientific Name">
               <input name="speciesInfo.scientificName" value={formData.speciesInfo.scientificName}
                 onChange={handleChange} placeholder="e.g. Theobroma cacao" className={iCls}/>
