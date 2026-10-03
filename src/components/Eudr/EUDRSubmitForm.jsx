@@ -27,34 +27,23 @@ const QUALIFIERS = [
 ];
 
 // ── Reusable field components ─────────────────────────────────────────────────
-// EUDR V3 n'accepte que des sous-positions à 6 chiffres (0901 → rejeté,
-// 090111 → accepté), alors que l'Annexe I (table hscode) liste des positions à
-// 4 chiffres. Sous-positions du Système harmonisé (HS 2022) des commodités
-// principales ; pour les autres positions, l'utilisateur complète les 2
-// derniers chiffres depuis sa déclaration en douane.
-const HS_SUBHEADINGS = {
-  '0201': [['020110', 'Carcasses and half-carcasses'], ['020120', 'Other cuts with bone in'], ['020130', 'Boneless']],
-  '0202': [['020210', 'Carcasses and half-carcasses'], ['020220', 'Other cuts with bone in'], ['020230', 'Boneless']],
-  '0901': [['090111', 'Coffee, not roasted, not decaffeinated'], ['090112', 'Coffee, not roasted, decaffeinated'],
-           ['090121', 'Coffee, roasted, not decaffeinated'], ['090122', 'Coffee, roasted, decaffeinated'],
-           ['090190', 'Other (coffee husks and skins, coffee substitutes)']],
-  '1201': [['120110', 'Soya beans, seed'], ['120190', 'Soya beans, other']],
-  '1507': [['150710', 'Soya-bean oil, crude'], ['150790', 'Soya-bean oil, other']],
-  '1511': [['151110', 'Palm oil, crude'], ['151190', 'Palm oil, other']],
-  '1801': [['180100', 'Cocoa beans, whole or broken, raw or roasted']],
-  '1802': [['180200', 'Cocoa shells, husks, skins and other cocoa waste']],
-  '1803': [['180310', 'Cocoa paste, not defatted'], ['180320', 'Cocoa paste, wholly or partly defatted']],
-  '1804': [['180400', 'Cocoa butter, fat and oil']],
-  '1805': [['180500', 'Cocoa powder, not containing added sugar']],
-  '1806': [['180610', 'Cocoa powder, containing added sugar'], ['180620', 'Other preparations in blocks > 2 kg or in bulk'],
-           ['180631', 'Blocks, slabs or bars, filled'], ['180632', 'Blocks, slabs or bars, not filled'],
-           ['180690', 'Other chocolate preparations']],
-  '2304': [['230400', 'Oilcake and other solid residues of soya-bean oil']],
-  '4001': [['400110', 'Natural rubber latex'], ['400121', 'Smoked sheets'],
-           ['400122', 'Technically specified natural rubber (TSNR)'], ['400129', 'Natural rubber, other forms'],
-           ['400130', 'Balata, gutta-percha, guayule, chicle and similar natural gums']],
-};
+// Codes HS déclarables : renvoyés par /api/hscode/ (verdicts TRACES stockés en
+// base par hscode_sync.py) — le code de l'Annexe I tel quel s'il est accepté,
+// puis ses sous-positions à 6 chiffres acceptées. Rien n'est codé en dur ici.
 const hsDigits = (code) => String(code || '').replace(/\D/g, '');
+
+const hsOptions = (h) => {
+  if (!h) return [];
+  const d = hsDigits(h.code);
+  const opts = [];
+  if (h.traces_valid !== false) {
+    opts.push({ code: d.slice(0, 6), label: d.length < 6 ? 'as listed in Annex I' : h.description });
+  }
+  (h.subheadings || []).forEach(sub => {
+    if (sub.code !== d && sub.traces_valid !== false) opts.push({ code: sub.code, label: sub.description || '' });
+  });
+  return opts;
+};
 
 // Unité supplémentaire : TRACES rejette tout qualificatif qui ne correspond pas
 // à l'unité de la Nomenclature combinée du code HS (même règle que
@@ -207,19 +196,14 @@ const EUDRManager = () => {
   };
 
   // ── HS code : position Annexe I → sous-position 6 chiffres ────────────────
+  const selectedHs = allHscodes.find(h => h.code === hsBase);
+  const hsChoices  = hsOptions(selectedHs);
   const handleHsBaseChange = (e) => {
     const code = e.target.value;
-    const d = hsDigits(code);
     setHsBase(code);
-    const subs = HS_SUBHEADINGS[d];
-    // 6 chiffres déjà (ex. "1513 21") ou une seule sous-position possible → automatique
-    const auto = d.length >= 6 ? d.slice(0, 6) : (subs && subs.length === 1 ? subs[0][0] : '');
-    setFormData(p => ({ ...p, hsHeading: auto }));
-  };
-  const handleHsSuffixChange = (e) => {
-    const base = hsDigits(hsBase);
-    const suffix = e.target.value.replace(/\D/g, '').slice(0, 6 - base.length);
-    setFormData(p => ({ ...p, hsHeading: base + suffix }));
+    // Par défaut : le code de l'Annexe I s'il est accepté, sinon la seule option possible
+    const opts = hsOptions(allHscodes.find(h => h.code === code));
+    setFormData(p => ({ ...p, hsHeading: opts.length ? opts[0].code : '' }));
   };
 
   // ── GeoJSON validation ────────────────────────────────────────────────────
@@ -260,8 +244,8 @@ const EUDRManager = () => {
     if (!f.countryOfActivity)               missing.push('Country of Activity');
     if (!f.descriptionOfGoods.trim())       missing.push('Description of Goods');
     if (!hsBase)                            missing.push('HS Heading');
-    else if (hsDigits(f.hsHeading).length !== 6)
-      missing.push(`HS Subheading (6 digits) for heading ${hsBase}`);
+    else if (!hsDigits(f.hsHeading))
+      missing.push(`HS code to declare for heading ${hsBase}`);
     if (!f.producers[0].country || !f.producers[0].name.trim()) missing.push('Producer (country + name)');
     const rule = supplementaryRule(f.hsHeading);
     const g = f.goodsMeasure;
@@ -434,30 +418,21 @@ const EUDRManager = () => {
                 ))}
               </select>
             </Field>
-            {hsBase && hsDigits(hsBase).length < 6 && (
-              <Field label="HS Subheading (6 digits)" required
-                hint={`EUDR requires a 6-digit code. Selected: ${formData.hsHeading || 'none'}`}>
-                {HS_SUBHEADINGS[hsDigits(hsBase)] ? (
-                  <select name="hsHeading" value={formData.hsHeading}
-                    onChange={handleChange} className={sCls}>
-                    <option value="">Select subheading</option>
-                    {HS_SUBHEADINGS[hsDigits(hsBase)].map(([code, label]) => (
-                      <option key={code} value={code}>{code} — {label}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-2.5 rounded-xl bg-gray-100 text-sm font-mono text-gray-700">
-                      {hsDigits(hsBase)}
-                    </span>
-                    <input value={formData.hsHeading.slice(hsDigits(hsBase).length)}
-                      onChange={handleHsSuffixChange} inputMode="numeric"
-                      maxLength={6 - hsDigits(hsBase).length}
-                      placeholder={'0'.repeat(6 - hsDigits(hsBase).length)}
-                      className={iCls}/>
-                  </div>
-                )}
+            {hsBase && hsChoices.length > 1 && (
+              <Field label="HS Code to Declare" required
+                hint="Codes accepted by the EUDR information system (TRACES)">
+                <select name="hsHeading" value={formData.hsHeading}
+                  onChange={handleChange} className={sCls}>
+                  {hsChoices.map(o => (
+                    <option key={o.code} value={o.code}>{o.code} — {o.label}</option>
+                  ))}
+                </select>
               </Field>
+            )}
+            {hsBase && hsChoices.length === 0 && (
+              <p className="sm:col-span-2 text-sm text-red-600">
+                HS code {hsBase} is not accepted by the EUDR information system. Choose another code.
+              </p>
             )}
             <Field label="Volume" hint="Not transmitted to EUDR (removed in V3)">
               <input type="number" step="any" min="0" name="goodsMeasure.volume"
