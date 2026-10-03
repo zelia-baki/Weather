@@ -30,10 +30,21 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPrev
             : (typeof err?.error === 'string' ? err.error : JSON.stringify(err, null, 2));
         const detail = typeof err === 'object' ? err?.detail : null;
         const raw = typeof err === 'object' ? err?.raw : null;
+        // Valeurs réellement envoyées à TRACES : son message ne dit jamais laquelle il rejette
+        const sent = typeof err === 'object' ? err?.sent : null;
         return (
             <div className="space-y-2">
                 <div className="text-red-600 font-semibold whitespace-pre-wrap">{errorMessage}</div>
                 {detail && <div className="text-red-500 text-sm whitespace-pre-wrap">{detail}</div>}
+                {sent && (
+                    <div className="text-xs text-gray-600 bg-gray-50 border rounded p-2">
+                        <span className="font-semibold">Sent to EUDR:</span>{' '}
+                        HS code <span className="font-mono">{sent.hsHeading || 'none'}</span>
+                        {sent.descriptionOfGoods ? `, goods "${sent.descriptionOfGoods}"` : ''}
+                        {sent.netWeight ? `, net weight ${sent.netWeight} kg` : ''}
+                        {sent.producerCountries?.length ? `, producer country ${sent.producerCountries.join(', ')}` : ''}
+                    </div>
+                )}
                 {raw && (
                     <details>
                         <summary className="cursor-pointer text-blue-600 underline text-sm">See raw EUDR response</summary>
