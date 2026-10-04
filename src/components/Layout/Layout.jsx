@@ -43,6 +43,7 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
   // ── Farm modular permissions ────────────────────────────────
   const hasFarmergroup = isAdmin || !!permissions.farmergroup;
   const hasStore        = isAdmin || !!permissions.store;
+  const hasEudrDds      = isAdmin || !!permissions.eudr_dds;
 
   return [
     {
@@ -119,7 +120,7 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
     },
     {
       id: "eudr", label: "DDS", Icon: FaFileContract,
-      show: isAll,
+      show: hasEudrDds,
       items: [
         { label: "DDS Submission", href: "/EUDRSubmission", Icon: FaFileContract },
       ],

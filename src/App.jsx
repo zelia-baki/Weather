@@ -215,6 +215,7 @@ const PERMISSION_LABELS = {
   sentinel: 'Sentinel / NDVI',
   reports: 'Rapports',
   qr: 'Module QR Code',
+  eudr_dds: 'EUDR DDS Submission',
 };
 
 const UserTypeRoute = ({ children, allowedRoles, requireWbii = false, requirePermission = null }) => {
@@ -376,7 +377,7 @@ const layoutRoutes = [
   { path: '/alertmessage', component: <AlertMessaging />, roles: ROLES.ALL },
 
   // EUDR
-  { path: '/EUDRSubmission', component: <EUDRSubmitForm />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/EUDRSubmission', component: <EUDRSubmitForm />, roles: ROLES.ALL, permission: 'eudr_dds' },
   { path: '/stats-certificate', component: <UserCertificate />, roles: ROLES.ALL },
 
   // Admin only

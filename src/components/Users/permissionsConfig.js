@@ -11,6 +11,7 @@ import { FaWater } from 'react-icons/fa';
 import { FaSatelliteDish } from 'react-icons/fa';
 import { FaChartBar } from 'react-icons/fa';
 import { FaQrcode } from 'react-icons/fa';
+import { FaFileContract } from 'react-icons/fa';
 
 export const PERMISSIONS_CONFIG = [
   {
@@ -60,6 +61,12 @@ export const PERMISSIONS_CONFIG = [
     label: 'Module QR Code',
     Icon: FaQrcode,
     description: 'Génération et gestion des QR codes de traçabilité',
+  },
+  {
+    key: 'eudr_dds',
+    label: 'EUDR DDS Submission',
+    Icon: FaFileContract,
+    description: 'Soumission, modification et retrait des DDS EUDR (TRACES)',
   },
 ];
 
