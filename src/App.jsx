@@ -139,6 +139,11 @@ import ProductDetail from './components/Shop/ProductDetail.jsx';
 import OurStory from './components/Shop/OurStory.jsx';
 import SalesDashboard from './components/Ecommerce/SalesDashboard.jsx';
 import SoldProductsDashboard from './components/Ecommerce/SoldProductsDashboard.jsx';
+import OrderManager from './components/Ecommerce/OrderManager.jsx';
+import CustomerManager from './components/Ecommerce/CustomerManager.jsx';
+
+//2TUME
+import VarietyManager from './components/crop/VarietyManager.jsx';
 // =============================================================================
 // GUARD : AccessDeniedScreen — composant partagé pour tous les refus d'accès
 // =============================================================================
@@ -312,6 +317,7 @@ const layoutRoutes = [
   { path: '/irrigationmanager', component: <IrrigationManager />, roles: ROLES.FARM },
   { path: '/cropcoefficientmanager', component: <CropCoefficientManager />, roles: ROLES.FARM },
   { path: '/grademanager', component: <GradeManager />, roles: ROLES.FARM },
+  { path: '/varietymanager', component: <VarietyManager />, roles: ROLES.FARM },//////////////////////////////
   { path: '/hscodemanager', component: <HSCodeManager />, roles: ROLES.FARM },
   { path: '/storeProductManager', component: <StoreProductManager />, roles: ROLES.FARM, permission: 'store' },
 
@@ -391,6 +397,8 @@ const layoutRoutes = [
   { path: '/auctionmanager', component: <AuctionManager />, roles: ROLES.ADMIN, adminOnly: true },
   { path: '/salesdashboard', component: <SalesDashboard />,        roles: ROLES.ADMIN, adminOnly: true },
   { path: '/soldproducts',   component: <SoldProductsDashboard />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/ordermanager', component: <OrderManager />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/customermanager', component: <CustomerManager />, roles: ROLES.ADMIN, adminOnly: true },
   
 
 ];

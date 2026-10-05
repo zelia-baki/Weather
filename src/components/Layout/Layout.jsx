@@ -61,6 +61,8 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         ...(hasFarmergroup ? [{ label: "Farmer Group", href: "/farmergroup", Icon: GiFarmer }] : []),
         { label: "Farm Manager",  href: "/farmmanager",         Icon: RiPlantLine },
         { label: "Crop",          href: "/cropmanage",          Icon: GiWheat },
+        { label: "Varieties",     href: "/varietymanager",      Icon: TbPlant2 }, 
+        { label: "Grades",        href: "/grademanager",        Icon: TbTag },
         { label: "Categories",    href: "/categorymanager",     Icon: TbTag },
         { label: "District",      href: "/district",            Icon: TbMap2 },
         { label: "View All",      href: "/mapviewall",          Icon: RiMapPinLine, state: { owner_type: "farmer" } },
@@ -87,6 +89,8 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "Shop (customer view)", href: "/shop",           Icon: BsShop },
         { label: "Auctions (public)",    href: "/auctions",       Icon: MdOutlineGavel },
         { label: "Auction Manager",      href: "/auctionmanager", Icon: MdOutlineGavel },
+        { label: "Orders", href: "/ordermanager", Icon: TbPackages },
+        { label: "Buyers", href: "/customermanager", Icon: TbPackages },
       ],
     },
     {

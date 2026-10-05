@@ -744,10 +744,11 @@ const LandingPage = () => {
             { label: "FORGET", href: "/shop/ourstory", hidden: true },
             { label: "About", href: "/sectionfutur" },
             { label: "Climate Tools", popup: true },
-            { label: "Contact", to: "contact", scroll: true },
             { label: "Nkusu Commerce", href: "/shop" },
+            { label: "Blog", href: "/blogpublic" },
+            { label: "Contact", to: "contact", scroll: true },   
             { label: "Auctions", href: "/auctions", hidden: true },
-            { label: "Our Story", href: "/shop/ourstory" },
+            
           ].filter((item) => !item.hidden).map((item) =>
             item.scroll ? (
               <ScrollLink key={item.label} to={item.to} smooth duration={500} offset={-80} className="nav-link">

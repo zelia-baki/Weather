@@ -24,3 +24,6 @@ dist-ssr
 src/axiosInstance.jsx
 .env
 .env.local
+
+tree_front.txt
+package-lock.json
