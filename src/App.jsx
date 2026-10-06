@@ -144,6 +144,7 @@ import CustomerManager from './components/Ecommerce/CustomerManager.jsx';
 
 //2TUME
 import VarietyManager from './components/crop/VarietyManager.jsx';
+import ShopLanding from './components/Shop/ShopLanding.jsx';
 // =============================================================================
 // GUARD : AccessDeniedScreen — composant partagé pour tous les refus d'accès
 // =============================================================================
@@ -428,6 +429,7 @@ function App() {
         <Route path="/payment/success"   element={<PaymentSuccess />} />
         <Route path="/payment/cancelled" element={<PaymentCancelled />} />
         <Route path="/payment/error"     element={<PaymentError />} />
+        <Route path="/welcome" element={<ShopLanding />} />
 
         {/* ── Boutique et enchères : même coquille ── */}
         <Route path="/shop" element={<ShopLayout />}>
@@ -444,6 +446,7 @@ function App() {
           <Route path="/auctions"        element={<AuctionsIndex />} />
           <Route path="/auction/lot/:id" element={<LotDetail />} />
           <Route path="/auction/:slug"   element={<AuctionPage />} />
+          
         </Route>
 
         {/* Retours DPO de caution : pages de transit, sans navigation */}
@@ -453,6 +456,7 @@ function App() {
 
         {/* ── Home protégé ── */}
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        
 
         {/* ── Routes protégées avec rôles + permissions ── */}
         {layoutRoutes.map(({
