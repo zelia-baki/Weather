@@ -97,6 +97,17 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "Warehouse Dashboard", href: "/warehousedashboard", Icon: TbChartBar },
       ],
     },
+        {
+      id: "exchange", label: "Exchange", Icon: TbPackages,
+      show: isAdmin,
+      items: [
+        { label: "Receipts",            href: "/2tume/receipts",   Icon: TbPackages },
+        { label: "Warehouses",          href: "/2tume/warehouses", Icon: BsShop },
+        { label: "Warehouse Dashboard", href: "/2tume/dashboard",  Icon: TbChartBar },
+        { label: "Quality & Grades",    href: "/2tume/quality",    Icon: TbTag },
+        { label: "Varieties",           href: "/2tume/varieties",  Icon: TbPlant2 },
+      ],
+    },
     {
       id: "weather", label: "Weather", Icon: FaCloudSun,
       show: isWeather,

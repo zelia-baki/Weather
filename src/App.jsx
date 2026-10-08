@@ -413,6 +413,13 @@ const layoutRoutes = [
   { path: '/receipts',     component: <ReceiptManager />,   roles: ROLES.WAREHOUSE },
   { path: '/receipts/new', component: <ReceiptReception />, roles: ROLES.WAREHOUSE },
   { path: '/warehousedashboard', component: <WarehouseDashboard />, roles: ROLES.WAREHOUSE },
+    // ── 2tume — commodity exchange ──
+  { path: '/2tume/receipts',      component: <ReceiptManager />,      roles: ROLES.WAREHOUSE },
+  { path: '/2tume/receipts/new',  component: <ReceiptReception />,    roles: ROLES.WAREHOUSE },
+  { path: '/2tume/warehouses',    component: <WarehouseManager />,    roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/2tume/dashboard',     component: <WarehouseDashboard />,  roles: ROLES.WAREHOUSE },
+  { path: '/2tume/quality',       component: <QualityManager />,      roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/2tume/varieties',     component: <VarietyManager />,      roles: ROLES.FARM },
   
 
 ];
