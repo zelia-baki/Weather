@@ -145,6 +145,14 @@ import CustomerManager from './components/Ecommerce/CustomerManager.jsx';
 //2TUME
 import VarietyManager from './components/crop/VarietyManager.jsx';
 import ShopLanding from './components/Shop/ShopLanding.jsx';
+import QualityManager from './components/crop/QualityManager.jsx';
+
+
+//RECEIPTS
+import ReceiptReception from './components/Receipt/ReceiptReception.jsx';
+import ReceiptManager from './components/Receipt/ReceiptManager.jsx';
+import ReceiptVerify from './components/Receipt/ReceiptVerify.jsx';
+import WarehouseDashboard from './components/Receipt/WarehouseDashboard.jsx';
 // =============================================================================
 // GUARD : AccessDeniedScreen — composant partagé pour tous les refus d'accès
 // =============================================================================
@@ -400,6 +408,11 @@ const layoutRoutes = [
   { path: '/soldproducts',   component: <SoldProductsDashboard />, roles: ROLES.ADMIN, adminOnly: true },
   { path: '/ordermanager', component: <OrderManager />, roles: ROLES.ADMIN, adminOnly: true },
   { path: '/customermanager', component: <CustomerManager />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/qualitymanager', component: <QualityManager />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/receipts/new', component: <ReceiptReception />, roles: ROLES.WAREHOUSE },
+  { path: '/receipts',     component: <ReceiptManager />,   roles: ROLES.WAREHOUSE },
+  { path: '/receipts/new', component: <ReceiptReception />, roles: ROLES.WAREHOUSE },
+  { path: '/warehousedashboard', component: <WarehouseDashboard />, roles: ROLES.WAREHOUSE },
   
 
 ];
@@ -453,6 +466,11 @@ function App() {
         <Route path="/auction/deposit/success"   element={<PaymentSuccess />} />
         <Route path="/auction/deposit/cancelled" element={<PaymentCancelled />} />
         <Route path="/auction/deposit/error"     element={<PaymentError />} />
+
+                {/* ── Pour 2TUME ── */}
+
+        <Route path="/verify"         element={<ReceiptVerify />} />
+        <Route path="/verify/:serial" element={<ReceiptVerify />} />
 
         {/* ── Home protégé ── */}
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
