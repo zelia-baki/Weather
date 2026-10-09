@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUserInfo } from "./hooks/useUserInfo";
 import { useFileUpload } from "./hooks/useFileUpload";
 import { useReports } from "./hooks/useReports";
+import { REPORT_TTL_DAYS } from "../../utils/storedReports";
 import { useTutorial } from "./hooks/useTutorial";
 import { tutorialSteps } from "./config/tutorialSteps";
 import StepLocation from "./steps/StepLocation";
@@ -16,10 +17,10 @@ import TutorialInvitation from "./components/TutorialInvitation";
 import TutorialFloatingButton from "./components/TutorialFloatingButton";
 import EudrHiddenCapture from "./components/EudrHiddenCapture"; // ✅ nouveau import
 
-// 🚧 DEV ONLY — mettre à false avant de déployer en prod
-// Quand true, un bouton "Skip payment (DEV)" apparaît à l'étape 4
+// 🚧 DEV ONLY — un bouton "Skip payment (DEV)" apparaît à l'étape 4
 // pour générer le rapport directement, sans passer par SendPaymentModal.
-const BYPASS_PAYMENT = true;
+// Lié à import.meta.env.DEV : jamais présent dans un build de prod.
+const BYPASS_PAYMENT = import.meta.env.DEV;
 
 // ── Step config ──────────────────────────────────────────────────────────────
 const STEPS = [
@@ -258,13 +259,13 @@ const EUDRSubmitFormForGuest = () => {
       setStep(3);
       return;
     }
-    // ✅ reports.<type> est maintenant un tableau (plusieurs rapports possibles, TTL 5 min)
+    // ✅ reports.<type> est maintenant un tableau (plusieurs rapports possibles, TTL REPORT_TTL_DAYS)
     const hasAnyReport =
       (reports.eudr?.length ?? 0) > 0 ||
       (reports.carbon?.length ?? 0) > 0 ||
       (reports.sentinel?.length ?? 0) > 0;
     if (step === 5 && !hasAnyReport) {
-      setStateError("⚠️ No report available (they expire 5 minutes after generation). Please restart the payment.");
+      setStateError(`⚠️ No report available (reports are kept ${REPORT_TTL_DAYS} days after generation). Please restart the payment.`);
       setStep(4);
       return;
     }

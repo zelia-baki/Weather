@@ -2,7 +2,8 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import axiosInstance from '../../axiosInstance.jsx';
-import { useLocation, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
+import useReportEntityId from "../../hooks/useReportEntityId";
 import Loading from '../main/Loading.jsx';
 import EudrReportSection from "../Guest/components/EudrReportSection.jsx";
 import { requestPdfFromRef } from "../Guest/utils/pdfUtils.js";
@@ -14,8 +15,7 @@ const ForestReport = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  const location = useLocation();
-  const forestId = location.state?.forestId || 1;
+  const forestId = useReportEntityId('forestId', 1);
   const reportRef = useRef();
 
   useEffect(() => {
@@ -129,6 +129,7 @@ const ForestReport = () => {
         <BackendPdfPanel
           ready={htmlReady}
           fetchPdf={() => requestPdfFromRef(reportRef, `EUDR_Report_Forest_${forestId}.pdf`)}
+          storeKey={`eudr-forest-${forestId}`}
           filename={`EUDR_Report_Forest_${forestId}.pdf`}
           title="EUDR Compliance Report — Forest"
           accent="blue"

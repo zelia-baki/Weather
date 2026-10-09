@@ -2,6 +2,7 @@ import { Trees, Wheat, Sprout } from "lucide-react";
 import SentinelDashboard from "../../Sentinel/SentinelDashboard";
 import PdfViewer from "../components/PdfViewer";
 import { downloadPdfFile } from "../utils/pdfDownload";
+import { REPORT_TTL_DAYS } from "../../../utils/storedReports";
 
 const formatTime = (ts) => new Date(ts).toLocaleTimeString();
 
@@ -79,8 +80,14 @@ const PdfReportBlock = ({ entry, filename, label, colorClass, accent, viewerTitl
           {label}
         </button>
       </>
+    ) : entry.pdfToken ? (
+      <p className="text-center text-sm text-gray-400 py-6">⏳ Loading PDF…</p>
     ) : (
-      <p className="text-center text-sm text-gray-400 py-6">⏳ Generating PDF…</p>
+      // L'entrée n'est créée qu'après la génération du PDF (voir useReports) :
+      // sans blob ni jeton, le PDF a échoué ou a expiré côté serveur.
+      <p className="text-center text-sm text-gray-500 py-6">
+        This PDF is no longer available. Please contact support with your payment reference.
+      </p>
     )}
   </div>
 );
@@ -99,7 +106,7 @@ const StepReports = ({ reports, geojson, phone, highlightReports = "" }) => {
 
       {!hasAny && (
         <p className="text-center text-sm text-gray-500">
-          No report available yet. Reports stay available for 5 minutes after generation.
+          No report available yet. Reports stay available for {REPORT_TTL_DAYS} days after generation.
         </p>
       )}
 
