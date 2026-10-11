@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
@@ -8,6 +8,7 @@ import ThemeProvider from "./components/ThemeProvider";
 // ─── Route guards ─────────────────────────────────────────────────────────────
 import ProtectedRoute from './ProtectedRoute.jsx';
 import FeatureRoute from './FeatureRoute.jsx';
+import { BRAND, isPathAllowed } from './brand.js';
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 import Layout from './components/Layout/Layout.jsx';
@@ -295,6 +296,8 @@ const ROLES = {
   FOREST: ['admin', 'forest'],
   WEATHER: ['admin', 'weather', 'farmer'],
   ADMIN: ['admin'],
+  // Pas encore de user_type 'warehouse' côté backend : admin seulement.
+  WAREHOUSE: ['admin'],
 };
 
 // =============================================================================
@@ -426,16 +429,30 @@ const layoutRoutes = [
 ];
 
 // =============================================================================
+// GUARD : BrandGate
+// Une route hors du périmètre du domaine courant (cf. brand.js) renvoie à
+// l'accueil de la marque. Sur nkusu.com tout passe.
+// =============================================================================
+const BrandGate = ({ children }) => {
+  const { pathname } = useLocation();
+  if (pathname !== '/' && !isPathAllowed(pathname)) {
+    return <Navigate to={BRAND.home} replace />;
+  }
+  return children;
+};
+
+// =============================================================================
 // APP
 // =============================================================================
 function App() {
   return (
     <BrowserRouter>
       <ThemeProvider />
+      <BrandGate>
       <Routes>
         {/* ── Routes publiques ── */}
 {/* ── Routes publiques ── */}
-        <Route path="/"                       element={<Landipage />} />
+        <Route path="/"                       element={BRAND.landingIsShop ? <ShopLanding /> : <Landipage />} />
         <Route path="/landipage"              element={<Landing />} />
         <Route path="/login"                  element={<Login />} />
         <Route path="/contactus"              element={<ContactUs />} />
@@ -517,6 +534,7 @@ function App() {
           />
         ))}
       </Routes>
+      </BrandGate>
     </BrowserRouter>
   );
 }

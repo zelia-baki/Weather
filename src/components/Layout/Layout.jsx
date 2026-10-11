@@ -12,6 +12,7 @@ import { BsCalendarDate, BsShop } from "react-icons/bs";
 import { GiFarmer, GiForestCamp, GiWheat } from "react-icons/gi";
 import { LuTreePine, LuScanLine } from "react-icons/lu";
 import parrot from "../img/parrot.jpg";
+import { BRAND, isMenuVisible, isPathAllowed } from "../../brand";
 
 // ─── Role badge config ────────────────────────────────────────
 const ROLE_META = {
@@ -102,7 +103,7 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
       show: isAdmin,
       items: [
         { label: "Receipts",            href: "/2tume/receipts",   Icon: TbPackages },
-        { label: "Warehouses",          href: "/2tume/warehouses", Icon: BsShop },
+        // Warehouses : à remettre avec WarehouseManager (route absente pour l'instant).
         { label: "Warehouse Dashboard", href: "/2tume/dashboard",  Icon: TbChartBar },
         { label: "Quality & Grades",    href: "/2tume/quality",    Icon: TbTag },
         { label: "Varieties",           href: "/2tume/varieties",  Icon: TbPlant2 },
@@ -144,7 +145,11 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "DDS Submission", href: "/EUDRSubmission", Icon: FaFileContract },
       ],
     },
-  ].filter((m) => m.show);
+  ]
+    // Sur 2tume.com : seuls les blocs et les liens du périmètre de la marque.
+    .filter((m) => m.show && isMenuVisible(m.id))
+    .map((m) => ({ ...m, items: m.items.filter((i) => isPathAllowed(i.href)) }))
+    .filter((m) => m.items.length > 0);
 };
 
 // ─── Desktop dropdown ─────────────────────────────────────────
@@ -292,14 +297,14 @@ const Layout = ({ children }) => {
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
 
           {/* Logo */}
-          <Link to="/home" className="flex items-center gap-2.5 shrink-0 group">
+          <Link to={BRAND.home} className="flex items-center gap-2.5 shrink-0 group">
             <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-white/30
                             group-hover:ring-white/60 transition-all duration-300 shadow-md">
-              <img src={parrot} alt="Nkusu" className="w-full h-full object-cover" />
+              <img src={parrot} alt={BRAND.name} className="w-full h-full object-cover" />
             </div>
             <span className="text-white font-bold text-lg tracking-tight
                              group-hover:text-teal-200 transition-colors duration-200">
-              Nkusu
+              {BRAND.name}
             </span>
           </Link>
 
