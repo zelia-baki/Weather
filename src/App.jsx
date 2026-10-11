@@ -416,7 +416,8 @@ const layoutRoutes = [
     // ── 2tume — commodity exchange ──
   { path: '/2tume/receipts',      component: <ReceiptManager />,      roles: ROLES.WAREHOUSE },
   { path: '/2tume/receipts/new',  component: <ReceiptReception />,    roles: ROLES.WAREHOUSE },
-  { path: '/2tume/warehouses',    component: <WarehouseManager />,    roles: ROLES.ADMIN, adminOnly: true },
+  // /2tume/warehouses : WarehouseManager n'est pas encore dans le dépôt — sa route
+  // faisait planter toute l'app (ReferenceError au chargement). À remettre avec le composant.
   { path: '/2tume/dashboard',     component: <WarehouseDashboard />,  roles: ROLES.WAREHOUSE },
   { path: '/2tume/quality',       component: <QualityManager />,      roles: ROLES.ADMIN, adminOnly: true },
   { path: '/2tume/varieties',     component: <VarietyManager />,      roles: ROLES.FARM },
