@@ -9,6 +9,9 @@ export default function PaymentSuccess() {
   // Retour DPO d'une commande boutique : la vérification se fait sur la
   // commande, pas sur un accès à une fonctionnalité.
   const isShop = useLocation().pathname.startsWith('/shop');
+  // Invité (rapport payé sans compte) : /home renvoie sur /login. Son rapport se
+  // génère dans l'onglet d'origine, resté ouvert — on l'y renvoie.
+  const isGuest = !localStorage.getItem('token');
 
   const [status, setStatus] = useState('verifying'); // verifying | success | pending | error
   const [message, setMessage] = useState('');
@@ -49,9 +52,11 @@ export default function PaymentSuccess() {
         fetchPaymentDetails();
         
         // Optionally redirect after 3 seconds
-        setTimeout(() => {
-          navigate('/home');
-        }, 3000);
+        if (!isGuest) {
+          setTimeout(() => {
+            navigate('/home');
+          }, 3000);
+        }
       } 
       // HTTP 202 = Still pending
       else if (res.status === 202) {
@@ -130,12 +135,18 @@ export default function PaymentSuccess() {
               </div>
             )}
 
+            {isGuest && (
+              <p className="text-sm text-gray-700 bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                Go back to the tab where you ordered your report: it is being generated there.
+                You can close this tab.
+              </p>
+            )}
             <div className="space-y-3">
               <button
-                onClick={() => navigate('/home')}
+                onClick={() => (isGuest ? window.close() : navigate('/home'))}
                 className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 font-medium transition-colors"
               >
-                Go to Dashboard
+                {isGuest ? 'Close this tab' : 'Go to Dashboard'}
               </button>
               
               <button

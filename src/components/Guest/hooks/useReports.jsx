@@ -3,6 +3,26 @@ import axiosInstance from "../../../axiosInstance";
 import { REPORT_TTL_DAYS, fetchStoredReport } from "../../../utils/storedReports";
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Les calculs s'appuient sur Sentinel-2 et SoilGrids, qui échouent parfois
+// ponctuellement : on retente avant d'afficher une erreur. Pas de retry sur un
+// refus d'accès (401/402/403 : paiement non reconnu) ni sur une requête invalide
+// qui échouerait pareil (413/415/422).
+const NO_RETRY = new Set([401, 402, 403, 404, 413, 415, 422]);
+const withRetry = async (call, attempts = 3, delayMs = 5000) => {
+  for (let i = 1; ; i++) {
+    try {
+      return await call();
+    } catch (err) {
+      if (i >= attempts || NO_RETRY.has(err.response?.status)) throw err;
+      console.warn(`⚠ Tentative ${i}/${attempts} échouée, nouvel essai…`, err.response?.data || err.message);
+      await wait(delayMs);
+    }
+  }
+};
+
+const errorMessage = (err) =>
+  err.response?.data?.error || err.response?.data?.msg || err.message || "Unknown error";
+
 const FEATURE_TO_KEY = {
   reporteudrguest: "eudr",
   reportcarbonguest: "carbon",
@@ -85,6 +105,10 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
   const [reports, setReports] = useState(() => loadCache());
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState({ eudr: false, carbon: false, sentinel: false });
+  // Échec de génération APRÈS paiement : affiché à l'étape 4 avec un bouton
+  // « Retry » (sans nouveau paiement). Sans ça, la page revenait sur « Pay Now »
+  // sans message et le client croyait devoir repayer.
+  const [generationError, setGenerationError] = useState(null); // { feature, message }
 
   // ✅ NOUVEAU : rapport EUDR JSON reçu, en attente de la capture heatmap
   // (voir <EudrHiddenCapture> à monter dans le composant parent) avant de
@@ -236,24 +260,27 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
     const key = FEATURE_TO_KEY[featureName];
     if (!key) { console.error("❌ Unknown featureName:", featureName); return; }
 
+    setGenerationError(null);
+
     // ── NDVI : inchangé ──────────────────────────────────────────────────
     if (featureName === "reportndviguest") {
       if (!geojson) { console.error("❌ Aucun polygone disponible"); return; }
       setLoading(true);
       await wait(2000);
       try {
-        const res = await axiosInstance.post("/api/sentinel/guest/sat-index", {
+        const res = await withRetry(() => axiosInstance.post("/api/sentinel/guest/sat-index", {
           geojson: normalizeGeojson(geojson),
           phone: userInfo.phone,
           // ✅ FIX : agent_id manquait sur ce rapport — il n'était envoyé que
           // pour EUDR/Carbon (generateEudrPdf/generateCarbonPdf ci-dessus),
           // ce qui excluait les rapports NDVI guest du suivi par agent.
           agent_id: userInfo.agent_id || undefined,
-        });
+        }));
         upsertReport(key, getSourceKey(geojson, null), geojson, res.data);
         setStep(5);
       } catch (err) {
         console.error("❌ Erreur NDVI guest:", err.response?.data || err);
+        setGenerationError({ feature: featureName, message: errorMessage(err) });
       } finally {
         setLoading(false);
       }
@@ -275,11 +302,11 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
     setLoading(true);
     await wait(2000);
     try {
-      const res = await axiosInstance.post(
+      const res = await withRetry(() => axiosInstance.post(
         `/api/gfw/Geojson/${featureName === "reportcarbonguest" ? "CarbonReportFromFile" : "ReportFromFile"}`,
         formData,
         { headers: { "X-Guest-ID": localStorage.getItem("guest_id"), "X-Guest-Phone": userInfo.phone } },
-      );
+      ));
       const data = res.data.report;
 
       if (featureName === "reporteudrguest") {
@@ -291,6 +318,7 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
       }
     } catch (err) {
       console.error("❌ Erreur lors de la génération du rapport :", err.response?.data || err);
+      setGenerationError({ feature: featureName, message: errorMessage(err) });
       setLoading(false);
     }
   };
@@ -298,5 +326,6 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
   return {
     reports, loading, showPaymentModal, setShowPaymentModal, handleReportReady,
     pendingEudrCapture, generateEudrPdf, // ✅ à brancher sur <EudrHiddenCapture> dans le parent
+    generationError,
   };
 };

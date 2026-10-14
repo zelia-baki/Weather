@@ -214,7 +214,7 @@ const EUDRSubmitFormForGuest = () => {
   const { userInfo, setUserInfo, handleUserInfoSubmit, loading: userLoading, isUserInfoValid } = useUserInfo(setStep);
   // ✅ reportRefs supprimé : StepReports gère désormais ses propres refs (nécessaire
   // pour supporter plusieurs rapports par type — voir useReports.jsx / StepReports.jsx)
-  const { reports, loading, showPaymentModal, handleReportReady, setShowPaymentModal,
+  const { reports, loading, showPaymentModal, handleReportReady, setShowPaymentModal, generationError,
     pendingEudrCapture, generateEudrPdf } = useReports({ files, geojson, userInfo, setStep, propertyType }); // ✅ + 2 valeurs
   const { isActive: isTutorialActive, currentStep: tutorialStep, showTutorial, startTutorial, nextStep: nextTutorialStep, prevStep: prevTutorialStep, skipTutorial } = useTutorial();
 
@@ -525,6 +525,25 @@ const EUDRSubmitFormForGuest = () => {
                     highlightPayment={getHighlightClass("payment")}
                     canGenerateReport={canGenerateReport} // ✅ vérification avant paiement
                   />
+                  {generationError && !loading && (
+                    <div className="max-w-md mx-auto mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 space-y-3">
+                      <p>
+                        <strong>Your payment is confirmed</strong>, but the report could not be generated:{" "}
+                        {generationError.message}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleReportReady(generationError.feature)}
+                        className="w-full py-2 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold"
+                      >
+                        Retry (no new payment)
+                      </button>
+                      <p className="text-xs text-red-600">
+                        Your access stays valid for the paid period. If it keeps failing, contact support with
+                        your phone number.
+                      </p>
+                    </div>
+                  )}
                   {BYPASS_PAYMENT && (
                     <div className="max-w-md mx-auto mt-3 text-center">
                       <button
