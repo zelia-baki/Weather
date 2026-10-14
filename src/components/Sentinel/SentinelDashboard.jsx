@@ -24,6 +24,7 @@ import SeasonalNdviRainfallPanel from "./panels/SeasonalNdviRainfallPanel";
 import CropPredictionPanel from "./panels/CropPredictionPanel";
 import SoilCarbonPanel from "./panels/SoilCarbonPanel";
 import TreeCO2Panel from "./panels/TreeCO2Panel";
+import ForestAreaChangePanel from "./panels/ForestAreaChangePanel";
 
 
 
@@ -420,6 +421,9 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
             isAdmin={!isGuest /* ton flag user.is_admin */}
             isGuest={isGuest} geojson={geojson} phone={phone}
           />
+        )}
+        {type === 'forest' && !isGuest && (
+          <ForestAreaChangePanel entityId={entityId} />
         )}
         {type === 'forest' && !isGuest && (
           <TreeCO2Panel entityId={entityId} entityType={type} />
