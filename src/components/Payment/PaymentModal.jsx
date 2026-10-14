@@ -124,7 +124,9 @@ const Field = ({ label, hint, children }) => (
   </label>
 );
 
-const inputCls = "w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100";
+// Couleurs explicites : la modale s'ouvre aussi dans la boutique, dont le thème
+// sombre donne un texte presque blanc — le numéro devenait illisible sur fond blanc.
+const inputCls = "w-full p-2.5 bg-white text-gray-900 placeholder-gray-400 text-base font-medium tracking-wide border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100 disabled:text-gray-700";
 
 const BackLink = ({ onClick }) => (
   <button type="button" onClick={onClick}
