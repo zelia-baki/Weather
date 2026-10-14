@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import axiosInstance from '../axiosInstance';
 
 // =============================================================================
 //  src/context/CartContext.jsx — remplace ton fichier actuel
@@ -52,6 +53,43 @@ export const CartProvider = ({ children }) => {
       return [];
     }
   });
+
+  // Le panier est gardé dans le navigateur : un prix ou un stock modifié depuis
+  // l'ajout restait affiché tel quel, alors que le serveur facture le prix
+  // actuel (30 USD affichés, 10 USD envoyés à DPO). On resynchronise chaque
+  // ligne avec le catalogue au chargement ; un produit retiré de la vente sort
+  // du panier.
+  useEffect(() => {
+    if (!items.length) return;
+    let cancelled = false;
+    axiosInstance.get('/api/ecommerce/products')
+      .then(({ data }) => {
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data : (data?.products || data?.items || []);
+        const byId = new Map(list.map(p => [p.id, p]));
+        setItems(prev => prev
+          .filter(i => byId.get(i.product_id)?.is_active !== false && byId.has(i.product_id))
+          .map(i => {
+            const p = byId.get(i.product_id);
+            const fresh = {
+              ...i,
+              name: p.name,
+              price: Number(p.price),
+              currency: p.currency,
+              unit: p.unit,
+              image: p.images?.[0] || i.image,
+              sale_mode: p.sale_mode || 'unit',
+              min_order_qty: Number(p.min_order_qty) || 1,
+              order_step: Number(p.order_step) || 1,
+              stock_qty: Number(p.stock_qty) || 0,
+            };
+            return { ...fresh, quantity: clampQuantity(fresh, i.quantity) };
+          }));
+      })
+      .catch(() => { /* hors ligne : on garde le panier tel quel, le serveur recalcule */ });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     try {
