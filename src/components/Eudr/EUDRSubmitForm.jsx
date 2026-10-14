@@ -53,16 +53,22 @@ const hsOptions = (h) => {
 // Unité supplémentaire : TRACES rejette tout qualificatif qui ne correspond pas
 // à l'unité de la Nomenclature combinée du code HS (même règle que
 // _supplementary_unit() côté backend, eudr_utils.py).
+// Vérifiées contre TRACES le 2026-10-14 sur tous les codes du formulaire.
 const SUPPLEMENTARY_UNIT_BY_HS = {
-  '0102': 'NAR', '4011': 'NAR', '4012': 'NAR',
-  '4403': 'MTQ', '4406': 'MTQ', '4407': 'MTQ', '4408': 'MTQ', '4412': 'MTQ',
+  '4011': 'NAR', '4012': 'NAR', '4013': 'NAR',
+  '4403': 'MTQ', '4406': 'MTQ', '4408': 'MTQ', '4410': 'MTQ', '4411': 'MTQ',
+  '4412': 'MTQ', '4413': 'MTQ',
+  '4704': 'KSD',
 };
 const NO_SUPPLEMENTARY_UNIT_CHAPTERS = ['02', '09', '12', '15', '16', '18', '23'];
+// TRACES refuse toute unité supplémentaire pour ces positions
+const NO_SUPPLEMENTARY_UNIT_HEADINGS = ['0102', '4407'];
 // 'none' → pas d'unité supplémentaire ; 'NAR'/'MTQ' → imposée ; null → libre
 const supplementaryRule = (hs) => {
   const d = hsDigits(hs);
   if (d.length < 2) return null;
-  if (NO_SUPPLEMENTARY_UNIT_CHAPTERS.includes(d.slice(0, 2))) return 'none';
+  if (NO_SUPPLEMENTARY_UNIT_CHAPTERS.includes(d.slice(0, 2))
+      || NO_SUPPLEMENTARY_UNIT_HEADINGS.includes(d.slice(0, 4))) return 'none';
   return SUPPLEMENTARY_UNIT_BY_HS[d.slice(0, 4)] || null;
 };
 
@@ -462,7 +468,8 @@ const EUDRManager = () => {
               <>
                 <Field label="Supplementary Unit" required={!!suppRule}
                   hint={suppRule === 'MTQ' ? 'Volume in cubic metres (m³)'
-                      : suppRule === 'NAR' ? 'Number of items / heads' : undefined}>
+                      : suppRule === 'NAR' ? 'Number of items / heads'
+                      : suppRule === 'KSD' ? 'Kilograms of 90 % dry substance' : undefined}>
                   <input type="number" step="any" min="0" name="goodsMeasure.supplementaryUnit"
                     value={formData.goodsMeasure.supplementaryUnit}
                     onChange={handleChange} placeholder="0" className={iCls}/>
