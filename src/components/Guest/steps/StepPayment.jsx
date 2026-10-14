@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axiosInstance from "../../../axiosInstance";
 
 const COLOR_CLASSES = {
   blue:    { text: "text-blue-600",    button: "bg-blue-600 hover:bg-blue-700" },
@@ -13,7 +14,20 @@ const StepPayment = ({
   loading,
   highlightPayment = "",
   canGenerateReport = true, // ✅ vérification passée par le parent
+  onGenerate,               // génère le rapport sans paiement si l'accès est déjà payé
 }) => {
+  // Accès déjà payé pour ce numéro (paiement confirmé mais rapport non généré,
+  // page rechargée…) : on propose de générer au lieu de faire repayer.
+  const [alreadyPaid, setAlreadyPaid] = useState(false);
+  useEffect(() => {
+    if (!selectedFeature || !phone) return;
+    let cancelled = false;
+    axiosInstance.get(`/api/payments/access/${selectedFeature}`, { params: { phone_number: phone } })
+      .then((r) => { if (!cancelled) setAlreadyPaid(!!r.data?.access); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [selectedFeature, phone]);
+
   const reportDetails = {
     reporteudrguest: {
       title: "Farm (EUDR) Report",
@@ -77,15 +91,32 @@ const StepPayment = ({
           </p>
         )}
 
-        <button
-          disabled={loading || !canGenerateReport}
-          onClick={handlePayClick}
-          className={`w-full py-2 px-4 rounded-lg text-white font-semibold ${
-            loading || !canGenerateReport ? "bg-gray-400 cursor-not-allowed" : colors.button
-          }`}
-        >
-          {loading ? "Processing..." : "Pay Now"}
-        </button>
+        {alreadyPaid && onGenerate ? (
+          <>
+            <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg p-2">
+              ✓ You already have an active paid access for this report.
+            </p>
+            <button
+              disabled={loading || !canGenerateReport}
+              onClick={() => onGenerate(selectedFeature)}
+              className={`w-full py-2 px-4 rounded-lg text-white font-semibold ${
+                loading || !canGenerateReport ? "bg-gray-400 cursor-not-allowed" : colors.button
+              }`}
+            >
+              {loading ? "Processing..." : "Generate my report"}
+            </button>
+          </>
+        ) : (
+          <button
+            disabled={loading || !canGenerateReport}
+            onClick={handlePayClick}
+            className={`w-full py-2 px-4 rounded-lg text-white font-semibold ${
+              loading || !canGenerateReport ? "bg-gray-400 cursor-not-allowed" : colors.button
+            }`}
+          >
+            {loading ? "Processing..." : "Pay Now"}
+          </button>
+        )}
 
         <p className="text-xs text-gray-400">
           Linked to phone number: <span className="font-medium">{phone}</span>
