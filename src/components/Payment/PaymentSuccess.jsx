@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../axiosInstance';
+import { peekPaymentReturn } from '../../utils/paymentReturn';
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
@@ -17,7 +18,18 @@ export default function PaymentSuccess() {
   const [message, setMessage] = useState('');
   const [paymentInfo, setPaymentInfo] = useState(null);
 
+  // Paiement lancé depuis une page qui a demandé à y revenir (rapport invité) :
+  // on y retourne tout de suite, c'est elle qui confirme et génère le rapport.
   useEffect(() => {
+    const memo = peekPaymentReturn();
+    if (memo && transToken && !isShop) {
+      navigate(`${memo.path}?paid=${encodeURIComponent(transToken)}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (peekPaymentReturn() && transToken && !isShop) return; // redirection en cours
     if (!transToken) {
       setStatus('error');
       setMessage('No transaction token provided');

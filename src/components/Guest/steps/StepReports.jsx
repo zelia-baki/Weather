@@ -115,27 +115,32 @@ const StepReports = ({ reports, geojson, phone, highlightReports = "" }) => {
           <PdfReportBlock
             key={entry.id}
             entry={entry}
-            filename={`EUDR_Report_${entry.id}.pdf`}
+            filename={`EUDR_Report_${entry.farmInfo?.farm_id || entry.id}.pdf`}
             label="📄 Download the EUDR PDF"
             colorClass="bg-blue-500 hover:bg-blue-700"
             accent="blue"
-            viewerTitle="EUDR Compliance Report"
+            viewerTitle={`EUDR Compliance Report${entry.farmInfo?.name ? ` · ${entry.farmInfo.name}` : ""}`}
           />
         ))}
 
-        {carbonList.map((entry) => (
+        {carbonList.map((entry) => {
+          const forest = entry.propertyType === "forest";
+          const kind = forest ? "Forest Carbon" : "Farmland Carbon";
+          const ref = entry.farmInfo?.farm_id || entry.id;
+          return (
           <div className="w-full space-y-4" key={entry.id}>
             <PdfReportBlock
               entry={entry}
-              filename={`Carbon_Report_${entry.id}.pdf`}
-              label="🌳 Download the Carbon PDF"
+              filename={`${kind.replace(" ", "_")}_Report_${ref}.pdf`}
+              label={`🌳 Download the ${kind} PDF`}
               colorClass="bg-green-500 hover:bg-green-700"
               accent="emerald"
-              viewerTitle="Carbon Emissions Report"
+              viewerTitle={`${kind} Report${entry.farmInfo?.name ? ` · ${entry.farmInfo.name}` : ""}`}
             />
             <CarbonExtraBlock extra={entry.extra} />
           </div>
-        ))}
+          );
+        })}
 
         {sentinelList.map((entry) => (
           <div className="w-full" key={entry.id}>

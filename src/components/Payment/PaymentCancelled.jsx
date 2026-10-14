@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { clearPaymentReturn, peekPaymentReturn } from '../../utils/paymentReturn';
 
 export function PaymentCancelled() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const transToken = searchParams.get('TransactionToken');
+
+  // Paiement abandonné depuis une page qui a demandé à y revenir : retour direct
+  // à l'étape de paiement, rien n'a été débité.
+  useEffect(() => {
+    const memo = peekPaymentReturn();
+    if (memo) {
+      clearPaymentReturn();
+      navigate(`${memo.path}?payment=cancelled`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center p-4">

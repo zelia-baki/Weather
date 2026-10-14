@@ -15,6 +15,7 @@ const StepPayment = ({
   highlightPayment = "",
   canGenerateReport = true, // ✅ vérification passée par le parent
   onGenerate,               // génère le rapport sans paiement si l'accès est déjà payé
+  propertyType = null,      // Carbon : "forest" | "farm"
 }) => {
   // Accès déjà payé pour ce numéro (paiement confirmé mais rapport non généré,
   // page rechargée…) : on propose de générer au lieu de faire repayer.
@@ -34,9 +35,13 @@ const StepPayment = ({
       description: "A compliance report for your farm according to EUDR requirements.",
       color: "blue",
     },
-    reportcarbonguest: {
-      title: "Carbon Report",
-      description: "An analysis of your farm's carbon footprint and environmental impact.",
+    reportcarbonguest: propertyType === "forest" ? {
+      title: "Forest Carbon Report",
+      description: "Carbon stock of your woodland, its 5-year history and the monthly change of the forest area.",
+      color: "green",
+    } : {
+      title: "Farmland Carbon Report",
+      description: "An analysis of your farm's carbon footprint, including soil organic carbon and its 5-year history.",
       color: "green",
     },
     reportndviguest: {

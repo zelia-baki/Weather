@@ -23,6 +23,8 @@ export function SendPaymentModal({
   agent_id: passedAgent,
   onPaymentSuccess,
   onSuccess, // alias accepté (PaymentRequired l'utilisait déjà)
+  returnPath = null,
+  title = null,
 }) {
   const navigate = useNavigate();
   const [priceInfo, setPriceInfo] = useState(null);
@@ -53,7 +55,7 @@ export function SendPaymentModal({
     <PaymentModal
       isOpen={isOpen}
       onClose={onClose}
-      title={FEATURE_TITLES[featureName] || featureName}
+      title={title || FEATURE_TITLES[featureName] || featureName}
       prices={priceInfo ? priceInfo.prices || {} : null}
       defaultCurrency={priceInfo?.default_currency}
       note={priceInfo?.duration_days ? `Access for ${priceInfo.duration_days} days` : null}
@@ -62,6 +64,7 @@ export function SendPaymentModal({
       lockPhone={!!passedPhone}
       provider={provider}
       onSuccess={handleSuccess}
+      returnPath={returnPath}
     />
   );
 }

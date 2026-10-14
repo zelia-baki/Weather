@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axiosInstance from "../../../axiosInstance";
 import { REPORT_TTL_DAYS, fetchStoredReport } from "../../../utils/storedReports";
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -18,6 +18,36 @@ const withRetry = async (call, attempts = 3, delayMs = 5000) => {
       await wait(delayMs);
     }
   }
+};
+
+// Infos ferme lues dans les propriétés du GeoJSON (fichier ou dessin) pour
+// les PDF : sans elles, le rapport affichait un identifiant technique et
+// « Owner N/A ».
+const pick = (props, keys) => {
+  for (const k of keys) {
+    const v = props?.[k];
+    if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+  }
+  return undefined;
+};
+
+const farmInfoFromGeojson = (gj) => {
+  const props = gj?.type === "FeatureCollection" ? gj.features?.[0]?.properties
+    : gj?.type === "Feature" ? gj.properties : null;
+  if (!props) return {};
+  const info = {
+    farm_id: pick(props, ["farm_id", "FarmID", "farmId", "farm_code", "ProducerID", "producer_id", "plot_id", "id"]),
+    name: pick(props, ["name", "farm_name", "ProducerName", "producer_name", "farmer_name", "owner", "Name"]),
+    subcounty: pick(props, ["subcounty", "sub_county"]),
+    district_name: pick(props, ["district_name", "district"]),
+  };
+  return Object.fromEntries(Object.entries(info).filter(([, v]) => v !== undefined));
+};
+
+const readFarmInfo = async (geojson, file) => {
+  if (geojson) return farmInfoFromGeojson(geojson);
+  if (!file) return {};
+  try { return farmInfoFromGeojson(JSON.parse(await file.text())); } catch { return {}; }
 };
 
 const errorMessage = (err) =>
@@ -109,6 +139,7 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
   // « Retry » (sans nouveau paiement). Sans ça, la page revenait sur « Pay Now »
   // sans message et le client croyait devoir repayer.
   const [generationError, setGenerationError] = useState(null); // { feature, message }
+  const farmInfoRef = useRef({}); // infos ferme du GeoJSON en cours (voir readFarmInfo)
 
   // ✅ NOUVEAU : rapport EUDR JSON reçu, en attente de la capture heatmap
   // (voir <EudrHiddenCapture> à monter dans le composant parent) avant de
@@ -160,6 +191,8 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
       const newEntry = {
         id: existing?.id || `${key}_${sourceKey}_${now}`,
         sourceKey,
+        propertyType: key === "carbon" ? propertyType : null,
+        farmInfo: farmInfoRef.current,
         geojson: entryGeojson || null,
         data,
         pdfUrl,
@@ -186,6 +219,7 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
         "/api/gfw/guest/eudr-pdf",
         {
           report: data, forest_map_image: forestMapBase64 || undefined,
+          farm_info: farmInfoRef.current,
           guest_id: localStorage.getItem("guest_id") || sourceKey,
           phone: userInfo.phone, // ✅ contrôle du paiement côté backend
           agent_id: userInfo.agent_id || undefined,
@@ -235,6 +269,8 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
         "/api/gfw/guest/carbon-pdf",
         {
           report: data,
+          farm_info: farmInfoRef.current,
+          property_type: propertyType || "farm",
           guest_id: localStorage.getItem("guest_id") || sourceKey,
           phone: userInfo.phone, // ✅ contrôle du paiement côté backend
           agent_id: userInfo.agent_id || undefined,
@@ -296,6 +332,7 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
     if (!file) { console.error("❌ Aucun fichier ou geojson disponible"); return; }
 
     const sourceKey = getSourceKey(geojson, file);
+    farmInfoRef.current = await readFarmInfo(geojson, file);
 
     const formData = new FormData();
     formData.append("file", file);
