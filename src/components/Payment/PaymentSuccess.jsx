@@ -22,14 +22,14 @@ export default function PaymentSuccess() {
   // on y retourne tout de suite, c'est elle qui confirme et génère le rapport.
   useEffect(() => {
     const memo = peekPaymentReturn();
-    if (memo && transToken && !isShop) {
+    if (memo && transToken) {
       navigate(`${memo.path}?paid=${encodeURIComponent(transToken)}`, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (peekPaymentReturn() && transToken && !isShop) return; // redirection en cours
+    if (peekPaymentReturn() && transToken) return; // redirection en cours
     if (!transToken) {
       setStatus('error');
       setMessage('No transaction token provided');
