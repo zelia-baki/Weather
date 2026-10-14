@@ -18,7 +18,7 @@ const CarbonReportForest = () => {
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '16px 16px 60px' }}>
       <BackendPdfPanel
         fetchPdf={() => axiosInstance.get(`/api/gfw/forest/${forestId}/carbon-pdf`, { responseType: 'blob' })}
-        storeKey={`carbon-forest-${forestId}`}
+        storeKey={`carbon-forest-v2-${forestId}`}
         filename={`Carbon_Forest_Report_${forestId}.pdf`}
         title="Forest Carbon Report"
         waitingLabel="Generating your forest carbon report…"

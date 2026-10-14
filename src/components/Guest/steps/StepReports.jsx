@@ -42,7 +42,7 @@ const CarbonExtraBlock = ({ extra }) => {
       </p>
       {soc ? (
         <div className="grid grid-cols-2 gap-2 text-sm text-amber-900">
-          <div>Stock 0-30cm: <strong>{soc["ocs_0-30cm"]} t/ha</strong></div>
+          <div>Stock 0-30cm: <strong>{soc["ocs_0-30cm"] == null ? "—" : (soc["ocs_0-30cm"] * 10).toFixed(1)} t C/ha</strong></div>
           <div>SOC 0-5cm: <strong>{soc["soc_0-5cm"]} g/kg</strong></div>
           <div>SOC 5-15cm: <strong>{soc["soc_5-15cm"]} g/kg</strong></div>
           <div>SOC 15-30cm: <strong>{soc["soc_15-30cm"]} g/kg</strong></div>
