@@ -142,20 +142,38 @@ const StepReports = ({ reports, geojson, phone, highlightReports = "" }) => {
           );
         })}
 
-        {sentinelList.map((entry) => (
-          <div className="w-full" key={entry.id}>
-            <p className="text-xs text-gray-400 text-center mb-1">
-              Generated at {formatTime(entry.timestamp)}
-            </p>
-            <SentinelDashboard
-              entityType="farm"
-              mode="guest"
-              geojson={entry.geojson || geojson}
-              phone={phone}
-              initialData={entry.data}
+        {sentinelList.map((entry) => {
+          const ref = entry.farmInfo?.farm_id || entry.id;
+          return (
+          <div className="w-full space-y-4" key={entry.id}>
+            <PdfReportBlock
+              entry={entry}
+              filename={`Satellite_Index_Report_${ref}.pdf`}
+              label="🛰️ Download the Satellite Index PDF"
+              colorClass="bg-emerald-600 hover:bg-emerald-700"
+              accent="emerald"
+              viewerTitle={`Satellite Index Report${entry.farmInfo?.name ? ` · ${entry.farmInfo.name}` : ""}`}
             />
+            {entry.data && (
+              <details className="group rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <summary className="cursor-pointer select-none list-none flex items-center justify-between gap-2
+                                    min-h-[44px] px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                  Interactive dashboard (charts, maps, loan simulation)
+                  <span aria-hidden="true" className="text-gray-400 transition-transform group-open:rotate-180">▾</span>
+                </summary>
+                <SentinelDashboard
+                  entityType="farm"
+                  mode="guest"
+                  geojson={entry.geojson || geojson}
+                  phone={phone}
+                  initialData={entry.data}
+                  farmInfo={entry.farmInfo}
+                />
+              </details>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

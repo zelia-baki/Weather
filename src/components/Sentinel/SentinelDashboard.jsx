@@ -30,7 +30,7 @@ import ForestAreaChangePanel from "./panels/ForestAreaChangePanel";
 
 
 
-export default function SentinelDashboard({ entityType = 'farm', mode = 'account', geojson = null, phone = null, initialData = null }) {
+export default function SentinelDashboard({ entityType = 'farm', mode = 'account', geojson = null, phone = null, initialData = null, farmInfo = null }) {
   const params = useParams();
   const location = useLocation();
   const isGuest = mode === 'guest';
@@ -117,14 +117,14 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
       const resp = isGuest
         ? await axiosInstance.post(
             '/api/sentinel/guest/sat-index/pdf',
-            { geojson, phone, ...ltvParamsRef.current },
+            { geojson, phone, farm_info: farmInfo || undefined, ...ltvParamsRef.current },
             { responseType: 'blob' },
           )
         : await axiosInstance.get(
             `/api/sentinel/farm/${entityId}/sat-index/pdf`,
             { params: ltvParamsRef.current, responseType: 'blob' },
           );
-      const name = isGuest ? 'Satellite_Index_Report' : `sat_index_${entityId}`;
+      const name = `Satellite_Index_Report_${isGuest ? (farmInfo?.farm_id || 'guest') : entityId}`;
       await downloadPdfFile(new Blob([resp.data], { type: 'application/pdf' }), `${name}.pdf`);
     } catch {
       setExportError('PDF export failed. Please try again.');
@@ -439,18 +439,6 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
         )}
         {type === 'forest' && !isGuest && (
           <TreeCO2Panel entityId={entityId} entityType={type} />
-        )}
-
-        {isGuest && (
-          <button
-            onClick={() => { setExportError(null); handleExportPdf(); }}
-            disabled={exporting}
-            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500
-                       disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-md transition-colors"
-          >
-            {exporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-            {exporting ? 'Generating the PDF…' : 'Download the Satellite Index PDF'}
-          </button>
         )}
 
         <p className="text-center text-xs text-slate-600 pb-4">

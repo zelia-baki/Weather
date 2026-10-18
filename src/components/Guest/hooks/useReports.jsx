@@ -110,7 +110,7 @@ const loadCache = () => {
     const cleaned = {
       eudr: prune(stripPdfUrl(parsed.eudr)),
       carbon: prune(stripPdfUrl(parsed.carbon)),
-      sentinel: prune(parsed.sentinel),
+      sentinel: prune(stripPdfUrl(parsed.sentinel)),
     };
     localStorage.setItem(CACHE_KEY, JSON.stringify(cleaned));
     return cleaned;
@@ -124,7 +124,7 @@ const saveCache = (cache) => {
     localStorage.setItem(CACHE_KEY, JSON.stringify({
       eudr: stripPdfUrl(cache.eudr),
       carbon: stripPdfUrl(cache.carbon),
-      sentinel: cache.sentinel,
+      sentinel: stripPdfUrl(cache.sentinel),
     }));
   } catch {
     // localStorage plein/indisponible : on ignore silencieusement
@@ -153,7 +153,7 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
   // ✅ Après un rechargement, les pdfUrl (blobs) sont perdus : on re-télécharge
   // chaque PDF conservé côté serveur grâce à son pdfToken.
   useEffect(() => {
-    ["eudr", "carbon"].forEach((key) => {
+    ["eudr", "carbon", "sentinel"].forEach((key) => {
       (reports[key] || []).filter((r) => !r.pdfUrl && r.pdfToken).forEach(async (entry) => {
         try {
           const res = await fetchStoredReport(entry.pdfToken);
@@ -292,6 +292,31 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
     fetchCarbonExtra(sourceKey, entryGeojson); // ✅ en parallèle, n'affecte pas le PDF/le step
   };
 
+  // PDF « Satellite Index » généré par le backend (ReportLab), conservé 7 jours
+  // et re-téléchargeable via X-Report-Token — même circuit que Carbon / EUDR.
+  // Le tableau de bord interactif reste affiché même si le PDF échoue.
+  const generateSentinelPdf = async (sourceKey, entryGeojson, data) => {
+    try {
+      const res = await axiosInstance.post(
+        "/api/sentinel/guest/sat-index/pdf",
+        {
+          geojson: normalizeGeojson(entryGeojson),
+          phone: userInfo.phone, // ✅ contrôle du paiement côté backend
+          farm_info: farmInfoRef.current,
+          guest_id: localStorage.getItem("guest_id") || sourceKey,
+          agent_id: userInfo.agent_id || undefined,
+        },
+        { responseType: "blob" }
+      );
+      const pdfBlob = new Blob([res.data], { type: "application/pdf" });
+      upsertReport("sentinel", sourceKey, entryGeojson, data, URL.createObjectURL(pdfBlob),
+                   res.headers["x-report-token"] || null);
+    } catch (err) {
+      console.error("❌ Erreur génération PDF satellite :", err.response?.data || err);
+      upsertReport("sentinel", sourceKey, entryGeojson, data, null);
+    }
+  };
+
   const handleReportReady = async (featureName) => {
     const key = FEATURE_TO_KEY[featureName];
     if (!key) { console.error("❌ Unknown featureName:", featureName); return; }
@@ -312,7 +337,7 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
           // ce qui excluait les rapports NDVI guest du suivi par agent.
           agent_id: userInfo.agent_id || undefined,
         }));
-        upsertReport(key, getSourceKey(geojson, null), geojson, res.data);
+        await generateSentinelPdf(getSourceKey(geojson, null), geojson, res.data);
         setStep(5);
       } catch (err) {
         console.error("❌ Erreur NDVI guest:", err.response?.data || err);
