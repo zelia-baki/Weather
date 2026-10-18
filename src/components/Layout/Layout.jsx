@@ -145,6 +145,18 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "DDS Submission", href: "/EUDRSubmission", Icon: FaFileContract },
       ],
     },
+    {
+      // A dropdown rather than loose header links: on a laptop the loose links
+      // were pushed off-screen by the menus, so admins could not reach Features.
+      id: "admin", label: "Admin", Icon: FaCrown,
+      show: isAdmin,
+      items: [
+        { label: "Users",         href: "/usermanager",     Icon: MdManageAccounts },
+        { label: "Features",      href: "/featuresManager", Icon: TbTag },
+        { label: "Crop calibration", href: "/cropcalibration", Icon: TbPlant2 },
+        { label: "Agents export", href: "/agentexport",     Icon: MdManageAccounts },
+      ],
+    },
   ]
     // Sur 2tume.com : seuls les blocs et les liens du périmètre de la marque.
     .filter((m) => m.show && isMenuVisible(m.id))
@@ -164,14 +176,16 @@ const DesktopDropdown = ({ menu, active, onEnter, onLeave }) => {
       onMouseLeave={() => onLeave(menu.id)}
     >
       <button
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+        onClick={() => onEnter(menu.id)}
+        aria-expanded={active}
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium
           transition-all duration-200
           ${isActive
             ? "bg-white/20 text-white"
             : "text-white/85 hover:text-white hover:bg-white/10"}`}
       >
-        <menu.Icon className="text-base shrink-0" />
-        <span>{menu.label}</span>
+        <menu.Icon className="hidden 2xl:block text-base shrink-0" />
+        <span className="whitespace-nowrap">{menu.label}</span>
         <FiChevronDown
           className={`text-xs transition-transform duration-200 ${active ? "rotate-180" : ""}`}
         />
@@ -179,8 +193,8 @@ const DesktopDropdown = ({ menu, active, onEnter, onLeave }) => {
 
       {active && (
         <div
-          className="dropdown absolute top-full left-0 mt-1 w-56 bg-white rounded-xl
-                     shadow-2xl border border-gray-100 overflow-hidden z-50"
+          className={`dropdown absolute top-full ${menu.id === "admin" ? "right-0" : "left-0"} mt-1 w-56 bg-white rounded-xl
+                     shadow-2xl border border-gray-100 overflow-hidden z-50`}
           style={{ animation: "fadeInDown 0.15s ease" }}
         >
           {menu.items.map((item) => (
@@ -210,7 +224,8 @@ const MobileAccordion = ({ menu, open, onToggle, onNavigate }) => {
     <div className="border-b border-white/10 last:border-0">
       <button
         onClick={() => onToggle(menu.id)}
-        className="w-full flex items-center justify-between px-4 py-3 text-white/90 text-sm font-medium"
+        aria-expanded={open}
+        className="w-full flex items-center justify-between px-4 py-3 min-h-[44px] text-white/90 text-sm font-medium"
       >
         <span className="flex items-center gap-2.5">
           <menu.Icon className="text-base opacity-80" />
@@ -228,7 +243,7 @@ const MobileAccordion = ({ menu, open, onToggle, onNavigate }) => {
               to={item.href}
               state={item.state}
               onClick={onNavigate}
-              className={`flex items-center gap-2.5 px-6 py-2.5 text-sm transition-colors
+              className={`flex items-center gap-2.5 px-6 py-3 text-sm transition-colors
                 ${location.pathname === item.href
                   ? "text-teal-300 font-semibold"
                   : "text-white/65 hover:text-white"}`}
@@ -309,7 +324,7 @@ const Layout = ({ children }) => {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
+          <nav className="hidden xl:flex items-center gap-0.5 flex-1 min-w-0 justify-center">
             {menus.map((menu) => (
               <DesktopDropdown
                 key={menu.id}
@@ -322,34 +337,12 @@ const Layout = ({ children }) => {
           </nav>
 
           {/* Desktop right */}
-          <div className="hidden lg:flex items-center gap-2 shrink-0">
+          <div className="hidden xl:flex items-center gap-2 shrink-0">
             {(userRole || isAdmin) && (
-              <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${meta.color}`}>
+              <span className={`hidden 2xl:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${meta.color}`}>
                 <RoleIcon className="text-sm" />
                 {meta.label}
               </span>
-            )}
-            {isAdmin && (
-              <>
-                <Link to="/usermanager"
-                  className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm
-                             px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition-all">
-                  <MdManageAccounts className="text-base" />
-                  <span>Users</span>
-                </Link>
-                <Link to="/featuresManager"
-                  className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm
-                             px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition-all">
-                  <MdManageAccounts className="text-base" />
-                  <span>Features</span>
-                </Link>
-                <Link to="/agentexport"
-                  className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm
-                             px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition-all">
-                  <MdManageAccounts className="text-base" />
-                  <span>Agents</span>
-                </Link>
-              </>
             )}
             <button
               onClick={handleLogOut}
@@ -363,7 +356,7 @@ const Layout = ({ children }) => {
           </div>
 
           {/* Mobile right */}
-          <div className="flex lg:hidden items-center gap-2">
+          <div className="flex xl:hidden items-center gap-2">
             {(userRole || isAdmin) && (
               <span className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${meta.color}`}>
                 <RoleIcon className="text-sm" />
@@ -372,8 +365,9 @@ const Layout = ({ children }) => {
             )}
             <button
               onClick={() => setMobileOpen((v) => !v)}
-              className="text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+              className="text-white p-2.5 rounded-lg hover:bg-white/10 transition-colors"
               aria-label="Toggle menu"
+              aria-expanded={mobileOpen}
             >
               {mobileOpen ? <FiX size={22} /> : <FiMenu size={22} />}
             </button>
@@ -382,7 +376,7 @@ const Layout = ({ children }) => {
 
         {/* ══ MOBILE DRAWER ════════════════════════════════════════ */}
         {mobileOpen && (
-          <div className="lg:hidden border-t border-white/10 bg-teal-800/97 backdrop-blur-sm
+          <div className="xl:hidden border-t border-white/10 bg-teal-800/97 backdrop-blur-sm
                           max-h-[80vh] overflow-y-auto">
             {(userRole || isAdmin) && (
               <div className="px-4 py-3 border-b border-white/10">
@@ -403,22 +397,6 @@ const Layout = ({ children }) => {
               />
             ))}
 
-            {isAdmin && (
-              <div className="border-t border-white/10 px-4 py-3 space-y-1">
-                <Link to="/usermanager" onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 text-white/80 hover:text-white text-sm py-2">
-                  <MdManageAccounts className="text-base" /> User Manager
-                </Link>
-                <Link to="/featuresManager" onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 text-white/80 hover:text-white text-sm py-2">
-                  <MdManageAccounts className="text-base" /> Feature Manager
-                </Link>
-                <Link to="/agentexport" onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 text-white/80 hover:text-white text-sm py-2">
-                  <MdManageAccounts className="text-base" /> Agent Export
-                </Link>
-              </div>
-            )}
 
             <div className="px-4 py-3 border-t border-white/10">
               <button

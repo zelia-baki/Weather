@@ -135,7 +135,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
 
     const datasets = [
       {
-        label: 'Historique',
+        label: 'Historical',
         data: xs.map((x, i) => ({ x, y: ys[i] })),
         type: 'scatter',
         backgroundColor: '#38bdf8',
@@ -144,7 +144,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
         pointHoverRadius: 7,
       },
       {
-        label: 'Régression',
+        label: 'Regression',
         data: [
           { x: minX, y: slope * minX + intercept },
           { x: maxX, y: slope * maxX + intercept },
@@ -167,7 +167,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
     }
     if (anchors.length) {
       datasets.push({
-        label: 'Calibration Analyste',
+        label: 'Analyst calibration',
         data: anchors,
         type: 'scatter',
         backgroundColor: '#f43f5e',
@@ -179,7 +179,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
     if (reg.predicted_yield != null) {
       const predX = xs[xs.length - 1];
       datasets.push({
-        label: 'Prédiction',
+        label: 'Prediction',
         data: [{ x: predX, y: reg.predicted_yield }],
         type: 'scatter',
         backgroundColor: '#eab308',
@@ -203,7 +203,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
         backgroundColor: '#0f172a', borderColor: '#334155', borderWidth: 1,
         titleColor: '#94a3b8', bodyColor: '#e2e8f0', padding: 10,
         callbacks: {
-          label: ctx => ` ${ctx.dataset.label}: NDVI ${ctx.parsed.x?.toFixed(3)}, Rendement ${ctx.parsed.y?.toFixed(2)} t/ha`,
+          label: ctx => ` ${ctx.dataset.label}: ${activeIndex.toUpperCase()} ${ctx.parsed.x?.toFixed(3)}, Yield ${ctx.parsed.y?.toFixed(2)} t/ha`,
         },
       },
     },
@@ -217,7 +217,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
       y: {
         ticks: { color: '#64748b', font: { size: 11 } },
         grid: { color: '#1e293b', borderDash: [4, 4] },
-        title: { display: true, text: 'Rendement (t/ha)', color: '#64748b', font: { size: 12 } },
+        title: { display: true, text: 'Yield (t/ha)', color: '#64748b', font: { size: 12 } },
       },
     },
   };
@@ -239,15 +239,15 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
       <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h3 className="font-semibold text-white text-base flex items-center gap-2">
-            <span>🌾</span> Analyse de Rendement & Calibration ML
+            <span>🌾</span> Yield Analysis & ML Calibration
           </h3>
           <p className="text-xs text-slate-400 mt-1">
-            Comparaison saisonnière et modélisation prédictive basée sur l'indice <span className="text-white font-medium">{idxMeta.label || activeIndex.toUpperCase()}</span>.
+            Seasonal comparison and predictive modelling based on the <span className="text-white font-medium">{idxMeta.label || activeIndex.toUpperCase()}</span> index.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: idxMeta.color || '#10b981' }} />
-          <span className="text-slate-300">Index actif :</span> <span className="text-white font-semibold">{idxMeta.label || activeIndex.toUpperCase()}</span>
+          <span className="text-slate-300">Active index:</span> <span className="text-white font-semibold">{idxMeta.label || activeIndex.toUpperCase()}</span>
         </div>
       </div>
 
@@ -255,9 +255,9 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
         {/* Graphique 1 : Saisonnier */}
         <div>
           <div className="mb-4">
-            <h4 className="font-medium text-slate-200 text-sm">Évolution Saisonnier (Trimestrielle)</h4>
+            <h4 className="font-medium text-slate-200 text-sm">Seasonal Trend (Quarterly)</h4>
             <p className="text-xs text-slate-400 mt-0.5">
-              Visualisez les ruptures de tendance par rapport aux années précédentes.
+              Spot trend breaks compared with previous years.
             </p>
           </div>
           <div className="h-72 bg-slate-950/30 p-4 rounded-xl border border-slate-800/60">
@@ -269,7 +269,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
             <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Rendement Historique ({hy1Year})
+              Historical yield ({hy1Year})
             </label>
             <div className="relative">
               <input
@@ -277,7 +277,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
                 step="0.01"
                 value={hy1}
                 onChange={e => setHy1(e.target.value)}
-                placeholder="Ex: 1.8"
+                placeholder="e.g. 1.8"
                 className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2
                            text-sm text-white placeholder-slate-600
                            focus:border-emerald-500 focus:outline-none transition-colors"
@@ -287,7 +287,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
             <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Rendement Historique ({hy2Year})
+              Historical yield ({hy2Year})
             </label>
             <div className="relative">
               <input
@@ -295,7 +295,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
                 step="0.01"
                 value={hy2}
                 onChange={e => setHy2(e.target.value)}
-                placeholder="Ex: 1.8"
+                placeholder="e.g. 1.8"
                 className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2
                            text-sm text-white placeholder-slate-600
                            focus:border-emerald-500 focus:outline-none transition-colors"
@@ -312,7 +312,7 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white
                          font-medium text-xs px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-900/20"
             >
-              ⚡ Appliquer la calibration & recalculer
+              ⚡ Apply calibration & recalculate
             </button>
           </div>
         )}
@@ -323,21 +323,21 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
             <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h4 className="font-medium text-slate-200 text-sm">Modèle de Régression & Prédiction</h4>
+                  <h4 className="font-medium text-slate-200 text-sm">Regression & Prediction Model</h4>
                   {reg.calibrated && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
-                      Calibré
+                      Calibrated
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Corrélation entre l'indice et les rendements réels observés.
+                  Correlation between the index and the observed yields.
                 </p>
               </div>
 
               {reg.predicted_yield != null && (
                 <div className="rounded-xl bg-slate-950/60 border border-emerald-500/30 px-4 py-2.5 text-right">
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Rendement Prédit</span>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Predicted yield</span>
                   <span className="text-xl font-bold text-emerald-400">{reg.predicted_yield} <span className="text-xs font-normal">t/ha</span></span>
                 </div>
               )}
@@ -350,14 +350,14 @@ export default function YieldAnalysisPanel({ history, forecast, ltv, activeIndex
             {/* Légende personnalisée épurée & métriques */}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-slate-800/60">
               <div className="flex flex-wrap items-center gap-4">
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-sky-400"></span> Historique</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-indigo-400"></span> Régression</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500"></span> Analyste</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400"></span> Prédiction</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-sky-400"></span> Historical</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-indigo-400"></span> Regression</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500"></span> Analyst</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400"></span> Prediction</span>
               </div>
               <div className="flex items-center gap-3 font-mono text-[11px] text-slate-300">
                 <span>R² = {reg.r2}</span>
-                <span>Pente = {reg.slope}</span>
+                <span>Slope = {reg.slope}</span>
               </div>
             </div>
           </div>

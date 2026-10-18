@@ -16,8 +16,8 @@ export default function IndexGaugePanel({ data }) {
           Index Gauges — Latest Reading
         </h3>
         <p className="text-xs text-slate-500 mt-1">
-          Snapshot du {last.date} · la position de l'aiguille reflète où se situe
-          la valeur dans la plage physique naturelle de chaque indice.
+          Snapshot of {last.date} · the needle shows where the value sits within
+          each index's natural physical range.
         </p>
       </div>
       <div className="p-6 grid grid-cols-2 sm:grid-cols-4 gap-4">

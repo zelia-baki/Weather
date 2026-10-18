@@ -118,6 +118,7 @@ import Card from './components/Card/Card.jsx';
 import Cardex from './components/Card/Cardex.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 import FeatureManager from './components/Features/FeatureManager.jsx';
+import CropCalibration from './components/crop/CropCalibration.jsx';
 
 // ─── Blog ─────────────────────────────────────────────────────────────────────
 import BlogAdmin from './components/Blog/BlogAdmin.jsx';
@@ -400,6 +401,7 @@ const layoutRoutes = [
 
   // Admin only
   { path: '/featuresManager', component: <FeatureManager />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/cropcalibration', component: <CropCalibration />, roles: ROLES.ADMIN, adminOnly: true },
   { path: '/locationadvisory', component: <LocationAdvisory />, roles: ROLES.ADMIN, adminOnly: true },
 
   // WBII

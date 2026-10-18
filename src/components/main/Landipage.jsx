@@ -212,7 +212,8 @@ const LocalStyles = () => (
       position: fixed; inset: 0; background: rgba(5,12,6,0.98);
       backdrop-filter: blur(20px); z-index: 400;
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 40px;
+      align-items: center; justify-content: center; justify-content: safe center; gap: 28px;
+      overflow-y: auto; padding: 72px 24px 32px;
     }
     .mobile-nav-link {
       font-family: var(--display); font-size: 36px; font-weight: 300;
@@ -354,7 +355,7 @@ const LocalStyles = () => (
       footer { padding: 32px 20px !important; }
 
       /* ── Mobile nav link font ── */
-      .mobile-nav-link { font-size: 28px; }
+      .mobile-nav-link { font-size: 26px; }
     }
 
     /* ══════════════════════════════════════════════
@@ -632,6 +633,17 @@ const ToolsPopup = ({ onClose }) => (
   </motion.div>
 );
 
+/* Header links, shared by the desktop nav and the phone menu so both list the same pages.
+   FORGET and Auctions are hidden for now: add them back here to show them again. */
+const NAV_ITEMS = [
+  { label: "Features", to: "features", scroll: true },
+  { label: "About", href: "/sectionfutur" },
+  { label: "Climate Tools", popup: true },
+  { label: "Nkusu Commerce", href: "/shop" },
+  { label: "Blog", href: "/blogpublic" },
+  { label: "Contact", to: "contact", scroll: true },
+];
+
 /* ─── LANDING PAGE ───────────────────────────────────────────────────────────── */
 const LandingPage = () => {
   const [splashDone, setSplashDone] = useState(false);
@@ -689,22 +701,25 @@ const LandingPage = () => {
             <button onClick={() => setMenuOpen(false)} style={{ position: "absolute", top: 24, right: 24, background: "none", border: "none", color: colors.muted, fontSize: 22, cursor: "pointer" }}>
               <FaTimes />
             </button>
-            {["Features", "About", "Climate Tools", "Contact"].map((item, i) => (
+            {NAV_ITEMS.map((item, i) => (
               <motion.a
-                key={item}
-                href={item === "Features" ? "#features" : item === "Contact" ? "#contact" : item === "Climate Tools" ? undefined : "#"}
+                key={item.label}
+                href={item.scroll ? `#${item.to}` : item.href}
                 className="mobile-nav-link"
                 onClick={() => {
                   setMenuOpen(false);
-                  if (item === "Climate Tools") setToolsOpen(true);
+                  if (item.popup) setToolsOpen(true);
                 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.07 }}
+                transition={{ delay: i * 0.05 }}
               >
-                {item}
+                {item.label}
               </motion.a>
             ))}
+            <motion.a href="/login" className="btn-outline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
+              Sign In
+            </motion.a>
             <motion.a href="/login" className="btn-primary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}>
               Get Started
             </motion.a>
@@ -738,18 +753,7 @@ const LandingPage = () => {
 
         {/* Desktop nav — hidden on mobile via CSS */}
         <nav className="desktop-nav">
-          {[
-            { label: "Features", to: "features", scroll: true },
-            // FORGET and Auctions hidden for now — remove `hidden` to show them again
-            { label: "FORGET", href: "/shop/ourstory", hidden: true },
-            { label: "About", href: "/sectionfutur" },
-            { label: "Climate Tools", popup: true },
-            { label: "Nkusu Commerce", href: "/shop" },
-            { label: "Blog", href: "/blogpublic" },
-            { label: "Contact", to: "contact", scroll: true },   
-            { label: "Auctions", href: "/auctions", hidden: true },
-            
-          ].filter((item) => !item.hidden).map((item) =>
+          {NAV_ITEMS.map((item) =>
             item.scroll ? (
               <ScrollLink key={item.label} to={item.to} smooth duration={500} offset={-80} className="nav-link">
                 {item.label}

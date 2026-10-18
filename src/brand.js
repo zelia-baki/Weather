@@ -76,7 +76,7 @@ const BRANDS = {
     name: '2tume',
     tagline: 'Commodity exchange',
     // Menu ids from Layout.jsx. Farm, forest, weather, digital and eudr stay out.
-    menus: ['exchange', 'ecommerce', 'dashboard'],
+    menus: ['exchange', 'ecommerce', 'dashboard', 'admin'],
     // Everything under /2tume, plus the shared pages above.
     allowedPaths: [TUME, ...SHARED_PATHS],
     home: `${TUME}/dashboard`,
