@@ -6,6 +6,7 @@ import {
   Download, Activity, BarChart2, AlertTriangle, Database, Loader2,
 } from "lucide-react";
 import axiosInstance from "../../axiosInstance";
+import { downloadPdfFile } from "../Guest/utils/pdfDownload";
 
 import "./config/chartSetup"; // effets de bord : mapboxgl.accessToken + ChartJS.register
 import { META } from "./constants";
@@ -24,11 +25,12 @@ import SeasonalNdviRainfallPanel from "./panels/SeasonalNdviRainfallPanel";
 import CropPredictionPanel from "./panels/CropPredictionPanel";
 import SoilCarbonPanel from "./panels/SoilCarbonPanel";
 import TreeCO2Panel from "./panels/TreeCO2Panel";
+import ForestAreaChangePanel from "./panels/ForestAreaChangePanel";
 
 
 
 
-export default function SentinelDashboard({ entityType = 'farm', mode = 'account', geojson = null, phone = null, initialData = null }) {
+export default function SentinelDashboard({ entityType = 'farm', mode = 'account', geojson = null, phone = null, initialData = null, farmInfo = null }) {
   const params = useParams();
   const location = useLocation();
   const isGuest = mode === 'guest';
@@ -43,6 +45,7 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
   const [error, setError] = useState(null);
   const [active, setActive] = useState('ndvi');
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(null);
 
   const [ltvLoading, setLtvLoading] = useState(false);
   const ltvParamsRef = useRef({});
@@ -110,16 +113,21 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
   const handleExportPdf = async () => {
     setExporting(true);
     try {
-      const resp = await axiosInstance.get(
-        `/api/sentinel/farm/${entityId}/sat-index/pdf`,
-        { params: ltvParamsRef.current, responseType: 'blob' },
-      );
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(new Blob([resp.data]));
-      link.setAttribute('download', `sat_index_${entityId}.pdf`);
-      document.body.appendChild(link); link.click(); link.remove();
+      // Guest : même rapport que l'écran, relu depuis le cache guest côté serveur.
+      const resp = isGuest
+        ? await axiosInstance.post(
+            '/api/sentinel/guest/sat-index/pdf',
+            { geojson, phone, farm_info: farmInfo || undefined, ...ltvParamsRef.current },
+            { responseType: 'blob' },
+          )
+        : await axiosInstance.get(
+            `/api/sentinel/farm/${entityId}/sat-index/pdf`,
+            { params: ltvParamsRef.current, responseType: 'blob' },
+          );
+      const name = `Satellite_Index_Report_${isGuest ? (farmInfo?.farm_id || 'guest') : entityId}`;
+      await downloadPdfFile(new Blob([resp.data], { type: 'application/pdf' }), `${name}.pdf`);
     } catch {
-      alert('PDF export failed');
+      setExportError('PDF export failed. Please try again.');
     } finally {
       setExporting(false);
     }
@@ -191,14 +199,14 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
                          text-sm px-3 py-1.5 rounded-lg transition-colors">
               <Zap size={13} /> Cache
             </button>
-            {type === 'farm' && !isGuest && (
+            {type === 'farm' && (
               <button
-                onClick={handleExportPdf}
+                onClick={() => { setExportError(null); handleExportPdf(); }}
                 disabled={exporting}
                 className="flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50
                            text-white text-sm px-4 py-1.5 rounded-lg transition-colors font-medium">
-                <Download size={13} />
-                {exporting ? 'Generating…' : 'PDF'}
+                {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                {exporting ? 'Generating…' : isGuest ? 'Download PDF' : 'PDF'}
               </button>
             )}
           </div>
@@ -206,6 +214,11 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {exportError && (
+          <p role="alert" className="flex items-center gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-lg px-4 py-2">
+            <AlertTriangle size={14} /> {exportError}
+          </p>
+        )}
         <OutOfBoundsAlert items={data.out_of_bounds} />
 
         {groups.map(({ title, Icon: GIcon, keys }) => (
@@ -420,6 +433,9 @@ export default function SentinelDashboard({ entityType = 'farm', mode = 'account
             isAdmin={!isGuest /* ton flag user.is_admin */}
             isGuest={isGuest} geojson={geojson} phone={phone}
           />
+        )}
+        {type === 'forest' && !isGuest && (
+          <ForestAreaChangePanel entityId={entityId} />
         )}
         {type === 'forest' && !isGuest && (
           <TreeCO2Panel entityId={entityId} entityType={type} />

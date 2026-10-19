@@ -54,7 +54,9 @@ export default function SoilCarbonPanel({
 
   if (!isGuest && entityType !== "farm") return null;
 
-  const ocs = soc?.["ocs_0-30cm"];
+  // SoilGrids renvoie ocs en kg/m² une fois divisé par son d_factor ; 1 kg/m² = 10 t/ha.
+  const ocsKgM2 = soc?.["ocs_0-30cm"];
+  const ocs = ocsKgM2 == null ? null : Math.round(ocsKgM2 * 100) / 10;
 
   return (
     <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">

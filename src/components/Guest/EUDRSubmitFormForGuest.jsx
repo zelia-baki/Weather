@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUserInfo } from "./hooks/useUserInfo";
 import { useFileUpload } from "./hooks/useFileUpload";
 import { useReports } from "./hooks/useReports";
+import { REPORT_TTL_DAYS } from "../../utils/storedReports";
 import { useTutorial } from "./hooks/useTutorial";
 import { tutorialSteps } from "./config/tutorialSteps";
 import StepLocation from "./steps/StepLocation";
@@ -15,11 +16,13 @@ import TutorialTooltip from "./components/TutorialTooltip";
 import TutorialInvitation from "./components/TutorialInvitation";
 import TutorialFloatingButton from "./components/TutorialFloatingButton";
 import EudrHiddenCapture from "./components/EudrHiddenCapture"; // ✅ nouveau import
+import axiosInstance from "../../axiosInstance";
+import { clearPaymentReturn } from "../../utils/paymentReturn";
 
-// 🚧 DEV ONLY — mettre à false avant de déployer en prod
-// Quand true, un bouton "Skip payment (DEV)" apparaît à l'étape 4
+// 🚧 DEV ONLY — un bouton "Skip payment (DEV)" apparaît à l'étape 4
 // pour générer le rapport directement, sans passer par SendPaymentModal.
-const BYPASS_PAYMENT = true;
+// Lié à import.meta.env.DEV : jamais présent dans un build de prod.
+const BYPASS_PAYMENT = import.meta.env.DEV;
 
 // ── Step config ──────────────────────────────────────────────────────────────
 const STEPS = [
@@ -166,6 +169,11 @@ const StepProgressBar = ({ current, onBack }) => (
   </>
 );
 
+// Page de retour après un paiement par carte (DPO dans le même onglet).
+const GUEST_PATH = "/EUDRSubmissionForGuest";
+const RESUME_POLL_MS = 4000;
+const RESUME_MAX_MS = 3 * 60 * 1000;
+
 // ── Main component ────────────────────────────────────────────────────────────
 const EUDRSubmitFormForGuest = () => {
   // Preselection from the landing page "Climate Tools" popup
@@ -209,11 +217,34 @@ const EUDRSubmitFormForGuest = () => {
   const [tutorialError, setTutorialError] = useState(null);
   const [stateError, setStateError] = useState(null); // ✅ erreur de vérification d'état
 
-  const { files, handleFileChange } = useFileUpload();
+  // Retour de DPO : ?paid=<token> (paiement à confirmer puis rapport à générer)
+  // ou ?payment=cancelled. Lu une fois, puis retiré de l'URL.
+  const [paymentReturn] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paid = params.get("paid");
+    const cancelled = params.get("payment") === "cancelled";
+    if (paid || cancelled) window.history.replaceState(null, "", window.location.pathname);
+    return paid ? { token: paid } : cancelled ? { cancelled: true } : null;
+  });
+  const [resumeStatus, setResumeStatus] = useState(
+    paymentReturn?.token ? "confirming" : paymentReturn?.cancelled ? "cancelled" : null);
+
+  const { files, handleFileChange: storeUploadedFile, clearFiles } = useFileUpload();
+  // Fichier importé et polygone dessiné s'excluent : l'un remplace l'autre
+  // (les deux sont gardés en localStorage pour le retour de DPO).
+  const handleFileChange = (inputName, e) => {
+    storeUploadedFile(inputName, e);
+    setGeojson(null);
+    localStorage.removeItem("polygon_geojson");
+  };
+  const handleGeojsonChange = (polygon) => {
+    setGeojson(polygon);
+    if (polygon) clearFiles();
+  };
   const { userInfo, setUserInfo, handleUserInfoSubmit, loading: userLoading, isUserInfoValid } = useUserInfo(setStep);
   // ✅ reportRefs supprimé : StepReports gère désormais ses propres refs (nécessaire
   // pour supporter plusieurs rapports par type — voir useReports.jsx / StepReports.jsx)
-  const { reports, loading, showPaymentModal, handleReportReady, setShowPaymentModal,
+  const { reports, loading, showPaymentModal, handleReportReady, setShowPaymentModal, generationError,
     pendingEudrCapture, generateEudrPdf } = useReports({ files, geojson, userInfo, setStep, propertyType }); // ✅ + 2 valeurs
   const { isActive: isTutorialActive, currentStep: tutorialStep, showTutorial, startTutorial, nextStep: nextTutorialStep, prevStep: prevTutorialStep, skipTutorial } = useTutorial();
 
@@ -240,6 +271,40 @@ const EUDRSubmitFormForGuest = () => {
   // Notamment utilisé "avant paiement" : step 4 nécessite geojson + feature + userInfo valides.
   const canGenerateReport = !!(geojson || files.geojson) && !!selectedFeature && isUserInfoValid();
 
+  // Retour de DPO : on confirme le paiement puis on génère le rapport, comme si
+  // le client n'avait jamais quitté la page.
+  useEffect(() => {
+    if (!paymentReturn?.token) return;
+    let stopped = false;
+    const started = Date.now();
+    const check = async () => {
+      if (stopped) return;
+      let status = "pending";
+      try {
+        status = String((await axiosInstance.get(`/api/payments/dpo/verify/${paymentReturn.token}`)).data?.status || "").toLowerCase();
+      } catch (err) {
+        console.warn("[Guest] payment check failed, retrying", err);
+      }
+      if (stopped) return;
+      if (status === "paid") {
+        clearPaymentReturn();
+        setResumeStatus(null);
+        setStep(4);
+        handleReportReady(selectedFeature);
+      } else if (status === "failed" || status === "cancelled") {
+        clearPaymentReturn();
+        setResumeStatus("failed");
+      } else if (Date.now() - started > RESUME_MAX_MS) {
+        setResumeStatus("timeout");
+      } else {
+        setTimeout(check, RESUME_POLL_MS);
+      }
+    };
+    check();
+    return () => { stopped = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (isTutorialActive) return; // ne pas interférer avec le tutoriel
 
@@ -258,13 +323,13 @@ const EUDRSubmitFormForGuest = () => {
       setStep(3);
       return;
     }
-    // ✅ reports.<type> est maintenant un tableau (plusieurs rapports possibles, TTL 5 min)
+    // ✅ reports.<type> est maintenant un tableau (plusieurs rapports possibles, TTL REPORT_TTL_DAYS)
     const hasAnyReport =
       (reports.eudr?.length ?? 0) > 0 ||
       (reports.carbon?.length ?? 0) > 0 ||
       (reports.sentinel?.length ?? 0) > 0;
     if (step === 5 && !hasAnyReport) {
-      setStateError("⚠️ No report available (they expire 5 minutes after generation). Please restart the payment.");
+      setStateError(`⚠️ No report available (reports are kept ${REPORT_TTL_DAYS} days after generation). Please restart the payment.`);
       setStep(4);
       return;
     }
@@ -355,6 +420,20 @@ const EUDRSubmitFormForGuest = () => {
         </div>
       )}
 
+      {resumeStatus && (
+        <div className="max-w-3xl mx-auto px-6 pt-4" style={{ fontFamily: "'DM Sans',sans-serif" }}>
+          <div className={`p-3 rounded-lg text-sm border ${
+            resumeStatus === "confirming" ? "bg-green-50 border-green-200 text-green-800"
+              : resumeStatus === "cancelled" ? "bg-yellow-50 border-yellow-200 text-yellow-800"
+              : "bg-red-50 border-red-200 text-red-800"}`}>
+            {resumeStatus === "confirming" && "⏳ Confirming your payment with DPO… your report will be generated right after."}
+            {resumeStatus === "cancelled" && "Payment cancelled: nothing was charged. You can try again below."}
+            {resumeStatus === "failed" && "The payment was declined or cancelled. No money was taken. You can try again below."}
+            {resumeStatus === "timeout" && "We are still waiting for DPO to confirm your payment. If you were charged, use \"Generate my report\" below in a few minutes, or contact support."}
+          </div>
+        </div>
+      )}
+
       {(loading || userLoading) && (
         <div className="max-w-3xl mx-auto px-6 pt-4 text-center" style={{ color: '#16a34a', fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}>
           ⏳ Processing your request…
@@ -368,7 +447,7 @@ const EUDRSubmitFormForGuest = () => {
             files={files}
             onFileChange={handleFileChange}
             geojson={geojson}
-            setGeojson={setGeojson}
+            setGeojson={handleGeojsonChange}
             onNext={handleStepLocationNext}
             canContinue={canProceedToStep2}
             highlightUpload={getHighlightClass("upload")}
@@ -523,7 +602,28 @@ const EUDRSubmitFormForGuest = () => {
                     loading={loading}
                     highlightPayment={getHighlightClass("payment")}
                     canGenerateReport={canGenerateReport} // ✅ vérification avant paiement
+                    onGenerate={handleReportReady}
+                    propertyType={propertyType}
                   />
+                  {generationError && !loading && (
+                    <div className="max-w-md mx-auto mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 space-y-3">
+                      <p>
+                        <strong>Your payment is confirmed</strong>, but the report could not be generated:{" "}
+                        {generationError.message}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleReportReady(generationError.feature)}
+                        className="w-full py-2 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold"
+                      >
+                        Retry (no new payment)
+                      </button>
+                      <p className="text-xs text-red-600">
+                        Your access stays valid for the paid period. If it keeps failing, contact support with
+                        your phone number.
+                      </p>
+                    </div>
+                  )}
                   {BYPASS_PAYMENT && (
                     <div className="max-w-md mx-auto mt-3 text-center">
                       <button
@@ -576,6 +676,7 @@ const EUDRSubmitFormForGuest = () => {
           featureName="reporteudrguest"
           phone={userInfo.phone}
           agent_id={userInfo.agent_id}
+          returnPath={GUEST_PATH}
           onPaymentSuccess={() => { handleReportReady("reporteudrguest"); setShowPaymentModal((p) => ({ ...p, eudr: false })); }}
         />
       )}
@@ -584,8 +685,10 @@ const EUDRSubmitFormForGuest = () => {
           isOpen={showPaymentModal.carbon}
           onClose={() => setShowPaymentModal((p) => ({ ...p, carbon: false }))}
           featureName="reportcarbonguest"
+          title={propertyType === "forest" ? "Forest Carbon Report" : "Farmland Carbon Report"}
           phone={userInfo.phone}
           agent_id={userInfo.agent_id}
+          returnPath={GUEST_PATH}
           onPaymentSuccess={() => { handleReportReady("reportcarbonguest"); setShowPaymentModal((p) => ({ ...p, carbon: false })); }}
         />
       )}
@@ -596,6 +699,7 @@ const EUDRSubmitFormForGuest = () => {
           featureName="reportndviguest"
           phone={userInfo.phone}
           agent_id={userInfo.agent_id}
+          returnPath={GUEST_PATH}
           onPaymentSuccess={() => { handleReportReady("reportndviguest"); setShowPaymentModal((p) => ({ ...p, sentinel: false })); }}
         />
       )}

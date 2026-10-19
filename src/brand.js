@@ -56,7 +56,7 @@ const SHARED_PATHS = [
   '/usermanager', '/createUsers', '/featuresManager',
   '/userDash',
   '/verify',                                    // public receipt verification
-  '/payment', '/contactus', '/login', '/signup',
+  '/payment', '/payment-required', '/contactus', '/login', '/signup',
 ];
 
 const BRANDS = {
@@ -76,7 +76,7 @@ const BRANDS = {
     name: '2tume',
     tagline: 'Commodity exchange',
     // Menu ids from Layout.jsx. Farm, forest, weather, digital and eudr stay out.
-    menus: ['exchange', 'ecommerce', 'dashboard'],
+    menus: ['exchange', 'ecommerce', 'dashboard', 'admin'],
     // Everything under /2tume, plus the shared pages above.
     allowedPaths: [TUME, ...SHARED_PATHS],
     home: `${TUME}/dashboard`,
@@ -90,8 +90,12 @@ export const BRAND = BRANDS[BRAND_KEY] || BRANDS.nkusu;
 /** Is this route reachable on the current domain? */
 export const isPathAllowed = (path) => {
   if (!BRAND.allowedPaths) return true;
-  return BRAND.allowedPaths.some(allowed =>
-    path === allowed || path.startsWith(`${allowed}/`));
+  // React Router matches case-insensitively, so the filter must too.
+  const p = path.toLowerCase();
+  return BRAND.allowedPaths.some(allowed => {
+    const a = allowed.toLowerCase();
+    return p === a || p.startsWith(`${a}/`);
+  });
 };
 
 /** Should this menu block be displayed? */

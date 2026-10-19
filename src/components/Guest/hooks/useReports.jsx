@@ -1,6 +1,57 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axiosInstance from "../../../axiosInstance";
+import { REPORT_TTL_DAYS, fetchStoredReport } from "../../../utils/storedReports";
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Les calculs s'appuient sur Sentinel-2 et SoilGrids, qui échouent parfois
+// ponctuellement : on retente avant d'afficher une erreur. Pas de retry sur un
+// refus d'accès (401/402/403 : paiement non reconnu) ni sur une requête invalide
+// qui échouerait pareil (413/415/422).
+const NO_RETRY = new Set([401, 402, 403, 404, 413, 415, 422]);
+const withRetry = async (call, attempts = 3, delayMs = 5000) => {
+  for (let i = 1; ; i++) {
+    try {
+      return await call();
+    } catch (err) {
+      if (i >= attempts || NO_RETRY.has(err.response?.status)) throw err;
+      console.warn(`⚠ Tentative ${i}/${attempts} échouée, nouvel essai…`, err.response?.data || err.message);
+      await wait(delayMs);
+    }
+  }
+};
+
+// Infos ferme lues dans les propriétés du GeoJSON (fichier ou dessin) pour
+// les PDF : sans elles, le rapport affichait un identifiant technique et
+// « Owner N/A ».
+const pick = (props, keys) => {
+  for (const k of keys) {
+    const v = props?.[k];
+    if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+  }
+  return undefined;
+};
+
+const farmInfoFromGeojson = (gj) => {
+  const props = gj?.type === "FeatureCollection" ? gj.features?.[0]?.properties
+    : gj?.type === "Feature" ? gj.properties : null;
+  if (!props) return {};
+  const info = {
+    farm_id: pick(props, ["farm_id", "FarmID", "farmId", "farm_code", "ProducerID", "producer_id", "plot_id", "id"]),
+    name: pick(props, ["name", "farm_name", "ProducerName", "producer_name", "farmer_name", "owner", "Name"]),
+    subcounty: pick(props, ["subcounty", "sub_county"]),
+    district_name: pick(props, ["district_name", "district"]),
+  };
+  return Object.fromEntries(Object.entries(info).filter(([, v]) => v !== undefined));
+};
+
+const readFarmInfo = async (geojson, file) => {
+  if (geojson) return farmInfoFromGeojson(geojson);
+  if (!file) return {};
+  try { return farmInfoFromGeojson(JSON.parse(await file.text())); } catch { return {}; }
+};
+
+const errorMessage = (err) =>
+  err.response?.data?.error || err.response?.data?.msg || err.message || "Unknown error";
 
 const FEATURE_TO_KEY = {
   reporteudrguest: "eudr",
@@ -9,7 +60,9 @@ const FEATURE_TO_KEY = {
 };
 
 const CACHE_KEY = "guest_reports_cache";
-const TTL_MS = 5 * 60 * 1000; // ✅ 5 minutes
+// ✅ Aligné sur STORED_REPORT_RETENTION (backend, app/utils/stored_reports.py) :
+// le PDF payé est conservé 7 jours côté serveur et re-téléchargeable via son pdfToken.
+const TTL_MS = REPORT_TTL_DAYS * 24 * 60 * 60 * 1000;
 
 const normalizeGeojson = (geojson) => {
   let geometry;
@@ -42,12 +95,14 @@ const getSourceKey = (geojson, file) => {
 
 const emptyCache = () => ({ eudr: [], carbon: [], sentinel: [] });
 
-// ✅ pdfUrl est un Object URL (blob) — invalide après reload, on ne le persiste jamais
+// ✅ pdfUrl est un Object URL (blob) — invalide après reload, on ne le persiste jamais.
+// On persiste pdfToken à la place : il permet de re-télécharger le PDF conservé
+// côté serveur (GET /api/gfw/stored-report/<token>).
 const stripPdfUrl = (list) => (list || []).map(({ pdfUrl, ...rest }) => rest);
 
 const loadCache = () => {
   try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return emptyCache();
     const parsed = JSON.parse(raw);
     const now = Date.now();
@@ -55,9 +110,9 @@ const loadCache = () => {
     const cleaned = {
       eudr: prune(stripPdfUrl(parsed.eudr)),
       carbon: prune(stripPdfUrl(parsed.carbon)),
-      sentinel: prune(parsed.sentinel),
+      sentinel: prune(stripPdfUrl(parsed.sentinel)),
     };
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(cleaned));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cleaned));
     return cleaned;
   } catch {
     return emptyCache();
@@ -66,13 +121,13 @@ const loadCache = () => {
 
 const saveCache = (cache) => {
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
       eudr: stripPdfUrl(cache.eudr),
       carbon: stripPdfUrl(cache.carbon),
-      sentinel: cache.sentinel,
+      sentinel: stripPdfUrl(cache.sentinel),
     }));
   } catch {
-    // sessionStorage plein/indisponible : on ignore silencieusement
+    // localStorage plein/indisponible : on ignore silencieusement
   }
 };
 
@@ -80,26 +135,51 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
   const [reports, setReports] = useState(() => loadCache());
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState({ eudr: false, carbon: false, sentinel: false });
+  // Échec de génération APRÈS paiement : affiché à l'étape 4 avec un bouton
+  // « Retry » (sans nouveau paiement). Sans ça, la page revenait sur « Pay Now »
+  // sans message et le client croyait devoir repayer.
+  const [generationError, setGenerationError] = useState(null); // { feature, message }
+  const farmInfoRef = useRef({}); // infos ferme du GeoJSON en cours (voir readFarmInfo)
 
   // ✅ NOUVEAU : rapport EUDR JSON reçu, en attente de la capture heatmap
   // (voir <EudrHiddenCapture> à monter dans le composant parent) avant de
   // pouvoir appeler /guest/eudr-pdf.
   const [pendingEudrCapture, setPendingEudrCapture] = useState(null); // { sourceKey, geojson, data }
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setReports((prev) => {
-        const now = Date.now();
-        const prune = (list) => list.filter((r) => now - r.timestamp < TTL_MS);
-        const cleaned = { eudr: prune(prev.eudr), carbon: prune(prev.carbon), sentinel: prune(prev.sentinel) };
-        saveCache(cleaned);
-        return cleaned;
-      });
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // ⚠ FIX : plus de purge périodique en mémoire. Elle supprimait un rapport
+  // payé pendant qu'il était affiché et le garde-fou du step 5 renvoyait alors
+  // l'utilisateur à "Pay Now". Le TTL ne s'applique qu'au chargement (loadCache).
 
-  const upsertReport = (key, sourceKey, entryGeojson, data, pdfUrl = null) => {
+  // ✅ Après un rechargement, les pdfUrl (blobs) sont perdus : on re-télécharge
+  // chaque PDF conservé côté serveur grâce à son pdfToken.
+  useEffect(() => {
+    ["eudr", "carbon", "sentinel"].forEach((key) => {
+      (reports[key] || []).filter((r) => !r.pdfUrl && r.pdfToken).forEach(async (entry) => {
+        try {
+          const res = await fetchStoredReport(entry.pdfToken);
+          const pdfUrl = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+          patchReport(key, entry.sourceKey, { pdfUrl });
+        } catch (err) {
+          console.error("❌ PDF conservé indisponible :", err.response?.status || err);
+          patchReport(key, entry.sourceKey, { pdfToken: null, pdfExpired: true });
+        }
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // une seule fois, au montage
+
+  // Patch d'une entrée existante sans toucher à son timestamp (contrairement à upsertReport).
+  const patchReport = (key, sourceKey, patch) => {
+    setReports((prev) => {
+      const list = prev[key] || [];
+      if (!list.some((r) => r.sourceKey === sourceKey)) return prev;
+      const updated = { ...prev, [key]: list.map((r) => (r.sourceKey === sourceKey ? { ...r, ...patch } : r)) };
+      saveCache(updated);
+      return updated;
+    });
+  };
+
+  const upsertReport = (key, sourceKey, entryGeojson, data, pdfUrl = null, pdfToken = null) => {
     setReports((prev) => {
       const now = Date.now();
       const list = prev[key] || [];
@@ -111,9 +191,12 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
       const newEntry = {
         id: existing?.id || `${key}_${sourceKey}_${now}`,
         sourceKey,
+        propertyType: key === "carbon" ? propertyType : null,
+        farmInfo: farmInfoRef.current,
         geojson: entryGeojson || null,
         data,
         pdfUrl,
+        pdfToken,
         extra: existing?.extra ?? null, // ✅ préservé — voir setReportExtra()
         timestamp: now,
       };
@@ -126,18 +209,7 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
   // ✅ NOUVEAU : complément NDVI (forest) / SOC+crop (farm) au Carbon Report
   // guest — patch isolé de `extra` sans toucher data/pdfUrl (contrairement à
   // upsertReport, qui remplace tout l'entry).
-  const setReportExtra = (key, sourceKey, extra) => {
-    setReports((prev) => {
-      const list = prev[key] || [];
-      if (!list.some((r) => r.sourceKey === sourceKey)) return prev; // rapport pas encore créé
-      const updated = {
-        ...prev,
-        [key]: list.map((r) => (r.sourceKey === sourceKey ? { ...r, extra } : r)),
-      };
-      saveCache(updated);
-      return updated;
-    });
-  };
+  const setReportExtra = (key, sourceKey, extra) => patchReport(key, sourceKey, { extra });
 
   // ✅ Appelé par <EudrHiddenCapture onCaptured={...}> une fois la heatmap
   // obtenue (ou après timeout, base64 = null).
@@ -147,7 +219,9 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
         "/api/gfw/guest/eudr-pdf",
         {
           report: data, forest_map_image: forestMapBase64 || undefined,
+          farm_info: farmInfoRef.current,
           guest_id: localStorage.getItem("guest_id") || sourceKey,
+          phone: userInfo.phone, // ✅ contrôle du paiement côté backend
           agent_id: userInfo.agent_id || undefined,
         },
         { responseType: "blob" }
@@ -156,7 +230,7 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
       // du Content-Type réseau renvoyé par le backend.
       const pdfBlob = new Blob([res.data], { type: "application/pdf" });
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      upsertReport("eudr", sourceKey, entryGeojson, data, pdfUrl);
+      upsertReport("eudr", sourceKey, entryGeojson, data, pdfUrl, res.headers["x-report-token"] || null);
     } catch (err) {
       console.error("❌ Erreur génération PDF EUDR :", err.response?.data || err);
       upsertReport("eudr", sourceKey, entryGeojson, data, null); // rapport visible sans PDF
@@ -195,7 +269,10 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
         "/api/gfw/guest/carbon-pdf",
         {
           report: data,
+          farm_info: farmInfoRef.current,
+          property_type: propertyType || "farm",
           guest_id: localStorage.getItem("guest_id") || sourceKey,
+          phone: userInfo.phone, // ✅ contrôle du paiement côté backend
           agent_id: userInfo.agent_id || undefined,
         },
         { responseType: "blob" }
@@ -204,7 +281,7 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
       // du Content-Type réseau renvoyé par le backend.
       const pdfBlob = new Blob([res.data], { type: "application/pdf" });
       const pdfUrl = URL.createObjectURL(pdfBlob);
-      upsertReport("carbon", sourceKey, entryGeojson, data, pdfUrl);
+      upsertReport("carbon", sourceKey, entryGeojson, data, pdfUrl, res.headers["x-report-token"] || null);
     } catch (err) {
       console.error("❌ Erreur génération PDF Carbon :", err.response?.data || err);
       upsertReport("carbon", sourceKey, entryGeojson, data, null);
@@ -215,9 +292,36 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
     fetchCarbonExtra(sourceKey, entryGeojson); // ✅ en parallèle, n'affecte pas le PDF/le step
   };
 
+  // PDF « Satellite Index » généré par le backend (ReportLab), conservé 7 jours
+  // et re-téléchargeable via X-Report-Token — même circuit que Carbon / EUDR.
+  // Le tableau de bord interactif reste affiché même si le PDF échoue.
+  const generateSentinelPdf = async (sourceKey, entryGeojson, data) => {
+    try {
+      const res = await axiosInstance.post(
+        "/api/sentinel/guest/sat-index/pdf",
+        {
+          geojson: normalizeGeojson(entryGeojson),
+          phone: userInfo.phone, // ✅ contrôle du paiement côté backend
+          farm_info: farmInfoRef.current,
+          guest_id: localStorage.getItem("guest_id") || sourceKey,
+          agent_id: userInfo.agent_id || undefined,
+        },
+        { responseType: "blob" }
+      );
+      const pdfBlob = new Blob([res.data], { type: "application/pdf" });
+      upsertReport("sentinel", sourceKey, entryGeojson, data, URL.createObjectURL(pdfBlob),
+                   res.headers["x-report-token"] || null);
+    } catch (err) {
+      console.error("❌ Erreur génération PDF satellite :", err.response?.data || err);
+      upsertReport("sentinel", sourceKey, entryGeojson, data, null);
+    }
+  };
+
   const handleReportReady = async (featureName) => {
     const key = FEATURE_TO_KEY[featureName];
     if (!key) { console.error("❌ Unknown featureName:", featureName); return; }
+
+    setGenerationError(null);
 
     // ── NDVI : inchangé ──────────────────────────────────────────────────
     if (featureName === "reportndviguest") {
@@ -225,18 +329,19 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
       setLoading(true);
       await wait(2000);
       try {
-        const res = await axiosInstance.post("/api/sentinel/guest/sat-index", {
+        const res = await withRetry(() => axiosInstance.post("/api/sentinel/guest/sat-index", {
           geojson: normalizeGeojson(geojson),
           phone: userInfo.phone,
           // ✅ FIX : agent_id manquait sur ce rapport — il n'était envoyé que
           // pour EUDR/Carbon (generateEudrPdf/generateCarbonPdf ci-dessus),
           // ce qui excluait les rapports NDVI guest du suivi par agent.
           agent_id: userInfo.agent_id || undefined,
-        });
-        upsertReport(key, getSourceKey(geojson, null), geojson, res.data);
+        }));
+        await generateSentinelPdf(getSourceKey(geojson, null), geojson, res.data);
         setStep(5);
       } catch (err) {
         console.error("❌ Erreur NDVI guest:", err.response?.data || err);
+        setGenerationError({ feature: featureName, message: errorMessage(err) });
       } finally {
         setLoading(false);
       }
@@ -252,17 +357,18 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
     if (!file) { console.error("❌ Aucun fichier ou geojson disponible"); return; }
 
     const sourceKey = getSourceKey(geojson, file);
+    farmInfoRef.current = await readFarmInfo(geojson, file);
 
     const formData = new FormData();
     formData.append("file", file);
     setLoading(true);
     await wait(2000);
     try {
-      const res = await axiosInstance.post(
+      const res = await withRetry(() => axiosInstance.post(
         `/api/gfw/Geojson/${featureName === "reportcarbonguest" ? "CarbonReportFromFile" : "ReportFromFile"}`,
         formData,
         { headers: { "X-Guest-ID": localStorage.getItem("guest_id"), "X-Guest-Phone": userInfo.phone } },
-      );
+      ));
       const data = res.data.report;
 
       if (featureName === "reporteudrguest") {
@@ -274,6 +380,7 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
       }
     } catch (err) {
       console.error("❌ Erreur lors de la génération du rapport :", err.response?.data || err);
+      setGenerationError({ feature: featureName, message: errorMessage(err) });
       setLoading(false);
     }
   };
@@ -281,5 +388,6 @@ export const useReports = ({ files, geojson, userInfo, setStep, propertyType }) 
   return {
     reports, loading, showPaymentModal, setShowPaymentModal, handleReportReady,
     pendingEudrCapture, generateEudrPdf, // ✅ à brancher sur <EudrHiddenCapture> dans le parent
+    generationError,
   };
 };

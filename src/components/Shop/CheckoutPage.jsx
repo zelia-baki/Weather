@@ -1,8 +1,25 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import PaymentModal from '../Payment/PaymentModal';
 import { shopCheckoutProvider } from '../Payment/paymentProviders';
+import axiosInstance from '../../axiosInstance';
+import { clearPaymentReturn } from '../../utils/paymentReturn';
+
+// Paiement par carte : DPO s'ouvre dans cet onglet puis revient ici
+// (?paid=<token> ou ?payment=cancelled) — plus d'onglet à retrouver.
+const CHECKOUT_PATH = '/shop/checkout';
+const FORM_KEY = 'shop_checkout_form';
+const RESUME_POLL_MS = 4000;
+const RESUME_MAX_MS = 3 * 60 * 1000;
+
+const readReturn = () => {
+  const params = new URLSearchParams(window.location.search);
+  const paid = params.get('paid');
+  const cancelled = params.get('payment') === 'cancelled';
+  if (paid || cancelled) window.history.replaceState(null, '', window.location.pathname);
+  return paid ? { token: paid } : cancelled ? { cancelled: true } : null;
+};
 
 // =============================================================================
 //  src/components/Shop/CheckoutPage.jsx — remplace ton fichier actuel
@@ -136,10 +153,62 @@ const CartLine = ({ item, first }) => {
 // ── Page ─────────────────────────────────────────────────────────────────────
 const CheckoutPage = () => {
   const { items, totalAmount, currency, currencies, hasMixedCurrency, clearCart } = useCart();
-  const [form, setForm] = useState({ guest_name: '', email: '', phone_number: '', shipping_address: '' });
+  // Le formulaire survit à l'aller-retour chez DPO (paiement annulé → rien à ressaisir).
+  const [form, setForm] = useState(() => {
+    try {
+      return { guest_name: '', email: '', phone_number: '', shipping_address: '',
+               ...JSON.parse(sessionStorage.getItem(FORM_KEY) || '{}') };
+    } catch {
+      return { guest_name: '', email: '', phone_number: '', shipping_address: '' };
+    }
+  });
   const [errors, setErrors] = useState({});
   const [paying, setPaying] = useState(false);
   const [paidTotal, setPaidTotal] = useState(null);
+  const [paidPhone, setPaidPhone] = useState(null);
+  const [paymentReturn] = useState(readReturn);
+  const [resumeStatus, setResumeStatus] = useState(
+    paymentReturn?.token ? 'confirming' : paymentReturn?.cancelled ? 'cancelled' : null);
+
+  useEffect(() => {
+    try { sessionStorage.setItem(FORM_KEY, JSON.stringify(form)); } catch { /* stockage indisponible */ }
+  }, [form]);
+
+  // Retour de DPO : on confirme le paiement puis on affiche le remerciement.
+  useEffect(() => {
+    if (!paymentReturn?.token) return;
+    let stopped = false;
+    const started = Date.now();
+    const check = async () => {
+      if (stopped) return;
+      let data = null;
+      try {
+        data = (await axiosInstance.get(`/api/ecommerce/checkout/verify/${paymentReturn.token}`)).data;
+      } catch (err) {
+        console.warn('[Checkout] payment check failed, retrying', err);
+      }
+      if (stopped) return;
+      if (data?.status === 'paid') {
+        clearPaymentReturn();
+        const order = data.order || {};
+        setPaidTotal(`${fmt(order.total_amount ?? totalAmount, 2)} ${order.currency || currency}`);
+        setPaidPhone(order.guest_phone || form.phone_number);
+        clearCart();
+        try { sessionStorage.removeItem(FORM_KEY); } catch { /* stockage indisponible */ }
+        setResumeStatus(null);
+      } else if (data?.status === 'failed') {
+        clearPaymentReturn();
+        setResumeStatus('failed');
+      } else if (Date.now() - started > RESUME_MAX_MS) {
+        setResumeStatus('timeout');
+      } else {
+        setTimeout(check, RESUME_POLL_MS);
+      }
+    };
+    check();
+    return () => { stopped = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const validate = () => {
     const e = {};
@@ -173,7 +242,9 @@ const CheckoutPage = () => {
   // l'acheteur retrouve sa commande intacte.
   const handlePaid = () => {
     setPaidTotal(`${fmt(totalAmount, 2)} ${currency}`);
+    setPaidPhone(form.phone_number);
     clearCart();
+    try { sessionStorage.removeItem(FORM_KEY); } catch { /* stockage indisponible */ }
   };
 
   if (paidTotal) {
@@ -185,11 +256,25 @@ const CheckoutPage = () => {
         </h1>
         <p style={{ ...sans, color: 'rgba(20,35,26,0.6)', maxWidth: 420, lineHeight: 1.6 }}>
           Your payment of <strong>{paidTotal}</strong> is confirmed. We&apos;ll contact you
-          on <strong>{form.phone_number}</strong> to arrange delivery.
+          on <strong>{paidPhone || form.phone_number}</strong> to arrange delivery.
         </p>
         <Link to="/shop" style={{ ...sans, fontSize: 13, color: GREEN, fontWeight: 700 }}>
           ← Back to shop
         </Link>
+      </div>
+    );
+  }
+
+  if (resumeStatus === 'confirming') {
+    return (
+      <div style={{ background: BG, minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 14, padding: 24, textAlign: 'center' }}>
+        <h1 style={{ ...serif, fontSize: 30, color: INK, fontWeight: 500, margin: 0 }}>
+          Confirming your payment…
+        </h1>
+        <p style={{ ...sans, color: 'rgba(20,35,26,0.6)', maxWidth: 420, lineHeight: 1.6 }}>
+          DPO is confirming your payment. This page updates by itself, please keep it open.
+        </p>
       </div>
     );
   }
@@ -220,6 +305,15 @@ const CheckoutPage = () => {
         <h1 style={{ ...serif, fontSize: 36, color: INK, fontWeight: 500, marginBottom: 32 }}>
           Checkout
         </h1>
+        {resumeStatus && (
+          <div style={{ ...sans, fontSize: 13, lineHeight: 1.5, padding: '12px 16px', borderRadius: 10, marginBottom: 24,
+            background: resumeStatus === 'cancelled' ? '#fdf6e3' : '#fdecea',
+            border: `1px solid ${resumeStatus === 'cancelled' ? '#e9d8a6' : '#f5c2c0'}`, color: INK }}>
+            {resumeStatus === 'cancelled' && 'Payment cancelled: nothing was charged. Your cart is unchanged, you can try again.'}
+            {resumeStatus === 'failed' && 'The payment was declined or cancelled. No money was taken. You can try again.'}
+            {resumeStatus === 'timeout' && 'DPO has not confirmed your payment yet. If you were charged, we will contact you; otherwise you can try again.'}
+          </div>
+        )}
 
         {/* Le blocage arrive AVANT le formulaire, pas après l'avoir rempli. */}
         {hasMixedCurrency && (
@@ -317,6 +411,7 @@ const CheckoutPage = () => {
         title={`Nkusu order · ${items.length} item${items.length > 1 ? 's' : ''}`}
         prices={{ [currency]: totalAmount }}
         defaultCurrency={currency}
+        returnPath={CHECKOUT_PATH}
         phone={form.phone_number}
         email={form.email}
         provider={provider}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
@@ -8,6 +8,7 @@ import ThemeProvider from "./components/ThemeProvider";
 // ─── Route guards ─────────────────────────────────────────────────────────────
 import ProtectedRoute from './ProtectedRoute.jsx';
 import FeatureRoute from './FeatureRoute.jsx';
+import { BRAND, isPathAllowed } from './brand.js';
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 import Layout from './components/Layout/Layout.jsx';
@@ -117,6 +118,7 @@ import Card from './components/Card/Card.jsx';
 import Cardex from './components/Card/Cardex.jsx';
 import CategoryManager from './components/Category/CategoryManager.jsx';
 import FeatureManager from './components/Features/FeatureManager.jsx';
+import CropCalibration from './components/crop/CropCalibration.jsx';
 
 // ─── Blog ─────────────────────────────────────────────────────────────────────
 import BlogAdmin from './components/Blog/BlogAdmin.jsx';
@@ -295,6 +297,8 @@ const ROLES = {
   FOREST: ['admin', 'forest'],
   WEATHER: ['admin', 'weather', 'farmer'],
   ADMIN: ['admin'],
+  // Pas encore de user_type 'warehouse' côté backend : admin seulement.
+  WAREHOUSE: ['admin'],
 };
 
 // =============================================================================
@@ -397,6 +401,7 @@ const layoutRoutes = [
 
   // Admin only
   { path: '/featuresManager', component: <FeatureManager />, roles: ROLES.ADMIN, adminOnly: true },
+  { path: '/cropcalibration', component: <CropCalibration />, roles: ROLES.ADMIN, adminOnly: true },
   { path: '/locationadvisory', component: <LocationAdvisory />, roles: ROLES.ADMIN, adminOnly: true },
 
   // WBII
@@ -416,7 +421,8 @@ const layoutRoutes = [
     // ── 2tume — commodity exchange ──
   { path: '/2tume/receipts',      component: <ReceiptManager />,      roles: ROLES.WAREHOUSE },
   { path: '/2tume/receipts/new',  component: <ReceiptReception />,    roles: ROLES.WAREHOUSE },
-  { path: '/2tume/warehouses',    component: <WarehouseManager />,    roles: ROLES.ADMIN, adminOnly: true },
+  // /2tume/warehouses : WarehouseManager n'est pas encore dans le dépôt — sa route
+  // faisait planter toute l'app (ReferenceError au chargement). À remettre avec le composant.
   { path: '/2tume/dashboard',     component: <WarehouseDashboard />,  roles: ROLES.WAREHOUSE },
   { path: '/2tume/quality',       component: <QualityManager />,      roles: ROLES.ADMIN, adminOnly: true },
   { path: '/2tume/varieties',     component: <VarietyManager />,      roles: ROLES.FARM },
@@ -425,16 +431,30 @@ const layoutRoutes = [
 ];
 
 // =============================================================================
+// GUARD : BrandGate
+// Une route hors du périmètre du domaine courant (cf. brand.js) renvoie à
+// l'accueil de la marque. Sur nkusu.com tout passe.
+// =============================================================================
+const BrandGate = ({ children }) => {
+  const { pathname } = useLocation();
+  if (pathname !== '/' && !isPathAllowed(pathname)) {
+    return <Navigate to={BRAND.home} replace />;
+  }
+  return children;
+};
+
+// =============================================================================
 // APP
 // =============================================================================
 function App() {
   return (
     <BrowserRouter>
       <ThemeProvider />
+      <BrandGate>
       <Routes>
         {/* ── Routes publiques ── */}
 {/* ── Routes publiques ── */}
-        <Route path="/"                       element={<Landipage />} />
+        <Route path="/"                       element={BRAND.landingIsShop ? <ShopLanding /> : <Landipage />} />
         <Route path="/landipage"              element={<Landing />} />
         <Route path="/login"                  element={<Login />} />
         <Route path="/contactus"              element={<ContactUs />} />
@@ -516,6 +536,7 @@ function App() {
           />
         ))}
       </Routes>
+      </BrandGate>
     </BrowserRouter>
   );
 }

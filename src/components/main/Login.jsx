@@ -3,6 +3,7 @@ import axiosInstance from '../../axiosInstance';
 import { motion } from 'framer-motion';
 import { FaEnvelope, FaLock, FaFeather, FaEye, FaEyeSlash, FaExclamationCircle } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { BRAND } from '../../brand';
 
 const getErrorMessage = (error) => {
   if (!error.response) {
@@ -32,7 +33,7 @@ const Login = () => {
     try {
       const response = await axiosInstance.post('/api/login', { email, password });
       localStorage.setItem('token', response.data.token);
-      navigate('/home');
+      navigate(BRAND.home);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
       setLoading(false);

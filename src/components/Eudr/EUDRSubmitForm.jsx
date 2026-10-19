@@ -10,7 +10,9 @@ import {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 // EUDR V3: TRADE no longer exists (traders are excluded from DDS submission)
-const ACTIVITY_TYPES = ["DOMESTIC", "IMPORT", "EXPORT"];
+// Repli si /api/eudr/config ne répond pas : un opérateur hors UE (UG) ne peut
+// déclarer qu'en IMPORT ; DOMESTIC/EXPORT étaient refusés par le backend.
+const DEFAULT_ACTIVITY_TYPES = ["IMPORT"];
 const EU_COUNTRIES   = [
   "AT","BE","BG","CY","CZ","DE","DK","EE","ES","FI","FR",
   "GR","HR","HU","IE","IT","LT","LU","LV","MT","NL","PL",
@@ -32,32 +34,41 @@ const QUALIFIERS = [
 // puis ses sous-positions à 6 chiffres acceptées. Rien n'est codé en dur ici.
 const hsDigits = (code) => String(code || '').replace(/\D/g, '');
 
+// Les sous-positions à 6 chiffres passent en premier (= choix par défaut) :
+// TRACES refuse certaines positions de l'Annexe I (0901 pour le café, vérifié le
+// 2026-10-14) alors que leurs sous-positions sont acceptées.
 const hsOptions = (h) => {
   if (!h) return [];
   const d = hsDigits(h.code);
   const opts = [];
-  if (h.traces_valid !== false) {
-    opts.push({ code: d.slice(0, 6), label: d.length < 6 ? 'as listed in Annex I' : h.description });
-  }
   (h.subheadings || []).forEach(sub => {
     if (sub.code !== d && sub.traces_valid !== false) opts.push({ code: sub.code, label: sub.description || '' });
   });
+  if (h.traces_valid !== false) {
+    opts.push({ code: d.slice(0, 6), label: d.length < 6 ? 'as listed in Annex I' : h.description });
+  }
   return opts;
 };
 
 // Unité supplémentaire : TRACES rejette tout qualificatif qui ne correspond pas
 // à l'unité de la Nomenclature combinée du code HS (même règle que
 // _supplementary_unit() côté backend, eudr_utils.py).
+// Vérifiées contre TRACES le 2026-10-14 sur tous les codes du formulaire.
 const SUPPLEMENTARY_UNIT_BY_HS = {
-  '0102': 'NAR', '4011': 'NAR', '4012': 'NAR',
-  '4403': 'MTQ', '4406': 'MTQ', '4407': 'MTQ', '4408': 'MTQ', '4412': 'MTQ',
+  '4011': 'NAR', '4012': 'NAR', '4013': 'NAR',
+  '4403': 'MTQ', '4406': 'MTQ', '4408': 'MTQ', '4410': 'MTQ', '4411': 'MTQ',
+  '4412': 'MTQ', '4413': 'MTQ',
+  '4704': 'KSD',
 };
 const NO_SUPPLEMENTARY_UNIT_CHAPTERS = ['02', '09', '12', '15', '16', '18', '23'];
+// TRACES refuse toute unité supplémentaire pour ces positions
+const NO_SUPPLEMENTARY_UNIT_HEADINGS = ['0102', '4407'];
 // 'none' → pas d'unité supplémentaire ; 'NAR'/'MTQ' → imposée ; null → libre
 const supplementaryRule = (hs) => {
   const d = hsDigits(hs);
   if (d.length < 2) return null;
-  if (NO_SUPPLEMENTARY_UNIT_CHAPTERS.includes(d.slice(0, 2))) return 'none';
+  if (NO_SUPPLEMENTARY_UNIT_CHAPTERS.includes(d.slice(0, 2))
+      || NO_SUPPLEMENTARY_UNIT_HEADINGS.includes(d.slice(0, 4))) return 'none';
   return SUPPLEMENTARY_UNIT_BY_HS[d.slice(0, 4)] || null;
 };
 
@@ -152,6 +163,7 @@ const EUDRManager = () => {
   const [loading,          setLoading]          = useState('');  // action key being loaded
   const [allCountries,     setAllCountries]     = useState([]);
   const [allHscodes,       setAllHscodes]       = useState([]);
+  const [activityTypes,    setActivityTypes]    = useState(DEFAULT_ACTIVITY_TYPES);
   // Code choisi dans la liste Annexe I ; formData.hsHeading = code final à 6 chiffres
   const [hsBase,           setHsBase]           = useState('');
   const suppRule = supplementaryRule(formData.hsHeading || hsBase);
@@ -179,6 +191,9 @@ const EUDRManager = () => {
     axiosInstance.get('/api/hscode/')
       .then(r => setAllHscodes(r.data.hscodes || []))
       .catch(() => {});
+    axiosInstance.get('/api/eudr/config')
+      .then(r => { if (r.data?.activityTypes?.length) setActivityTypes(r.data.activityTypes); })
+      .catch(() => {});
   }, []);
 
   // ── handleChange supports nested keys (e.g. "goodsMeasure.volume") ─────────
@@ -201,7 +216,7 @@ const EUDRManager = () => {
   const handleHsBaseChange = (e) => {
     const code = e.target.value;
     setHsBase(code);
-    // Par défaut : le code de l'Annexe I s'il est accepté, sinon la seule option possible
+    // Par défaut : la première sous-position acceptée, sinon le code de l'Annexe I
     const opts = hsOptions(allHscodes.find(h => h.code === code));
     setFormData(p => ({ ...p, hsHeading: opts.length ? opts[0].code : '' }));
   };
@@ -370,7 +385,7 @@ const EUDRManager = () => {
               <select name="activityType" value={formData.activityType}
                 onChange={handleChange} className={sCls}>
                 <option value="">Select activity type</option>
-                {ACTIVITY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                {activityTypes.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
             <Field label="Border Cross Country" required>
@@ -453,7 +468,8 @@ const EUDRManager = () => {
               <>
                 <Field label="Supplementary Unit" required={!!suppRule}
                   hint={suppRule === 'MTQ' ? 'Volume in cubic metres (m³)'
-                      : suppRule === 'NAR' ? 'Number of items / heads' : undefined}>
+                      : suppRule === 'NAR' ? 'Number of items / heads'
+                      : suppRule === 'KSD' ? 'Kilograms of 90 % dry substance' : undefined}>
                   <input type="number" step="any" min="0" name="goodsMeasure.supplementaryUnit"
                     value={formData.goodsMeasure.supplementaryUnit}
                     onChange={handleChange} placeholder="0" className={iCls}/>

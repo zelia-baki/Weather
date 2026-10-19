@@ -13,7 +13,8 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import axiosInstance from '../../axiosInstance.jsx';
-import { useLocation, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import useReportEntityId from '../../hooks/useReportEntityId';
 import Loading from '../main/Loading.jsx';
 import EudrReportSection from '../Guest/components/EudrReportSection.jsx';
 import BackendPdfPanel from './BackendPdfPanel.jsx';
@@ -54,8 +55,7 @@ const FarmReport = () => {
   const [forestMapImage, setForestMapImage] = useState(null);
 
   const hasSaved = useRef(false);
-  const location = useLocation();
-  const farmId = location.state?.farmId || 'WAK0001';
+  const farmId = useReportEntityId('farmId', 'WAK0001');
 
   // ── Sauvegarde DB ─────────────────────────────────────────────────────────
   const saveReportToDatabase = useCallback(async (data) => {
@@ -168,6 +168,7 @@ const FarmReport = () => {
         <BackendPdfPanel
           ready={mapReady}
           fetchPdf={fetchPdf}
+          storeKey={`eudr-farm-${farmId}`}
           filename={`EUDR_Report_${farmInfo?.farm_id || farmId}.pdf`}
           title="EUDR Compliance Report"
           accent="blue"

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { rememberPaymentReturn } from "../../utils/paymentReturn";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
 import GooglePayButton from "./GooglePayButton";
@@ -124,7 +125,9 @@ const Field = ({ label, hint, children }) => (
   </label>
 );
 
-const inputCls = "w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100";
+// Couleurs explicites : la modale s'ouvre aussi dans la boutique, dont le thème
+// sombre donne un texte presque blanc — le numéro devenait illisible sur fond blanc.
+const inputCls = "w-full p-2.5 bg-white text-gray-900 placeholder-gray-400 text-base font-medium tracking-wide border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100 disabled:text-gray-700";
 
 const BackLink = ({ onClick }) => (
   <button type="button" onClick={onClick}
@@ -149,6 +152,7 @@ export default function PaymentModal({
   provider = {},
   onSuccess,
   showGooglePay = true,
+  returnPath = null,     // carte : DPO s'ouvre dans cet onglet puis y revient (voir utils/paymentReturn)
 }) {
   const prices = priceMap || NO_PRICES;
   // step : 'method' | 'details' | 'waiting' | 'success' | 'failed'
@@ -208,7 +212,9 @@ export default function PaymentModal({
       key: "card",
       icon: CARD,
       title: "Card or Mobile Money (DPO)",
-      text: "Visa, Mastercard or mobile money on DPO's secure page, opened in a new tab.",
+      text: returnPath
+        ? "Visa, Mastercard or mobile money on DPO's secure page. You come back here automatically."
+        : "Visa, Mastercard or mobile money on DPO's secure page, opened in a new tab.",
     },
     showGooglePay && {
       key: "googlepay",
@@ -274,6 +280,13 @@ export default function PaymentModal({
     setBusy(true); setMessage("");
     try {
       const { url, ref } = await provider.startCard({ phone, email, currency });
+      if (returnPath) {
+        // Même onglet : au retour, /payment/success renvoie à returnPath, qui
+        // vérifie le paiement et génère le rapport lui-même.
+        rememberPaymentReturn(ref, returnPath);
+        window.location.assign(url);
+        return;
+      }
       setCardUrl(url);
       // Bloqué par le navigateur ? Pas grave : le lien reste affiché.
       window.open(url, "_blank");

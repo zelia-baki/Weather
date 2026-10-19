@@ -47,6 +47,14 @@ axiosInstance.interceptors.request.use(
       config.__binaryTransport = true;
       config.headers[BINARY_HEADER] = "base64";
     }
+    // Upload (FormData) : le Content-Type JSON par défaut de l'instance fait
+    // convertir le FormData en JSON par axios — le fichier n'arrivait jamais
+    // ("No file provided", rapport guest payé mais non généré). Sans en-tête,
+    // le navigateur pose multipart/form-data avec sa boundary.
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      config.headers.delete?.("Content-Type");
+      delete config.headers["Content-Type"];
+    }
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { BRAND } from '../../brand';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import axiosInstance from '../../axiosInstance';
@@ -694,7 +695,7 @@ const ShopLanding = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <span style={{ ...mono, fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: CLAY }}>
-              Nkusu
+              {BRAND.name}
             </span>
           </div>
 
@@ -706,9 +707,9 @@ const ShopLanding = () => {
             opacity: ready ? 1 : 0, transition: 'opacity 1s ease .3s',
           }}>
             <div>
-              <div style={{ ...serif, fontSize: 24, color: INK, lineHeight: 1 }}>Nkusu</div>
+              <div style={{ ...serif, fontSize: 24, color: INK, lineHeight: 1 }}>{BRAND.name}</div>
               <div style={{ ...sans, fontSize: 9.5, letterSpacing: 2.5, color: CLAY,
-                textTransform: 'uppercase' }}>Verified origin</div>
+                textTransform: 'uppercase' }}>{BRAND.tagline}</div>
             </div>
             <div style={{ display: 'flex', gap: 26, alignItems: 'center' }}>
               {[['Shop', '/shop'], ['Auctions', '/auctions'], ['Our story', '/shop/ourstory']].map(([label, to]) => (

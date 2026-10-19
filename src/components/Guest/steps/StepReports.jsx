@@ -2,6 +2,7 @@ import { Trees, Wheat, Sprout } from "lucide-react";
 import SentinelDashboard from "../../Sentinel/SentinelDashboard";
 import PdfViewer from "../components/PdfViewer";
 import { downloadPdfFile } from "../utils/pdfDownload";
+import { REPORT_TTL_DAYS } from "../../../utils/storedReports";
 
 const formatTime = (ts) => new Date(ts).toLocaleTimeString();
 
@@ -41,7 +42,7 @@ const CarbonExtraBlock = ({ extra }) => {
       </p>
       {soc ? (
         <div className="grid grid-cols-2 gap-2 text-sm text-amber-900">
-          <div>Stock 0-30cm: <strong>{soc["ocs_0-30cm"]} t/ha</strong></div>
+          <div>Stock 0-30cm: <strong>{soc["ocs_0-30cm"] == null ? "—" : (soc["ocs_0-30cm"] * 10).toFixed(1)} t C/ha</strong></div>
           <div>SOC 0-5cm: <strong>{soc["soc_0-5cm"]} g/kg</strong></div>
           <div>SOC 5-15cm: <strong>{soc["soc_5-15cm"]} g/kg</strong></div>
           <div>SOC 15-30cm: <strong>{soc["soc_15-30cm"]} g/kg</strong></div>
@@ -79,8 +80,14 @@ const PdfReportBlock = ({ entry, filename, label, colorClass, accent, viewerTitl
           {label}
         </button>
       </>
+    ) : entry.pdfToken ? (
+      <p className="text-center text-sm text-gray-400 py-6">⏳ Loading PDF…</p>
     ) : (
-      <p className="text-center text-sm text-gray-400 py-6">⏳ Generating PDF…</p>
+      // L'entrée n'est créée qu'après la génération du PDF (voir useReports) :
+      // sans blob ni jeton, le PDF a échoué ou a expiré côté serveur.
+      <p className="text-center text-sm text-gray-500 py-6">
+        This PDF is no longer available. Please contact support with your payment reference.
+      </p>
     )}
   </div>
 );
@@ -99,7 +106,7 @@ const StepReports = ({ reports, geojson, phone, highlightReports = "" }) => {
 
       {!hasAny && (
         <p className="text-center text-sm text-gray-500">
-          No report available yet. Reports stay available for 5 minutes after generation.
+          No report available yet. Reports stay available for {REPORT_TTL_DAYS} days after generation.
         </p>
       )}
 
@@ -108,42 +115,65 @@ const StepReports = ({ reports, geojson, phone, highlightReports = "" }) => {
           <PdfReportBlock
             key={entry.id}
             entry={entry}
-            filename={`EUDR_Report_${entry.id}.pdf`}
+            filename={`EUDR_Report_${entry.farmInfo?.farm_id || entry.id}.pdf`}
             label="📄 Download the EUDR PDF"
             colorClass="bg-blue-500 hover:bg-blue-700"
             accent="blue"
-            viewerTitle="EUDR Compliance Report"
+            viewerTitle={`EUDR Compliance Report${entry.farmInfo?.name ? ` · ${entry.farmInfo.name}` : ""}`}
           />
         ))}
 
-        {carbonList.map((entry) => (
+        {carbonList.map((entry) => {
+          const forest = entry.propertyType === "forest";
+          const kind = forest ? "Forest Carbon" : "Farmland Carbon";
+          const ref = entry.farmInfo?.farm_id || entry.id;
+          return (
           <div className="w-full space-y-4" key={entry.id}>
             <PdfReportBlock
               entry={entry}
-              filename={`Carbon_Report_${entry.id}.pdf`}
-              label="🌳 Download the Carbon PDF"
+              filename={`${kind.replace(" ", "_")}_Report_${ref}.pdf`}
+              label={`🌳 Download the ${kind} PDF`}
               colorClass="bg-green-500 hover:bg-green-700"
               accent="emerald"
-              viewerTitle="Carbon Emissions Report"
+              viewerTitle={`${kind} Report${entry.farmInfo?.name ? ` · ${entry.farmInfo.name}` : ""}`}
             />
             <CarbonExtraBlock extra={entry.extra} />
           </div>
-        ))}
+          );
+        })}
 
-        {sentinelList.map((entry) => (
-          <div className="w-full" key={entry.id}>
-            <p className="text-xs text-gray-400 text-center mb-1">
-              Generated at {formatTime(entry.timestamp)}
-            </p>
-            <SentinelDashboard
-              entityType="farm"
-              mode="guest"
-              geojson={entry.geojson || geojson}
-              phone={phone}
-              initialData={entry.data}
+        {sentinelList.map((entry) => {
+          const ref = entry.farmInfo?.farm_id || entry.id;
+          return (
+          <div className="w-full space-y-4" key={entry.id}>
+            <PdfReportBlock
+              entry={entry}
+              filename={`Satellite_Index_Report_${ref}.pdf`}
+              label="🛰️ Download the Satellite Index PDF"
+              colorClass="bg-emerald-600 hover:bg-emerald-700"
+              accent="emerald"
+              viewerTitle={`Satellite Index Report${entry.farmInfo?.name ? ` · ${entry.farmInfo.name}` : ""}`}
             />
+            {entry.data && (
+              <details className="group rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <summary className="cursor-pointer select-none list-none flex items-center justify-between gap-2
+                                    min-h-[44px] px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                  Interactive dashboard (charts, maps, loan simulation)
+                  <span aria-hidden="true" className="text-gray-400 transition-transform group-open:rotate-180">▾</span>
+                </summary>
+                <SentinelDashboard
+                  entityType="farm"
+                  mode="guest"
+                  geojson={entry.geojson || geojson}
+                  phone={phone}
+                  initialData={entry.data}
+                  farmInfo={entry.farmInfo}
+                />
+              </details>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

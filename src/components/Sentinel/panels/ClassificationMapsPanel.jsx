@@ -39,7 +39,7 @@ export default function ClassificationMapsPanel({
         }
         next[idx] = data;
       } catch (e) {
-        nextErr[idx] = e.response?.data?.error || 'Erreur de classification';
+        nextErr[idx] = e.response?.data?.error || 'Classification failed';
       }
     }
     setResults(next);
@@ -117,7 +117,7 @@ export default function ClassificationMapsPanel({
               <div className="p-4">
                 <div className="flex justify-between text-[10px] text-slate-500 font-semibold uppercase mb-2">
                   <span>Legend</span>
-                  <span>Surface (km²)</span>
+                  <span>Area (km²)</span>
                 </div>
                 <div className="space-y-1.5">
                   {result.classes?.map((c, i) => (

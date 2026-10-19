@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, Link, useLocation } from 'react-router-dom';
+import { BRAND } from '../../brand';
 import { CartProvider, useCart } from '../../context/CartContext';
 
 // =============================================================================
@@ -93,11 +94,11 @@ const ShopHeader = () => {
         <Link to="/shop" style={{ textDecoration: 'none', flexShrink: 0 }}>
           <span style={{ ...serif, fontSize: 24, color: INK, fontWeight: 500,
             letterSpacing: 0.5 }}>
-            Nkusu
+            {BRAND.name}
           </span>
           <span style={{ ...sans, fontSize: 9.5, letterSpacing: 2.5, color: CLAY,
             textTransform: 'uppercase', display: 'block', marginTop: -4 }}>
-            Verified origin
+            {BRAND.tagline}
           </span>
         </Link>
 
@@ -152,7 +153,7 @@ const ShopFooter = () => (
     <div style={{ maxWidth: 1160, margin: '0 auto',
       display: 'flex', justifyContent: 'space-between', gap: 32, flexWrap: 'wrap' }}>
       <div style={{ maxWidth: 320 }}>
-        <div style={{ ...serif, fontSize: 22, color: INK, marginBottom: 8 }}>Nkusu</div>
+        <div style={{ ...serif, fontSize: 22, color: INK, marginBottom: 8 }}>{BRAND.name}</div>
         <p style={{ ...sans, fontSize: 13, lineHeight: 1.7,
           color: 'rgba(20,35,26,0.5)', margin: 0 }}>
           Coffee and cocoa whose plot of origin is mapped, checked against the
@@ -177,7 +178,7 @@ const ShopFooter = () => (
         <div>
           <div style={{ ...sans, fontSize: 10.5, letterSpacing: 1.5,
             textTransform: 'uppercase', color: 'rgba(20,35,26,0.4)', marginBottom: 12 }}>
-            Nkusu
+            {BRAND.name}
           </div>
           <Link to="/" style={{ ...sans, display: 'block', fontSize: 13, marginBottom: 9,
             color: 'rgba(20,35,26,0.6)', textDecoration: 'none' }}>
