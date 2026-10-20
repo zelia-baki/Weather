@@ -91,11 +91,11 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "Auctions (public)",    href: "/auctions",       Icon: MdOutlineGavel },
         { label: "Auction Manager",      href: "/auctionmanager", Icon: MdOutlineGavel },
         { label: "Orders", href: "/ordermanager", Icon: TbPackages },
+        { label: "Orders", href: "/ordermanager", Icon: TbPackages },
+        { label: "Subscriptions", href: "/subscriptionmanager", Icon: BsCalendarDate },
         { label: "Buyers", href: "/customermanager", Icon: TbPackages },
-        { label: "Quality & Grades", href: "/qualitymanager", Icon: TbTag },
-        { label: "Receive delivery", href: "/receipts/new", Icon: TbPackages },
-        { label: "Receipts", href: "/receipts", Icon: TbPackages },
-        { label: "Warehouse Dashboard", href: "/warehousedashboard", Icon: TbChartBar },
+        { label: "Buyers", href: "/customermanager", Icon: TbPackages },
+
       ],
     },
         {

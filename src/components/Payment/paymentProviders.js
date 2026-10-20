@@ -100,3 +100,75 @@ export const shopCheckoutProvider = (order) => {
     },
   };
 };
+
+// ── Abonnements (/api/subscriptions) ────────────────────────────────────────
+//   Une livraison d'abonnement est une commande boutique normale : la
+//   vérification passe par les mêmes routes que shopCheckoutProvider.
+const subscriptionProvider = (initiate) => ({
+  mobileMoneyCurrencies: ["UGX"],
+
+  async startMobileMoney(args) {
+    const data = await initiate("mobile_money", args);
+    return { ref: data.txn_id, message: data.msg };
+  },
+
+  async checkMobileMoney(txnId) {
+    return statusOf(await axiosInstance.get(`/api/ecommerce/checkout/mobile/status/${txnId}`));
+  },
+
+  async startCard(args) {
+    const data = await initiate("dpo", args);
+    return { url: data.payment_url, ref: data.trans_token };
+  },
+
+  async checkCard(transToken) {
+    return statusOf(await axiosInstance.get(`/api/ecommerce/checkout/verify/${transToken}`));
+  },
+});
+
+const payDelivery = async (token, orderId, payment_method, { phone, email }) => {
+  const res = await axiosInstance.post(
+    `/api/subscriptions/manage/${token}/orders/${orderId}/pay`,
+    { payment_method, phone_number: phone, email },
+  );
+  if (!res.data?.success) throw new Error(res.data?.error || "Payment could not be started");
+  return res.data;
+};
+
+//   S'abonner + payer la 1re livraison.
+//   subscription : { product_id, quantity_kg, frequency_weeks, guest_name,
+//                    email, shipping_address }
+//   createdRef   : useRef de la page. Après la 1re tentative, il contient
+//                  { manage_token, order_id, manage_url } : un nouvel essai
+//                  paie alors la MÊME commande au lieu de créer un 2e abonnement.
+//   onCreated    : appelé une seule fois, quand l'abonnement est créé.
+export const subscriptionCheckoutProvider = (subscription, createdRef, onCreated) =>
+  subscriptionProvider(async (payment_method, { phone, email }) => {
+    const created = createdRef?.current;
+    if (created) return payDelivery(created.manage_token, created.order_id, payment_method, { phone, email });
+
+    const remember = (data) => {
+      if (data?.manage_token) {
+        onCreated?.({ manage_token: data.manage_token, order_id: data.order_id, manage_url: data.manage_url });
+      }
+    };
+    try {
+      const res = await axiosInstance.post("/api/subscriptions/create", {
+        ...subscription,
+        email: email || subscription.email,
+        phone_number: phone,
+        payment_method,
+      });
+      remember(res.data);
+      if (!res.data?.success) throw new Error(res.data?.error || "Payment could not be started");
+      return res.data;
+    } catch (err) {
+      // Abonnement créé mais paiement refusé au démarrage : on garde le lien.
+      remember(err?.response?.data);
+      throw err;
+    }
+  });
+
+//   Payer une livraison existante, depuis la page de l'abonnement.
+export const subscriptionDeliveryProvider = (token, orderId) =>
+  subscriptionProvider((payment_method, args) => payDelivery(token, orderId, payment_method, args));

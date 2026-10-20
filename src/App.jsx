@@ -155,6 +155,11 @@ import ReceiptReception from './components/Receipt/ReceiptReception.jsx';
 import ReceiptManager from './components/Receipt/ReceiptManager.jsx';
 import ReceiptVerify from './components/Receipt/ReceiptVerify.jsx';
 import WarehouseDashboard from './components/Receipt/WarehouseDashboard.jsx';
+
+
+import SubscribeCheckout from './components/Shop/SubscribeCheckout.jsx';
+import MySubscription from './components/Shop/MySubscription.jsx';
+import SubscriptionManager from './components/Ecommerce/SubscriptionManager.jsx';
 // =============================================================================
 // GUARD : AccessDeniedScreen — composant partagé pour tous les refus d'accès
 // =============================================================================
@@ -428,6 +433,9 @@ const layoutRoutes = [
   { path: '/2tume/varieties',     component: <VarietyManager />,      roles: ROLES.FARM },
   
 
+
+    { path: '/subscriptionmanager', component: <SubscriptionManager />, roles: ROLES.ADMIN, adminOnly: true },
+
 ];
 
 // =============================================================================
@@ -480,6 +488,8 @@ function App() {
           <Route path="payment/success"   element={<PaymentSuccess />} />
           <Route path="payment/cancelled" element={<PaymentCancelled />} />
           <Route path="payment/error"     element={<PaymentError />} />
+          <Route path="subscribe/:id" element={<SubscribeCheckout />} />
+          <Route path="subscription/:token" element={<MySubscription />} />
         </Route>
 
         <Route element={<ShopLayout />}>

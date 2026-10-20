@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../axiosInstance';
 import { useCart } from '../../context/CartContext';
 import VerifiedStamp from './VerifiedStamp';
@@ -14,8 +14,9 @@ import Swal from 'sweetalert2';
 //    'weight' → saisie en kg, minimum et pas   (« 12,5 kg à 50 $/kg »)
 //    'lot'    → un seul bouton, tout ou rien   (« Acquérir ce lot · 12 kg »)
 //
-//  C'est la même donnée produit dans les trois cas — seule la configuration
-//  min/pas/stock diffère. Pas de branche cachée dans la logique de panier.
+//  ★ NOUVEAU — Abonnement : un produit vendu au kilo propose « Achat unique /
+//  Abonnement ». En abonnement, le client choisit la fréquence (1, 2 ou 3
+//  semaines) et part vers /shop/subscribe/:id au lieu du panier.
 // =============================================================================
 
 const BG = '#f7f4ee';
@@ -32,6 +33,13 @@ const serif = { fontFamily: "'Cormorant Garamond', serif" };
 
 const fmt = (n, digits = 0) =>
   Number(n).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: 3 });
+
+const FREQUENCIES = [1, 2, 3];
+const everyLabel = (w) => (w === 1 ? 'every week' : `every ${w} weeks`);
+
+// Même règle que Subscription.is_subscribable côté serveur.
+const isSubscribable = (p) =>
+  p && p.sale_mode === 'weight' && p.unit === 'kg' && !p.is_auction_only;
 
 // ── Bloc d'achat ─────────────────────────────────────────────────────────────
 
@@ -108,19 +116,65 @@ const LotSummary = ({ product }) => (
   </div>
 );
 
+// ★ NOUVEAU — Achat unique / Abonnement
+const pill = (active) => ({
+  ...sans, flex: 1, padding: '10px 14px', borderRadius: 100, fontSize: 13, fontWeight: 600,
+  cursor: 'pointer', border: `1px solid ${active ? GREEN : BORDER}`,
+  background: active ? 'rgba(22,128,60,0.08)' : 'transparent',
+  color: active ? GREEN : 'rgba(20,35,26,0.6)',
+});
+
+const PurchaseMode = ({ mode, setMode, weeks, setWeeks }) => (
+  <div style={{ marginBottom: 20 }}>
+    <div style={{ display: 'flex', gap: 8 }}>
+      <button type="button" style={pill(mode === 'once')} onClick={() => setMode('once')}>
+        One-time purchase
+      </button>
+      <button type="button" style={pill(mode === 'subscribe')} onClick={() => setMode('subscribe')}>
+        Subscribe &amp; get it delivered
+      </button>
+    </div>
+
+    {mode === 'subscribe' && (
+      <div style={{ background: SAND, borderRadius: 12, padding: '16px 18px', marginTop: 12 }}>
+        <div style={{ ...sans, fontSize: 10.5, letterSpacing: 1.5, textTransform: 'uppercase',
+          color: 'rgba(20,35,26,0.45)', marginBottom: 10 }}>
+          Delivery frequency
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {FREQUENCIES.map(w => (
+            <button key={w} type="button" style={{ ...pill(weeks === w), flex: 'unset' }}
+              onClick={() => setWeeks(w)}>
+              {w === 1 ? 'Every week' : `Every ${w} weeks`}
+            </button>
+          ))}
+        </div>
+        <p style={{ ...sans, fontSize: 12.5, color: 'rgba(20,35,26,0.55)', margin: '12px 0 0', lineHeight: 1.6 }}>
+          You pay the first delivery now, then each delivery when it is ready. You get an SMS
+          with a payment link. Pause or cancel anytime.
+        </p>
+      </div>
+    )}
+  </div>
+);
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { addItem } = useCart();
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState(0);
+  const [mode, setMode] = useState('once');     // 'once' | 'subscribe'
+  const [weeks, setWeeks] = useState(2);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setMode('once');
     axiosInstance.get(`/api/ecommerce/products/${id}`)
       .then(res => {
         if (cancelled) return;
@@ -143,6 +197,10 @@ const ProductDetail = () => {
     });
   };
 
+  const handleSubscribe = () => {
+    navigate(`/shop/subscribe/${product.id}?qty=${quantity}&weeks=${weeks}`);
+  };
+
   if (loading) {
     return <div style={{ background: BG, minHeight: '100vh' }} aria-busy="true" />;
   }
@@ -162,6 +220,8 @@ const ProductDetail = () => {
   const isOut = product.stock_status === 'out';
   const isLow = product.stock_status === 'low';
   const isLot = product.sale_mode === 'lot';
+  const canSubscribe = isSubscribable(product) && !isOut;
+  const subscribing = canSubscribe && mode === 'subscribe';
   const lineTotal = isLot ? product.total_price : quantity * product.price;
 
   return (
@@ -195,7 +255,6 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {/* Miniatures — l'ancienne page n'affichait que la première image */}
             {product.images?.length > 1 && (
               <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 {product.images.map((url, i) => (
@@ -248,6 +307,10 @@ const ProductDetail = () => {
               <span style={{ fontSize: 14, color: 'rgba(20,35,26,0.45)' }}> / {product.unit}</span>
             </div>
 
+            {canSubscribe && (
+              <PurchaseMode mode={mode} setMode={setMode} weeks={weeks} setWeeks={setWeeks} />
+            )}
+
             {!isOut && isLot && <LotSummary product={product} />}
             {!isOut && !isLot && (
               <QuantityPicker product={product} quantity={quantity} setQuantity={setQuantity} />
@@ -266,7 +329,7 @@ const ProductDetail = () => {
             )}
 
             <button
-              onClick={handleAddToCart}
+              onClick={subscribing ? handleSubscribe : handleAddToCart}
               disabled={isOut}
               style={{
                 width: '100%', padding: '16px', borderRadius: 100, border: 'none',
@@ -278,21 +341,24 @@ const ProductDetail = () => {
             >
               {isOut
                 ? 'Sold out'
-                : isLot
-                  ? `Take this lot · ${fmt(product.total_price, 2)} ${product.currency}`
-                  : `Add to cart · ${fmt(lineTotal, 2)} ${product.currency}`}
+                : subscribing
+                  ? `Subscribe · ${fmt(lineTotal, 2)} ${product.currency} ${everyLabel(weeks)}`
+                  : isLot
+                    ? `Take this lot · ${fmt(product.total_price, 2)} ${product.currency}`
+                    : `Add to cart · ${fmt(lineTotal, 2)} ${product.currency}`}
             </button>
 
-            <Link to="/shop/checkout" style={{ ...sans, display: 'block', textAlign: 'center',
-              textDecoration: 'none', fontSize: 13, color: 'rgba(20,35,26,0.5)' }}>
-              View cart →
-            </Link>
+            {!subscribing && (
+              <Link to="/shop/checkout" style={{ ...sans, display: 'block', textAlign: 'center',
+                textDecoration: 'none', fontSize: 13, color: 'rgba(20,35,26,0.5)' }}>
+                View cart →
+              </Link>
+            )}
 
             <ProofPanel traceability={product.traceability} />
           </div>
         </div>
 
-        {/* ── Récit, pleine largeur sous les deux colonnes ──────────── */}
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
           <StoryBlocks product={product} />
         </div>
