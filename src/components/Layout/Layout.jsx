@@ -91,9 +91,7 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "Auctions (public)",    href: "/auctions",       Icon: MdOutlineGavel },
         { label: "Auction Manager",      href: "/auctionmanager", Icon: MdOutlineGavel },
         { label: "Orders", href: "/ordermanager", Icon: TbPackages },
-        { label: "Orders", href: "/ordermanager", Icon: TbPackages },
         { label: "Subscriptions", href: "/subscriptionmanager", Icon: BsCalendarDate },
-        { label: "Buyers", href: "/customermanager", Icon: TbPackages },
         { label: "Buyers", href: "/customermanager", Icon: TbPackages },
 
       ],
