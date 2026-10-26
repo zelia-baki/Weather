@@ -591,7 +591,6 @@ const ToolsPopup = ({ onClose }) => (
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
-          <div style={{ ...monoLabel(colors.green), fontSize: 11, marginBottom: 6 }}>Free Tools</div>
           <h3 style={{ fontFamily: fonts.display, fontSize: "clamp(22px,3vw,28px)", fontWeight: 600, color: colors.text }}>
             What would you like to check?
           </h3>
