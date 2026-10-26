@@ -105,7 +105,8 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "Warehouse Dashboard", href: "/2tume/dashboard",  Icon: TbChartBar },
         { label: "Quality & Grades",    href: "/2tume/quality",    Icon: TbTag },
         { label: "Varieties",           href: "/2tume/varieties",  Icon: TbPlant2 },
-      ],
+        { label: "Warehouses", href: "/2tume/warehouses", Icon: TbPackages },
+            ],
     },
     {
       id: "weather", label: "Weather", Icon: FaCloudSun,

@@ -626,6 +626,46 @@ const LotCard = ({ lot, index }) => {
   );
 };
 
+/** Champ « Vérifier un reçu » : mène à la page publique /verify/<numéro>. */
+const VerifyReceiptBox = () => {
+  const navigate = useNavigate();
+  const [serial, setSerial] = useState('');
+  const [ref, reveal] = useReveal();
+
+  const submit = (e) => {
+    e.preventDefault();
+    const clean = serial.trim().toUpperCase();
+    if (clean) navigate(`/verify/${encodeURIComponent(clean)}`);
+  };
+
+  return (
+    <section ref={ref} style={{ ...reveal, padding: '110px 24px 0', background: BG }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', textAlign: 'center' }}>
+        <div style={{ ...mono, fontSize: 10.5, letterSpacing: 3, color: GREEN,
+          textTransform: 'uppercase', marginBottom: 18 }}>
+          Warehouse receipts
+        </div>
+        <h2 style={{ ...serif, fontSize: 'clamp(30px, 4vw, 46px)', color: INK,
+          fontWeight: 500, margin: '0 0 14px', lineHeight: 1.08 }}>
+          Holding a receipt? Check it in seconds.
+        </h2>
+        <p style={{ ...sans, fontSize: 15, lineHeight: 1.7, color: 'rgba(20,35,26,0.62)',
+          margin: '0 auto 30px', maxWidth: 520 }}>
+          Enter the number printed on the receipt, or scan its QR code, to confirm it is genuine
+          and that the goods are still held in a certified warehouse.
+        </p>
+        <form onSubmit={submit} style={{ display: 'flex', gap: 10, maxWidth: 520, margin: '0 auto' }}>
+          <input value={serial} onChange={e => setSerial(e.target.value)}
+            placeholder="e.g. WR-00012" aria-label="Receipt number"
+            style={{ ...mono, flex: 1, padding: '15px 18px', borderRadius: 100,
+              border: `1px solid ${LINE}`, fontSize: 15, color: INK, background: '#fff',
+              outline: 'none', textTransform: 'uppercase' }}/>
+          <PrimaryButton onClick={submit}>Verify →</PrimaryButton>
+        </form>
+      </div>
+    </section>
+  );
+};
 // ── 5. Page ──────────────────────────────────────────────────────────────────
 const ShopLanding = () => {
   const mountRef = useRef(null);
@@ -712,8 +752,11 @@ const ShopLanding = () => {
                 textTransform: 'uppercase' }}>{BRAND.tagline}</div>
             </div>
             <div style={{ display: 'flex', gap: 26, alignItems: 'center' }}>
-              {[['Shop', '/shop'], ['Auctions', '/auctions'], ['Our story', '/shop/ourstory']].map(([label, to]) => (
-                <Link key={to} to={to} data-hover style={{ ...sans, fontSize: 13,
+              {[
+                ...(BRAND.key === '2tume' ? [['Verify a receipt', '/verify']] : []),
+                ['Shop', '/shop'], ['Auctions', '/auctions'], ['Our story', '/shop/ourstory'],
+              ].map(([label, to]) => (
+                      <Link key={to} to={to} data-hover style={{ ...sans, fontSize: 13,
                   color: 'rgba(20,35,26,0.62)', textDecoration: 'none' }}>{label}</Link>
               ))}
             </div>
@@ -819,7 +862,7 @@ const ShopLanding = () => {
           </div>
         </div>
       </section>
-
+      {BRAND.key === '2tume' && <VerifyReceiptBox />}
       {/* ── The lots ────────────────────────────────────────────────── */}
             {/* ── The lots ────────────────────────────────────────────────── */}
       <section style={{ padding: '130px 24px 140px', background: BG }}>

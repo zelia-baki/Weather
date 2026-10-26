@@ -155,6 +155,7 @@ import ReceiptReception from './components/Receipt/ReceiptReception.jsx';
 import ReceiptManager from './components/Receipt/ReceiptManager.jsx';
 import ReceiptVerify from './components/Receipt/ReceiptVerify.jsx';
 import WarehouseDashboard from './components/Receipt/WarehouseDashboard.jsx';
+import WarehouseManager from './components/Receipt/WarehouseManager.jsx';
 
 
 import SubscribeCheckout from './components/Shop/SubscribeCheckout.jsx';
@@ -431,7 +432,7 @@ const layoutRoutes = [
   { path: '/2tume/dashboard',     component: <WarehouseDashboard />,  roles: ROLES.WAREHOUSE },
   { path: '/2tume/quality',       component: <QualityManager />,      roles: ROLES.ADMIN, adminOnly: true },
   { path: '/2tume/varieties',     component: <VarietyManager />,      roles: ROLES.FARM },
-  
+  { path: '/2tume/warehouses', component: <WarehouseManager />, roles: ROLES.WAREHOUSE },
 
 
     { path: '/subscriptionmanager', component: <SubscriptionManager />, roles: ROLES.ADMIN, adminOnly: true },
