@@ -14,11 +14,11 @@ const statusOf = (res) => res.data?.status;
 //   agentId     : agent terrain à qui rattacher le paiement (comptabilité)
 //   guest       : paiement invité → on purge un éventuel token résiduel,
 //                 sinon le backend rattacherait le paiement au mauvais compte
-export const featurePaymentProvider = ({ featureName, agentId, guest = false, mobileMoneyCurrencies }) => {
+export const featurePaymentProvider = ({ featureName, agentId, guest = false }) => {
   const forgetSession = () => { if (guest) localStorage.removeItem("token"); };
 
   return {
-    mobileMoneyCurrencies,
+    mobileMoneyCurrencies: ["UGX"],
 
     async startMobileMoney({ phone }) {
       forgetSession();

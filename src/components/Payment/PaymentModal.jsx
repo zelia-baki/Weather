@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { rememberPaymentReturn } from "../../utils/paymentReturn";
+import axiosInstance from "../../axiosInstance";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
 import GooglePayButton from "./GooglePayButton";
@@ -168,11 +169,29 @@ export default function PaymentModal({
 
   const currencies = Object.keys(prices);
   const mobileCurrencies = provider.mobileMoneyCurrencies || ["UGX"];
-  // Mobile Money ne prélève que dans ses propres devises : on prend la devise
-  // choisie si elle convient, sinon la première devise compatible tarifée.
-  const mobileCurrency = mobileCurrencies.includes(currency)
+  // Mobile Money (IO) ne prélève qu'en UGX : prix UGX s'il existe, sinon le
+  // prix (ex. USD) converti au taux du jour par le backend, comme au prélèvement.
+  const pricedMobile = mobileCurrencies.includes(currency)
     ? currency
     : mobileCurrencies.find((c) => prices[c] != null);
+  const mobileCurrency = pricedMobile || mobileCurrencies[0];
+  const quoteBase = defaultCurrency && prices[defaultCurrency] != null ? defaultCurrency : currency;
+  const [quote, setQuote] = useState(null);   // { base, price, amount } | { base, price, error }
+
+  useEffect(() => {
+    if (!isOpen || pricedMobile || prices[quoteBase] == null) return;
+    const price = prices[quoteBase];
+    if (quote && quote.base === quoteBase && quote.price === price) return;
+    axiosInstance.get("/api/payments/fx/ugx", { params: { amount: price, currency: quoteBase } })
+      .then((res) => setQuote({ base: quoteBase, price, amount: res.data.amount }))
+      .catch(() => setQuote({ base: quoteBase, price, error: true }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, pricedMobile, quoteBase, prices[quoteBase]]);
+
+  const quoteReady = quote && quote.base === quoteBase && quote.price === prices[quoteBase];
+  const mobileAmount = pricedMobile
+    ? prices[pricedMobile]
+    : (quoteReady && !quote.error ? quote.amount : null);
 
   const stopPolling = () => {
     if (timer.current) clearInterval(timer.current);
@@ -204,9 +223,10 @@ export default function PaymentModal({
       icon: PHONE,
       title: "Mobile Money",
       text: "MTN or Airtel. A payment request pops up on your phone — just enter your PIN.",
-      disabledReason: mobileCurrency == null
-        ? `Only available for payments in ${mobileCurrencies.join(", ")}.`
-        : null,
+      disabledReason: mobileAmount != null ? null
+        : (pricedMobile || quoteReady || prices[quoteBase] == null)
+          ? "Not available right now — please use Card or Mobile Money (DPO)."
+          : "Loading today's UGX rate…",
     },
     provider.startCard && {
       key: "card",
@@ -225,7 +245,7 @@ export default function PaymentModal({
     },
   ].filter(Boolean);
 
-  const amountFor = (m) => (m === "mobile" ? prices[mobileCurrency] : prices[currency]);
+  const amountFor = (m) => (m === "mobile" ? mobileAmount : prices[currency]);
   const currencyFor = (m) => (m === "mobile" ? mobileCurrency : currency);
   const shownAmount = method ? amountFor(method) : prices[currency];
   const shownCurrency = method ? currencyFor(method) : currency;

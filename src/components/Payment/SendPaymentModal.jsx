@@ -40,9 +40,8 @@ export function SendPaymentModal({
     featureName,
     agentId: passedAgent,
     guest: !!passedPhone,
-    // Mobile Money prélève dans la devise par défaut de la feature.
-    mobileMoneyCurrencies: priceInfo?.default_currency ? [priceInfo.default_currency] : undefined,
-  }), [featureName, passedAgent, passedPhone, priceInfo]);
+    // Mobile Money prélève en UGX (converti par le backend si le prix est en USD).
+  }), [featureName, passedAgent, passedPhone]);
 
   const handleSuccess = ({ method, ref }) => {
     const done = onPaymentSuccess || onSuccess;
