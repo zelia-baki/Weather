@@ -20,17 +20,27 @@ const DueDiligenceStatement = ({
     country_of_activity,
     operator_country,
 }) => {
+    // 19200.000000 → 19200 (TRACES renvoie les décimales du XSD)
+    const num = (v) => (v === '' || v == null || isNaN(Number(v)) ? v : String(Number(v)));
     return (
         <>
+            {/* Couleurs en hex explicites et styles limités à .dds-pdf : le texte
+                héritait de la page une couleur que html2canvas rendait presque
+                blanche dans le PDF, et les règles table/td s'appliquaient à toute l'appli. */}
             <style>
                 {`
-        table {
-          width: 100%;
-          border-collapse: collapse;
+        .dds-pdf, .dds-pdf * {
+          color: #111111;
         }
 
-        td, th {
-          border: 1px solid black;
+        .dds-pdf table {
+          width: 100%;
+          border-collapse: collapse;
+          background-color: #ffffff;
+        }
+
+        .dds-pdf td, .dds-pdf th {
+          border: 1px solid #000000;
           padding: 10px;
           vertical-align: top;
         }
@@ -65,13 +75,14 @@ const DueDiligenceStatement = ({
           height: 20px;
         }
 
-        .no-inner-borders td {
+        .dds-pdf .no-inner-borders td {
           border: none;
         }
       `}
             </style>
 
-            <div style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', margin: '20px' }}>
+            <div className="dds-pdf" style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px', margin: '20px',
+                                                color: '#111111', backgroundColor: '#ffffff' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <tbody>
                         <tr>
@@ -131,9 +142,9 @@ const DueDiligenceStatement = ({
                         <tr style={{ margin: "10px" }}>
                             <td colSpan="2">COMMENTS(ADDITIONAL INFORMATION)</td>
                             <td>VOLUME</td>
-                            <td>{Volume}</td>
+                            <td>{num(Volume)}</td>
                             <td>NET WEIGHT</td>
-                            <td colSpan="2">{net_weight}</td>
+                            <td colSpan="2">{num(net_weight)}</td>
                         </tr>
 
                         <tr style={{ margin: "10px" }}>
@@ -145,7 +156,7 @@ const DueDiligenceStatement = ({
 
                         <tr style={{ margin: "10px" }}>
                             <td>SUPPLEMENTARY UNIT</td>
-                            <td>{s_unit}</td>
+                            <td>{num(s_unit)}</td>
                             <td>QUALIFIER UNIT</td>
                             <td>{q_unit}</td>
                             <td>VERIFICATION CODE</td>
@@ -169,14 +180,14 @@ const DueDiligenceStatement = ({
                             <td>PHONE</td>
                             <td>256783130358</td>
                             <td>EMAIL</td>
-                            <td><a href="mailto:jwetub@agrivields.com">lwetutb@agrivields.com</a></td>
+                            <td>lwetutb@agriyields.com</td>
                         </tr>
 
                         <tr>
                             <td>COUNTRY OF ACTIVITY</td>
                             <td colSpan="2">{operator_country}</td>
                             <td>ADDRESS</td>
-                            <td colSpan="3">T2 BUILDING PAPAYE RISE KIWATULE, KAMPALA</td>
+                            <td colSpan="3">T2 BUILDING PAPAYA RISE KIWATULE, KAMPALA</td>
                         </tr>
 
                         <tr>

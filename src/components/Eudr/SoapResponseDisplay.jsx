@@ -170,7 +170,7 @@ const SoapResponseDisplay = ({ data, referenceNumber, verificationCode, showPrev
                             producer_country={producer?.country || ''}
                             place={data.remote_data.operator?.country || ''}
                             date={new Date(data.remote_data.statusDate || Date.now()).toLocaleDateString()}
-                            referenceNumber={data.remote_data.referenceNumber || ''}
+                            referenceNumber={data.remote_data.referenceNumber || referenceNumber || ''}
                             country_of_activity={data.remote_data.countryOfActivity || ''}
                             operator_country={data.remote_data.operator?.country || ''}
                         />
