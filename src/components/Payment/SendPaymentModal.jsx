@@ -25,6 +25,11 @@ export function SendPaymentModal({
   onSuccess, // alias accepté (PaymentRequired l'utilisait déjà)
   returnPath = null,
   title = null,
+  // Paiement invité : purge le token avant de payer. Par défaut, un téléphone
+  // imposé = flux invité ; un utilisateur connecté qui passe un téléphone
+  // (ex. DDS, téléphone de l'opérateur) doit passer guest={false}, sinon il
+  // était déconnecté en silence et ses appels suivants partaient sans token.
+  guest = !!passedPhone,
 }) {
   const navigate = useNavigate();
   const [priceInfo, setPriceInfo] = useState(null);
@@ -39,9 +44,9 @@ export function SendPaymentModal({
   const provider = useMemo(() => featurePaymentProvider({
     featureName,
     agentId: passedAgent,
-    guest: !!passedPhone,
+    guest,
     // Mobile Money prélève en UGX (converti par le backend si le prix est en USD).
-  }), [featureName, passedAgent, passedPhone]);
+  }), [featureName, passedAgent, guest]);
 
   const handleSuccess = ({ method, ref }) => {
     const done = onPaymentSuccess || onSuccess;

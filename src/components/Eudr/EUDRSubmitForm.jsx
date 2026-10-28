@@ -673,6 +673,7 @@ const EUDRManager = () => {
           onClose={() => setShowPaymentModal(false)}
           featureName="eudrsubmission"
           phone={formData.operator.phone}
+          guest={false}
           onPaymentSuccess={() => {
             setShowPaymentModal(false);
             handleVerify();
