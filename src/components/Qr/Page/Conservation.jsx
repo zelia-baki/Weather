@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import axiosInstance from "../../../axiosInstance";
 import StepIndicator  from "../Component/StepIndicator";
 import FormNavigation from "../Component/FormNavigation";
 import FormStep       from "../Component/FormStep";
 import ReceiptPreview from "../Component/ReceiptPreview";
+import { downloadReceiptsPdf } from "../Component/downloadReceiptsPdf";
 import { createConservationFormSteps, conservationStepNames } from "../Component/conservationStepsConfig";
 
 const ConservationQrPage = () => {
@@ -11,6 +11,7 @@ const ConservationQrPage = () => {
   const [formData,      setFormData]      = useState({});
   const [qrData,        setQrData]        = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
 
   const formSteps = createConservationFormSteps();
 
@@ -49,28 +50,14 @@ Batch: ${data.batch_number}
   const handleDownloadPDF = async () => {
     if (isDownloading) return;
     setIsDownloading(true);
+    setDownloadError(null);
     try {
-      const baseQrData  = JSON.parse(JSON.stringify(formData));
-      const batchNumber = parseInt(baseQrData.batch_number, 10);
-      if (isNaN(batchNumber)) return;
-
-      const qrDataList = Array.from({ length: batchNumber }, (_, i) => ({
-        ...baseQrData, batch_number: (i + 1).toString(),
-      }));
-
-      const res = await axiosInstance.post(
-        "/api/qrcode/generate_pdf",
-        { qr_data_list: qrDataList, description: "Digital receipt for tree cutting conservation." },
-        { responseType: "blob" }
-      );
-      const url  = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href  = url;
-      link.setAttribute("download", `conservation_receipts_${baseQrData.batch_number}_batches.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) { console.error(err); }
+      await downloadReceiptsPdf({
+        base: formData,
+        description: "Digital receipt for tree cutting conservation.",
+        filename: n => `conservation_receipts_${n}_batches.pdf`,
+      });
+    } catch (err) { setDownloadError(err.message); }
     finally { setIsDownloading(false); }
   };
 
@@ -125,6 +112,7 @@ Batch: ${data.batch_number}
                 qrData={qrData}
                 onDownloadPDF={handleDownloadPDF}
                 isDownloading={isDownloading}
+                downloadError={downloadError}
               />
             </div>
           </div>

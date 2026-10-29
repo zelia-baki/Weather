@@ -8,6 +8,7 @@ const ReceiptPreview = ({
   qrData,
   onDownloadPDF,
   isDownloading,
+  downloadError = null,
   // Props optionnelles pour le tableau dynamique
   formData   = null,
   farmBlocks = null,
@@ -187,6 +188,9 @@ const ReceiptPreview = ({
               "Download PDF"
             )}
           </button>
+          {downloadError && (
+            <p className="mt-2 text-sm text-red-600" role="alert">{downloadError}</p>
+          )}
         </>
       )}
     </>
