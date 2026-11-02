@@ -5,6 +5,7 @@ import FormNavigation from "../Component/FormNavigation";
 import FormStep from "../Component/FormStep";
 import ReceiptPreview from "../Component/ReceiptPreview";
 import { downloadReceiptsPdf } from "../Component/downloadReceiptsPdf";
+import { removeFarmKeys } from "../Component/farmKeys";
 import { createExportFormSteps, exportStepNames } from "../Component/exportStepsConfig";
 
 // ✅ Same hook as ProduceQrPage & FertilizerQrPage — handles pagination automatically
@@ -35,6 +36,7 @@ const ExportDigitalStamps = () => {
   const [qrData, setQrData] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
+  const [traceHashes,   setTraceHashes]   = useState([]);
   const [error, setError] = useState(null);
 
   // ✅ FIX: use useFetchData (paginated) instead of a single axiosInstance.get()
@@ -191,11 +193,7 @@ const ExportDigitalStamps = () => {
     const next = farmBlocks.filter((_, i) => i !== index);
     setFarmBlocks(next);
     setFormData(prev => {
-      const d = { ...prev };
-      delete d[`farm_${index}_id`];
-      delete d[`farm_${index}_phone`];
-      delete d[`farm_${index}_district`];
-      delete d[`farm_${index}_qty`];
+      const d = removeFarmKeys(prev, index);
       return { ...d, ...recompute(d, next) };
     });
   };
@@ -253,7 +251,7 @@ const ExportDigitalStamps = () => {
     ].join("\n");
   };
 
-  const handleSubmit = () => setQrData(generateQrData(formData));
+  const handleSubmit = () => { setTraceHashes([]); setQrData(generateQrData(formData)); };
 
   // ── PDF download ────────────────────────────────────────────────────────────
   const handleDownloadPDF = async () => {
@@ -261,11 +259,13 @@ const ExportDigitalStamps = () => {
     setIsDownloading(true);
     setDownloadError(null);
     try {
-      await downloadReceiptsPdf({
+      const hashes = await downloadReceiptsPdf({
         base: formData,
         description: "Digital receipt for export transaction.",
         filename: n => `export_receipts_${n}.pdf`,
+        qrType: "export",
       });
+      setTraceHashes(hashes);
     } catch (err) { setDownloadError(err.message); }
     finally { setIsDownloading(false); }
   };
@@ -371,6 +371,7 @@ const ExportDigitalStamps = () => {
                 onDownloadPDF={handleDownloadPDF}
                 isDownloading={isDownloading}
                 downloadError={downloadError}
+                traceHashes={traceHashes}
                 formData={formData}
                 farmBlocks={farmBlocks}
                 formType="export"

@@ -1,4 +1,5 @@
 import React from "react";
+import { traceUrl } from "./downloadReceiptsPdf";
 
 /**
  * ReceiptPreview — version originale conservée intégralement.
@@ -9,6 +10,7 @@ const ReceiptPreview = ({
   onDownloadPDF,
   isDownloading,
   downloadError = null,
+  traceHashes = [],
   // Props optionnelles pour le tableau dynamique
   formData   = null,
   farmBlocks = null,
@@ -158,11 +160,23 @@ const ReceiptPreview = ({
               <p className="text-gray-600">Digital receipt for produce transaction</p>
             </div>
             <div className="text-center mb-4">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`}
-                alt="QR Code"
-                className="mx-auto border rounded"
-              />
+              {traceHashes.length > 0 ? (
+                <>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(traceUrl(traceHashes[0]))}`}
+                    alt="QR code of receipt 1"
+                    className="mx-auto border rounded"
+                  />
+                  <p className="mt-2 text-xs text-gray-500">QR of receipt 1, as printed: a short link to its public page</p>
+                </>
+              ) : (
+                <div className="mx-auto w-[200px] h-[200px] border-2 border-dashed border-teal-200 rounded flex items-center justify-center p-4">
+                  <p className="text-xs text-gray-500">
+                    Each printed QR is a short link to a public page with all the data below,
+                    so it stays easy to scan. Download the PDF to create them.
+                  </p>
+                </div>
+              )}
             </div>
             <pre className="text-xs bg-gray-50 p-3 rounded border overflow-auto max-h-40">
               {qrData}
@@ -190,6 +204,23 @@ const ReceiptPreview = ({
           </button>
           {downloadError && (
             <p className="mt-2 text-sm text-red-600" role="alert">{downloadError}</p>
+          )}
+          {traceHashes.length > 0 && (
+            <div className="mt-4 bg-white p-4 rounded-lg shadow border">
+              <h3 className="text-sm font-semibold text-teal-700 mb-2">
+                Public pages ({traceHashes.length})
+              </h3>
+              <ul className="max-h-48 overflow-auto text-sm space-y-1">
+                {traceHashes.map((h, i) => (
+                  <li key={h}>
+                    <a href={traceUrl(h)} target="_blank" rel="noopener noreferrer"
+                       className="text-indigo-600 hover:underline">
+                      Receipt {i + 1} — /trace/{h.slice(0, 8)}…
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </>
       )}

@@ -5,6 +5,7 @@ import FormNavigation from "../Component/FormNavigation";
 import FormStep       from "../Component/FormStep";
 import ReceiptPreview from "../Component/ReceiptPreview";
 import { downloadReceiptsPdf } from "../Component/downloadReceiptsPdf";
+import { removeFarmKeys } from "../Component/farmKeys";
 import { createFormSteps, stepNames } from "../Component/formStepsConfig";
 import useFetchData from "../../Qr/Produce/useFetchData";
 
@@ -33,6 +34,7 @@ const GenerateQrCodeAndReceipt = () => {
   const [qrData,        setQrData]        = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
+  const [traceHashes,   setTraceHashes]   = useState([]);
 
   const farms             = useFetchData("/api/farm/",            "farms");
   const districts         = useFetchData("/api/district/",        "districts");
@@ -126,9 +128,7 @@ const GenerateQrCodeAndReceipt = () => {
     const next = farmBlocks.filter((_, i) => i !== index);
     setFarmBlocks(next);
     setFormData(prev => {
-      const d = { ...prev };
-      delete d[`farm_${index}_id`]; delete d[`farm_${index}_phone`];
-      delete d[`farm_${index}_district`]; delete d[`farm_${index}_qty`];
+      const d = removeFarmKeys(prev, index);
       return { ...d, ...recompute(d, next) };
     });
   };
@@ -151,7 +151,7 @@ const GenerateQrCodeAndReceipt = () => {
   const weightMissing = currentStep === TRANSACTION_STEP &&
     (!formData.produce_weight || parseFloat(formData.produce_weight) === 0);
 
-  const handleSubmit    = () => setQrData(JSON.stringify(formData, null, 2));
+  const handleSubmit    = () => { setTraceHashes([]); setQrData(JSON.stringify(formData, null, 2)); };
   const nextStep        = () => setCurrentStep(s => s + 1);
   const prevStep        = () => setCurrentStep(s => s - 1);
 
@@ -160,11 +160,13 @@ const GenerateQrCodeAndReceipt = () => {
     setIsDownloading(true);
     setDownloadError(null);
     try {
-      await downloadReceiptsPdf({
+      const hashes = await downloadReceiptsPdf({
         base: JSON.parse(qrData),
         description: "Digital receipt for produce transaction.",
         filename: n => `receipts_${n}_batches.pdf`,
+        qrType: "produce",
       });
+      setTraceHashes(hashes);
     } catch (err) { setDownloadError(err.message); }
     finally { setIsDownloading(false); }
   };
@@ -239,6 +241,7 @@ const GenerateQrCodeAndReceipt = () => {
                 onDownloadPDF={handleDownloadPDF}
                 isDownloading={isDownloading}
                 downloadError={downloadError}
+                traceHashes={traceHashes}
                 formData={formData}
                 farmBlocks={farmBlocks}
                 formType="produce"

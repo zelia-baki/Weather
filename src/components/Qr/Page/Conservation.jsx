@@ -12,6 +12,7 @@ const ConservationQrPage = () => {
   const [qrData,        setQrData]        = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
+  const [traceHashes,   setTraceHashes]   = useState([]);
 
   const formSteps = createConservationFormSteps();
 
@@ -45,18 +46,20 @@ Diameter: ${data.diameter}cm
 Batch: ${data.batch_number}
   `.trim();
 
-  const handleSubmit = () => setQrData(generateQrData(formData));
+  const handleSubmit = () => { setTraceHashes([]); setQrData(generateQrData(formData)); };
 
   const handleDownloadPDF = async () => {
     if (isDownloading) return;
     setIsDownloading(true);
     setDownloadError(null);
     try {
-      await downloadReceiptsPdf({
+      const hashes = await downloadReceiptsPdf({
         base: formData,
         description: "Digital receipt for tree cutting conservation.",
         filename: n => `conservation_receipts_${n}_batches.pdf`,
+        qrType: "conservation",
       });
+      setTraceHashes(hashes);
     } catch (err) { setDownloadError(err.message); }
     finally { setIsDownloading(false); }
   };
@@ -113,6 +116,7 @@ Batch: ${data.batch_number}
                 onDownloadPDF={handleDownloadPDF}
                 isDownloading={isDownloading}
                 downloadError={downloadError}
+                traceHashes={traceHashes}
               />
             </div>
           </div>

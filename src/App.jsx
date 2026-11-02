@@ -108,6 +108,7 @@ import Conservation from './components/Qr/Page/Conservation.jsx';
 import Export from './components/Qr/Page/ExportDigitalStamps.jsx';
 import Fertilizer from './components/Qr/Page/Fertilizer.jsx';
 import QrDashboard from './components/Qr/Page/QrDashboard.jsx';
+import QrTrace from './components/Qr/Page/QrTrace.jsx';
 // ─── Users ────────────────────────────────────────────────────────────────────
 import CreateUsers from './components/Users/CreateUsers.jsx';
 import UserManagement from './components/Users/UserManagement.jsx';
@@ -509,6 +510,8 @@ function App() {
 
         <Route path="/verify"         element={<ReceiptVerify />} />
         <Route path="/verify/:serial" element={<ReceiptVerify />} />
+        {/* Page publique d'un reçu QR : le QR imprimé ne contient que ce lien */}
+        <Route path="/trace/:hash"    element={<QrTrace />} />
 
         {/* ── Home protégé ── */}
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />

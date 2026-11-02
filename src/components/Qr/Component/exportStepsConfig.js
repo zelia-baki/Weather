@@ -68,7 +68,7 @@ export const createExportFormSteps = (
     {
       title: "Product Details",
       fields: [
-        { type: "number", name: "batch_number", label: "Batch Number", required: true },
+        { type: "number", name: "batch_number", label: "Batch Number (receipts to print, max 100)", required: true },
         { type: "text", name: "produce_weight", label: "Produce Weight (kg)", readOnly: true, placeholder: "Auto-computed from farm quantities" },
         {
           type: "select", name: "season", label: "Season", required: true,

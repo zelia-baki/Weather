@@ -15,7 +15,7 @@ export const createFertilizerFormSteps = (farmBlocks, stores, agroInputType, agr
   {
     title: "AgroInput Information",
     fields: [
-      { type: "text",   name: "batch_number",    label: "Batch Number",           required: true },
+      { type: "text",   name: "batch_number",    label: "Batch Number (receipts to print, max 100)",           required: true },
       { type: "select", name: "agroInputType",   label: "AgroInput Type",         required: true,
         options: [{ value: "Fertilizer", label: "Fertilizer" }, { value: "Pesticide", label: "Pesticide" }] },
       ...(agroInputType === "Fertilizer" ? [

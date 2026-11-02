@@ -63,7 +63,7 @@ export const createConservationFormSteps = () => [
       {
         type: "text",
         name: "batch_number",
-        label: "Batch Number",
+        label: "Batch Number (receipts to print, max 100)",
         required: true
       }
     ]

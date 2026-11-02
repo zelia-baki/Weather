@@ -15,7 +15,7 @@ export const createFormSteps = (farmBlocks, countries, produceCategories, crops,
   {
     title: "Product Information",
     fields: [
-      { type: "text",   name: "batch_number",      label: "Batch Number",      required: true },
+      { type: "text",   name: "batch_number",      label: "Batch Number (receipts to print, max 100)",      required: true },
       {
         type: "select", name: "country_of_origin", label: "Country of Origin", required: true,
         options: countries.map((c) => ({ value: c.nom_en_gb, label: c.nom_en_gb })),

@@ -5,6 +5,7 @@ import FormNavigation from "../Component/FormNavigation";
 import FormStep       from "../Component/FormStep";
 import ReceiptPreview from "../Component/ReceiptPreview";
 import { downloadReceiptsPdf } from "../Component/downloadReceiptsPdf";
+import { removeFarmKeys } from "../Component/farmKeys";
 import { createFertilizerFormSteps, fertilizerStepNames } from "../Component/fertilizerStepsConfig";
 import useFetchData from "../../Qr/Produce/useFetchData";
 
@@ -26,6 +27,7 @@ const FertilizerQrPage = () => {
   const [qrData,            setQrData]            = useState(null);
   const [isDownloading,     setIsDownloading]     = useState(false);
   const [downloadError, setDownloadError] = useState(null);
+  const [traceHashes,   setTraceHashes]   = useState([]);
   const [agroInputType,     setAgroInputType]     = useState("");
   const [agroInputCategory, setAgroInputCategory] = useState("");
 
@@ -108,9 +110,7 @@ const FertilizerQrPage = () => {
     const next = farmBlocks.filter((_, i) => i !== index);
     setFarmBlocks(next);
     setFormData(prev => {
-      const d = { ...prev };
-      delete d[`farm_${index}_id`]; delete d[`farm_${index}_phone`];
-      delete d[`farm_${index}_district`]; delete d[`farm_${index}_qty`];
+      const d = removeFarmKeys(prev, index);
       return { ...d, ...recompute(d, next) };
     });
   };
@@ -160,18 +160,20 @@ const FertilizerQrPage = () => {
     ].filter(Boolean).join("\n");
   };
 
-  const handleSubmit = () => setQrData(generateQrData(formData));
+  const handleSubmit = () => { setTraceHashes([]); setQrData(generateQrData(formData)); };
 
   const handleDownloadPDF = async () => {
     if (isDownloading) return;
     setIsDownloading(true);
     setDownloadError(null);
     try {
-      await downloadReceiptsPdf({
+      const hashes = await downloadReceiptsPdf({
         base: formData,
         description: "Digital receipt for fertilizer transaction.",
         filename: n => `fertilizer_receipts_${n}_batches.pdf`,
+        qrType: "fertilizer",
       });
+      setTraceHashes(hashes);
     } catch (err) { setDownloadError(err.message); }
     finally { setIsDownloading(false); }
   };
@@ -246,6 +248,7 @@ const FertilizerQrPage = () => {
                 onDownloadPDF={handleDownloadPDF}
                 isDownloading={isDownloading}
                 downloadError={downloadError}
+                traceHashes={traceHashes}
                 formData={formData}
                 farmBlocks={farmBlocks}
                 formType="fertilizer"
