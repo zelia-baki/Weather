@@ -1,4 +1,5 @@
 // ── PUBLIC QR TRACEABILITY PAGE ──────────────────────────────────────────────
+// Farmer phone numbers are shown in full (client request); CIN / national ID never.
 // Where a printed QR receipt lands (/trace/<hash>). The QR holds only this short
 // link, so it stays easy to scan; every detail (farms, crops, grade, warehouse)
 // is served here by GET /api/qrcode/public/<hash>. No account, no token.
@@ -131,7 +132,13 @@ const FarmCard = ({ farm, index }) => {
           <Field label="Country">{farm.country}</Field>
           <Field label="Gender">{farm.gender}</Field>
           <Field label="Phone">
-            {farm.phone && <span className="inline-flex items-center gap-1" style={mono}><Phone aria-hidden="true" className="h-3.5 w-3.5" />{farm.phone}</span>}
+            {farm.phone && (
+              <a href={`tel:${farm.phone.replace(/[^\d+]/g, "")}`}
+                 className="inline-flex min-h-[44px] items-center gap-1 underline underline-offset-2"
+                 style={{ ...mono, color: C.green }}>
+                <Phone aria-hidden="true" className="h-3.5 w-3.5" />{farm.phone}
+              </a>
+            )}
           </Field>
           <div className="col-span-2">
             <Field label="Geolocation">
@@ -316,7 +323,7 @@ export default function QrTrace() {
 
             <p className="pt-2 text-center text-xs" style={{ color: C.muted }}>
               Record <span style={mono}>{data.hash}</span>
-              <br />Farmer phone numbers are partly hidden. Powered by Nkusu.
+              <br />Powered by Nkusu.
             </p>
           </div>
         )}
