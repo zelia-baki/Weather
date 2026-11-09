@@ -60,6 +60,42 @@ export const featurePaymentProvider = ({ featureName, agentId, guest = false }) 
     async checkCard(transToken) {
       return statusOf(await axiosInstance.get(`/api/payments/dpo/verify/${transToken}`));
     },
+
+    // ── Carte Cybersource (Unified Checkout, toutes devises) ──────────────
+    async cybersourceInfo() {
+      const res = await axiosInstance.get("/api/payments/cybersource/currencies");
+      return res.data; // { enabled, test_mode, currencies }
+    },
+
+    async quoteCybersource(currency) {
+      const res = await axiosInstance.get("/api/payments/cybersource/quote", {
+        params: { feature_name: featureName, currency },
+      });
+      return res.data.amount;
+    },
+
+    async startCybersource({ phone, currency }) {
+      forgetSession();
+      const res = await axiosInstance.post("/api/payments/cybersource/initiate", {
+        feature_name: featureName,
+        phone_number: phone,
+        currency,
+        agent_id: agentId || undefined,
+      });
+      if (!res.data?.success) throw new Error(res.data?.error || "Payment could not be started");
+      return { captureContext: res.data.capture_context, txnId: res.data.txn_id };
+    },
+
+    async completeCybersource({ txnId, token, email }) {
+      try {
+        const res = await axiosInstance.post("/api/payments/cybersource/complete", {
+          txn_id: txnId, transient_token: token, email: email || undefined,
+        });
+        return { status: res.data?.status, error: res.data?.error };
+      } catch (err) {
+        return { status: err?.response?.data?.status || "failed", error: err?.response?.data?.error };
+      }
+    },
   };
 };
 

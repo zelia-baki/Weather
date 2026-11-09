@@ -383,7 +383,6 @@ const ReceiptVerify = () => {
           defaultCurrency={data.detail_currency}
           returnPath={`/verify/${data.serial}`}
           provider={provider}
-          showGooglePay={false}
           onSuccess={() => { setPaying(false); loadDetail(current, loadKey(current), 5); }}
         />
       )}
