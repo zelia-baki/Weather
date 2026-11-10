@@ -8,7 +8,7 @@ import { FiLogOut, FiMenu, FiX, FiChevronDown } from "react-icons/fi";
 import { FaTree, FaCloudSun, FaQrcode, FaFileContract, FaCrown, FaUser } from "react-icons/fa";
 import { TbPlant2, TbMap2, TbChartBar, TbTag, TbPackages } from "react-icons/tb";
 import { RiPlantLine, RiMapPinLine } from "react-icons/ri";
-import { BsCalendarDate, BsShop } from "react-icons/bs";
+import { BsCalendarDate, BsShop , BsGlobe } from "react-icons/bs";
 import { GiFarmer, GiForestCamp, GiWheat } from "react-icons/gi";
 import { LuTreePine, LuScanLine } from "react-icons/lu";
 import parrot from "../img/parrot.jpg";
@@ -93,6 +93,7 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "Auction Manager",      href: "/auctionmanager", Icon: MdOutlineGavel },
         { label: "Orders", href: "/ordermanager", Icon: TbPackages },
         { label: "Subscriptions", href: "/subscriptionmanager", Icon: BsCalendarDate },
+        { label: "Regional prices", href: "/priceregions", Icon: BsGlobe },
         { label: "Buyers", href: "/customermanager", Icon: TbPackages },
 
       ],
