@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosInstance from '../../axiosInstance';
 import VerifiedStamp from './VerifiedStamp';
+import { useRegionalPricing, COUNTRIES } from '../../utils/region';
 
 // =============================================================================
 //  src/components/Shop/ShopPage.jsx — remplace ton fichier actuel
@@ -15,6 +16,9 @@ import VerifiedStamp from './VerifiedStamp';
 //  2. Un lot n'affiche pas le même prix qu'un produit à l'unité. « 12 kg ·
 //     600 USD » est parlant ; « 50 USD/kg » seul laisse l'acheteur faire la
 //     multiplication de tête.
+//
+//  ★ PRIX RÉGIONAUX : les cartes affichent le prix du pays de livraison
+//  choisi (« Prices for delivery to … », mémorisé pour tout le site).
 // =============================================================================
 
 const BG = '#f7f4ee';
@@ -62,10 +66,11 @@ const LotBadge = () => (
 );
 
 // ── Prix d'une carte, selon le mode de vente ─────────────────────────────────
-const CardPrice = ({ product }) => {
+const CardPrice = ({ product, unitPrice }) => {
+  const lotTotal = Number(product.stock_qty || 0) * unitPrice;
   const perUnit = (
     <>
-      {fmt(product.price, 2)} {product.currency}
+      {fmt(unitPrice, 2)} {product.currency}
       <span style={{ color: 'rgba(20,35,26,0.45)', fontSize: 12 }}> / {product.unit}</span>
     </>
   );
@@ -78,10 +83,10 @@ const CardPrice = ({ product }) => {
   return (
     <div>
       <div style={{ ...mono, fontSize: 17, color: CLAY }}>
-        {fmt(product.total_price, 2)} {product.currency}
+        {fmt(lotTotal, 2)} {product.currency}
       </div>
       <div style={{ ...mono, fontSize: 11.5, color: 'rgba(20,35,26,0.45)', marginTop: 3 }}>
-        {fmt(product.stock_qty)} {product.unit} × {fmt(product.price, 2)}
+        {fmt(product.stock_qty)} {product.unit} × {fmt(unitPrice, 2)}
       </div>
     </div>
   );
@@ -95,6 +100,7 @@ const ShopPage = () => {
   const [activeCategory, setActiveCategory] = useState(null);   // id, pas nom
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { country, setCountry, region, priceFor } = useRegionalPricing();
 
   useEffect(() => {
     Promise.all([
@@ -160,7 +166,7 @@ const ShopPage = () => {
 
       {/* ── Filtres ──────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 1160, margin: '0 auto', padding: '32px 24px 0',
-        display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={() => setActiveCategory(null)} style={filterBtn(!activeCategory)}>
           All
         </button>
@@ -170,6 +176,17 @@ const ShopPage = () => {
             {cat.name}
           </button>
         ))}
+
+        <label style={{ ...sans, fontSize: 12, color: 'rgba(20,35,26,0.55)', marginLeft: 'auto',
+          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          Prices for delivery to
+          <select value={country} onChange={e => setCountry(e.target.value)}
+            style={{ ...sans, fontSize: 12, padding: '6px 8px', borderRadius: 8, maxWidth: '100%',
+              border: '1px solid rgba(20,35,26,0.15)', background: '#fff', color: INK }}>
+            {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+          </select>
+          {region && <span style={{ color: 'rgba(20,35,26,0.4)' }}>({region.name})</span>}
+        </label>
       </div>
 
       {/* ── Grille ───────────────────────────────────────────────────── */}
@@ -256,7 +273,8 @@ const ShopPage = () => {
                     </div>
                   )}
 
-                  <CardPrice product={product} />
+                  <CardPrice product={product}
+                    unitPrice={priceFor(product.price, product.currency) ?? Number(product.price)} />
                 </div>
               </div>
             </Link>

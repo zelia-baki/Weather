@@ -5,6 +5,7 @@ import PaymentModal from '../Payment/PaymentModal';
 import { shopCheckoutProvider } from '../Payment/paymentProviders';
 import axiosInstance from '../../axiosInstance';
 import { clearPaymentReturn } from '../../utils/paymentReturn';
+import { useRegionalPricing, COUNTRIES } from '../../utils/region';
 
 // Paiement par carte : DPO s'ouvre dans cet onglet puis revient ici
 // (?paid=<token> ou ?payment=cancelled) — plus d'onglet à retrouver.
@@ -35,6 +36,10 @@ const readReturn = () => {
 //  3. Le panier multi-devises est bloqué ICI, avant l'appel au serveur.
 //     L'acheteur ne remplit plus tout le formulaire pour apprendre à la fin
 //     que sa commande est impossible.
+//
+//  ★ PRIX RÉGIONAUX : le panier garde le prix de BASE. Cette page affiche le
+//  prix du pays de livraison choisi (même calcul que le serveur) et envoie
+//  shipping_country au checkout. Le serveur recalcule le montant facturé.
 // =============================================================================
 
 const BG = '#f7f4ee';
@@ -69,10 +74,10 @@ const stepBtn = (enabled) => ({
 });
 
 // ── Une ligne de panier ──────────────────────────────────────────────────────
-const CartLine = ({ item, first }) => {
+const CartLine = ({ item, first, unitPrice }) => {
   const { increment, decrement, removeItem, canIncrease, canDecrease } = useCart();
   const isLot = item.sale_mode === 'lot';
-  const lineTotal = item.price * item.quantity;
+  const lineTotal = unitPrice * item.quantity;
 
   return (
     <div style={{ display: 'flex', gap: 14, padding: '16px 18px',
@@ -92,7 +97,7 @@ const CartLine = ({ item, first }) => {
         </div>
 
         <div style={{ ...mono, fontSize: 12.5, color: 'rgba(20,35,26,0.55)', margin: '4px 0 8px' }}>
-          {fmt(item.price, 2)} {item.currency} / {item.unit}
+          {fmt(unitPrice, 2)} {item.currency} / {item.unit}
         </div>
 
         {isLot ? (
@@ -152,7 +157,16 @@ const CartLine = ({ item, first }) => {
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 const CheckoutPage = () => {
-  const { items, totalAmount, currency, currencies, hasMixedCurrency, clearCart } = useCart();
+  const { items, currency, currencies, hasMixedCurrency, clearCart } = useCart();
+  const { country, setCountry, region, priceFor } = useRegionalPricing();
+
+  // Prix du pays de livraison, ligne par ligne, et total correspondant.
+  const unitPriceOf = (item) => priceFor(item.price, item.currency) ?? item.price;
+  const totalAmount = useMemo(
+    () => Math.round(items.reduce((sum, i) => sum + unitPriceOf(i) * i.quantity, 0) * 100) / 100,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, priceFor]
+  );
   // Le formulaire survit à l'aller-retour chez DPO (paiement annulé → rien à ressaisir).
   const [form, setForm] = useState(() => {
     try {
@@ -226,7 +240,8 @@ const CheckoutPage = () => {
     guest_name: form.guest_name,
     email: form.email,
     shipping_address: form.shipping_address,
-  }), [items, form]);
+    shipping_country: country,
+  }), [items, form, country]);
 
   const handleSubmit = () => {
     if (items.length === 0 || hasMixedCurrency) return;
@@ -338,7 +353,7 @@ const CheckoutPage = () => {
             <div style={{ ...labelStyle, marginBottom: 16, fontSize: 12 }}>Order summary</div>
             <div style={{ background: '#fff', borderRadius: 12, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
               {items.map((item, i) => (
-                <CartLine key={item.product_id} item={item} first={i === 0} />
+                <CartLine key={item.product_id} item={item} first={i === 0} unitPrice={unitPriceOf(item)} />
               ))}
 
               <div style={{ padding: '16px 18px', borderTop: `1px solid ${BORDER}`,
@@ -374,6 +389,16 @@ const CheckoutPage = () => {
                 <label style={labelStyle}>Email (optional)</label>
                 <input style={inputStyle} type="email" value={form.email} placeholder="jane@example.com"
                   onChange={e => setForm({ ...form, email: e.target.value })}/>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Delivery country *</label>
+                <select style={inputStyle} value={country} onChange={e => setCountry(e.target.value)}>
+                  {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                </select>
+                <p style={{ ...sans, fontSize: 11.5, color: 'rgba(20,35,26,0.45)', marginTop: 4 }}>
+                  Prices depend on the delivery country{region ? ` (${region.name})` : ''}.
+                </p>
               </div>
 
               <div>

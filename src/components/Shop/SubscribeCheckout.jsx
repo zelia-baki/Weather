@@ -4,10 +4,15 @@ import axiosInstance from '../../axiosInstance';
 import PaymentModal from '../Payment/PaymentModal';
 import { subscriptionCheckoutProvider } from '../Payment/paymentProviders';
 import { clearPaymentReturn } from '../../utils/paymentReturn';
+import { useRegionalPricing, COUNTRIES } from '../../utils/region';
 
 // =============================================================================
 //  src/components/Shop/SubscribeCheckout.jsx — NOUVEAU
-//  Route : /shop/subscribe/:id?qty=<kg>&weeks=<1|2|3>
+//  Route : /shop/subscribe/:id?qty=<kg>&weeks=<1|2|3|4>&country=<ISO>
+//
+//  ★ PRIX RÉGIONAUX : le prix dépend du pays de livraison. Le pays vient de
+//  la fiche produit (?country=) et reste modifiable ici tant que
+//  l'abonnement n'est pas créé. Le serveur recalcule le même prix.
 //
 //  Formulaire de livraison + paiement de la 1re livraison. Même logique que
 //  CheckoutPage : la carte (DPO) s'ouvre dans cet onglet puis revient ici
@@ -73,6 +78,14 @@ export default function SubscribeCheckout() {
   const [weeks] = useState(() => Number(searchParams.get('weeks')) || saved.weeks || 2);
   const [form, setForm] = useState(() => ({ ...EMPTY_FORM, ...(saved.form || {}) }));
   const createdRef = useRef(saved.created || null);
+  const { country, setCountry, priceFor } = useRegionalPricing();
+
+  // Pays choisi sur la fiche produit.
+  useEffect(() => {
+    const c = (searchParams.get('country') || '').toUpperCase();
+    if (COUNTRIES.some(x => x.code === c)) setCountry(c);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -143,11 +156,12 @@ export default function SubscribeCheckout() {
       guest_name: form.guest_name,
       email: form.email,
       shipping_address: form.shipping_address,
+      shipping_country: country,
     },
     createdRef,
     (created) => { createdRef.current = created; persist({ created }); },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [id, qty, weeks, form]);
+  ), [id, qty, weeks, form, country]);
 
   const validate = () => {
     const e = {};
@@ -215,7 +229,10 @@ export default function SubscribeCheckout() {
     );
   }
 
-  const deliveryTotal = qty * product.price;
+  const unitPrice = priceFor(product.price, product.currency) ?? Number(product.price);
+  const deliveryTotal = qty * unitPrice;
+  // Une fois l'abonnement créé, sa 1re commande a déjà son prix : on fige le pays.
+  const countryLocked = !!createdRef.current;
 
   return (
     <div style={{ background: BG, minHeight: '100vh', padding: '48px 24px' }}>
@@ -259,7 +276,7 @@ export default function SubscribeCheckout() {
 
               <Row label="Quantity per delivery">{fmt(qty)} kg</Row>
               <Row label="Frequency">{everyLabel(weeks)}</Row>
-              <Row label="Price">{fmt(product.price, 2)} {product.currency} / kg</Row>
+              <Row label="Price">{fmt(unitPrice, 2)} {product.currency} / kg</Row>
               <Row label="Each delivery">{fmt(deliveryTotal, 2)} {product.currency}</Row>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -297,6 +314,17 @@ export default function SubscribeCheckout() {
                 <label style={labelStyle}>Email (optional)</label>
                 <input style={inputStyle} type="email" value={form.email} placeholder="jane@example.com"
                   onChange={e => setForm({ ...form, email: e.target.value })} />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Delivery country *</label>
+                <select style={inputStyle} value={country} disabled={countryLocked}
+                  onChange={e => setCountry(e.target.value)}>
+                  {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                </select>
+                <p style={{ ...sans, fontSize: 11.5, color: 'rgba(20,35,26,0.45)', marginTop: 4 }}>
+                  Prices depend on the delivery country.
+                </p>
               </div>
 
               <div>

@@ -5,6 +5,7 @@ import { useCart } from '../../context/CartContext';
 import VerifiedStamp from './VerifiedStamp';
 import { SpecStrip, TastingNotes, StoryBlocks, ProofPanel } from './ProductStory';
 import Swal from 'sweetalert2';
+import { useRegionalPricing, COUNTRIES } from '../../utils/region';
 
 // =============================================================================
 //  src/components/Shop/ProductDetail.jsx — remplace ton fichier actuel
@@ -15,8 +16,11 @@ import Swal from 'sweetalert2';
 //    'lot'    → un seul bouton, tout ou rien   (« Acquérir ce lot · 12 kg »)
 //
 //  ★ NOUVEAU — Abonnement : un produit vendu au kilo propose « Achat unique /
-//  Abonnement ». En abonnement, le client choisit la fréquence (1, 2 ou 3
+//  Abonnement ». En abonnement, le client choisit la fréquence (1, 2, 3 ou 4
 //  semaines) et part vers /shop/subscribe/:id au lieu du panier.
+//
+//  ★ PRIX RÉGIONAUX : le prix affiché dépend du pays de livraison choisi
+//  (« Prices for: … »). Le serveur recalcule le même prix au paiement.
 // =============================================================================
 
 const BG = '#f7f4ee';
@@ -34,7 +38,7 @@ const serif = { fontFamily: "'Cormorant Garamond', serif" };
 const fmt = (n, digits = 0) =>
   Number(n).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: 3 });
 
-const FREQUENCIES = [1, 2, 3];
+const FREQUENCIES = [1, 2, 3, 4];
 const everyLabel = (w) => (w === 1 ? 'every week' : `every ${w} weeks`);
 
 // Même règle que Subscription.is_subscribable côté serveur.
@@ -96,7 +100,7 @@ const QuantityPicker = ({ product, quantity, setQuantity }) => {
   );
 };
 
-const LotSummary = ({ product }) => (
+const LotSummary = ({ product, unitPrice, lotTotal }) => (
   <div style={{
     background: SAND, borderRadius: 12, padding: '20px 22px', marginBottom: 20,
     display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20,
@@ -107,13 +111,27 @@ const LotSummary = ({ product }) => (
         Sold as one lot
       </div>
       <div style={{ ...mono, fontSize: 15, color: INK }}>
-        {fmt(product.stock_qty)} {product.unit} × {fmt(product.price, 2)} {product.currency}
+        {fmt(product.stock_qty)} {product.unit} × {fmt(unitPrice, 2)} {product.currency}
       </div>
     </div>
     <div style={{ ...serif, fontSize: 30, color: CLAY, whiteSpace: 'nowrap' }}>
-      {fmt(product.total_price, 2)} {product.currency}
+      {fmt(lotTotal, 2)} {product.currency}
     </div>
   </div>
+);
+
+// « Prices for: [Uganda ▾] » — le pays est mémorisé pour tout le site.
+const CountryPicker = ({ country, setCountry, region }) => (
+  <label style={{ ...sans, fontSize: 12, color: 'rgba(20,35,26,0.55)',
+    display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+    Prices for delivery to
+    <select value={country} onChange={(e) => setCountry(e.target.value)}
+      style={{ ...sans, fontSize: 12, padding: '5px 8px', borderRadius: 8,
+        border: `1px solid ${BORDER}`, background: '#fff', color: INK, maxWidth: '100%' }}>
+      {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+    </select>
+    {region && <span style={{ color: 'rgba(20,35,26,0.4)' }}>({region.name})</span>}
+  </label>
 );
 
 // ★ NOUVEAU — Achat unique / Abonnement
@@ -170,6 +188,7 @@ const ProductDetail = () => {
   const [activeImage, setActiveImage] = useState(0);
   const [mode, setMode] = useState('once');     // 'once' | 'subscribe'
   const [weeks, setWeeks] = useState(2);
+  const { country, setCountry, region, priceFor } = useRegionalPricing();
 
   useEffect(() => {
     let cancelled = false;
@@ -198,7 +217,7 @@ const ProductDetail = () => {
   };
 
   const handleSubscribe = () => {
-    navigate(`/shop/subscribe/${product.id}?qty=${quantity}&weeks=${weeks}`);
+    navigate(`/shop/subscribe/${product.id}?qty=${quantity}&weeks=${weeks}&country=${country}`);
   };
 
   if (loading) {
@@ -222,7 +241,10 @@ const ProductDetail = () => {
   const isLot = product.sale_mode === 'lot';
   const canSubscribe = isSubscribable(product) && !isOut;
   const subscribing = canSubscribe && mode === 'subscribe';
-  const lineTotal = isLot ? product.total_price : quantity * product.price;
+  // Prix pour le pays de livraison choisi (même calcul que le serveur).
+  const unitPrice = priceFor(product.price, product.currency) ?? product.price;
+  const lotTotal = Number(product.stock_qty || 0) * unitPrice;
+  const lineTotal = isLot ? lotTotal : quantity * unitPrice;
 
   return (
     <div style={{ background: BG, minHeight: '100vh', padding: '48px 24px 96px' }}>
@@ -302,16 +324,18 @@ const ProductDetail = () => {
               </div>
             )}
 
-            <div style={{ ...mono, fontSize: 26, color: INK, margin: '28px 0 20px' }}>
-              {fmt(product.price, 2)} {product.currency}
+            <div style={{ ...mono, fontSize: 26, color: INK, margin: '28px 0 10px' }}>
+              {fmt(unitPrice, 2)} {product.currency}
               <span style={{ fontSize: 14, color: 'rgba(20,35,26,0.45)' }}> / {product.unit}</span>
             </div>
+
+            <CountryPicker country={country} setCountry={setCountry} region={region} />
 
             {canSubscribe && (
               <PurchaseMode mode={mode} setMode={setMode} weeks={weeks} setWeeks={setWeeks} />
             )}
 
-            {!isOut && isLot && <LotSummary product={product} />}
+            {!isOut && isLot && <LotSummary product={product} unitPrice={unitPrice} lotTotal={lotTotal} />}
             {!isOut && !isLot && (
               <QuantityPicker product={product} quantity={quantity} setQuantity={setQuantity} />
             )}
@@ -344,7 +368,7 @@ const ProductDetail = () => {
                 : subscribing
                   ? `Subscribe · ${fmt(lineTotal, 2)} ${product.currency} ${everyLabel(weeks)}`
                   : isLot
-                    ? `Take this lot · ${fmt(product.total_price, 2)} ${product.currency}`
+                    ? `Take this lot · ${fmt(lotTotal, 2)} ${product.currency}`
                     : `Add to cart · ${fmt(lineTotal, 2)} ${product.currency}`}
             </button>
 

@@ -162,6 +162,9 @@ import WarehouseManager from './components/Receipt/WarehouseManager.jsx';
 import SubscribeCheckout from './components/Shop/SubscribeCheckout.jsx';
 import MySubscription from './components/Shop/MySubscription.jsx';
 import SubscriptionManager from './components/Ecommerce/SubscriptionManager.jsx';
+// PAYS //////
+import PriceRegionManager from './components/Ecommerce/PriceRegionManager';
+
 // =============================================================================
 // GUARD : AccessDeniedScreen — composant partagé pour tous les refus d'accès
 // =============================================================================
@@ -512,7 +515,8 @@ function App() {
         <Route path="/verify/:serial" element={<ReceiptVerify />} />
         {/* Page publique d'un reçu QR : le QR imprimé ne contient que ce lien */}
         <Route path="/trace/:hash"    element={<QrTrace />} />
-
+        {/*Price region */}
+        <Route path="/priceregions" element={<PriceRegionManager />} />
         {/* ── Home protégé ── */}
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         
