@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../axiosInstance';
 import { peekPaymentReturn } from '../../utils/paymentReturn';
@@ -9,7 +9,18 @@ export default function PaymentSuccess() {
   const transToken = searchParams.get('TransactionToken');
   // Retour DPO d'une commande boutique : la vérification se fait sur la
   // commande, pas sur un accès à une fonctionnalité.
-  const isShop = useLocation().pathname.startsWith('/shop');
+  const { pathname } = useLocation();
+  const isShop = pathname.startsWith('/shop');
+  // Caution d'enchère : vérifiée sur l'inscription, pas sur un accès payant.
+  const isAuction = pathname.startsWith('/auction');
+  const verifyUrl = isShop ? `/api/ecommerce/checkout/verify/${transToken}`
+    : isAuction ? `/api/auction/deposit/verify/${transToken}`
+      : `/api/payments/dpo/verify/${transToken}`;
+  // Le retour DPO ne confirme plus rien sans l'accord de DPO : tant qu'il
+  // répond « en attente », on revérifie automatiquement (8 s, anti-429 DPO).
+  const retries = useRef(0);
+  const retryTimer = useRef(null);
+  useEffect(() => () => clearTimeout(retryTimer.current), []);
   // Invité (rapport payé sans compte) : /home renvoie sur /login. Son rapport se
   // génère dans l'onglet d'origine, resté ouvert — on l'y renvoie.
   const isGuest = !localStorage.getItem('token');
@@ -43,9 +54,8 @@ export default function PaymentSuccess() {
     try {
       console.log('[PAYMENT SUCCESS] Verifying payment:', transToken);
       
-      const res = await axiosInstance.get(isShop
-        ? `/api/ecommerce/checkout/verify/${transToken}`
-        : `/api/payments/dpo/verify/${transToken}`);
+      clearTimeout(retryTimer.current);
+      const res = await axiosInstance.get(verifyUrl);
       
       console.log('[PAYMENT SUCCESS] Verification response:', res.data);
 
@@ -61,8 +71,8 @@ export default function PaymentSuccess() {
         }
 
         // Fetch payment details if needed
-        fetchPaymentDetails();
-        
+        if (!isAuction) fetchPaymentDetails();   // détails d'accès payant, sans objet pour une caution
+
         // Optionally redirect after 3 seconds
         if (!isGuest) {
           setTimeout(() => {
@@ -74,6 +84,10 @@ export default function PaymentSuccess() {
       else if (res.status === 202) {
         setStatus('pending');
         setMessage('Payment is being processed. Please wait...');
+        if (retries.current < 15) {
+          retries.current += 1;
+          retryTimer.current = setTimeout(verifyPayment, 8000);
+        }
       }
     } catch (error) {
       console.error('[PAYMENT SUCCESS] Verification error:', error);
