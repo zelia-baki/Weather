@@ -26,7 +26,7 @@ const CarbonExtraBlock = ({ extra }) => {
           <div>CO2e: <strong>{((b.co2_sequestered_kg || 0) / 1000).toFixed(2)} Mg</strong></div>
         </div>
         <p className="text-xs text-emerald-700">
-          NDVI {b.ndvi_used} ({b.ndvi_date}) · {extra.area_ha} ha · generic model, requires local calibration.
+          NDVI {b.ndvi_used} ({b.ndvi_date}) · {extra.area_ha} ha · {b.calibrated ? 'model calibrated on local forest inventory plots.' : 'generic model, requires local calibration.'}
         </p>
       </div>
     );

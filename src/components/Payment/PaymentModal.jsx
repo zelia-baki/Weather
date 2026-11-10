@@ -3,7 +3,7 @@ import { rememberPaymentReturn } from "../../utils/paymentReturn";
 import axiosInstance from "../../axiosInstance";
 import { Dialog } from "@headlessui/react";
 import { motion } from "framer-motion";
-import GooglePayButton from "./GooglePayButton";
+import { showCybersourceCheckout, cybersourceErrorText } from "./cybersourceCheckout";
 
 // =============================================================================
 //  PaymentModal — LE composant de paiement de toute l'application.
@@ -30,6 +30,10 @@ import GooglePayButton from "./GooglePayButton";
 //    startCard({ phone, email, currency }) → { url, ref }
 //    checkCard(ref)                        → 'paid' | 'pending' | 'failed'
 //    mobileMoneyCurrencies                 → devises acceptées par Mobile Money
+//    cybersourceInfo()                     → { enabled, test_mode, currencies }
+//    quoteCybersource(currency)            → montant dans cette devise
+//    startCybersource({ phone, currency }) → { captureContext, txnId }
+//    completeCybersource({ txnId, token, email }) → { status, error }
 //  Une méthode dont les fonctions manquent n'est simplement pas proposée.
 // =============================================================================
 
@@ -46,7 +50,24 @@ const CURRENCY_LABELS = {
   ZAR: "🇿🇦 ZAR - South African Rand",
   GBP: "🇬🇧 GBP - British Pound",
   EUR: "🇪🇺 EUR - Euro",
+  CHF: "🇨🇭 CHF - Swiss Franc",
+  CAD: "🇨🇦 CAD - Canadian Dollar",
+  AUD: "🇦🇺 AUD - Australian Dollar",
+  JPY: "🇯🇵 JPY - Japanese Yen",
+  CNY: "🇨🇳 CNY - Chinese Yuan",
+  AED: "🇦🇪 AED - UAE Dirham",
+  INR: "🇮🇳 INR - Indian Rupee",
+  RWF: "🇷🇼 RWF - Rwandan Franc",
+  XOF: "XOF - West African CFA Franc",
+  XAF: "XAF - Central African CFA Franc",
+  NGN: "🇳🇬 NGN - Nigerian Naira",
+  GHS: "🇬🇭 GHS - Ghanaian Cedi",
+  MAD: "🇲🇦 MAD - Moroccan Dirham",
 };
+
+// Conteneurs où Cybersource Unified Checkout dessine son formulaire carte.
+const CYBS_SELECTION = "cybs-payment-selection";
+const CYBS_SCREEN = "cybs-payment-screen";
 
 const formatAmount = (amount, currency) =>
   `${Number(amount).toLocaleString("en-US", { maximumFractionDigits: 2 })} ${currency}`;
@@ -69,7 +90,6 @@ const Icon = ({ d, className = "w-6 h-6" }) => (
 );
 const PHONE = "M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z";
 const CARD = "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z";
-const WALLET = "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z";
 const LOCK = "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z";
 const BACK = "M15 19l-7-7 7-7";
 const CHEVRON = "M9 5l7 7-7 7";
@@ -152,13 +172,12 @@ export default function PaymentModal({
   lockPhone = false,
   provider = {},
   onSuccess,
-  showGooglePay = true,
   returnPath = null,     // carte : DPO s'ouvre dans cet onglet puis y revient (voir utils/paymentReturn)
 }) {
   const prices = priceMap || NO_PRICES;
   // step : 'method' | 'details' | 'waiting' | 'success' | 'failed'
   const [step, setStep] = useState("method");
-  const [method, setMethod] = useState(null);         // 'mobile' | 'card' | 'googlepay'
+  const [method, setMethod] = useState(null);         // 'mobile' | 'card' | 'cybersource'
   const [phone, setPhone] = useState(initialPhone);
   const [email, setEmail] = useState(initialEmail);
   const [currency, setCurrency] = useState(defaultCurrency || Object.keys(prices)[0] || "");
@@ -166,6 +185,41 @@ export default function PaymentModal({
   const [message, setMessage] = useState("");
   const [cardUrl, setCardUrl] = useState(null);
   const timer = useRef(null);
+
+  // ── Carte Cybersource ──
+  const [cybs, setCybs] = useState(null);                 // { enabled, test_mode, currencies }
+  const [cybsCurrency, setCybsCurrency] = useState("USD");
+  const [cybsQuote, setCybsQuote] = useState(null);       // { currency, amount } | { currency, error }
+  const [cybsSession, setCybsSession] = useState(null);   // { captureContext, txnId }
+
+  useEffect(() => {
+    if (!isOpen || !provider.cybersourceInfo) return;
+    let alive = true;
+    provider.cybersourceInfo()
+      .then((info) => {
+        if (!alive) return;
+        setCybs(info);
+        const list = info?.currencies || [];
+        setCybsCurrency(list.includes(currency) ? currency : list.includes("USD") ? "USD" : list[0]);
+      })
+      .catch(() => alive && setCybs({ enabled: false }));
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !cybs?.enabled || !cybsCurrency) return;
+    if (prices[cybsCurrency] != null) { setCybsQuote({ currency: cybsCurrency, amount: prices[cybsCurrency] }); return; }
+    let alive = true;
+    setCybsQuote(null);
+    provider.quoteCybersource(cybsCurrency)
+      .then((amount) => alive && setCybsQuote({ currency: cybsCurrency, amount }))
+      .catch(() => alive && setCybsQuote({ currency: cybsCurrency, error: true }));
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, cybs?.enabled, cybsCurrency, prices[cybsCurrency]]);
+
+  const cybsAmount = cybsQuote && cybsQuote.currency === cybsCurrency && !cybsQuote.error ? cybsQuote.amount : null;
 
   const currencies = Object.keys(prices);
   const mobileCurrencies = provider.mobileMoneyCurrencies || ["UGX"];
@@ -202,7 +256,7 @@ export default function PaymentModal({
   useEffect(() => {
     if (isOpen) {
       setStep("method"); setMethod(null); setMessage(""); setCardUrl(null); setBusy(false);
-      setPhone(initialPhone); setEmail(initialEmail);
+      setPhone(initialPhone); setEmail(initialEmail); setCybsSession(null);
     }
     return stopPolling;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -236,17 +290,17 @@ export default function PaymentModal({
         ? "Visa, Mastercard or mobile money on DPO's secure page. You come back here automatically."
         : "Visa, Mastercard or mobile money on DPO's secure page, opened in a new tab.",
     },
-    showGooglePay && {
-      key: "googlepay",
-      icon: WALLET,
-      title: "Google Pay",
-      text: "Test mode only — no real payment is taken yet.",
-      badge: "Test",
+    provider.startCybersource && cybs?.enabled && {
+      key: "cybersource",
+      icon: CARD,
+      title: "Card in USD, EUR or another currency",
+      text: "Visa, Mastercard or Amex. The secure card form opens right here.",
+      badge: cybs.test_mode ? "Test" : null,
     },
   ].filter(Boolean);
 
-  const amountFor = (m) => (m === "mobile" ? mobileAmount : prices[currency]);
-  const currencyFor = (m) => (m === "mobile" ? mobileCurrency : currency);
+  const amountFor = (m) => (m === "mobile" ? mobileAmount : m === "cybersource" ? cybsAmount : prices[currency]);
+  const currencyFor = (m) => (m === "mobile" ? mobileCurrency : m === "cybersource" ? cybsCurrency : currency);
   const shownAmount = method ? amountFor(method) : prices[currency];
   const shownCurrency = method ? currencyFor(method) : currency;
 
@@ -320,13 +374,68 @@ export default function PaymentModal({
     }
   };
 
+  const startCybersource = async (e) => {
+    e.preventDefault();
+    setBusy(true); setMessage("");
+    try {
+      const session = await provider.startCybersource({ phone, currency: cybsCurrency });
+      setCybsSession(session);
+      setStep("cardform");   // les conteneurs s'affichent, puis l'effet ci-dessous lance le formulaire
+    } catch (err) {
+      setMessage(errorText(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Formulaire carte Cybersource : affiché une fois les conteneurs dans le DOM.
+  // cybsRun = txn en cours ; changer d'étape ne l'annule pas (le passage à
+  // « waiting » doit laisser la confirmation se terminer), revenir aux
+  // méthodes ou fermer, si.
+  const cybsRun = useRef(null);
+  useEffect(() => { if (!isOpen || !cybsSession) cybsRun.current = null; }, [isOpen, cybsSession]);
+  useEffect(() => {
+    if (step !== "cardform" || !cybsSession || cybsRun.current === cybsSession.txnId) return;
+    const run = cybsSession.txnId;
+    cybsRun.current = run;
+    const alive = () => cybsRun.current === run;
+    (async () => {
+      let token;
+      try {
+        token = await showCybersourceCheckout(cybsSession.captureContext, {
+          paymentSelection: `#${CYBS_SELECTION}`, paymentScreen: `#${CYBS_SCREEN}`,
+        });
+      } catch (err) {
+        if (!alive()) return;
+        setMessage(cybersourceErrorText(err));
+        setStep("failed");
+        return;
+      }
+      if (!alive()) return;
+      setStep("waiting");
+      const { status, error } = await provider.completeCybersource({ txnId: run, token, email });
+      if (!alive()) return;
+      const s = normalizeStatus(status);
+      if (s === "paid") {
+        setStep("success");
+        onSuccess?.({ method: "cybersource", ref: run });
+      } else {
+        setMessage(error || (s === "pending"
+          ? "Your payment is under review. Access opens once it is approved."
+          : "The payment was declined. No money was taken."));
+        setStep("failed");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, cybsSession]);
+
   const chooseMethod = (key) => { setMethod(key); setMessage(""); setStep("details"); };
-  const backToMethods = () => { stopPolling(); setMethod(null); setMessage(""); setStep("method"); };
+  const backToMethods = () => { stopPolling(); setMethod(null); setMessage(""); setCybsSession(null); setStep("method"); };
 
   // Pendant l'attente, un clic hors du modal ne doit pas tout annuler.
   const handleDialogClose = () => { if (step !== "waiting") onClose?.(); };
 
-  const stepIndex = { method: 0, details: 1, waiting: 2, success: 3, failed: 2 }[step];
+  const stepIndex = { method: 0, details: 1, cardform: 2, waiting: 2, success: 3, failed: 2 }[step];
   const phoneValid = phone.replace(/\D/g, "").length >= 9;
 
   // ── Rendu ───────────────────────────────────────────────────────────────
@@ -455,25 +564,62 @@ export default function PaymentModal({
               </form>
             )}
 
-            {/* ── 2c. Google Pay (test) ───────────────────────────────── */}
-            {step === "details" && method === "googlepay" && (
-              <div className="space-y-4">
+            {/* ── 2c. Carte Cybersource (toutes devises) ──────────────── */}
+            {step === "details" && method === "cybersource" && (
+              <form onSubmit={startCybersource} className="space-y-4">
                 <BackLink onClick={backToMethods} />
-                <p className="text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  🧪 <strong>Test mode.</strong> Google Pay needs a merchant account and a payment
-                  gateway before it can take real payments. This button uses Google&apos;s sandbox
-                  and won&apos;t charge anyone.
+                {cybs?.test_mode && (
+                  <p className="text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    🧪 <strong>Test mode</strong> (admins only): use a Cybersource test card such as
+                    4111 1111 1111 1111. No real card is charged.
+                  </p>
+                )}
+                <HowItWorks steps={[
+                  "Choose the currency you want to pay in.",
+                  "Tap “Continue” — the secure card form appears here.",
+                  "Enter your card: this page confirms automatically.",
+                ]} />
+                <Field label="Currency" hint={prices[cybsCurrency] == null && cybsAmount != null ? "Converted at today's exchange rate." : null}>
+                  <select className={inputCls} value={cybsCurrency} disabled={busy}
+                    onChange={(e) => setCybsCurrency(e.target.value)}>
+                    {(cybs?.currencies || []).map((c) => <option key={c} value={c}>{CURRENCY_LABELS[c] || c}</option>)}
+                  </select>
+                </Field>
+                {!lockPhone && (
+                  <Field label="Phone number">
+                    <input type="tel" className={inputCls} value={phone} required
+                      placeholder="+256XXXXXXXXX" disabled={busy}
+                      onChange={(e) => setPhone(e.target.value)} />
+                  </Field>
+                )}
+                <Field label="Email (optional)" hint="For your payment receipt.">
+                  <input type="email" className={inputCls} value={email} placeholder="you@email.com"
+                    disabled={busy} onChange={(e) => setEmail(e.target.value)} />
+                </Field>
+                {cybsQuote?.error && cybsQuote.currency === cybsCurrency && (
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">
+                    No price is available in {cybsCurrency} right now. Please choose another currency.
+                  </p>
+                )}
+                {message && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">{message}</p>}
+                <button type="submit" disabled={busy || cybsAmount == null || (!lockPhone && !phone)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
+                  {busy ? <><Spinner /> Preparing secure form…</>
+                    : cybsAmount == null ? <><Spinner /> Loading price…</>
+                      : <><Icon d={LOCK} className="w-5 h-5" /> Continue · {formatAmount(cybsAmount, cybsCurrency)}</>}
+                </button>
+                <p className="text-xs text-gray-400 text-center">Secure card payment powered by Cybersource (Visa)</p>
+              </form>
+            )}
+
+            {step === "cardform" && (
+              <div className="space-y-3">
+                <BackLink onClick={backToMethods} />
+                <p className="text-sm text-gray-600">
+                  Enter your card details below. You pay <strong>{formatAmount(cybsAmount ?? 0, cybsCurrency)}</strong>.
                 </p>
-                <GooglePayButton
-                  amount={prices[currency]}
-                  currency={currency}
-                  disabled={prices[currency] == null}
-                  onTestToken={(paymentData) => {
-                    console.log("[GooglePay TEST] paymentData", paymentData);
-                    setMessage("🧪 Google Pay test token received — no real payment was processed.");
-                  }}
-                />
-                {message && <p className="text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg p-2">{message}</p>}
+                <div id={CYBS_SELECTION} />
+                <div id={CYBS_SCREEN} className="min-h-[120px]" />
               </div>
             )}
 
@@ -483,7 +629,12 @@ export default function PaymentModal({
                 <div className="mx-auto w-14 h-14 rounded-full bg-green-50 text-green-600 flex items-center justify-center">
                   <Spinner className="h-7 w-7" />
                 </div>
-                {method === "mobile" ? (
+                {method === "cybersource" ? (
+                  <>
+                    <p className="font-semibold text-gray-900">Confirming your payment…</p>
+                    <p className="text-sm text-gray-600">This only takes a few seconds. Please don&apos;t close this window.</p>
+                  </>
+                ) : method === "mobile" ? (
                   <>
                     <p className="font-semibold text-gray-900">Check your phone</p>
                     <p className="text-sm text-gray-600">

@@ -53,6 +53,7 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
       items: [
         { label: "Forest Data",  href: "/forestpage",  Icon: GiForestCamp },
         { label: "Tree Manager", href: "/treemanager", Icon: FaTree },
+        ...(isAdmin ? [{ label: "Forest Calibration", href: "/forestcalibration", Icon: LuTreePine }] : []),
       ],
     },
     {
@@ -154,6 +155,7 @@ const buildMenus = (isAdmin, role, permissions = {}) => {
         { label: "Users",         href: "/usermanager",     Icon: MdManageAccounts },
         { label: "Features",      href: "/featuresManager", Icon: TbTag },
         { label: "Crop calibration", href: "/cropcalibration", Icon: TbPlant2 },
+        { label: "Forest calibration", href: "/forestcalibration", Icon: LuTreePine },
         { label: "Agents export", href: "/agentexport",     Icon: MdManageAccounts },
       ],
     },
