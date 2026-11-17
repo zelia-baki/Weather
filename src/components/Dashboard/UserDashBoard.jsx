@@ -105,73 +105,19 @@ export default function Dashboard() {
       : `${areaInSquareMeters.toFixed(0)} m²`;
   };
 
+  // Fermes + forêts : un seul COUNT côté serveur (avant : une requête par page
+  // de 6 fermes, soit ~9 000 requêtes avec 54 000 fermes).
   useEffect(() => {
-    const fetchFarmerStats = async () => {
-      try {
-        const response = await axiosInstance.get('/api/farm/?page=1');
-        let totalFarmers = 0;
-        if (response.data.total) {
-          totalFarmers = response.data.total;
-        } else if (response.data.total_pages && response.data.farms) {
-          const totalPages = response.data.total_pages;
-          if (totalPages === 1) {
-            totalFarmers = response.data.farms.length;
-          } else {
-            const allPagesPromises = [];
-            for (let page = 1; page <= totalPages; page++) {
-              allPagesPromises.push(axiosInstance.get(`/api/farm/?page=${page}`));
-            }
-            const allPages = await Promise.all(allPagesPromises);
-            totalFarmers = allPages.reduce((total, pageResponse) => {
-              return total + (pageResponse.data.farms ? pageResponse.data.farms.length : 0);
-            }, 0);
-          }
-        } else {
-          totalFarmers = response.data.farms ? response.data.farms.length : 0;
-        }
-        setFarmerStats({ totalFarmers, loading: false });
-      } catch (error) {
-        console.error('Error fetching farmer stats:', error);
+    axiosInstance.get('/api/dashboard/entities/count')
+      .then(({ data }) => {
+        setFarmerStats({ totalFarmers: data.farms ?? 0, loading: false });
+        setForestStats({ totalForests: data.forests ?? 0, loading: false });
+      })
+      .catch((error) => {
+        console.error('Error fetching farm/forest counts:', error);
         setFarmerStats({ totalFarmers: 0, loading: false });
-      }
-    };
-    fetchFarmerStats();
-  }, []);
-
-  // ===============================
-  // FETCH FOREST STATS
-  // ===============================
-  useEffect(() => {
-    const fetchForestStats = async () => {
-      try {
-        const response = await axiosInstance.get('/api/forest/?page=1');
-        let totalForests = 0;
-        if (response.data.total) {
-          totalForests = response.data.total;
-        } else if (response.data.total_pages && response.data.forests) {
-          const totalPages = response.data.total_pages;
-          if (totalPages === 1) {
-            totalForests = response.data.forests.length;
-          } else {
-            const allPagesPromises = [];
-            for (let page = 1; page <= totalPages; page++) {
-              allPagesPromises.push(axiosInstance.get(`/api/forest/?page=${page}`));
-            }
-            const allPages = await Promise.all(allPagesPromises);
-            totalForests = allPages.reduce((total, pageResponse) => {
-              return total + (pageResponse.data.forests ? pageResponse.data.forests.length : 0);
-            }, 0);
-          }
-        } else {
-          totalForests = response.data.forests ? response.data.forests.length : 0;
-        }
-        setForestStats({ totalForests, loading: false });
-      } catch (error) {
-        console.error('Error fetching forest stats:', error);
         setForestStats({ totalForests: 0, loading: false });
-      }
-    };
-    fetchForestStats();
+      });
   }, []);
 
   // ===============================

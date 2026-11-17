@@ -2,11 +2,15 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import axiosInstance from "../../axiosInstance";
-import * as turf from "@turf/turf";
 import Swal from "sweetalert2";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+
+// Avec 50 000+ fermes, on ne charge plus tous les points d'un coup :
+//  - vue large  : un point par ferme (centroïde), regroupés en clusters (couche GPU)
+//  - vue zoomée : contours des seules fermes visibles, chargés pour la zone affichée
+const POLY_MIN_ZOOM = 11;
 
 const COLORS = [
   "#22c55e","#3b82f6","#f59e0b","#ef4444","#8b5cf6",
@@ -19,32 +23,20 @@ const MAP_STYLES = [
   { id: "outdoors",          label: "Terrain",   url: "mapbox://styles/mapbox/outdoors-v12" },
 ];
 
-const createFarmMarkerEl = (color) => {
-  const el = document.createElement("div");
-  el.style.cssText = "cursor:pointer;";
-  el.innerHTML = `
-    <svg width="32" height="40" viewBox="0 0 32 40" fill="none"
-         xmlns="http://www.w3.org/2000/svg"
-         style="filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));transition:transform .15s ease">
-      <path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 24 16 24S32 28 32 16C32 7.16 24.84 0 16 0Z"
-            fill="${color}"/>
-      <path d="M9 17L16 11L23 17" stroke="white" stroke-width="1.8"
-            stroke-linejoin="round" fill="none" stroke-linecap="round"/>
-      <rect x="11" y="17" width="10" height="7" rx="1"
-            fill="rgba(255,255,255,0.25)" stroke="white" stroke-width="1.5"/>
-      <rect x="14.5" y="20.5" width="3" height="3.5" rx="0.5"
-            fill="rgba(255,255,255,0.9)"/>
-    </svg>
-  `;
-  el.addEventListener("mouseenter", () => {
-    const svg = el.querySelector("svg");
-    if (svg) svg.style.transform = "scale(1.25) translateY(-3px)";
-  });
-  el.addEventListener("mouseleave", () => {
-    const svg = el.querySelector("svg");
-    if (svg) svg.style.transform = "";
-  });
-  return el;
+const EMPTY = { type: "FeatureCollection", features: [] };
+
+const colorFor = (ownerId) => {
+  let h = 0;
+  for (const ch of String(ownerId)) h = (h * 31 + ch.charCodeAt(0)) | 0;
+  return COLORS[Math.abs(h) % COLORS.length];
+};
+
+const escapeHtml = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const formatHa = (m2) => {
+  const ha = m2 / 10000;
+  return ha >= 1000 ? `${Math.round(ha).toLocaleString()} ha` : `${ha.toFixed(2)} ha`;
 };
 
 const loadingPopupHTML = () => `
@@ -63,26 +55,26 @@ const farmPopupHTML = (farm, ownerId, areaHa, color) => `
       <div style="width:34px;height:34px;border-radius:50%;background:${color};
            display:flex;align-items:center;justify-content:center;
            color:white;font-weight:700;font-size:14px;flex-shrink:0">
-        ${(farm?.name || "F")[0].toUpperCase()}
+        ${escapeHtml((farm?.name || "F")[0].toUpperCase())}
       </div>
       <div>
         <p style="margin:0;font-weight:700;color:#111827;font-size:13px;line-height:1.2">
-          ${farm?.name || "Farm #" + ownerId}
+          ${escapeHtml(farm?.name || "Farm #" + ownerId)}
         </p>
-        <p style="margin:0;font-size:11px;color:#9ca3af;font-family:monospace">${ownerId}</p>
+        <p style="margin:0;font-size:11px;color:#9ca3af;font-family:monospace">${escapeHtml(ownerId)}</p>
       </div>
     </div>
     <table style="width:100%;font-size:12px;border-collapse:collapse">
-      ${farm?.subcounty ? `<tr><td style="color:#6b7280;padding:3px 0">Country</td><td style="font-weight:600;color:#111827;text-align:right">${farm.subcounty}</td></tr>` : ""}
-      ${farm?.gender    ? `<tr><td style="color:#6b7280;padding:3px 0">Gender</td><td style="font-weight:600;color:#111827;text-align:right">${farm.gender}</td></tr>` : ""}
-      ${farm?.phonenumber1||farm?.phonenumber ? `<tr><td style="color:#6b7280;padding:3px 0">Phone</td><td style="font-weight:600;color:#111827;text-align:right">${farm?.phonenumber1||farm?.phonenumber}</td></tr>` : ""}
+      ${farm?.subcounty ? `<tr><td style="color:#6b7280;padding:3px 0">Subcounty</td><td style="font-weight:600;color:#111827;text-align:right">${escapeHtml(farm.subcounty)}</td></tr>` : ""}
+      ${farm?.gender    ? `<tr><td style="color:#6b7280;padding:3px 0">Gender</td><td style="font-weight:600;color:#111827;text-align:right">${escapeHtml(farm.gender)}</td></tr>` : ""}
+      ${farm?.phonenumber1||farm?.phonenumber ? `<tr><td style="color:#6b7280;padding:3px 0">Phone</td><td style="font-weight:600;color:#111827;text-align:right">${escapeHtml(farm?.phonenumber1||farm?.phonenumber)}</td></tr>` : ""}
       <tr><td style="color:#6b7280;padding:3px 0">Area</td>
           <td style="text-align:right">
             <span style="background:#dcfce7;color:#16a34a;padding:1px 8px;
                    border-radius:99px;font-size:11px;font-weight:600">${areaHa} ha</span>
           </td></tr>
     </table>
-    <button class="mapbox-delete-btn" data-owner-id="${ownerId}"
+    <button class="mapbox-delete-btn" data-owner-id="${escapeHtml(ownerId)}"
       style="margin-top:10px;width:100%;padding:7px;background:#fee2e2;color:#dc2626;
              border:1px solid #fecaca;border-radius:8px;cursor:pointer;
              font-size:11px;font-weight:600;font-family:inherit"
@@ -104,179 +96,233 @@ const Stat = ({ label, value, sub }) => (
   </div>
 );
 
+// Couches (re)créées après chaque chargement de style (setStyle efface tout).
+const addLayers = (map, farmsData, polysData) => {
+  if (!map.getSource("farms")) {
+    map.addSource("farms", {
+      type: "geojson", data: farmsData,
+      cluster: true, clusterMaxZoom: POLY_MIN_ZOOM, clusterRadius: 50,
+    });
+  }
+  if (!map.getSource("polygons")) {
+    map.addSource("polygons", { type: "geojson", data: polysData, promoteId: "owner_id" });
+  }
+  if (map.getLayer("farm-clusters")) return;
+
+  map.addLayer({ id: "polygons-fill", type: "fill", source: "polygons", minzoom: POLY_MIN_ZOOM,
+    paint: { "fill-color": ["get", "color"],
+             "fill-opacity": ["case", ["boolean", ["feature-state", "hover"], false], 0.55, 0.3] } });
+  map.addLayer({ id: "polygons-outline", type: "line", source: "polygons", minzoom: POLY_MIN_ZOOM,
+    paint: { "line-color": ["get", "color"], "line-width": 2, "line-opacity": 0.9 } });
+
+  map.addLayer({ id: "farm-clusters", type: "circle", source: "farms", filter: ["has", "point_count"],
+    paint: {
+      "circle-color": ["step", ["get", "point_count"], "#22c55e", 100, "#eab308", 1000, "#f97316", 5000, "#ef4444"],
+      "circle-radius": ["step", ["get", "point_count"], 16, 100, 22, 1000, 30, 5000, 38],
+      "circle-opacity": 0.85,
+      "circle-stroke-width": 2, "circle-stroke-color": "rgba(255,255,255,0.7)",
+    } });
+  map.addLayer({ id: "farm-cluster-count", type: "symbol", source: "farms", filter: ["has", "point_count"],
+    layout: { "text-field": ["get", "point_count_abbreviated"],
+              "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"], "text-size": 12 },
+    paint: { "text-color": "#fff" } });
+  map.addLayer({ id: "farm-points", type: "circle", source: "farms", filter: ["!", ["has", "point_count"]],
+    paint: {
+      "circle-color": ["get", "color"],
+      "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 4, 14, 6],
+      "circle-stroke-width": 1.5, "circle-stroke-color": "#fff",
+      // une fois les contours affichés, le point devient discret
+      "circle-opacity": ["interpolate", ["linear"], ["zoom"], POLY_MIN_ZOOM + 1, 1, POLY_MIN_ZOOM + 3, 0.35],
+      "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], POLY_MIN_ZOOM + 1, 1, POLY_MIN_ZOOM + 3, 0.35],
+    } });
+};
+
 // =============================================================================
 const MapViewAll = () => {
   const mapContainerRef = useRef();
   const mapRef          = useRef();
-  const markersRef      = useRef([]);
   const boundsRef       = useRef(null);
+  const farmsRef        = useRef(EMPTY);      // GeoJSON des centroïdes
+  const polysRef        = useRef(EMPTY);      // GeoJSON des contours visibles
+  const areaRef         = useRef(new Map());  // owner_id → m²
+  const polyAbortRef    = useRef(null);
+  const polyTimerRef    = useRef(null);
+  const hoverRef        = useRef(null);
   const location        = useLocation();
   const owner_type      = location.state?.owner_type || "farmer";
 
-  const [polygons,     setPolygons]     = useState([]);
+  const [count,        setCount]        = useState(0);
   const [totalArea,    setTotalArea]    = useState(0);
   const [zoom,         setZoom]         = useState("5.00");
   const [styleId,      setStyleId]      = useState("satellite");
   const [notification, setNotification] = useState(null);
   const [loading,      setLoading]      = useState(true);
+  const [polyState,    setPolyState]    = useState({ loading: false, tooMany: false, shown: 0 });
   const [panelOpen,    setPanelOpen]    = useState(true);
 
-  useEffect(() => {
-    if (mapRef.current) return;
-    mapRef.current = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: MAP_STYLES[0].url,
-      center: [32.5825, 0.3476],
-      zoom: 5,
-    });
-    mapRef.current.addControl(new mapboxgl.NavigationControl(), "bottom-right");
-    mapRef.current.addControl(new mapboxgl.ScaleControl({ unit: "metric" }), "bottom-left");
-    mapRef.current.addControl(new mapboxgl.FullscreenControl(), "bottom-right");
-    mapRef.current.on("move", () => setZoom(mapRef.current.getZoom().toFixed(2)));
-  }, []);
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const s = MAP_STYLES.find(m => m.id === styleId);
-    if (!s) return;
-    mapRef.current.setStyle(s.url);
-    mapRef.current.once("styledata", () => {
-      if (polygons.length > 0) renderOnMap(polygons);
-    });
-  }, [styleId]); // eslint-disable-line
-
-  const fetchPolygons = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await axiosInstance.get(`/api/points/getallbyownertype/${owner_type}`);
-      if (!r.data.polygons?.length) {
-        setNotification({ type: "info", message: "No polygons found for this owner type." });
-        setLoading(false);
+  // ── Contours de la zone visible ────────────────────────────────────────────
+  const loadVisiblePolygons = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    clearTimeout(polyTimerRef.current);
+    polyTimerRef.current = setTimeout(async () => {
+      if (map.getZoom() < POLY_MIN_ZOOM) {
+        polyAbortRef.current?.abort();
+        setPolyState({ loading: false, tooMany: false, shown: 0 });
         return;
       }
-      setPolygons(r.data.polygons);
-      setNotification(null);
+      const b = map.getBounds();
+      // marge : les fermes dont le centre est juste hors cadre restent dessinées
+      const dx = (b.getEast() - b.getWest()) * 0.15, dy = (b.getNorth() - b.getSouth()) * 0.15;
+      const bbox = [b.getWest() - dx, b.getSouth() - dy, b.getEast() + dx, b.getNorth() + dy]
+        .map(v => v.toFixed(5)).join(",");
+      polyAbortRef.current?.abort();
+      const ctrl = new AbortController();
+      polyAbortRef.current = ctrl;
+      setPolyState(s => ({ ...s, loading: true }));
+      try {
+        const r = await axiosInstance.get(`/api/points/map/${owner_type}/polygons`,
+          { params: { bbox }, signal: ctrl.signal });
+        if (r.data.too_many) {
+          setPolyState({ loading: false, tooMany: true, shown: 0 });
+          return;
+        }
+        r.data.features.forEach(f => { f.properties.color = colorFor(f.properties.owner_id); });
+        polysRef.current = { type: "FeatureCollection", features: r.data.features };
+        map.getSource("polygons")?.setData(polysRef.current);
+        setPolyState({ loading: false, tooMany: false, shown: r.data.features.length });
+      } catch (e) {
+        if (e?.name !== "CanceledError" && e?.code !== "ERR_CANCELED")
+          setPolyState({ loading: false, tooMany: false, shown: 0 });
+      }
+    }, 250);
+  }, [owner_type]);
+
+  // ── Centroïdes (une requête légère, en cache côté serveur) ─────────────────
+  const fetchFarms = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await axiosInstance.get(`/api/points/map/${owner_type}/centroids`);
+      if (!data.count) {
+        setNotification({ type: "info", message: "No polygons found for this owner type." });
+        farmsRef.current = EMPTY;
+      } else {
+        setNotification(null);
+        const areas = new Map();
+        let w = 180, s = 90, e = -180, n = -90;
+        const features = data.ids.map((id, i) => {
+          const [lon, lat] = data.coords[i];
+          areas.set(id, data.areas[i]);
+          if (lon < w) w = lon; if (lon > e) e = lon;
+          if (lat < s) s = lat; if (lat > n) n = lat;
+          return { type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] },
+                   properties: { owner_id: id, color: colorFor(id) } };
+        });
+        areaRef.current = areas;
+        farmsRef.current = { type: "FeatureCollection", features };
+        boundsRef.current = new mapboxgl.LngLatBounds([w, s], [e, n]);
+        mapRef.current?.fitBounds(boundsRef.current, { padding: 60, maxZoom: 14, duration: 0 });
+      }
+      setCount(data.count || 0);
+      setTotalArea(data.total_area_m2 || 0);
+      mapRef.current?.getSource("farms")?.setData(farmsRef.current);
+      loadVisiblePolygons();
     } catch {
       setNotification({ type: "error", message: "Failed to load polygons." });
     } finally {
       setLoading(false);
     }
-  }, [owner_type]);
+  }, [owner_type, loadVisiblePolygons]);
 
-  useEffect(() => { fetchPolygons(); }, [fetchPolygons]);
+  // ── Carte ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (mapRef.current) return;
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: MAP_STYLES[0].url,
+      center: [32.5825, 0.3476],
+      zoom: 5,
+    });
+    mapRef.current = map;
+    map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
+    map.addControl(new mapboxgl.ScaleControl({ unit: "metric" }), "bottom-left");
+    map.addControl(new mapboxgl.FullscreenControl(), "bottom-right");
 
-  const renderOnMap = useCallback((polys) => {
-    if (!mapRef.current || polys.length === 0) return;
+    map.on("style.load", () => addLayers(map, farmsRef.current, polysRef.current));
+    map.on("moveend", () => { setZoom(map.getZoom().toFixed(2)); loadVisiblePolygons(); });
 
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-
-    const bounds  = new mapboxgl.LngLatBounds();
-    let   totalM2 = 0;
-
-    const features = polys.map((polygon, index) => {
-      const rawCoords = polygon.points.map(p => [p.longitude, p.latitude]);
-
-      // ── KEY FIX: ensure ring is closed before creating GeoJSON ──────────
-      const coordinates = [...rawCoords];
-      if (coordinates.length >= 3) {
-        const [fx, fy] = coordinates[0];
-        const [lx, ly] = coordinates[coordinates.length - 1];
-        if (fx !== lx || fy !== ly) coordinates.push([fx, fy]);
-      }
-
-      const polygonGeoJSON = {
-        type: "Feature",
-        geometry: { type: "Polygon", coordinates: [coordinates] },
-        properties: {},
-      };
-
-      const area     = Math.round(turf.area(polygonGeoJSON) * 100) / 100;
-      const centroid = turf.centroid(polygonGeoJSON);
-      const color    = COLORS[index % COLORS.length];
-
-      totalM2 += area;
-      coordinates.forEach(coord => bounds.extend(coord));
-
-      const lngLat  = centroid.geometry.coordinates;
-      const ownerId = polygon.owner_id;
-      const areaHa  = (area / 10000).toFixed(4);
-
-      const markerEl = createFarmMarkerEl(color);
-      markerEl.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        const popup = new mapboxgl.Popup({
-          maxWidth: "270px", className: "farm-popup", offset: [0, -36],
-        })
-          .setLngLat(lngLat)
-          .setHTML(loadingPopupHTML())
-          .addTo(mapRef.current);
-
-        try {
-          const res  = await axiosInstance.get(`/api/farm/${ownerId}`);
-          const farm = res.data?.data || res.data || null;
-          popup.setHTML(farmPopupHTML(farm, ownerId, areaHa, color));
-        } catch {
-          popup.setHTML(farmPopupHTML(null, ownerId, areaHa, color));
-        }
+    // Cluster : zoom jusqu'à ce qu'il s'ouvre
+    map.on("click", "farm-clusters", (e) => {
+      const f = e.features[0];
+      map.getSource("farms").getClusterExpansionZoom(f.properties.cluster_id, (err, z) => {
+        if (!err) map.easeTo({ center: f.geometry.coordinates, zoom: z + 0.5 });
       });
-
-      const marker = new mapboxgl.Marker({ element: markerEl, anchor: "bottom" })
-        .setLngLat(lngLat)
-        .addTo(mapRef.current);
-      markersRef.current.push(marker);
-
-      return {
-        type: "Feature",
-        geometry: { type: "Polygon", coordinates: [coordinates] },
-        properties: { id: index, owner_type: polygon.owner_type, owner_id: ownerId, area, color },
-      };
     });
 
-    setTotalArea((totalM2 / 10000).toFixed(2));
+    // Ferme (point ou contour) : fiche
+    const openFarm = async (e) => {
+      const ownerId = e.features[0].properties.owner_id;
+      const lngLat  = e.features[0].geometry.type === "Point" ? e.features[0].geometry.coordinates : e.lngLat;
+      const areaHa  = ((areaRef.current.get(ownerId) || 0) / 10000).toFixed(4);
+      const color   = colorFor(ownerId);
+      const popup = new mapboxgl.Popup({ maxWidth: "270px", className: "farm-popup", offset: 10 })
+        .setLngLat(lngLat).setHTML(loadingPopupHTML()).addTo(map);
+      try {
+        const res  = await axiosInstance.get(`/api/farm/${ownerId}`);
+        popup.setHTML(farmPopupHTML(res.data?.data || res.data || null, ownerId, areaHa, color));
+      } catch {
+        popup.setHTML(farmPopupHTML(null, ownerId, areaHa, color));
+      }
+    };
+    map.on("click", "farm-points", openFarm);
+    map.on("click", "polygons-fill", (e) => {
+      // un point déjà cliqué au même endroit a priorité
+      if (map.queryRenderedFeatures(e.point, { layers: ["farm-points", "farm-clusters"] }).length) return;
+      openFarm(e);
+    });
 
-    const geojson = { type: "FeatureCollection", features };
-    const src     = mapRef.current.getSource("polygons");
-    if (src) {
-      src.setData(geojson);
-    } else {
-      mapRef.current.addSource("polygons", { type: "geojson", data: geojson });
-      mapRef.current.addLayer({ id: "polygons-fill", type: "fill", source: "polygons",
-        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.3 } });
-      mapRef.current.addLayer({ id: "polygons-outline", type: "line", source: "polygons",
-        paint: { "line-color": ["get", "color"], "line-width": 2, "line-opacity": 0.9 } });
-      mapRef.current.addLayer({ id: "polygons-hover", type: "fill", source: "polygons",
-        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.55 },
-        filter: ["==", "id", -1] });
-      mapRef.current.on("mouseenter", "polygons-fill", (e) => {
-        mapRef.current.getCanvas().style.cursor = "pointer";
-        mapRef.current.setFilter("polygons-hover", ["==", "id", e.features[0].properties.id]);
-      });
-      mapRef.current.on("mouseleave", "polygons-fill", () => {
-        mapRef.current.getCanvas().style.cursor = "";
-        mapRef.current.setFilter("polygons-hover", ["==", "id", -1]);
-      });
+    for (const layer of ["farm-clusters", "farm-points", "polygons-fill"]) {
+      map.on("mouseenter", layer, () => { map.getCanvas().style.cursor = "pointer"; });
+      map.on("mouseleave", layer, () => { map.getCanvas().style.cursor = ""; });
     }
+    map.on("mousemove", "polygons-fill", (e) => {
+      const id = e.features[0]?.id;
+      if (hoverRef.current !== null && hoverRef.current !== id)
+        map.setFeatureState({ source: "polygons", id: hoverRef.current }, { hover: false });
+      hoverRef.current = id ?? null;
+      if (id !== undefined) map.setFeatureState({ source: "polygons", id }, { hover: true });
+    });
+    map.on("mouseleave", "polygons-fill", () => {
+      if (hoverRef.current !== null)
+        map.setFeatureState({ source: "polygons", id: hoverRef.current }, { hover: false });
+      hoverRef.current = null;
+    });
 
-    boundsRef.current = bounds;
-    mapRef.current.fitBounds(bounds, { padding: 60, maxZoom: 14 });
+    return () => {
+      clearTimeout(polyTimerRef.current);
+      polyAbortRef.current?.abort();
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []); // eslint-disable-line
 
-  }, []);
+  useEffect(() => { fetchFarms(); }, [fetchFarms]);
 
   useEffect(() => {
-    if (!mapRef.current || polygons.length === 0) return;
-    const run = () => renderOnMap(polygons);
-    if (mapRef.current.isStyleLoaded()) run();
-    else mapRef.current.on("load", run);
-  }, [polygons, renderOnMap]);
+    if (!mapRef.current) return;
+    const s = MAP_STYLES.find(m => m.id === styleId);
+    // diff:false → style rechargé entièrement, « style.load » recrée nos couches
+    if (s && mapRef.current.isStyleLoaded()) mapRef.current.setStyle(s.url, { diff: false });
+  }, [styleId]);
 
+  // ── Suppression d'un contour ───────────────────────────────────────────────
   useEffect(() => {
     const handleClick = async (e) => {
       if (!e.target.classList.contains("mapbox-delete-btn")) return;
       const ownerId = e.target.getAttribute("data-owner-id");
       const result  = await Swal.fire({
         title: "Delete polygon?",
-        html: `<p style="color:#6b7280;font-size:14px">Remove boundary for <strong>${owner_type} #${ownerId}</strong>?</p>`,
+        html: `<p style="color:#6b7280;font-size:14px">Remove boundary for <strong>${escapeHtml(owner_type)} #${escapeHtml(ownerId)}</strong>?</p>`,
         icon: "warning", showCancelButton: true, confirmButtonColor: "#ef4444",
         confirmButtonText: "Yes, delete", customClass: { popup: "rounded-2xl" },
       });
@@ -284,8 +330,15 @@ const MapViewAll = () => {
       try {
         await axiosInstance.delete(`/api/points/owner/${ownerId}`);
         document.querySelectorAll(".mapboxgl-popup").forEach(p => p.remove());
+        // retrait local immédiat (le cache serveur se reconstruit de son côté)
+        const keep = f => f.properties.owner_id !== ownerId;
+        farmsRef.current = { ...farmsRef.current, features: farmsRef.current.features.filter(keep) };
+        polysRef.current = { ...polysRef.current, features: polysRef.current.features.filter(keep) };
+        mapRef.current?.getSource("farms")?.setData(farmsRef.current);
+        mapRef.current?.getSource("polygons")?.setData(polysRef.current);
+        setCount(c => c - 1);
+        setTotalArea(a => a - (areaRef.current.get(ownerId) || 0));
         Swal.fire({ icon: "success", title: "Deleted!", timer: 1500, showConfirmButton: false });
-        await fetchPolygons();
       } catch {
         Swal.fire({ icon: "error", title: "Error", text: "Failed to delete.", customClass: { popup: "rounded-2xl" } });
       }
@@ -293,7 +346,7 @@ const MapViewAll = () => {
     const el = mapContainerRef.current;
     if (el) el.addEventListener("click", handleClick);
     return () => { if (el) el.removeEventListener("click", handleClick); };
-  }, [owner_type, fetchPolygons]);
+  }, [owner_type]);
 
   useEffect(() => {
     if (!notification) return;
@@ -306,6 +359,13 @@ const MapViewAll = () => {
     if (!mapRef.current || !boundsRef.current) return;
     mapRef.current.fitBounds(boundsRef.current, { padding: 60, maxZoom: 14, duration: 900 });
   };
+
+  const zoomNum = parseFloat(zoom);
+  const hint = loading ? null
+    : zoomNum < POLY_MIN_ZOOM ? `Zoom in to see ${typeLabel.toLowerCase()} boundaries`
+    : polyState.tooMany ? `Too many ${typeLabel.toLowerCase()}s in view — zoom in to see boundaries`
+    : polyState.loading ? "Loading boundaries…"
+    : null;
 
   return (
     <div style={{ position: "relative", width: "100%", height: "calc(100vh - 60px)",
@@ -334,7 +394,7 @@ const MapViewAll = () => {
               borderTopColor: "#22c55e", borderRadius: "50%",
               animation: "pspin .7s linear infinite", margin: "0 auto 12px" }}/>
             <p style={{ color: "#e2f5e8", fontSize: 13, fontWeight: 500, margin: 0 }}>
-              Loading polygons…
+              Loading {typeLabel.toLowerCase()}s…
             </p>
           </div>
         </div>
@@ -380,7 +440,7 @@ const MapViewAll = () => {
             <div style={{ width: 20, height: 20, borderRadius: "50%",
               background: "rgba(34,197,94,0.3)", border: "1px solid rgba(34,197,94,0.5)" }}/>
             <span style={{ fontSize: 11, fontWeight: 700, color: "#4ade80",
-              fontFamily: "monospace" }}>{polygons.length}</span>
+              fontFamily: "monospace" }}>{count.toLocaleString()}</span>
           </div>
         )}
 
@@ -402,10 +462,10 @@ const MapViewAll = () => {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <Stat label="Polygons"   value={polygons.length}    sub={`${typeLabel}s mapped`}/>
-              <Stat label="Total Area" value={`${totalArea} ha`}  sub="combined coverage"/>
-              <Stat label="Zoom"       value={zoom}               sub="current level"/>
-              <Stat label="Type"       value={typeLabel}          sub={owner_type}/>
+              <Stat label="Polygons"   value={count.toLocaleString()} sub={`${typeLabel}s mapped`}/>
+              <Stat label="Total Area" value={formatHa(totalArea)}    sub="combined coverage"/>
+              <Stat label="Zoom"       value={zoom}                   sub="current level"/>
+              <Stat label="In view"    value={polyState.shown.toLocaleString()} sub="boundaries drawn"/>
             </div>
 
             <div style={{ height: 1, background: "rgba(34,197,94,0.1)", margin: "14px 0 10px" }}/>
@@ -434,7 +494,7 @@ const MapViewAll = () => {
                   color: "#93c5fd", fontSize: 11, fontWeight: 600, fontFamily: "inherit" }}>
                 Zoom to All
               </button>
-              <button onClick={fetchPolygons}
+              <button onClick={fetchFarms}
                 style={{ flex: 1, padding: "8px 0", borderRadius: 8, cursor: "pointer",
                   background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)",
                   color: "#4ade80", fontSize: 11, fontWeight: 600, fontFamily: "inherit" }}>
@@ -444,38 +504,25 @@ const MapViewAll = () => {
 
             <p style={{ marginTop: 10, fontSize: 10, color: "rgba(255,255,255,0.3)",
               textAlign: "center", lineHeight: 1.4 }}>
-              Click a marker to view farm details
+              Click a cluster to zoom in, a {typeLabel.toLowerCase()} to view its details
             </p>
           </div>
         )}
       </div>
 
-      {polygons.length > 0 && !loading && (
+      {hint && (
         <div style={{ position: "absolute", bottom: 40, left: "50%",
           transform: "translateX(-50%)", zIndex: 20,
           background: "rgba(10,18,12,0.82)", backdropFilter: "blur(12px)",
           borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)",
-          padding: "8px 18px", display: "flex", alignItems: "center", gap: 12,
+          padding: "8px 18px", display: "flex", alignItems: "center", gap: 10,
           boxShadow: "0 4px 16px rgba(0,0,0,0.4)", animation: "fadeIn .4s ease",
-          maxWidth: "80vw" }}>
-          <div style={{ display: "flex", gap: 4 }}>
-            {polygons.slice(0, Math.min(8, polygons.length)).map((_, i) => (
-              <div key={i} style={{ width: 10, height: 10, borderRadius: "50%",
-                background: COLORS[i % COLORS.length],
-                border: "1px solid rgba(255,255,255,0.3)" }}/>
-            ))}
-            {polygons.length > 8 && (
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: "10px" }}>
-                +{polygons.length - 8}
-              </span>
-            )}
-          </div>
-          <div style={{ width: 1, height: 14, background: "rgba(255,255,255,0.15)" }}/>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>
-            <strong style={{ color: "#fff" }}>{polygons.length}</strong>{" "}
-            {typeLabel}{polygons.length !== 1 ? "s" : ""} ·{" "}
-            <strong style={{ color: "#4ade80" }}>{totalArea} ha</strong> total
-          </span>
+          maxWidth: "calc(100vw - 32px)", color: "rgba(255,255,255,0.8)", fontSize: 12 }}>
+          {polyState.loading && (
+            <div style={{ width: 12, height: 12, border: "2px solid rgba(255,255,255,0.2)",
+              borderTopColor: "#22c55e", borderRadius: "50%", animation: "pspin .7s linear infinite" }}/>
+          )}
+          {hint}
         </div>
       )}
     </div>

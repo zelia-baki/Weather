@@ -2,359 +2,214 @@ import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import axiosInstance from '../../axiosInstance';
-import * as turf from '@turf/turf';
 import 'mapbox-gl/dist/mapbox-gl.css';
+
+// Carte de synthèse du tableau de bord : un point par ferme/forêt (centroïde,
+// calculé et mis en cache côté serveur), regroupés en clusters. Les contours
+// complets ne sont plus téléchargés ici (50 000+ fermes = 1,2 M de points).
+
+const GLOW = ['#6366f1', '#a855f7', '#f87171', '#fbbf24'];
+
+const escapeHtml = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const MapboxExample = ({ ownerType = null, showControls = true, height = "100%", styleType = "dark" }) => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
+  const dataRef = useRef({ type: 'FeatureCollection', features: [] });
+  const boundsRef = useRef(null);
   const location = useLocation();
-  const popupRef = useRef(new mapboxgl.Popup({ closeButton: false, closeOnClick: false }));
-  
+
   const owner_type = ownerType || location.state?.owner_type || "farmer";
-  
+
   const [notification, setNotification] = useState(null);
-  const [mapProps, setMapProps] = useState({
-    center: [-32.5825, 0.3476],
-    zoom: 5,
-  });
-  const [polygons, setPolygons] = useState([]);
   const [totalArea, setTotalArea] = useState(0);
   const [polygonCount, setPolygonCount] = useState(0);
 
-  // Différents styles de map
-  const getMapStyle = () => {
-    switch(styleType) {
-      case 'dark':
-        return 'mapbox://styles/mapbox/dark-v11';
-      case 'satellite':
-        return 'mapbox://styles/mapbox/satellite-v9';
-      case 'light':
-        return 'mapbox://styles/mapbox/light-v11';
-      default:
-        return 'mapbox://styles/mapbox/dark-v11';
-    }
-  };
+  const mapStyle = {
+    dark: 'mapbox://styles/mapbox/dark-v11',
+    satellite: 'mapbox://styles/mapbox/satellite-v9',
+    light: 'mapbox://styles/mapbox/light-v11',
+  }[styleType] || 'mapbox://styles/mapbox/dark-v11';
 
+  // ── Carte + couches ────────────────────────────────────────────────────────
   useEffect(() => {
     mapboxgl.accessToken = 'pk.eyJ1IjoidHNpbWlqYWx5IiwiYSI6ImNsejdjNXpqdDA1ZzMybHM1YnU4aWpyaDcifQ.CSQsCZwMF2CYgE-idCz08Q';
 
-    if (!mapRef.current) {
-      mapRef.current = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: getMapStyle(),
-        center: mapProps.center,
-        zoom: mapProps.zoom,
-      });
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: mapStyle,
+      center: [32.5825, 0.3476],
+      zoom: 5,
+    });
+    mapRef.current = map;
 
-      mapRef.current.on('move', () => {
-        const center = mapRef.current.getCenter();
-        const zoom = mapRef.current.getZoom();
-        setMapProps({
-          center: [center.lng, center.lat],
-          zoom: zoom.toFixed(2),
-        });
+    map.on('load', () => {
+      map.addSource('entities', {
+        type: 'geojson', data: dataRef.current,
+        cluster: true, clusterMaxZoom: 12, clusterRadius: 45,
       });
+      map.addLayer({
+        id: 'entity-clusters-glow', type: 'circle', source: 'entities', filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': ['step', ['get', 'point_count'], GLOW[0], 100, GLOW[1], 1000, GLOW[2], 5000, GLOW[3]],
+          'circle-radius': ['step', ['get', 'point_count'], 24, 100, 30, 1000, 38, 5000, 46],
+          'circle-opacity': 0.18, 'circle-blur': 0.6,
+        },
+      });
+      map.addLayer({
+        id: 'entity-clusters', type: 'circle', source: 'entities', filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': ['step', ['get', 'point_count'], GLOW[0], 100, GLOW[1], 1000, GLOW[2], 5000, GLOW[3]],
+          'circle-radius': ['step', ['get', 'point_count'], 14, 100, 18, 1000, 24, 5000, 30],
+          'circle-opacity': 0.75,
+          'circle-stroke-width': 1.5, 'circle-stroke-color': 'rgba(255,255,255,0.6)',
+        },
+      });
+      map.addLayer({
+        id: 'entity-cluster-count', type: 'symbol', source: 'entities', filter: ['has', 'point_count'],
+        layout: {
+          'text-field': ['get', 'point_count_abbreviated'],
+          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'], 'text-size': 11,
+        },
+        paint: { 'text-color': '#fff' },
+      });
+      map.addLayer({
+        id: 'entity-points', type: 'circle', source: 'entities', filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': ['get', 'color'],
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 4, 15, 8],
+          'circle-opacity': 0.85, 'circle-blur': 0.2,
+          'circle-stroke-width': 1, 'circle-stroke-color': 'rgba(255,255,255,0.7)',
+        },
+      });
+      if (boundsRef.current) map.fitBounds(boundsRef.current, { padding: 50, duration: 0 });
+    });
+
+    map.on('click', 'entity-clusters', (e) => {
+      const f = e.features[0];
+      map.getSource('entities').getClusterExpansionZoom(f.properties.cluster_id, (err, z) => {
+        if (!err) map.easeTo({ center: f.geometry.coordinates, zoom: z + 0.5 });
+      });
+    });
+
+    map.on('click', 'entity-points', (e) => {
+      const p = e.features[0].properties;
+      const color = p.color;
+      const deleteBtn = showControls
+        ? `<button class="delete-btn" data-owner-id="${escapeHtml(p.owner_id)}"
+                   style="margin-top: 10px; padding: 8px 16px; background: linear-gradient(45deg, #ff0040, #ff4081);
+                          color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+             Delete Polygon
+           </button>`
+        : '';
+      new mapboxgl.Popup({ closeButton: true, closeOnClick: true, className: 'dark-popup' })
+        .setLngLat(e.features[0].geometry.coordinates)
+        .setHTML(`<div style="background: #1a1a1a; color: white; padding: 15px; border-radius: 8px; border: 1px solid ${color};">
+             <h3 style="color: ${color}; margin: 0 0 10px 0;">Owner Type: ${escapeHtml(owner_type)}</h3>
+             <p style="margin: 5px 0; color: #ccc;">Owner ID: ${escapeHtml(p.owner_id)}</p>
+             <p style="margin: 5px 0; color: #ccc;">Area: ${Number(p.area).toLocaleString()} m²</p>
+             ${deleteBtn}
+           </div>`)
+        .addTo(map);
+    });
+
+    for (const layer of ['entity-clusters', 'entity-points']) {
+      map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = ''; });
     }
 
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
+      map.remove();
+      mapRef.current = null;
     };
-  }, [styleType]);
+  }, [mapStyle, owner_type, showControls]);
 
-  useEffect(() => {
-    const fetchPolygons = async () => {
-      try {
-        const response = await axiosInstance.get(`/api/points/getallbyownertype/${owner_type}`);
-        const data = response.data;
-
-        if (!data.polygons || data.polygons.length === 0) {
-          if (showControls) {
-            setNotification({
-              type: "info",
-              message: "No polygons found.",
-            });
-          }
-          return;
-        }
-
-        setNotification(null);
-        setPolygons(data.polygons);
-        setPolygonCount(data.polygons.length);
-
-      } catch (error) {
-        console.error('Error fetching polygons:', error);
-        if (showControls) {
-          setNotification({
-            type: "error",
-            message: "Error loading polygons.",
-          });
-        }
+  // ── Données ────────────────────────────────────────────────────────────────
+  const loadData = async () => {
+    try {
+      const { data } = await axiosInstance.get(`/api/points/map/${owner_type}/centroids`);
+      if (!data.count) {
+        if (showControls) setNotification({ type: "info", message: "No polygons found." });
+        return;
       }
-    };
-
-    fetchPolygons();
-  }, [owner_type, showControls]);
-
-  // Fonction pour créer un hexagone
-  const createHexagon = (center, radius) => {
-    const points = [];
-    for (let i = 0; i < 6; i++) {
-      const angle = (i * 60) * Math.PI / 180;
-      const x = center[0] + radius * Math.cos(angle);
-      const y = center[1] + radius * Math.sin(angle);
-      points.push([x, y]);
-    }
-    points.push(points[0]); // Fermer le polygone
-    return points;
-  };
-
-  // Couleurs pour le style sombre
-  const getGlowColor = (index) => {
-    const colors = [
-        'rgba(99,102,241,0.7)',
-        'rgba(168,85,247,0.7)',
-        'rgba(248,113,113,0.7)',
-        'rgba(251,191,36,0.7)',
-
-    ];
-    return colors[index % colors.length];
-  };
-
-  useEffect(() => {
-    const addPolygonLayers = () => {
-      if (!mapRef.current || polygons.length === 0) return;
-
-      const features = polygons.map((polygon, index) => {
-        const coordinates = polygon.points.map(point => [point.longitude, point.latitude]);
-        
-        // Calculer le centroïde du polygone original
-        const originalPolygon = {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [coordinates]
-          }
-        };
-        
-        const centroid = turf.centroid(originalPolygon);
-        const area = turf.area(originalPolygon);
-        
-        // Créer un hexagone autour du centroïde
-        // La taille de l'hexagone dépend de la superficie du polygone
-        const radius = Math.sqrt(area) * 0.00001; // Ajustez ce facteur selon vos besoins
-        const hexagonCoords = createHexagon(centroid.geometry.coordinates, Math.max(radius, 0.001));
-        
-        // Ajouter un marqueur lumineux au centre
-        const markerEl = document.createElement('div');
-        markerEl.className = 'hexagon-marker';
-        markerEl.style.cssText = `
-          width: 12px;
-          height: 12px;
-          background-color: ${getGlowColor(index)};
-          border-radius: 50%;
-          box-shadow: 0 0 20px ${getGlowColor(index)}, 0 0 40px ${getGlowColor(index)};
-          animation: pulse 2s infinite;
-        `;
-        
-        new mapboxgl.Marker(markerEl)
-          .setLngLat(centroid.geometry.coordinates)
-          .addTo(mapRef.current);
-
+      setNotification(null);
+      let w = 180, s = 90, e = -180, n = -90;
+      const features = data.ids.map((id, i) => {
+        const [lon, lat] = data.coords[i];
+        if (lon < w) w = lon; if (lon > e) e = lon;
+        if (lat < s) s = lat; if (lat > n) n = lat;
         return {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [hexagonCoords],
-          },
-          properties: {
-            id: index,
-            owner_type: polygon.owner_type,
-            owner_id: polygon.owner_id,
-            area: Math.round(area * 100) / 100,
-            color: getGlowColor(index),
-            originalCoords: coordinates
-          },
+          type: 'Feature', geometry: { type: 'Point', coordinates: [lon, lat] },
+          properties: { owner_id: id, area: data.areas[i], color: GLOW[i % GLOW.length] },
         };
       });
-
-      const total = features.reduce((sum, feature) => sum + feature.properties.area, 0);
-      setTotalArea(total);
-
-      const geojson = {
-        type: 'FeatureCollection',
-        features,
-      };
-
-      // Supprimer les anciennes sources et couches si elles existent
-      if (mapRef.current.getSource('hexagonPolygons')) {
-        mapRef.current.removeLayer('hexagon-fill');
-        mapRef.current.removeLayer('hexagon-outline');
-        mapRef.current.removeLayer('hexagon-glow');
-        mapRef.current.removeSource('hexagonPolygons');
+      dataRef.current = { type: 'FeatureCollection', features };
+      boundsRef.current = [[w, s], [e, n]];
+      setPolygonCount(data.count);
+      setTotalArea(data.total_area_m2);
+      const map = mapRef.current;
+      const src = map?.getSource('entities');
+      if (src) {
+        src.setData(dataRef.current);
+        map.fitBounds(boundsRef.current, { padding: 50, duration: 0 });
       }
-
-      mapRef.current.addSource('hexagonPolygons', {
-        type: 'geojson',
-        data: geojson,
-      });
-
-      // Couche de lueur externe
-      mapRef.current.addLayer({
-        id: 'hexagon-glow',
-        type: 'fill',
-        source: 'hexagonPolygons',
-        paint: {
-          'fill-color': ['get', 'color'],
-          'fill-opacity': 0.1,
-        },
-      });
-
-      // Couche de remplissage principal
-      mapRef.current.addLayer({
-        id: 'hexagon-fill',
-        type: 'fill',
-        source: 'hexagonPolygons',
-        paint: {
-          'fill-color': ['get', 'color'],
-          'fill-opacity': 0.3,
-        },
-      });
-
-      // Contour lumineux
-      mapRef.current.addLayer({
-        id: 'hexagon-outline',
-        type: 'line',
-        source: 'hexagonPolygons',
-        paint: {
-          'line-color': ['get', 'color'],
-          'line-width': 2,
-          'line-opacity': 0.8,
-        },
-      });
-
-      // Gestion des clics
-      mapRef.current.on('click', 'hexagon-fill', (e) => {
-        const { properties } = e.features[0];
-
-        const popupContent = showControls 
-          ? `<div style="background: #1a1a1a; color: white; padding: 15px; border-radius: 8px; border: 1px solid ${properties.color};">
-               <h3 style="color: ${properties.color}; margin: 0 0 10px 0;">Owner Type: ${properties.owner_type}</h3>
-               <p style="margin: 5px 0; color: #ccc;
-               ">Owner ID: ${properties.owner_id}</p>
-               <p style="margin: 5px 0; color: #ccc;">Feature ID: ${properties.id}</p>
-               <p style="margin: 5px 0; color: #ccc;">Area: ${properties.area} m²</p>
-               <button class="delete-btn" data-owner-id="${properties.owner_id}" 
-                       style="margin-top: 10px; padding: 8px 16px; background: linear-gradient(45deg, #ff0040, #ff4081); 
-                              color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                 Delete Polygon
-               </button>
-             </div>`
-          : `<div style="background: #1a1a1a; color: white; padding: 15px; border-radius: 8px; border: 1px solid ${properties.color};">
-               <h3 style="color: ${properties.color}; margin: 0 0 10px 0;">Owner Type: ${properties.owner_type}</h3>
-               <p style="margin: 5px 0; color: #ccc;">Owner ID: ${properties.owner_id}</p>
-               <p style="margin: 5px 0; color: #ccc;">Area: ${properties.area} m²</p>
-             </div>`;
-
-        new mapboxgl.Popup({
-          closeButton: true,
-          closeOnClick: true,
-          className: 'dark-popup'
-        })
-          .setLngLat(e.lngLat)
-          .setHTML(popupContent)
-          .addTo(mapRef.current);
-      });
-
-      mapRef.current.on('mouseenter', 'hexagon-fill', () => {
-        mapRef.current.getCanvas().style.cursor = 'pointer';
-      });
-
-      mapRef.current.on('mouseleave', 'hexagon-fill', () => {
-        mapRef.current.getCanvas().style.cursor = '';
-      });
-
-      // Ajuster la vue pour inclure tous les hexagones
-      const bounds = new mapboxgl.LngLatBounds();
-      features.forEach(feature => {
-        feature.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
-      });
-      mapRef.current.fitBounds(bounds, { padding: 50 });
-    };
-
-    if (mapRef.current && polygons.length > 0) {
-      if (mapRef.current.isStyleLoaded()) {
-        addPolygonLayers();
-      } else {
-        mapRef.current.on('load', addPolygonLayers);
-      }
+    } catch (error) {
+      console.error('Error fetching polygons:', error);
+      if (showControls) setNotification({ type: "error", message: "Error loading polygons." });
     }
-  }, [polygons, showControls]);
+  };
 
-  // Event listener pour le bouton Delete
+  useEffect(() => { loadData(); }, [owner_type, showControls]); // eslint-disable-line
+
+  // ── Suppression ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!showControls) return;
+    const el = mapContainerRef.current;
 
     const handleDeleteClick = async (event) => {
-      if (event.target.classList.contains("delete-btn")) {
-        const ownerId = event.target.getAttribute("data-owner-id");
-
-        const isConfirmed = window.confirm(`Are you sure you want to delete the polygon with owner ID: ${ownerId}?`);
-        if (!isConfirmed) return;
-
-        try {
-          const response = await axiosInstance.delete(`/api/points/owner/${ownerId}`);
-          if (response.status === 204) {
-            setNotification({
-              type: "info",
-              message: `Polygon with owner ID: ${ownerId} deleted successfully.`,
-            });
-
-            const updatedPolygonsResponse = await axiosInstance.get(`/api/points/getallbyownertype/${owner_type}`);
-            const updatedData = updatedPolygonsResponse.data;
-
-            setPolygons(updatedData.polygons);
-            setPolygonCount(updatedData.polygons.length);
-          } else {
-            setNotification({
-              type: "error",
-              message: `Failed to delete polygon with owner ID: ${ownerId}.`,
-            });
-          }
-        } catch (error) {
-          console.error("Error deleting polygon:", error);
-          setNotification({
-            type: "error",
-            message: `Error deleting polygon with owner ID: ${ownerId}.`,
-          });
+      if (!event.target.classList.contains("delete-btn")) return;
+      const ownerId = event.target.getAttribute("data-owner-id");
+      if (!window.confirm(`Are you sure you want to delete the polygon with owner ID: ${ownerId}?`)) return;
+      try {
+        const response = await axiosInstance.delete(`/api/points/owner/${ownerId}`);
+        if (response.status === 204) {
+          document.querySelectorAll(".mapboxgl-popup").forEach(p => p.remove());
+          const removed = dataRef.current.features.find(f => f.properties.owner_id === ownerId);
+          dataRef.current = {
+            ...dataRef.current,
+            features: dataRef.current.features.filter(f => f.properties.owner_id !== ownerId),
+          };
+          mapRef.current?.getSource('entities')?.setData(dataRef.current);
+          setPolygonCount(c => c - 1);
+          setTotalArea(a => a - (removed?.properties.area || 0));
+          setNotification({ type: "info", message: `Polygon with owner ID: ${ownerId} deleted successfully.` });
+        } else {
+          setNotification({ type: "error", message: `Failed to delete polygon with owner ID: ${ownerId}.` });
         }
+      } catch (error) {
+        console.error("Error deleting polygon:", error);
+        setNotification({ type: "error", message: `Error deleting polygon with owner ID: ${ownerId}.` });
       }
     };
 
-    mapContainerRef.current?.addEventListener("click", handleDeleteClick);
-
-    return () => {
-      mapContainerRef.current?.removeEventListener("click", handleDeleteClick);
-    };
-  }, [polygons, owner_type, showControls]);
+    el?.addEventListener("click", handleDeleteClick);
+    return () => el?.removeEventListener("click", handleDeleteClick);
+  }, [owner_type, showControls]);
 
   return (
     <div className="relative" style={{ height }}>
-      <style jsx>{`
-        .mapboxgl-popup-content {
+      <style>{`
+        .dark-popup .mapboxgl-popup-content {
           background: transparent !important;
           padding: 0 !important;
           box-shadow: none !important;
         }
-        
-        .mapboxgl-popup-tip {
+        .dark-popup .mapboxgl-popup-tip {
           display: none !important;
         }
       `}</style>
-      
+
       {notification && showControls && (
         <div
           className={`absolute top-4 right-2 z-10 px-4 py-2 rounded-md shadow-lg transition-shadow duration-300 focus:outline-none ${
@@ -363,19 +218,19 @@ const MapboxExample = ({ ownerType = null, showControls = true, height = "100%",
               : "bg-red-500 text-white"
           }`}
           style={{
-            boxShadow: notification.type === "info" 
-              ? "0 0 20px rgba(0, 255, 209, 0.5)" 
+            boxShadow: notification.type === "info"
+              ? "0 0 20px rgba(0, 255, 209, 0.5)"
               : "0 0 20px rgba(255, 0, 0, 0.5)"
           }}
         >
           {notification.message}
         </div>
       )}
-      
+
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
-      
+
       {showControls && (
-        <div 
+        <div
           className="absolute bottom-4 left-4 rounded-lg p-4 shadow-lg"
           style={{
             background: 'rgba(26, 26, 26, 0.9)',
@@ -384,8 +239,8 @@ const MapboxExample = ({ ownerType = null, showControls = true, height = "100%",
           }}
         >
           <div className="text-sm text-white">
-            <p><strong style={{color: '#00FFD1'}}>Polygons:</strong> {polygonCount}</p>
-            <p><strong style={{color: '#00FFD1'}}>Total Area:</strong> {totalArea.toFixed(2)} m²</p>
+            <p><strong style={{color: '#00FFD1'}}>Polygons:</strong> {polygonCount.toLocaleString()}</p>
+            <p><strong style={{color: '#00FFD1'}}>Total Area:</strong> {(totalArea / 10000).toFixed(2)} ha</p>
           </div>
         </div>
       )}
