@@ -34,6 +34,16 @@ const colorFor = (ownerId) => {
 const escapeHtml = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => (
   { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+// Cadrage sur 99 % des entités : quelques coordonnées aberrantes (saisies de test
+// hors du pays) ne doivent pas faire dézoomer la carte sur tout un continent.
+const robustBounds = (coords) => {
+  const lons = coords.map(c => c[0]).sort((a, b) => a - b);
+  const lats = coords.map(c => c[1]).sort((a, b) => a - b);
+  const q = (arr, p) => arr[Math.min(arr.length - 1, Math.max(0, Math.round(p * (arr.length - 1))))];
+  const cut = coords.length >= 200 ? 0.005 : 0;
+  return [[q(lons, cut), q(lats, cut)], [q(lons, 1 - cut), q(lats, 1 - cut)]];
+};
+
 const formatHa = (m2) => {
   const ha = m2 / 10000;
   return ha >= 1000 ? `${Math.round(ha).toLocaleString()} ha` : `${ha.toFixed(2)} ha`;
@@ -101,7 +111,7 @@ const addLayers = (map, farmsData, polysData) => {
   if (!map.getSource("farms")) {
     map.addSource("farms", {
       type: "geojson", data: farmsData,
-      cluster: true, clusterMaxZoom: POLY_MIN_ZOOM, clusterRadius: 50,
+      cluster: true, clusterMaxZoom: POLY_MIN_ZOOM - 1, clusterRadius: 50,
     });
   }
   if (!map.getSource("polygons")) {
@@ -209,18 +219,14 @@ const MapViewAll = () => {
       } else {
         setNotification(null);
         const areas = new Map();
-        let w = 180, s = 90, e = -180, n = -90;
         const features = data.ids.map((id, i) => {
-          const [lon, lat] = data.coords[i];
           areas.set(id, data.areas[i]);
-          if (lon < w) w = lon; if (lon > e) e = lon;
-          if (lat < s) s = lat; if (lat > n) n = lat;
-          return { type: "Feature", geometry: { type: "Point", coordinates: [lon, lat] },
+          return { type: "Feature", geometry: { type: "Point", coordinates: data.coords[i] },
                    properties: { owner_id: id, color: colorFor(id) } };
         });
         areaRef.current = areas;
         farmsRef.current = { type: "FeatureCollection", features };
-        boundsRef.current = new mapboxgl.LngLatBounds([w, s], [e, n]);
+        boundsRef.current = new mapboxgl.LngLatBounds(...robustBounds(data.coords));
         mapRef.current?.fitBounds(boundsRef.current, { padding: 60, maxZoom: 14, duration: 0 });
       }
       setCount(data.count || 0);
