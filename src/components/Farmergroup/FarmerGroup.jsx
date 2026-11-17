@@ -1,13 +1,31 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axiosInstance from '../../axiosInstance';
 import Swal from 'sweetalert2';
+import { jwtDecode } from 'jwt-decode';
 import {
   Users, Plus, Edit2, Trash2, Search, X, AlertTriangle,
-  Loader2, Check, ChevronLeft, ChevronRight, Lightbulb,
+  Loader2, Check, ChevronLeft, ChevronRight, Lightbulb, UserCog, Tractor,
 } from 'lucide-react';
 
 const EMPTY_FORM = { name: '', description: '' };
 const PER_PAGE   = 8;
+
+const getIsAdmin = () => {
+  try {
+    const token = localStorage.getItem('token');
+    return token ? Boolean(jwtDecode(token)?.sub?.is_admin) : false;
+  } catch { return false; }
+};
+
+// Pages affichées : 1 … autour de la page courante … dernière.
+const pageList = (current, total) => {
+  const pages = new Set([1, total, current - 1, current, current + 1]);
+  const sorted = [...pages].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+  return sorted.flatMap((p, i) => (i && p - sorted[i - 1] > 1 ? ['…', p] : [p]));
+};
+
+const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const inputCls = (err) =>
   `w-full border rounded-xl px-3.5 py-2.5 text-sm transition-all outline-none
@@ -83,6 +101,50 @@ const FarmerGroupManager = () => {
     } catch { setGlobalError('Error deleting group.'); }
   };
 
+  // ── Admin : rattacher la coopérative (et ses fermes) à un autre compte ──
+  const isAdmin = useMemo(getIsAdmin, []);
+  const [users, setUsers] = useState(null);
+
+  const handleAssign = async (fg) => {
+    let list = users;
+    if (!list) {
+      try {
+        const r = await axiosInstance.get('/api/users/');
+        list = (r.data ?? []).slice().sort((a, b) => a.username.localeCompare(b.username));
+        setUsers(list);
+      } catch { setGlobalError('Error loading accounts.'); return; }
+    }
+    const options = list.map(u =>
+      `<option value="${escapeHtml(u.username)}">${escapeHtml(u.company_name || u.email)}</option>`).join('');
+    const r = await Swal.fire({
+      title: `Assign "${escapeHtml(fg.name)}"`,
+      html: `<p style="font-size:14px;color:#6b7280;margin-bottom:12px">
+               The cooperative and its ${fg.farm_count ?? 0} farm(s) will move to the chosen account.
+               Current account: <b>${escapeHtml(fg.owner_username || 'none')}</b></p>
+             <input id="assign-user" list="assign-users" class="swal2-input" style="width:85%"
+                    placeholder="Type a username…" autocomplete="off">
+             <datalist id="assign-users">${options}</datalist>`,
+      showCancelButton: true, confirmButtonText: 'Assign', confirmButtonColor: '#059669',
+      customClass: { popup: 'rounded-2xl' },
+      preConfirm: () => {
+        const name = document.getElementById('assign-user').value.trim();
+        const user = list.find(u => u.username === name);
+        if (!user) { Swal.showValidationMessage('Choose an account from the list'); return false; }
+        return user;
+      },
+    });
+    if (!r.isConfirmed) return;
+    try {
+      const res = await axiosInstance.put(`/api/farmergroup/${fg.id}/assign`, { user_id: r.value.id });
+      setGroups(gs => gs.map(g => (g.id === fg.id ? { ...g, ...res.data.farmer_group } : g)));
+      Swal.fire({ icon: 'success', title: 'Assigned', text: res.data.msg, timer: 2500,
+        showConfirmButton: false, customClass: { popup: 'rounded-2xl' } });
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err.response?.data?.msg || 'Could not assign.',
+        customClass: { popup: 'rounded-2xl' } });
+    }
+  };
+
   const openCreate  = () => { setFormData(EMPTY_FORM); setEditingId(null); setFormErrors({}); setDrawerOpen(true); };
   const openEdit    = (fg) => { setFormData({ name: fg.name ?? '', description: fg.description ?? '' }); setEditingId(fg.id); setFormErrors({}); setDrawerOpen(true); };
   const closeDrawer = () => { setDrawerOpen(false); setFormData(EMPTY_FORM); setEditingId(null); setFormErrors({}); };
@@ -90,7 +152,8 @@ const FarmerGroupManager = () => {
   // Filtered + paginated (client-side — groups are few)
   const filtered   = groups.filter(fg =>
     fg.name?.toLowerCase().includes(search.toLowerCase()) ||
-    fg.description?.toLowerCase().includes(search.toLowerCase())
+    fg.description?.toLowerCase().includes(search.toLowerCase()) ||
+    fg.owner_username?.toLowerCase().includes(search.toLowerCase())
   );
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paginated  = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
@@ -170,10 +233,28 @@ const FarmerGroupManager = () => {
                 <div className="min-w-0">
                   <h3 className="font-bold text-gray-800 leading-tight truncate">{fg.name}</h3>
                   {fg.description && <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">{fg.description}</p>}
-                  <span className="text-xs text-gray-400 font-mono mt-1 inline-block">#{fg.id}</span>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                    <span className="text-xs text-gray-400 font-mono">#{fg.id}</span>
+                    {isAdmin && (
+                      <>
+                        <span className="text-xs text-gray-500 inline-flex items-center gap-1">
+                          <Tractor size={12}/> {fg.farm_count ?? 0} farm{fg.farm_count === 1 ? '' : 's'}
+                        </span>
+                        <span className="text-xs text-gray-500 inline-flex items-center gap-1">
+                          <UserCog size={12}/> {fg.owner_username || 'no account'}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-2 flex-shrink-0">
+              <div className="flex flex-wrap justify-end gap-2 flex-shrink-0">
+                {isAdmin && (
+                  <button onClick={() => handleAssign(fg)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 transition-colors">
+                    <UserCog size={12}/> Assign
+                  </button>
+                )}
                 <button onClick={() => openEdit(fg)}
                   className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-200 transition-colors">
                   <Edit2 size={12}/> Edit
@@ -196,7 +277,9 @@ const FarmerGroupManager = () => {
             <ChevronLeft size={16}/> Previous
           </button>
           <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            {pageList(currentPage, totalPages).map((page, i) => page === '…' ? (
+              <span key={`gap-${i}`} className="w-8 text-center text-sm text-gray-400">…</span>
+            ) : (
               <button key={page} onClick={() => setCurrentPage(page)}
                 className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                   currentPage === page ? 'bg-emerald-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
