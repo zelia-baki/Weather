@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
+import FarmSelect from '../common/FarmSelect';
 import { useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
@@ -7,7 +8,6 @@ const FarmDataManager = () => {
   const location = useLocation();
   const farmId = location.state?.farmId || "WAK0001";
   const [farmData, setFarmData] = useState([]);
-  const [farmsList, setFarmsList] = useState([]);
   const [cropsList, setCropsList] = useState([]);
   const [countriesList, setCountriesList] = useState([]);
   const [formData, setFormData] = useState({
@@ -35,7 +35,7 @@ const FarmDataManager = () => {
       setFormData(prev => ({ ...prev, farm_id: farmId }));
       fetchFarmData(farmId);
     }
-    fetchFarmsList();
+
     fetchCropsList();
     fetchCountryList();
   }, [farmId]);
@@ -55,15 +55,6 @@ const FarmDataManager = () => {
       setFarmData(response.data.farmdata_list);
     } catch (error) {
       console.error("Error fetching farm data:", error);
-    }
-  };
-
-  const fetchFarmsList = async () => {
-    try {
-      const response = await axiosInstance.get('/api/farm/all');
-      setFarmsList(response.data.farms);
-    } catch (error) {
-      console.error("Error fetching farms list:", error);
     }
   };
 
@@ -166,18 +157,8 @@ const FarmDataManager = () => {
         {!farmId && (
           <div>
             <label htmlFor="farm_id" className="block mb-2 text-sm font-medium">Farm ID:</label>
-            <select
-              name="farm_id"
-              value={formData.farm_id}
-              onChange={handleFarmSelect}
-              required
-              className="w-full p-2 border rounded-md shadow-sm"
-            >
-              <option value="">Select a Farm</option>
-              {farmsList.map((farm) => (
-                <option key={farm.id} value={farm.id}>{farm.name}</option>
-              ))}
-            </select>
+            <FarmSelect id="farm_id" name="farm_id" value={formData.farm_id} onChange={handleFarmSelect} required
+              inputClassName="w-full p-2 pr-14 border rounded-md shadow-sm bg-white" />
           </div>
         )}
 

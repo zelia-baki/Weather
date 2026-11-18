@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import InputField  from "./InputField";
 import SelectField from "./SelectField";
+import FarmSelect  from "../../common/FarmSelect";
 
 /**
  * FarmBlock
@@ -17,7 +18,6 @@ const FarmBlock = ({
   onFarmChange,
   onAddFarm,
   onRemoveFarm,
-  farms,
   districts,
   isLastBlock,
   canRemove,
@@ -82,18 +82,20 @@ const FarmBlock = ({
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {/* Farm ID */}
-        <SelectField
-          label="Farm ID"
-          name={`farm_${index}_id`}
-          value={formData[`farm_${index}_id`] || ""}
-          onChange={handleFarmSelect}
-          options={farms.map((f) => ({
-            value: f.id,
-            label: `${f.name} — ${f.subcounty || f.id}`,
-          }))}
-          required
-        />
+        {/* Farm ID — recherche serveur (50 000+ fermes) */}
+        <div className="mb-4">
+          <label htmlFor={`farm_${index}_id`} className="text-sm font-semibold mb-1.5 block text-teal-700">
+            Farm ID<span className="text-red-400 ml-0.5">*</span>
+          </label>
+          <FarmSelect
+            id={`farm_${index}_id`}
+            name={`farm_${index}_id`}
+            value={formData[`farm_${index}_id`] || ""}
+            onChange={handleFarmSelect}
+            required
+            inputClassName="border-2 border-gray-200 p-3 pr-16 w-full rounded-lg text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
+          />
+        </div>
 
         {/* Phone — TOUJOURS éditable, jamais readOnly */}
         <div className="relative">

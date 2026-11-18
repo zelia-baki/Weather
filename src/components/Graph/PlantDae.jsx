@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Line } from "react-chartjs-2";
 import axiosInstance from "../../axiosInstance";
+import FarmSelect from "../common/FarmSelect";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -34,7 +35,6 @@ const DegreeDaysLineChart = () => {
   const [longitude, setLongitude] = useState(0);
 
   const [crops, setCrops] = useState([]);
-  const [farms, setFarms] = useState([]);
   const [crop, setCrop] = useState("");
   const [selectedFarmId, setSelectedFarmId] = useState("");
   const [selectedPlantingDate, setSelectedPlantingDate] = useState("");
@@ -73,9 +73,6 @@ const DegreeDaysLineChart = () => {
   useEffect(() => {
     axiosInstance.get("/api/crop/")
       .then(res => setCrops(res.data.crops || []))
-      .catch(console.error);
-    axiosInstance.get("/api/farm/all")
-      .then(res => setFarms(res.data.farms || []))
       .catch(console.error);
   }, []);
 
@@ -290,14 +287,7 @@ const DegreeDaysLineChart = () => {
       </h1>
 
       <div className="mb-6 flex flex-wrap gap-2 items-center">
-        <select value={selectedFarmId} onChange={handleFarmChange} className="p-2 border rounded">
-          <option value="">Select a farm</option>
-          {farms.map(f => (
-            <option key={f.id} value={f.id}>
-              {f.name} – {f.subcounty}
-            </option>
-          ))}
-        </select>
+        <FarmSelect value={selectedFarmId} onChange={handleFarmChange} className="min-w-[16rem] flex-1" />
 
         <select value={crop} onChange={e => { setCrop(e.target.value); setIsDateSaved(false); }} className="p-2 border rounded">
           <option value="">Select a crop</option>

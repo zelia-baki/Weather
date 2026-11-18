@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import axiosInstance from "../../axiosInstance";
+import FarmSelect from "../common/FarmSelect";
 import axios from "axios"; // Import d'axios pour la requête Mapbox
 
 import {
@@ -39,7 +40,6 @@ const DegreeDaysLineChart = () => {
   const [crops, setCrops] = useState([]);
 
   // États pour les fermes et la localisation
-  const [farms, setFarms] = useState([]);
   const [selectedFarmId, setSelectedFarmId] = useState("");
   const [city, setCity] = useState("");
   const [province, setProvince] = useState("");
@@ -81,17 +81,6 @@ const DegreeDaysLineChart = () => {
   }, []);
 
   // Récupération dynamique des fermes
-  useEffect(() => {
-    const fetchFarms = async () => {
-      try {
-        const { data } = await axiosInstance.get("/api/farm/all");
-        setFarms(data.farms || []);
-      } catch (error) {
-        console.error("Error fetching farms:", error);
-      }
-    };
-    fetchFarms();
-  }, []);
 
   // Gestion de la sélection d'une ferme
   const handleFarmChange = async (e) => {
@@ -294,18 +283,7 @@ const DegreeDaysLineChart = () => {
       </h1>
       <div className="mb-4 flex flex-wrap items-center">
         {/* Sélection de la ferme */}
-        <select
-          value={selectedFarmId}
-          onChange={handleFarmChange}
-          className="p-2 border rounded mr-2"
-        >
-          <option value="">Select a farm</option>
-          {farms.map((farm) => (
-            <option key={farm.id} value={farm.id}>
-              {farm.name} - {farm.subcounty}
-            </option>
-          ))}
-        </select>
+        <FarmSelect value={selectedFarmId} onChange={handleFarmChange} className="min-w-[16rem] flex-1" />
         {/* Saisie manuelle des coordonnées (optionnel) */}
         <input
           type="number"

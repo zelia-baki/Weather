@@ -14,7 +14,6 @@ const FormStep = ({
   onAddFarm,
   onRemoveFarm,
   onFarmChange,
-  farms,
   districts,
   showFarmQty  = false,
   farmQtyLabel = "Weight (kg)",
@@ -75,7 +74,6 @@ const FormStep = ({
                     onFarmChange={onFarmChange}
                     onAddFarm={onAddFarm}
                     onRemoveFarm={onRemoveFarm}
-                    farms={farms}
                     districts={districts}
                     isLastBlock={farmIndex === farmBlocks.length - 1}
                     canRemove={farmBlocks.length > 1}

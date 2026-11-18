@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axiosInstance from '../../axiosInstance';
+import FarmSelect from "../common/FarmSelect";
 import {
   MapPin, Phone, RefreshCw, CheckCircle, AlertTriangle,
   Zap, Shield, Clock, ChevronRight,
@@ -485,7 +486,6 @@ const ScheduleRow = ({ item, onSend, isSending }) => {
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 const LocationAdvisory = () => {
-  const [farms, setFarms]               = useState([]);
   const [selectedFarm, setSelectedFarm] = useState(null);
   const [phoneInput, setPhoneInput]     = useState('');
   const [locationResult, setLocationResult] = useState(null);
@@ -499,19 +499,15 @@ const LocationAdvisory = () => {
   const [scheduleStartDate, setScheduleStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [notification, setNotification] = useState(null);
 
-  useEffect(() => {
-    axiosInstance.get('/api/farm/all').then(r => setFarms(r.data.farms || [])).catch(console.error);
-  }, []);
 
   const showNotif = (type, message) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 3500);
   };
 
-  const onFarmChange = (id) => {
-    const farm = farms.find(f => String(f.id) === id);
+  const onFarmChange = (farm) => {
     setSelectedFarm(farm || null);
-    if (farm) setPhoneInput(farm.phonenumber || farm.phonenumber2 || '');
+    if (farm) setPhoneInput(farm.phonenumber1 || farm.phonenumber || farm.phonenumber2 || '');
     setLocationResult(null); setAdvisory(null);
     setStatus('idle'); setError(null);
     setSchedule([]); setSchedulingEnabled(false);
@@ -665,11 +661,8 @@ const LocationAdvisory = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Farm</label>
-                <select className="w-full h-10 px-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all appearance-none cursor-pointer"
-                  onChange={e => onFarmChange(e.target.value)}>
-                  <option value="">Select a farm…</option>
-                  {farms.map(f => <option key={f.id} value={f.id}>{f.name}{f.subcounty ? ` — ${f.subcounty}` : ''}</option>)}
-                </select>
+                <FarmSelect value={selectedFarm?.id || ""} onChange={(e, farm) => onFarmChange(farm)} className="w-full"
+                  inputClassName="w-full h-10 px-3 pr-14 bg-white border border-gray-200 rounded-lg text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">

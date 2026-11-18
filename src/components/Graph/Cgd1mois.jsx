@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import axiosInstance from "../../axiosInstance";
+import FarmSelect from "../common/FarmSelect";
 import axios from "axios";
 
 import {
@@ -38,7 +39,6 @@ const DegreeDaysLineChart = () => {
   const [crop, setCrop] = useState("");
   const [crops, setCrops] = useState([]);
 
-  const [farms, setFarms] = useState([]);
   const [selectedFarmId, setSelectedFarmId] = useState("");
   const [city, setCity] = useState("");
   const [province, setProvince] = useState("");
@@ -79,17 +79,6 @@ const DegreeDaysLineChart = () => {
     fetchCrops();
   }, []);
 
-  useEffect(() => {
-    const fetchFarms = async () => {
-      try {
-        const { data } = await axiosInstance.get("/api/farm/all");
-        setFarms(data.farms || []);
-      } catch (error) {
-        console.error("Error fetching farms:", error);
-      }
-    };
-    fetchFarms();
-  }, []);
 
   const handleFarmChange = async (e) => {
     const farmId = e.target.value;
@@ -255,18 +244,7 @@ const DegreeDaysLineChart = () => {
       </h1>
 
      <div className="mb-4 flex items-center space-x-2">
-  <select
-    value={selectedFarmId}
-    onChange={handleFarmChange}
-    className="p-2 border rounded"
-  >
-    <option value="">Select a farm</option>
-    {farms.map((farm) => (
-      <option key={farm.id} value={farm.id}>
-        {farm.name} - {farm.subcounty}
-      </option>
-    ))}
-  </select>
+  <FarmSelect value={selectedFarmId} onChange={handleFarmChange} className="min-w-[16rem] flex-1" />
 
   <input
     type="number"

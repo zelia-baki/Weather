@@ -4,6 +4,7 @@
 // result before issuing anything. A rejected delivery never produces a receipt.
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import axiosInstance from '../../axiosInstance';
+import FarmSelect from '../common/FarmSelect';
 import Swal from 'sweetalert2';
 import {
   Warehouse, Package, FlaskConical, Users, Check, X, Loader2, AlertTriangle,
@@ -232,7 +233,6 @@ const ReceiptReception = () => {
   const [measurements, setMeasurements] = useState({});
   const [grading,     setGrading]     = useState(null);
   const [grading_busy, setGradingBusy] = useState(false);
-  const [farms,       setFarms]       = useState([]);         // catalogue
   const [farmLines,   setFarmLines]   = useState([]);         // what was delivered
   const [stock,       setStock]       = useState(null);
   const [submitting,  setSubmitting]  = useState(false);
@@ -246,7 +246,6 @@ const ReceiptReception = () => {
       .then(r => setWarehouses((r.data.stores ?? []).filter(s => s.is_certified && s.status !== false)))
       .catch(() => setGlobalError('Could not load warehouses.'));
     axiosInstance.get('/api/crop/').then(r => setCrops(r.data.crops ?? [])).catch(() => {});
-    axiosInstance.get('/api/farm/').then(r => setFarms(r.data.farms ?? [])).catch(() => {});
   }, []);
 
   // Free space, so the operator knows before weighing.
@@ -560,13 +559,9 @@ const ReceiptReception = () => {
 
               {farmLines.map((line, i) => (
                 <div key={i} className="flex gap-2 items-start">
-                  <select value={line.farm_id} onChange={e => updateFarmLine(i, { farm_id: e.target.value })}
-                    className={`${inputCls(false)} flex-1`}>
-                    <option value="">Select farm</option>
-                    {farms.map(f => (
-                      <option key={f.farm_id || f.id} value={f.farm_id}>{f.farm_id} — {f.name}</option>
-                    ))}
-                  </select>
+                  {/* recherche serveur : avant, seules les 6 premières fermes étaient proposées */}
+                  <FarmSelect value={line.farm_id} onChange={e => updateFarmLine(i, { farm_id: e.target.value })}
+                    className="flex-1" inputClassName={`${inputCls(false)} pr-14`} />
                   <input type="number" min="0" step="0.001" placeholder="kg" value={line.weight_kg}
                     onChange={e => updateFarmLine(i, { weight_kg: e.target.value })}
                     className={`${inputCls(false)} w-32`}/>

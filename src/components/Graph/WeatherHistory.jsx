@@ -3,6 +3,7 @@ import { Line } from "react-chartjs-2";
 import { Chart as ChartJS } from "chart.js/auto";
 import axios from "axios";
 import axiosInstance from "../../axiosInstance"; // 🔹 Assure-toi que ce chemin est correct
+import FarmSelect from "../common/FarmSelect";
 import { FiInfo } from "react-icons/fi";
 import {
   WiThermometer,
@@ -16,7 +17,6 @@ function Graph() {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [weatherData, setWeatherData] = useState([]);
-  const [farms, setFarms] = useState([]);
   const [selectedFarmId, setSelectedFarmId] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
@@ -24,17 +24,6 @@ function Graph() {
   const [forecastPeriod, setForecastPeriod] = useState("10"); // 🔹 default 10 days
 
   // 🔹 Charger la liste des fermes
-  useEffect(() => {
-    const fetchFarms = async () => {
-      try {
-        const { data } = await axiosInstance.get("/api/farm/all");
-        setFarms(data.farms || []);
-      } catch (error) {
-        console.error("Error fetching farms:", error);
-      }
-    };
-    fetchFarms();
-  }, []);
 
   // 🔹 Quand on sélectionne une ferme
   const handleFarmChange = async (e) => {
@@ -206,18 +195,7 @@ function Graph() {
               <label className="text-gray-700 font-semibold mb-1">
                 Select a Farm
               </label>
-              <select
-                value={selectedFarmId}
-                onChange={handleFarmChange}
-                className="p-2 border rounded"
-              >
-                <option value="">-- Choose Farm --</option>
-                {farms.map((farm) => (
-                  <option key={farm.id} value={farm.id}>
-                    {farm.name} - {farm.subcounty}
-                  </option>
-                ))}
-              </select>
+              <FarmSelect value={selectedFarmId} onChange={handleFarmChange} className="min-w-[16rem] flex-1" />
             </div>
             <div className="flex flex-col">
               <label className="text-gray-700 font-semibold mb-1">Latitude</label>

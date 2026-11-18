@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FiCheckCircle, FiAlertCircle, FiTrash2, FiLoader } from 'react-icons/fi';
 import axiosInstance from '../../axiosInstance';
+import FarmSelect from '../common/FarmSelect';
 
 // Field plots used to calibrate the Sentinel-2 index → biomass model of each
 // perennial crop (backend: app/utils/crop_calibration_utils.py). Each crop
@@ -62,7 +63,6 @@ function FamilyCard({ f }) {
 
 export default function CropCalibration() {
   const [data, setData] = useState(null);
-  const [farms, setFarms] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -84,7 +84,6 @@ export default function CropCalibration() {
 
   useEffect(() => {
     load();
-    axiosInstance.get('/api/farm/all').then((r) => setFarms(r.data.farms || [])).catch(() => {});
   }, []);
 
   const set = (key) => (e) => {
@@ -174,12 +173,8 @@ export default function CropCalibration() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="cc-farm_id" className={LABEL_CLASSES}>Farm *</label>
-              <input id="cc-farm_id" list="cc-farms" value={form.farm_id} onChange={set('farm_id')}
-                     placeholder="Farm ID" className={INPUT_CLASSES} aria-invalid={!!errors.farm_id}
-                     aria-describedby={errors.farm_id ? 'cc-farm_id-err' : undefined} />
-              <datalist id="cc-farms">
-                {farms.map((f) => <option key={f.farm_id} value={f.farm_id}>{f.name}</option>)}
-              </datalist>
+              <FarmSelect id="cc-farm_id" name="farm_id" value={form.farm_id} onChange={set('farm_id')}
+                          inputClassName={`${INPUT_CLASSES} pr-14`} />
               {errors.farm_id && <p id="cc-farm_id-err" className="mt-1 text-xs text-red-600">{errors.farm_id}</p>}
             </div>
             <div>

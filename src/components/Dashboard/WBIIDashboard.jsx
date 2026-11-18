@@ -6,10 +6,11 @@ import {
   CloudRain, Sun, Thermometer, Activity, Sprout
 } from 'lucide-react';
 import axiosInstance from '../../axiosInstance';
+import FarmSelect from '../common/FarmSelect';
 import ExportButtons from './Exportbuttons';
 
 const WBIIDashboard = () => {
-  const [farms, setFarms] = useState([]);
+  const [farmCount, setFarmCount] = useState(0);
   const [selectedFarm, setSelectedFarm] = useState(null);
   const [wbiiData, setWbiiData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -31,13 +32,12 @@ const WBIIDashboard = () => {
   // ─── Ref sur le conteneur du graphique ───────────────────────
   const chartRef = useRef(null);
 
-  // ─── Liste des fermes : /api/farm/all (pas de pagination nécessaire) ───
+  // ─── Première ferme (affichée au chargement) ; les autres via FarmSelect ───
   const fetchFarms = async () => {
     try {
-      const response = await axiosInstance.get('/api/farm/all');
-      const farmsList = response.data?.farms || [];
-      console.log(`Total farms loaded: ${farmsList.length}`);
-      return farmsList;
+      const response = await axiosInstance.get('/api/farm/', { params: { page: 1, per_page: 1 } });
+      setFarmCount(response.data?.total_farms || 0);
+      return response.data?.farms || [];
     } catch (error) {
       console.error('Error fetching farms:', error);
       setError('Failed to load farms. Please try again.');
@@ -257,8 +257,6 @@ const WBIIDashboard = () => {
       setLoading(true);
       try {
         const farmData = await fetchFarms();
-        console.log('Setting farms:', farmData);
-        setFarms(farmData);
         if (farmData.length > 0) {
           await loadWBIIForFarm(farmData[0]);
         } else {
@@ -585,25 +583,14 @@ const WBIIDashboard = () => {
         <div className="bg-white rounded-3xl shadow-lg border border-purple-100 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-purple-600" />
-            Select Farm {farms.length > 0 && `(${farms.length} farms)`}
+            Select Farm {farmCount > 0 && `(${farmCount.toLocaleString()} farms)`}
           </h3>
-          <select
+          <FarmSelect
             value={selectedFarm?.id || ''}
-            onChange={(e) => {
-              const farmId = e.target.value;
-              const farm = farms.find(f => String(f.id) === String(farmId));
-              if (farm) loadWBIIForFarm(farm);
-            }}
+            onChange={(e, farm) => { if (farm) loadWBIIForFarm(farm); }}
             disabled={loading}
-            className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-gray-900 font-medium focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 disabled:opacity-50 disabled:cursor-not-allowed appearance-none cursor-pointer"
-          >
-            <option value="">-- Select a Farm --</option>
-            {farms.map((farm) => (
-              <option key={farm.id} value={farm.id}>
-                {farm.name} {farm.geolocation ? `(${farm.geolocation})` : ''}
-              </option>
-            ))}
-          </select>
+            inputClassName="w-full px-4 py-3 pr-14 bg-white border-2 border-gray-300 rounded-xl text-gray-900 font-medium focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 disabled:opacity-50"
+          />
         </div>
 
         {/* Crop & Land Details */}

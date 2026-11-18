@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { Line } from 'react-chartjs-2';
 import axiosInstance from '../../axiosInstance.jsx';
+import FarmSelect from '../common/FarmSelect';
+import { fetchWeatherByCell } from '../../utils/weatherByCell';
 import { WiThermometer, WiThermometerExterior, WiHumidity, WiStrongWind, WiRain } from "react-icons/wi";
 import emailjs from 'emailjs-com';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
+const ALL_FARMS_PAGE = 40;   // cartes « All farms » affichées à la fois
 
 const WeatherDashboard = () => {
     const [location, setLocation] = useState({ lat: 0, lon: 0 });
@@ -16,7 +20,7 @@ const WeatherDashboard = () => {
     const [weatherData, setWeatherData] = useState(null);
     const [map, setMap] = useState(null);
     const [anomalyAlert, setAnomalyAlert] = useState(null);
-    const [farms, setFarms] = useState([]);
+    const [selectedFarm, setSelectedFarm] = useState(null);   // ferme choisie (FarmSelect)
     const [selectedFarmId, setSelectedFarmId] = useState('');
     const [forecastDays, setForecastDays] = useState([]);
     const [query, setQuery] = useState('');
@@ -27,24 +31,12 @@ const WeatherDashboard = () => {
     const [allFarmsAlerts, setAllFarmsAlerts] = useState([]);
     const [allFarmsLoading, setAllFarmsLoading] = useState(false);
     const [allFarmsLastChecked, setAllFarmsLastChecked] = useState(null);
+    const [allFarmsTotal, setAllFarmsTotal] = useState(0);
+    const [allFarmsShown, setAllFarmsShown] = useState(ALL_FARMS_PAGE);
 
     // ✅ AJOUT : Ferme actuellement sélectionnée + numéro de téléphone associé
-    const selectedFarm = farms.find((farm) => String(farm.id) === String(selectedFarmId));
     const selectedFarmPhone = selectedFarm?.phonenumber1 || selectedFarm?.phonenumber || null;
 
-    // Récupération de la liste des fermes
-    useEffect(() => {
-        const fetchFarms = async () => {
-            try {
-                const { data } = await axiosInstance.get('/api/farm/all');
-                setFarms(data.farms || []);
-            } catch (error) {
-                console.error('Error fetching farms:', error);
-            }
-        };
-
-        fetchFarms();
-    }, []);
 
     // 🌍 NOUVELLE FONCTION : Reverse Geocoding pour obtenir le nom du lieu
     const fetchLocationName = async (lat, lon) => {
@@ -65,9 +57,10 @@ const WeatherDashboard = () => {
     };
 
     // Sélection d'une ferme
-    const handleFarmIdChange = async (e) => {
+    const handleFarmIdChange = async (e, farm) => {
         const farm_id = e.target.value;
         setSelectedFarmId(farm_id);
+        setSelectedFarm(farm || null);
         if (farm_id) {
             try {
                 const response = await axiosInstance.get(`/api/farm/${farm_id}`);
@@ -325,7 +318,6 @@ const WeatherDashboard = () => {
 
     // Envoi de l'alerte par EmailJS
     const sendEmailAlert = (message) => {
-        const selectedFarm = farms.find((farm) => farm.id === selectedFarmId);
         const recipientEmail = selectedFarm && selectedFarm.email ? selectedFarm.email : 'default@example.com';
 
         const templateParams = {
@@ -346,41 +338,30 @@ const WeatherDashboard = () => {
 
     // 🆕 AJOUT : Dashboard multi-fermes — vérifie toutes les fermes et liste celles en alerte
     const fetchAllFarmsAlerts = async () => {
-        if (!farms.length) return;
         setAllFarmsLoading(true);
         try {
+            // Fermes en une requête, météo par case de ~11 km (≈350 cases pour 53 000
+            // fermes, 4 appels Open-Meteo) au lieu d'un appel par ferme.
+            const { data } = await axiosInstance.get('/api/farm/alert-targets');
+            const targets = data.farms || [];
+            setAllFarmsTotal(targets.length);
+            const { cells } = await fetchWeatherByCell(
+                targets,
+                'hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=3',
+            );
             const results = [];
-
-            for (const farm of farms) {
-                if (!farm.geolocation || !farm.geolocation.includes(',')) continue;
-                const [latStr, lonStr] = farm.geolocation.split(',');
-                const lat = parseFloat(latStr);
-                const lon = parseFloat(lonStr);
-                if (isNaN(lat) || isNaN(lon)) continue;
-
-                try {
-                    const response = await fetch(
-                        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,shortwave_radiation,wind_speed_1000hPa&forecast_days=3`
-                    );
-                    const data = await response.json();
-                    const anomalies = computeAnomalies(data);
-
-                    if (anomalies.length > 0) {
-                        results.push({
-                            farm,
-                            phone: farm.phonenumber1 || farm.phonenumber || null,
-                            lat,
-                            lon,
-                            anomalies,
-                        });
-                    }
-                } catch (err) {
-                    console.error(`Error checking farm ${farm.name}:`, err);
+            for (const cell of cells) {
+                const anomalies = computeAnomalies(cell.weather);
+                if (!anomalies.length) continue;
+                for (const farm of cell.farms) {
+                    results.push({ farm, phone: farm.phonenumber || null, lat: farm.lat, lon: farm.lon, anomalies });
                 }
             }
-
             setAllFarmsAlerts(results);
+            setAllFarmsShown(ALL_FARMS_PAGE);
             setAllFarmsLastChecked(new Date());
+        } catch (err) {
+            console.error('Error checking all farms:', err);
         } finally {
             setAllFarmsLoading(false);
         }
@@ -388,10 +369,10 @@ const WeatherDashboard = () => {
 
     // Lance la vérification multi-fermes dès qu'on ouvre l'onglet "All Farms" (et que les fermes sont chargées)
     useEffect(() => {
-        if (activeTab === 'all' && farms.length > 0 && allFarmsAlerts.length === 0 && !allFarmsLastChecked) {
+        if (activeTab === 'all' && !allFarmsLoading && allFarmsAlerts.length === 0 && !allFarmsLastChecked) {
             fetchAllFarmsAlerts();
         }
-    }, [activeTab, farms]);
+    }, [activeTab]);
 
     // Initialisation de la map Mapbox
     useEffect(() => {
@@ -525,20 +506,13 @@ const WeatherDashboard = () => {
                                     </svg>
                                     Select Farm
                                 </label>
-                                <select
+                                <FarmSelect
                                     id="farm_id"
                                     name="farm_id"
                                     value={selectedFarmId}
                                     onChange={handleFarmIdChange}
-                                    className="w-full p-3 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 hover:border-blue-300 cursor-pointer"
-                                >
-                                    <option value="">-- Choose Farm --</option>
-                                    {farms.map((farm) => (
-                                        <option key={farm.id} value={farm.id}>
-                                            {farm.name} - {farm.subcounty}
-                                        </option>
-                                    ))}
-                                </select>
+                                    inputClassName="w-full p-3 pr-14 border-2 border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200 hover:border-blue-300"
+                                />
                             </div>
 
                             {/* Latitude */}
@@ -740,7 +714,7 @@ const WeatherDashboard = () => {
                                     <h2 className="text-2xl font-bold text-gray-800">All Farms — Active Alerts</h2>
                                     <p className="text-sm text-gray-500 mt-1">
                                         {allFarmsLastChecked
-                                            ? `Last checked: ${allFarmsLastChecked.toLocaleTimeString('en-US')} · ${allFarmsAlerts.length} / ${farms.length} farms in alert`
+                                            ? `Last checked: ${allFarmsLastChecked.toLocaleTimeString('en-US')} · ${allFarmsAlerts.length.toLocaleString()} / ${allFarmsTotal.toLocaleString()} farms in alert`
                                             : 'Not checked yet'}
                                     </p>
                                 </div>
@@ -761,7 +735,7 @@ const WeatherDashboard = () => {
                                     <svg className="w-8 h-8 animate-spin mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                     </svg>
-                                    <p className="text-sm">Checking weather for {farms.length} farms…</p>
+                                    <p className="text-sm">Checking weather for {allFarmsTotal ? allFarmsTotal.toLocaleString() : 'all'} farms…</p>
                                 </div>
                             ) : allFarmsAlerts.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-gray-400">
@@ -772,7 +746,7 @@ const WeatherDashboard = () => {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {allFarmsAlerts.map((item, index) => (
+                                    {allFarmsAlerts.slice(0, allFarmsShown).map((item, index) => (
                                         <div key={`${item.farm.id}-${index}`} className="rounded-xl border-2 border-red-200 bg-red-50/50 p-5">
                                             <div className="flex items-start justify-between mb-3">
                                                 <div>
@@ -799,6 +773,7 @@ const WeatherDashboard = () => {
                                             <button
                                                 onClick={() => {
                                                     setSelectedFarmId(String(item.farm.id));
+                                                    setSelectedFarm({ ...item.farm, phonenumber1: item.farm.phonenumber });
                                                     setLatitude(item.lat);
                                                     setLongitude(item.lon);
                                                     setLocation({ lat: item.lat, lon: item.lon });
@@ -811,6 +786,17 @@ const WeatherDashboard = () => {
                                             </button>
                                         </div>
                                     ))}
+                                    {allFarmsAlerts.length > allFarmsShown && (
+                                        <div className="md:col-span-2 flex flex-col items-center gap-1 pt-2">
+                                            <button onClick={() => setAllFarmsShown(n => n + ALL_FARMS_PAGE * 2)}
+                                                className="px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm">
+                                                Show more
+                                            </button>
+                                            <span className="text-xs text-gray-400">
+                                                {allFarmsShown.toLocaleString()} of {allFarmsAlerts.length.toLocaleString()} farms in alert shown
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

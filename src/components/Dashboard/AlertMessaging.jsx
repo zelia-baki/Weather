@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../axiosInstance';
+import Swal from 'sweetalert2';
+import { fetchWeatherByCell } from '../../utils/weatherByCell';
 import {
   AlertTriangle, Cloud, Wind, Droplets, ThermometerSun,
   Bug, MapPin, Phone, Calendar, Send, RefreshCw, CheckCircle, XCircle, Leaf, Sun
@@ -582,6 +584,8 @@ const FarmCard = ({ alert, index, selected, onToggle, mode }) => {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+const PAGE_SIZE = 60;   // cartes affichées à la fois (des milliers de fermes possibles)
+
 const AlertMessaging = () => {
   const [alerts, setAlerts]           = useState([]);
   const [loading, setLoading]         = useState(false);
@@ -593,138 +597,90 @@ const AlertMessaging = () => {
   const [sendToAdmin, setSendToAdmin]         = useState(true);
   const [sendStatus, setSendStatus]           = useState(null); // null | {sending} | {done, success, total}
   const [skippedFarms, setSkippedFarms]       = useState([]); // farms excluded from results + why
+  const [progress, setProgress]               = useState(null); // {done, total} cases météo
+  const [shown, setShown]                     = useState(PAGE_SIZE); // cartes affichées
+  const [search, setSearch]                   = useState('');
 
   // ── Data fetching ───────────────────────────────────────────────────────────
 
-  const fetchFarms = async () => {
-    try {
-      const res = await axiosInstance.get('/api/farm/all');
-      const d = res.data;
-      // NOTE: if your backend paginates (e.g. returns { farms, page, total_pages }),
-      // this only grabs the first page. Log the raw response shape below to check.
-      console.log('[fetchFarms] raw response:', d);
-      if (Array.isArray(d)) return d;
-      return d?.farms || d?.data || d?.items || [];
-    } catch (err) {
-      console.error('[fetchFarms] request failed:', err);
-      return [];
-    }
-  };
-
-  const fetchWeatherData = async (lat, lon) => {
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m&forecast_days=10`;
-      return await (await fetch(url)).json();
-    } catch {
-      return null;
-    }
-  };
-
+  // Une prévision par case de ~11 km (fermes voisines = même météo) et toutes les
+  // fermes en une requête serveur : avant, 3+ requêtes par ferme, impraticable
+  // avec 50 000+ fermes.
   const fetchAlerts = async () => {
     setLoading(true);
+    setProgress(null);
     setSelectedWeather([]);
     setSelectedPest([]);
     setSelectedOutlook([]);
-    const skipped = [];
     try {
-      const farms = await fetchFarms();
-      console.log(`[fetchAlerts] total farms returned by API: ${farms.length}`);
+      const { data } = await axiosInstance.get('/api/farm/alert-targets');
+      const farms = data.farms || [];
+      const skipped = [...(data.skipped || [])];
+      if (!farms.length) { setAlerts([]); setSkippedFarms(skipped); return; }
 
-      if (!farms.length) { setAlerts([]); setSkippedFarms([]); return; }
+      const { cells, failed } = await fetchWeatherByCell(
+        farms,
+        'hourly=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m&forecast_days=10',
+        { onProgress: (done, total) => setProgress({ done, total }) },
+      );
+      failed.forEach(f => skipped.push({ id: f.id, name: f.name, reason: 'weather fetch failed' }));
 
       const results = [];
-      for (const farm of farms) {
-        if (!farm.geolocation) {
-          console.warn(`[fetchAlerts] SKIPPED farm "${farm.name}" (id=${farm.id}): no geolocation field`);
-          skipped.push({ id: farm.id, name: farm.name, reason: 'missing geolocation' });
-          continue;
+      for (const cell of cells) {
+        // calculs météo une seule fois par case
+        const weather_alerts = detectWeatherAnomalies(cell.weather);
+        const cellPests      = detectPestAlerts(cell.weather);
+        const outlook        = buildDailyOutlook(cell.weather);
+        for (const farm of cell.farms) {
+          const pest_alerts = farm.crops.length
+            ? cellPests
+                .map(pa => ({ ...pa, alerts: pa.alerts.filter(pest =>
+                  (PEST_TO_CROPS[pest] || []).some(c => farm.crops.includes(c))) }))
+                .filter(pa => pa.alerts.length > 0)
+            : cellPests;
+          results.push({
+            farm: {
+              id: farm.id,
+              name: farm.name,
+              geolocation: `${farm.lat},${farm.lon}`,
+              phonenumber: farm.phonenumber,
+              crops: farm.crops,
+            },
+            weather_alerts,
+            pest_alerts,
+            outlook,
+          });
         }
-        const [lat, lon] = farm.geolocation.split(',').map(c => parseFloat(c.trim()));
-        if (isNaN(lat) || isNaN(lon)) {
-          console.warn(`[fetchAlerts] SKIPPED farm "${farm.name}" (id=${farm.id}): invalid geolocation "${farm.geolocation}"`);
-          skipped.push({ id: farm.id, name: farm.name, reason: `invalid geolocation "${farm.geolocation}"` });
-          continue;
-        }
-
-        // Fetch crops
-        let farmCrops = [];
-        try {
-          const fdRes = await axiosInstance.get(`/api/farmdata/?farm_id=${farm.farm_id}`);
-          const cropIds = [...new Set((fdRes.data?.farmdata_list || []).map(fd => fd.crop_id))];
-          for (const id of cropIds) {
-            const cr = await axiosInstance.get(`/api/crop/${id}`);
-            if (cr.data?.name) farmCrops.push(cr.data.name);
-          }
-        } catch (err) {
-          console.warn(`[fetchAlerts] crop fetch failed for farm "${farm.name}" (id=${farm.id}):`, err);
-        }
-
-        const weatherData = await fetchWeatherData(lat, lon);
-        if (!weatherData) {
-          console.warn(`[fetchAlerts] SKIPPED farm "${farm.name}" (id=${farm.id}): weather fetch failed`);
-          skipped.push({ id: farm.id, name: farm.name, reason: 'weather fetch failed' });
-          continue;
-        }
-
-        const weather_alerts = detectWeatherAnomalies(weatherData);
-        let pest_alerts = detectPestAlerts(weatherData);
-        const outlook = buildDailyOutlook(weatherData);
-
-        if (farmCrops.length > 0) {
-          pest_alerts = pest_alerts
-            .map(pa => ({
-              ...pa,
-              alerts: pa.alerts.filter(pest =>
-                (PEST_TO_CROPS[pest] || []).some(c => farmCrops.includes(c))
-              ),
-            }))
-            .filter(pa => pa.alerts.length > 0);
-        }
-
-        // Note: unlike weather/pest alerts, the outlook is always included —
-        // it's a routine notification, not conditional on anomalies existing.
-        results.push({
-          farm: {
-            id: farm.id,
-            name: farm.name,
-            geolocation: farm.geolocation,
-            phonenumber: farm.phonenumber1 || farm.phonenumber,
-            crops: farmCrops,
-          },
-          weather_alerts,
-          pest_alerts,
-          outlook,
-        });
       }
-
-      console.log(`[fetchAlerts] farms included in results: ${results.length} / ${farms.length}`);
-      if (skipped.length) {
-        console.warn('[fetchAlerts] skipped farms summary:', skipped);
-      }
-
+      results.sort((a, b) => String(a.farm.name).localeCompare(String(b.farm.name)));
       setAlerts(results);
       setSkippedFarms(skipped);
+      setShown(PAGE_SIZE);
     } catch (err) {
       console.error('[fetchAlerts] unexpected error:', err);
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   };
 
   useEffect(() => {
+    // Pas de rafraîchissement automatique : la prévision change au mieux toutes les
+    // heures et chaque case compte dans le quota Open-Meteo. Bouton « Refresh ».
     fetchAlerts();
-    const id = setInterval(fetchAlerts, 5 * 60 * 1000);
-    return () => clearInterval(id);
   }, []);
 
   // ── Selection helpers ───────────────────────────────────────────────────────
 
+  const q = search.trim().toLowerCase();
   const visibleIndexes = (mode) =>
     alerts.reduce((acc, a, i) => {
       const has = mode === 'weather' ? a.weather_alerts?.length > 0
         : mode === 'pest' ? a.pest_alerts?.length > 0
         : a.outlook?.length > 0;
-      if (has) acc.push(i);
+      const match = !q || String(a.farm.name).toLowerCase().includes(q)
+        || String(a.farm.id).toLowerCase().includes(q);
+      if (has && match) acc.push(i);
       return acc;
     }, []);
 
@@ -757,6 +713,18 @@ const AlertMessaging = () => {
   const sendSelected = async () => {
     if (!selected.length) return;
     const ADMIN = "256783130358";
+    if (selected.length > 20) {
+      const recipients = selected.length * ((sendToFarmers ? 1 : 0) + (sendToAdmin ? 1 : 0));
+      const ok = await Swal.fire({
+        icon: 'warning',
+        title: `Send alerts for ${selected.length.toLocaleString()} farms?`,
+        html: `Up to <b>${recipients.toLocaleString()}</b> SMS (more for multi-part messages), sent one per second.`,
+        showCancelButton: true,
+        confirmButtonText: 'Send',
+        confirmButtonColor: '#059669',
+      });
+      if (!ok.isConfirmed) return;
+    }
     setSendStatus({ sending: true });
     let success = 0, total = 0;
 
@@ -794,7 +762,9 @@ const AlertMessaging = () => {
   const weatherCount = alerts.filter(a => a.weather_alerts?.length > 0).length;
   const pestCount    = alerts.filter(a => a.pest_alerts?.length > 0).length;
   const outlookCount = alerts.filter(a => a.outlook?.length > 0).length;
-  const visCount     = visibleIndexes(tab).length;
+  const visibleList  = visibleIndexes(tab);
+  const visCount     = visibleList.length;
+  const selectedSet  = new Set(selected);
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
@@ -823,12 +793,13 @@ const AlertMessaging = () => {
           <div className="flex flex-col gap-1.5 rounded-xl p-4 border bg-amber-50 border-amber-200 text-amber-800 text-sm">
             <div className="flex items-center gap-2 font-medium">
               <AlertTriangle className="w-4 h-4" />
-              {skippedFarms.length} farm(s) excluded — see console for details
+              {skippedFarms.length.toLocaleString()} farm(s) excluded
             </div>
             <ul className="list-disc list-inside text-xs space-y-0.5">
-              {skippedFarms.map((s, i) => (
+              {skippedFarms.slice(0, 10).map((s, i) => (
                 <li key={i}>{s.name || `Farm #${s.id}`}: {s.reason}</li>
               ))}
+              {skippedFarms.length > 10 && <li>… and {(skippedFarms.length - 10).toLocaleString()} more</li>}
             </ul>
           </div>
         )}
@@ -901,7 +872,10 @@ const AlertMessaging = () => {
               >
                 {selected.length === visCount && visCount > 0 ? 'Deselect all' : 'Select all'}
               </button>
-              <span className="text-sm text-gray-400">{selected.length} / {visCount} selected</span>
+              <span className="text-sm text-gray-400">{selected.length.toLocaleString()} / {visCount.toLocaleString()} selected</span>
+              <input type="search" value={search} placeholder="Filter farms…"
+                onChange={e => { setSearch(e.target.value); setShown(PAGE_SIZE); }}
+                className="ml-2 w-44 px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
             </div>
             <button
               onClick={sendSelected}
@@ -920,7 +894,9 @@ const AlertMessaging = () => {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                 <RefreshCw className="w-8 h-8 animate-spin mb-3" />
-                <p className="text-sm">Fetching forecast data…</p>
+                <p className="text-sm">
+                  Fetching forecast data…{progress && ` ${progress.done} / ${progress.total} areas`}
+                </p>
               </div>
             ) : visCount === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
@@ -928,18 +904,31 @@ const AlertMessaging = () => {
                 <p className="text-sm font-medium text-gray-600">No active {tab} alerts</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {alerts.map((alert, index) => (
-                  <FarmCard
-                    key={`${alert.farm.id}-${index}`}
-                    alert={alert}
-                    index={index}
-                    selected={selected.includes(index)}
-                    onToggle={toggle}
-                    mode={tab}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {visibleList.slice(0, shown).map((index) => (
+                    <FarmCard
+                      key={`${alerts[index].farm.id}-${index}`}
+                      alert={alerts[index]}
+                      index={index}
+                      selected={selectedSet.has(index)}
+                      onToggle={toggle}
+                      mode={tab}
+                    />
+                  ))}
+                </div>
+                {visCount > shown && (
+                  <div className="mt-5 flex flex-col items-center gap-1">
+                    <button onClick={() => setShown(n => n + PAGE_SIZE * 2)}
+                      className="px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm">
+                      Show more
+                    </button>
+                    <span className="text-xs text-gray-400">
+                      {shown.toLocaleString()} of {visCount.toLocaleString()} farms shown
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

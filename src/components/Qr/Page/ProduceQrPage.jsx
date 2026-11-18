@@ -36,7 +36,7 @@ const GenerateQrCodeAndReceipt = () => {
   const [downloadError, setDownloadError] = useState(null);
   const [traceHashes,   setTraceHashes]   = useState([]);
 
-  const farms             = useFetchData("/api/farm/",            "farms");
+  // Fermes : plus de liste complète (50 000+), FarmBlock cherche côté serveur (FarmSelect)
   const districts         = useFetchData("/api/district/",        "districts");
   const countries         = useFetchData("/api/pays/",            "pays");
   const stores            = useFetchData("/api/store/",           "stores");
@@ -216,7 +216,6 @@ const GenerateQrCodeAndReceipt = () => {
                 onAddFarm={addFarmBlock}
                 onRemoveFarm={removeFarmBlock}
                 onFarmChange={handleFarmChange}
-                farms={farms}
                 districts={districts}
                 showFarmQty={currentStep === 0}
                 farmQtyLabel="Weight contributed (kg)"

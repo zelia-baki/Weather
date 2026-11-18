@@ -6,6 +6,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { FiMapPin } from 'react-icons/fi';
 import axiosInstance from '../../axiosInstance.jsx';
+import FarmSelect from "../common/FarmSelect";
 import * as turf from '@turf/turf';
 
 
@@ -31,7 +32,6 @@ const MapboxExample = () => {
   const [kcVal, setKcVal] = useState(null);
   const [latitude, setLatitude] = useState(0);
   const [longitude, setLongitude] = useState(0);
-  const [farms, setFarms] = useState([]);
   const [selectedFarmId, setSelectedFarmId] = useState("");
   const [landSurface, setLandSurface] = useState(1800);
 
@@ -86,17 +86,6 @@ const MapboxExample = () => {
   };
 
   // ✅ Récupération des fermes
-  useEffect(() => {
-    const fetchFarms = async () => {
-      try {
-        const { data } = await axiosInstance.get("/api/farm/all");
-        setFarms(data.farms || []);
-      } catch (error) {
-        console.error("Error fetching farms:", error);
-      }
-    };
-    fetchFarms();
-  }, []);
 
   // ✅ Sélection ferme
   const handleFarmChange = async (e) => {
@@ -335,12 +324,7 @@ const MapboxExample = () => {
             {/* Crop Selector */}
             <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
                 <div>
-                <select value={selectedFarmId} onChange={handleFarmChange} className="w-full p-3 border rounded-lg">
-                  <option value="">Select a farm</option>
-                  {farms.map((farm) => (
-                    <option key={farm.id} value={farm.id}>{farm.name} - {farm.subcounty}</option>
-                  ))}
-                </select>
+                <FarmSelect value={selectedFarmId} onChange={handleFarmChange} className="w-full" />
               </div>
               <select name="crop_id" onChange={handleCropSelect} className="w-full p-3 border rounded-lg">
                 <option value="">Select a crop</option>

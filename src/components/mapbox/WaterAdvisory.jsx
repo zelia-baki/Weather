@@ -15,6 +15,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { FiMapPin } from 'react-icons/fi';
 import axiosInstance from '../../axiosInstance.jsx';
+import FarmSelect from "../common/FarmSelect";
 import * as turf from '@turf/turf';
 import { WiDaySunny, WiHumidity, WiRain, WiWindy, WiCloud, WiSolarEclipse } from 'react-icons/wi';
 
@@ -290,7 +291,7 @@ const WaterAdvisory = () => {
 
   const [latitude,       setLatitude]       = useState(0);
   const [longitude,      setLongitude]      = useState(0);
-  const [farms,          setFarms]          = useState([]);
+  const [selectedFarmName, setSelectedFarmName] = useState('');
   const [selectedFarmId, setSelectedFarmId] = useState('');
   const [landSurface,    setLandSurface]    = useState(1800);
   const [phoneNumber,    setPhoneNumber]    = useState('');
@@ -365,11 +366,6 @@ const WaterAdvisory = () => {
     }
   }, [dailyEtC, dailyPrecipitation, landSurface]);
 
-  useEffect(() => {
-    axiosInstance.get('/api/farm/all')
-      .then(({ data }) => setFarms(data.farms || []))
-      .catch(console.error);
-  }, []);
 
   useEffect(() => {
     axiosInstance.get('/api/crop/')
@@ -451,7 +447,7 @@ const WaterAdvisory = () => {
   };
 
   const generateWaterAdvisoryMessage = () => {
-    const farmName  = farms.find(f => f.id === parseInt(selectedFarmId))?.name ?? 'Farm';
+    const farmName  = selectedFarmName || 'Farm';
     const cropName  = cropsList.find(c => c.id === parseInt(selectedCrop))?.name ?? 'Crop';
     const stageName = GROWTH_STAGES.find(s => s.id === growthStage)?.id?.toUpperCase() ?? 'MID';
     const surface   = parseFloat(landSurface);
@@ -508,9 +504,10 @@ const WaterAdvisory = () => {
   };
 
   // ── Farm selection ────────────────────────────────────────────────────────
-  const handleFarmChange = async (e) => {
+  const handleFarmChange = async (e, farm) => {
     const farmId = e.target.value;
     setSelectedFarmId(farmId);
+    setSelectedFarmName(farm?.name || '');
     if (!farmId) { setLandSurface(1800); return; }
 
     try {
@@ -872,16 +869,7 @@ const WaterAdvisory = () => {
             {/* Farm */}
             <div className="flex flex-col gap-1.5">
               <label className="block text-sm font-bold text-gray-900">Select Farm:</label>
-              <select
-                value={selectedFarmId}
-                onChange={handleFarmChange}
-                className="w-full p-3 bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-base"
-              >
-                <option value="">Select a farm</option>
-                {farms.map(farm => (
-                  <option key={farm.id} value={farm.id}>{farm.name} - {farm.subcounty}</option>
-                ))}
-              </select>
+              <FarmSelect value={selectedFarmId} onChange={handleFarmChange} className="w-full" />
             </div>
 
             {/* Crop */}

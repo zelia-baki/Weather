@@ -4,6 +4,7 @@ import QRCodeStyling from 'qr-code-styling';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import axiosInstance from '../../axiosInstance';
+import FarmSelect from '../common/FarmSelect';
 
 const PointForm = () => {
   const navigate = useNavigate();
@@ -29,7 +30,6 @@ const PointForm = () => {
     end_customer_name: '',
   });
 
-  const [farms, setFarms] = useState([]);
   const [cropId, setCrop] = useState([]);
   const [cat_id, setCat] = useState([]);
   const [categorys, setCategory] = useState([]);
@@ -200,18 +200,6 @@ const PointForm = () => {
   }, [selectedGradeValue, cropGrades]);
 
 
-  useEffect(() => {
-    const fetchFarms = async () => {
-      try {
-        const { data } = await axiosInstance.get('/api/farm/');
-        setFarms(data.farms || []);
-      } catch (error) {
-        console.error('Error fetching farms:', error);
-      }
-    };
-
-    fetchFarms();
-  }, []);
 
   useEffect(() => {
     const fetchDistrict = async () => {
@@ -432,21 +420,9 @@ const PointForm = () => {
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label htmlFor="farm_id" className="block text-sm font-medium text-gray-700">Farm ID:</label>
-              <select
-                id="farm_id"
-                name="farm_id"
-                value={formData.farm_id || ''}
-                onChange={handleFarmIdChange}
-                required
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              >
-                <option value="">Select Farm</option>
-                {farms.map(farm => (
-                  <option key={farm.id} value={farm.id}>
-                    {farm.name} - {farm.subcounty}
-                  </option>
-                ))}
-              </select>
+              <FarmSelect id="farm_id" name="farm_id" value={formData.farm_id || ''} onChange={handleFarmIdChange} required
+                className="mt-1"
+                inputClassName="block w-full p-2 pr-14 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
             </div>
             <div>
               <label htmlFor="farmergroup_id" className="block text-sm font-medium text-gray-700">Farmer Group:</label>

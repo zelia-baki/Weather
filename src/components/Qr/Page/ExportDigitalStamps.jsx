@@ -39,8 +39,7 @@ const ExportDigitalStamps = () => {
   const [traceHashes,   setTraceHashes]   = useState([]);
   const [error, setError] = useState(null);
 
-  // ✅ FIX: use useFetchData (paginated) instead of a single axiosInstance.get()
-  const farms = useFetchData("/api/farm/", "farms");       // ← was only loading page 1
+  // Fermes : plus de liste complète (50 000+), FarmBlock cherche côté serveur (FarmSelect)
   const districts = useFetchData("/api/district/", "districts");
   const countries = useFetchData("/api/pays/", "pays");
   const stores = useFetchData("/api/store/", "stores");
@@ -270,9 +269,6 @@ const ExportDigitalStamps = () => {
     finally { setIsDownloading(false); }
   };
 
-  // ── Farm count badge ────────────────────────────────────────────────────────
-  const loadedFarmCount = Array.isArray(farms) ? farms.length : 0;
-
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 min-h-screen py-8 light-panel">
       <div className="container mx-auto px-4">
@@ -282,13 +278,6 @@ const ExportDigitalStamps = () => {
           <h1 className="text-3xl font-bold text-blue-700 mb-1">
             Digital Export Stamps
           </h1>
-          {/* ✅ Shows how many farms were loaded so user knows pagination worked */}
-          {loadedFarmCount > 0 && (
-            <p className="text-sm text-gray-400 flex items-center justify-center gap-1.5">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
-              {loadedFarmCount} farm{loadedFarmCount !== 1 ? "s" : ""} loaded
-            </p>
-          )}
         </div>
 
         <StepIndicator
@@ -345,7 +334,6 @@ const ExportDigitalStamps = () => {
                 onAddFarm={addFarmBlock}
                 onRemoveFarm={removeFarmBlock}
                 onFarmChange={handleFarmChange}
-                farms={farms}
                 districts={districts}
                 showFarmQty={currentStep === 0}
                 farmQtyLabel="Weight contributed (kg)"

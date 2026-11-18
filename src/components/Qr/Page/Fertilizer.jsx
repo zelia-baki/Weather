@@ -31,7 +31,7 @@ const FertilizerQrPage = () => {
   const [agroInputType,     setAgroInputType]     = useState("");
   const [agroInputCategory, setAgroInputCategory] = useState("");
 
-  const farms     = useFetchData("/api/farm/",     "farms");
+  // Fermes : plus de liste complète (50 000+), FarmBlock cherche côté serveur (FarmSelect)
   const districts = useFetchData("/api/district/", "districts");
   const stores    = useFetchData("/api/store/",    "stores");
 
@@ -223,7 +223,6 @@ const FertilizerQrPage = () => {
                 onAddFarm={addFarmBlock}
                 onRemoveFarm={removeFarmBlock}
                 onFarmChange={handleFarmChange}
-                farms={farms}
                 districts={districts}
                 showFarmQty={currentStep === 0}
                 farmQtyLabel="Quantity applied (kg)"
