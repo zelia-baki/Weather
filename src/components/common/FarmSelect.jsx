@@ -129,6 +129,8 @@ const FarmSelect = ({
           onClick={() => setOpen(true)}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onKeyDown={onKeyDown}
+          // style en ligne : certains thèmes du site forcent une couleur claire sur les <input>
+          style={{ color: "#111827", WebkitTextFillColor: "#111827" }}
           className={inputClassName || "w-full p-3 pr-16 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:bg-gray-100"}
         />
         {/* champ caché pour la validation HTML « required » des formulaires */}
